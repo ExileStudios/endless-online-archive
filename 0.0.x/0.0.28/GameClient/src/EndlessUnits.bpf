@@ -1,0 +1,27 @@
+#include <vcl.h>
+#pragma hdrstop
+USEUNIT("Gfx_icon.cpp");
+USEUNIT("Gfx_mapicon.cpp");
+USEUNIT("Gfx_mapicons.cpp");
+USEUNIT("Ctrl_skills.cpp");
+USEUNIT("Itemskill.cpp");
+USEUNIT("Ctrl_priest.cpp");
+USEUNIT("Ctrl_law.cpp");
+USEUNIT("Ctrl_learn.cpp");
+USEUNIT("Learnitem.cpp");
+USEUNIT("Ctrl_help.cpp");
+USEUNIT("Ctrl_memo.cpp");
+USEUNIT("Ctrl_report.cpp");
+USEUNIT("Ctrl_musician.cpp");
+USEUNIT("Gfx_musician.cpp");
+USEUNIT("Ctrl_inn.cpp");
+USEUNIT("Classvalues.cpp");
+USEUNIT("Classvalue.cpp");
+USEUNIT("Ctrl_quests.cpp");
+USEUNIT("Gfx_dialog.cpp");
+USEUNIT("Ctrl_dialog.cpp");
+USEUNIT("Ctrl_book.cpp");
+#define Library
+
+// To add a file to the library use the Project menu 'Add to Project'.
+
