@@ -1,0 +1,20 @@
+# The archive tracks only the reconstructed source, the project files, each program's QUIRKS.md and the README.
+# Everything else in the working folder stays local.
+*
+!*/
+!*.cpp
+!*.h
+!*.dfm
+!*.bpr
+!*.bpf
+!*.bpg
+!*.res
+!QUIRKS.md
+!/README.md
+!/.gitignore
+!/.gitattributes
+
+# never descended into, whatever they hold
+/tools/
+**/lib/
+**/history/

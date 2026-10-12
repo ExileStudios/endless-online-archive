@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="GameServer.exe"/>
+    <OBJFILES value="GameServer.obj MainForm.obj Players.obj Player.obj Playerskill.obj Playerinventory.obj Serial.obj Settings.obj Logins.obj Packets.obj Mysqlcontrols.obj Itemvalue.obj Itemvalues.obj Npc.obj Mapchest.obj Mapcontrol.obj Mapobject.obj Mapwarp.obj Map.obj Itemground.obj $(BCB)\lib\Debug\vcldb50.lib Itemchest.obj Skillvalues.obj Npcvalues.obj Skillvalue.obj Npcvalue.obj Npcdrop.obj Jukeboxcontrol.obj Jukebox.obj Newscontrol.obj Doorcontrol.obj Msgboardcontrol.obj Msgboard.obj Npccontrol.obj Gamecontrol.obj Shopvalues.obj Shopitem.obj Shopvalue.obj Shopcraft.obj Chestcontrol.obj Weaponmap.obj $(BCB)\lib\Debug\vclbde50.lib $(BCB)\lib\Debug\vcl50.lib Banned.obj Effectcontrol.obj Eventcontrol.obj Wedding.obj Weddings.obj Learnvalue.obj Learnvalues.obj Learnitem.obj MySQLthread.obj Mysqltask.obj Innvalues.obj Innvalue.obj Classvalues.obj Classvalue.obj Playerquest.obj Questtype.obj Quest.obj Questengine.obj Queststate.obj Filecache.obj Killcounter.obj Playercommand.obj Killcounters.obj Questcounter.obj Questcounterlist.obj Questcounters.obj"/>
+    <RESFILES value="GameServer.res"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) MainForm.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="vcldb50.lib vclbde50.lib vcl50.lib"/>
+    <SPARELIBS value="vcldb50.lib vclbde50.lib vcl50.lib"/>
+    <PACKAGES value=""/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value=""/>
+    <MAINSOURCE value="GameServer.cpp"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\debug"/>
+    <WARNINGS value="-w-8057"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value=""/>
+    <CFLAG1 value="-v -Od -tWM -k -c"/>
+    <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-Tpe -aa -c -Gn -j -v"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0w32.obj memmgr.lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib vcle50.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+InMemoryExe=0
+ShowInfoMsgs=0
+LinkDebugVcl=0
+
+  </IDEOPTIONS>
+</PROJECT>
