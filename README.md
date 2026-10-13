@@ -12,7 +12,10 @@ it is named and commented, and the behaviours of the original that look odd are 
   - `Watchdog/`: the server's companion: starts the server again when it stops answering and writes its statistics
     pages.
   - `Econfig/`: the client's settings program.
+- `misc/`: programs that belong to no release.
+  - `EOSoda/`: a chat helper that turns typed text into drunk-sounding "sodanized" text and can copy it to the
+    clipboard.
 
-The `0.3.x/` folder arrives with its releases, and `misc/` with the programs that belong to no release.
+The `0.3.x/` folder arrives with its releases.
 
 Each program's folder holds its source and project files in `src/`, and its `QUIRKS.md`.
