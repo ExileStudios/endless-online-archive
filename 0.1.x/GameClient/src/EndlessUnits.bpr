@@ -1,0 +1,60 @@
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="EndlessUnits.lib"/>
+    <OBJFILES value="Gfx_icon.obj Gfx_mapicon.obj Gfx_mapicons.obj Ctrl_skills.obj Itemskill.obj Ctrl_priest.obj Ctrl_law.obj Ctrl_learn.obj Learnitem.obj Ctrl_help.obj Ctrl_memo.obj Ctrl_report.obj Ctrl_musician.obj Gfx_musician.obj Ctrl_inn.obj Classvalues.obj Classvalue.obj Ctrl_quests.obj Gfx_dialog.obj Ctrl_dialog.obj Ctrl_book.obj"/>
+    <MAINSOURCE value="EndlessUnits.bpf"/>
+    <PATHCPP value=".;"/>
+    <USERDEFINES value="NO_STRICT"/>
+    <SYSDEFINES value=""/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl;..\lib\tdx\inc0;..\lib\tdx\inc1;..\lib\tdx\inc2;..\lib\tdx\inc3;..\lib\tdx\inc4"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\release;..\lib\dx"/>
+    <WARNINGS value="-w-8057"/>
+    <PATHASM value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="TLib"/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-O2 -vi -tWM -c"/>
+    <PFLAGS value="-v -$Y -$W -$O- -JPHNE -M"/>
+    <LFLAGS value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="$(OBJFILES)"/>
+  </LINKER>
+  <IDEOPTIONS>
+
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+  </IDEOPTIONS>
+</PROJECT>

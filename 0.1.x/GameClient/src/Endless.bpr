@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="Endless.exe"/>
+    <OBJFILES value="Endless.obj TMainForm.obj ..\history\Fileprotection.obj ..\history\Animationprotector.obj Sfxprotection.obj Ctrl_into.obj Ctrl_menu.obj Gfxprotection.obj Gfx_intro.obj Gfx_menu.obj Ctrl_credits.obj Gfx_interface.obj Ctrl_interface.obj Mapprotection.obj Gfx_maptiles.obj Configuration.obj Sys_edit.obj Sys_edits.obj Sys_keyboard.obj Gfx_top.obj Gfx_edits.obj Sys_mouse.obj Gfx_game.obj Ctrl_game.obj Gfx_sprites.obj Ctrl_chat.obj Midiplayer.obj Packetcontrols.obj Packetoperations.obj Packetproces.obj Sys_player.obj Sys_players.obj Ctrl_status.obj Gfx_alpha.obj Gfx_balloon.obj Gfx_player.obj Ctrl_playerlist.obj Gfx_playername.obj Gfx_mapobjects.obj ..\history\Gfx_mapobject.obj ..\lib\dx\tdicondition.obj ..\lib\dx\tdiconstantforce.obj ..\lib\dx\tdicustomforce.obj ..\lib\dx\tdidataformat.obj ..\lib\dx\tdidevcaps.obj ..\lib\dx\tdideviceinstance.obj ..\lib\dx\tdideviceobjectdata.obj ..\lib\dx\tdideviceobjectinstance.obj ..\lib\dx\tdieffescape.obj ..\lib\dx\tdieffect.obj ..\lib\dx\tdieffectinfo.obj ..\lib\dx\tdienvelope.obj ..\lib\dx\tdifileeffect.obj ..\lib\dx\tdijoystate.obj ..\lib\dx\tdijoystate2.obj ..\lib\dx\tdikeyboardstate.obj ..\lib\dx\tdimousestate.obj ..\lib\dx\tdimousestate2.obj ..\lib\dx\tdiobjectdataformat.obj ..\lib\dx\tdiperiodic.obj ..\lib\dx\tdipropdword.obj ..\lib\dx\tdipropguidandpath.obj ..\lib\dx\tdipropheader.obj ..\lib\dx\tdiproprange.obj ..\lib\dx\tdipropstring.obj ..\lib\dx\tdirampforce.obj ..\lib\dx\tdx_input.obj ..\lib\dx\tdx_inputdevice.obj ..\lib\dx\tdx_inputeffect.obj Gfx_object.obj Gfx_tile.obj Gfx_maptile.obj Gfx_mask.obj Gfx_mapmask.obj Gfx_mapmasks.obj Gfx_wall.obj Gfx_mapwall.obj Gfx_mapwalls.obj Gfx_maptop.obj Gfx_maptops.obj Mapwarp.obj Mapobject.obj Gfx_emotebuffer.obj Stringunit.obj Pathfinder.obj Pathnode.obj Sys_npc.obj Sys_npcs.obj Gfx_npc.obj Gfx_npcs.obj Ctrl_group.obj Ctrl_groupmember.obj Gfx_blend.obj Gfx_mapblend.obj Gfx_mapblends.obj Sys_item.obj Sys_items.obj Gfx_item.obj Gfx_mapitem.obj Gfx_mapitems.obj Itemvalue.obj Itemvalues.obj Ctrl_settings.obj Ctrl_news.obj Ctrl_inventory.obj Iteminventory.obj Gfx_subitem.obj Gfx_useritem.obj Register.obj Ctrl_paperdoll.obj ..\lib\dx\tds3dbuffer.obj ..\lib\dx\tds3dlistener.obj ..\lib\dx\tdsbcaps.obj ..\lib\dx\tdsbpositionnotify.obj ..\lib\dx\tdsbufferdesc.obj ..\lib\dx\tdscbcaps.obj ..\lib\dx\tdscbufferdesc.obj ..\lib\dx\tdsccaps.obj ..\lib\dx\tdscaps.obj ..\lib\dx\tdx_sound.obj ..\lib\dx\tdx_sound3dbuffer.obj ..\lib\dx\tdx_sound3dlistener.obj ..\lib\dx\tdx_soundbuffer.obj ..\lib\dx\tdx_soundcapture.obj ..\lib\dx\tdx_soundcapturebuffer.obj ..\lib\dx\tdx_soundkspropertyset.obj ..\lib\dx\tdx_soundnotify.obj Filelogger.obj Mapsign.obj Ctrl_trade.obj Gfx_trade.obj Gfx_chest.obj Ctrl_chest.obj Mapdoor.obj Npcvalues.obj Npcvalue.obj Gfx_shop.obj Ctrl_shop.obj Itemshop.obj Gfx_bank.obj Ctrl_bank.obj Ctrl_locker.obj Ctrl_social.obj Gfx_social.obj Itemcraft.obj Ctrl_barber.obj Gfx_barber.obj Ctrl_guild.obj ..\lib\dx\tddbltfx.obj ..\lib\dx\tddcaps.obj ..\lib\dx\tddcolorcontrol.obj ..\lib\dx\tddcolorkey.obj ..\lib\dx\tdddeviceidentifier.obj ..\lib\dx\tddgammaramp.obj ..\lib\dx\tddoverlayfx.obj ..\lib\dx\tddpixelformat.obj ..\lib\dx\tddscaps.obj ..\lib\dx\tddsurfacedesc.obj ..\lib\dx\tddvideoportbandwidth.obj ..\lib\dx\tddvideoportcaps.obj ..\lib\dx\tddvideoportconnect.obj ..\lib\dx\tddvideoportdesc.obj ..\lib\dx\tddvideoportinfo.obj ..\lib\dx\tddvideoportstatus.obj ..\lib\dx\tdx_draw.obj ..\lib\dx\tdx_drawclipper.obj ..\lib\dx\tdx_drawcolorcontrol.obj ..\lib\dx\tdx_drawgammacontrol.obj ..\lib\dx\tdx_drawpalette.obj ..\lib\dx\tdx_drawsurface.obj ..\lib\dx\tdx_drawvideoport.obj ..\lib\dx\tdx_drawvideoportcontainer.obj Gfx_effect.obj Gfx_mapeffect.obj Gfx_mapeffects.obj Sys_soundmap.obj Sys_magicmap.obj Sys_effect.obj Sys_effects.obj Sys_weaponmap.obj Ctrl_gamebars.obj Gfx_msgboard.obj Ctrl_msgboard.obj Sys_msg.obj Gfx_jukebox.obj Ctrl_jukebox.obj Gfx_stats.obj Ctrl_stats.obj Skillvalues.obj Skillvalue.obj Ctrl_spells.obj Itemspell.obj"/>
+    <RESFILES value="Endless.res ..\lib\tdx\inc1\TDx_Draw_Library_Icons.RES ..\lib\tdx\inc2\TDx_Sound_Library_Icons.RES ..\lib\tdx\inc3\TDx_Input_Library_Icons.RES"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) TMainForm.dfm"/>
+    <LIBFILES value="msimg32.lib"/>
+    <LIBRARIES value="vcl50.lib"/>
+    <SPARELIBS value="vcl50.lib"/>
+    <PACKAGES value=""/>
+    <PATHCPP value="..\history;."/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value="NO_STRICT"/>
+    <SYSDEFINES value=""/>
+    <MAINSOURCE value="Endless.cpp"/>
+    <INCLUDEPATH value="..\history;$(BCB)\include;$(BCB)\include\vcl;..\lib\tdx\inc0;..\lib\tdx\inc1;..\lib\tdx\inc2;..\lib\tdx\inc3;..\lib\tdx\inc4"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\release;..\lib\dx"/>
+    <WARNINGS value="-w-8057"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value=""/>
+    <CFLAG1 value="-O2 -vi -tWM -c"/>
+    <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-Tpe -aa -c -Gn -j -v"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0w32.obj memmgr.lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) cp32mt.lib EndlessUnits.lib import32.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1033
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+InMemoryExe=0
+ShowInfoMsgs=0
+LinkDebugVcl=0
+
+  </IDEOPTIONS>
+</PROJECT>
