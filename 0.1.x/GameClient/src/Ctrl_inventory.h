@@ -1,9 +1,15 @@
 #ifndef Ctrl_inventoryH
 #define Ctrl_inventoryH
 
+#include <new>
 #include <vector.h>
 
+struct Tooltip;
+
 #include "Iteminventory.h"
+
+#define DRAG_DELAY_IDLE 1000
+#define INVENTORY_CELL_SIZE 26
 #define ITEM_SIZE_MAX_NARROW 3
 
 // The inventory grid: the items and their cells, dragging between cells and from the paperdoll, the drop and junk
@@ -13,14 +19,12 @@ struct InventoryController
     bool left_button_hovered;
     bool right_button_hovered;
     bool paperdoll_button_hovered;
-    char unused_bytes[5];
     vector<InventoryItem> items;
     vector<InventoryItem> layout_backup;
     vector<InventoryItem> trial_backup;
     vector<InventoryItem> loaded_items;
     vector<InventoryItem> saved_slots;
-    String hover_text;
-    int hover_item_special;
+    Tooltip *tooltip;
     int hover_item_size;
     int hover_item_id;
     int hover_col;
@@ -44,12 +48,14 @@ struct InventoryController
     int last_mouse_x;
     int last_mouse_y;
     int drag_delay_ticks;
+    int mouse_x;
+    int mouse_y;
     bool input_enabled;
     char equip_pending[23];
     bool hover_dirty;
     bool items_dirty;
     char drag_dirty;
-    char third_unused_bytes[5];
+    char unused_bytes[5];
     int click_ticks;
     int click_col;
     int click_row;
@@ -59,7 +65,6 @@ struct InventoryController
     int change_rows[20];
     int change_count;
     bool changes_overflowed;
-    char fourth_unused_bytes[7];
 
     InventoryController();
     ~InventoryController();
@@ -76,6 +81,7 @@ struct InventoryController
     void MarkDragDirty();
     void UseItem(int item_id);
     void MouseMove(int x, int y);
+    void RefreshHover();
     void UpdateItemHover(int x, int y);
     void MouseDown(int x, int y, int button);
     void CancelDrag();
@@ -83,7 +89,7 @@ struct InventoryController
     void RestoreLayoutBackup();
     void RevertDragLayout();
     void MouseUp();
-    bool UpdateButtonHover(int x, int y);
+    void UpdateButtonHover(int x, int y);
     void ResetLayoutChanges();
     void RecordLayoutChange(int item_id, int col, int row);
     void SaveLayout();

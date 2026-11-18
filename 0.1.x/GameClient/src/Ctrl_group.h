@@ -1,9 +1,12 @@
 #ifndef Ctrl_groupH
 #define Ctrl_groupH
 
+#include <new>
 #include <vector.h>
 
 #include "Ctrl_groupmember.h"
+
+#define GROUP_VISIBLE_ROWS 7
 
 // The group panel: the group's members with level, health and leader mark, the waits between invites and between
 // list requests, and the player whose invite is waiting.
@@ -11,7 +14,6 @@ struct GroupController
 {
     char scroll_up_hovered;
     char scroll_down_hovered;
-    char unused_bytes[6];
     vector<GroupMember> members;
     char is_leader;
     int requester_id;

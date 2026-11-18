@@ -1,6 +1,11 @@
 #ifndef Gfx_bankH
 #define Gfx_bankH
 
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
 struct GraphicSize
 {
     int width;
@@ -15,7 +20,7 @@ class TDx_DrawSurface;
 struct BankGraphics
 {
     TDx_DrawSurface *surface;
-    Windows::TRect surface_rect;
+    TRect surface_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;

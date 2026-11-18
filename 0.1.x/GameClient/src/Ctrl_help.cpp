@@ -5,9 +5,8 @@
 #include "Tmainform.h"
 #include "Ctrl_chat.h"
 #include <io.h>
-#pragma package(smart_init)
 
-#define HELP_VISIBLE_LINES 7
+#pragma package(smart_init)
 
 HelpController::HelpController()
 {
@@ -67,7 +66,7 @@ int HelpController::GetScrollThumbOffset()
 // the scroll bar.
 void HelpController::MouseDown(int x, int y)
 {
-    if (x >= 124)
+    if ((x >= 124))
     {
         if (x <= 568 && y >= 350 && y <= 447)
         {
@@ -115,17 +114,16 @@ void HelpController::LoadPage(String page_name)
     Clear();
     try
     {
-        String lpFileName = "./help/" + page_name + ".ehf";
-        if (!access(lpFileName.c_str(), 0))
-            file_lines->LoadFromFile(lpFileName.c_str());
+        String lp_file_name = "./help/" + page_name + ".ehf";
+        if (!access(lp_file_name.c_str(), 0))
+            file_lines->LoadFromFile(lp_file_name.c_str());
         for (int i = 0; i < file_lines->Count; i++)
         {
             if (file_lines->Strings[i].Length() > 1)
             {
-                char line_flag;
                 String line = file_lines->Strings[i];
                 String link_target = "";
-                line_flag = false;
+                char line_flag = false;
                 char hide_icon = false;
                 int open_pos = line.Pos("<");
                 int close_pos = line.Pos(">");
@@ -177,16 +175,16 @@ void HelpController::LoadPage(String page_name)
 // gets the icon.
 void HelpController::AddText(String text, String link_target, char line_flag, char hide_icon)
 {
+    int j;
+    int piece_start;
     HDC dc;
-    int piece_start = 0;
-    int j = 0;
     if (text.Length() > 1)
     {
         int max_width = 420;
         int piece_count = 0;
         int next_start = 1;
         int continuation_indent = 0;
-        String wrapped_pieces[MAX_WRAP_PIECES];
+        String wrapped_pieces[10];
         if (MainForm->OffscreenSurface->GetDC(&dc))
         {
             try
@@ -200,34 +198,35 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
                 {
                     for (int i = 0; i <= 12; i++)
                     {
-                        if (text.Length() < next_start)
-                            continue;
-                        piece_count++;
-                        piece_start = next_start;
-                        char searching = true;
-                        for (j = next_start; j <= text.Length() && searching; j++)
+                        if (text.Length() >= next_start)
                         {
-                            int piece_indent = 0;
-                            if (i > 0)
-                                piece_indent = continuation_indent;
-                            if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
-                                max_width - 40 - piece_indent) ||
-                                MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
-                                max_width - piece_indent || j == text.Length())
+                            piece_count++;
+                            piece_start = next_start;
+                            char searching = true;
+                            for (j = next_start; j <= text.Length() && searching; j++)
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) <=
-                                    max_width || j == text.Length())
+                                int piece_indent = 0;
+                                if (i > 0)
+                                    piece_indent = continuation_indent;
+                                if ((text[j] == ' ' &&
+                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                        max_width - 40 - piece_indent) ||
+                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                        max_width - piece_indent || j == text.Length())
                                 {
-                                    wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
-                                    next_start = j + 1;
-                                    searching = false;
-                                }
-                                else
-                                {
-                                    wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
-                                    next_start = j + 1;
-                                    searching = false;
+                                    if (MainForm->draw_canvas->TextWidth(text.SubString(piece_start,
+                                        j - piece_start)) <= max_width || j == text.Length())
+                                    {
+                                        wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
+                                        next_start = j + 1;
+                                        searching = false;
+                                    }
+                                    else
+                                    {
+                                        wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
+                                        next_start = j + 1;
+                                        searching = false;
+                                    }
                                 }
                             }
                         }
@@ -271,7 +270,7 @@ void HelpController::ScrollUp()
     if (lines->Count > HELP_VISIBLE_LINES && top_line > 0)
     {
         top_line--;
-        double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
+        double scroll_fraction = (double)top_line / (lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -285,7 +284,7 @@ void HelpController::ScrollDown()
     if (lines->Count - 7 > top_line)
     {
         top_line++;
-        double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
+        double scroll_fraction = (double)top_line / (lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -296,9 +295,7 @@ void HelpController::ScrollDown()
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line from its position.
 void HelpController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -308,9 +305,9 @@ void HelpController::DragScrollThumb(int y)
             thumb_offset = 50;
         if (lines->Count > HELP_VISIBLE_LINES)
         {
-            thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
-            scaled_line = (lines->Count - 7.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
+            double scaled_line = (lines->Count - 7.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }

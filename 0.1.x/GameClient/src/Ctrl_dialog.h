@@ -2,8 +2,12 @@
 #define Ctrl_dialogH
 
 #include <Classes.hpp>
+
+#define DIALOG_BUTTON_BACK_FRAME 5
+#define DIALOG_BUTTON_NEXT_FRAME 7
 #define DIALOG_BUTTON_OK_FRAME 4
 #define DIALOG_MAX_LINKS 10
+#define DIALOG_THUMB_TRAVEL 52.0
 #define QUEST_DEFAULT_DIALOG 0
 #define QUEST_REQUEST_COOLDOWN_TICKS 16
 
@@ -41,8 +45,7 @@ struct DialogController
     int quest_ids[10];
     TStringList *link_texts;
     int link_ids[DIALOG_MAX_LINKS];
-    int link_line_indices[DIALOG_MAX_LINKS];
-    char unused_bytes[40];
+    int link_line_indices[20];
     char scroll_changed;
     int unused_value;
     int top_line;
@@ -55,7 +58,7 @@ struct DialogController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char second_unused_bytes[4];
+    char unused_bytes[4];
 
     DialogController();
     ~DialogController();

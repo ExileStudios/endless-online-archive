@@ -1,6 +1,8 @@
 #ifndef Gfx_alphaH
 #define Gfx_alphaH
 
+#include <TDx_DrawSurface.H>
+
 enum GreenMask
 {
     GreenMask_Rgb555 = 992,
@@ -29,12 +31,12 @@ struct ExtBlts
 
     ExtBlts(TDx_DrawSurface *surface);
     ~ExtBlts();
-    unsigned int MakeColor(unsigned int red, unsigned int green, unsigned int blue);
-    void GetMaskShiftAndWidth(int mask, unsigned short *shift, unsigned short *width);
+    int MakeColor(int red, int green, int blue);
+    int GetMaskShiftAndWidth(int mask, unsigned short *shift, unsigned short *width);
     int AlphaBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface, TDx_DrawSurface *source_surface,
-        Windows::TRect *source_rect, int alpha);
+    TRect *source_rect, int alpha);
     int HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface, TDx_DrawSurface *source_surface,
-        Windows::TRect *source_rect);
+    TRect *source_rect);
 };
 
 #endif

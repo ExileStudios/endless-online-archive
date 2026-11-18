@@ -1,9 +1,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Gfx_mapmasks.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
 #include "Gfx_mask.h"
+
 #pragma package(smart_init)
 
 MaskGraphics::MaskGraphics(char preload)
@@ -45,17 +47,19 @@ void MaskGraphics::AgeGraphics()
 {
     for (vector<MaskWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
-// Loads the first queued map mask, opening the library when no load has it open.
+// Loads one waiting mask graphic from its library each call; one that failed to load twice is freed and waits no
+// longer.
 void MaskGraphics::LoadPendingGraphic()
 {
+    vector<MaskWrapper>::iterator it;
     // The call after the map mask queue empties closes the library again, unless it is kept open.
     if (queue_drained)
     {
@@ -74,31 +78,50 @@ void MaskGraphics::LoadPendingGraphic()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapMasks).c_str());
             library_open = true;
         }
-        for (vector<MaskWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
+        it = entries.begin();
+        while (it != entries.end())
         {
             if (!it->is_loaded)
             {
-                HMODULE open_library = library;
-                it->CreateResource();
-                GraphicSize size = it->resource->LoadSurface((int)open_library, it->graphic_id + 100);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
+                if (it->idle_ticks > 1)
                 {
+                    if (it->idle_ticks == 2)
+                    {
+                        it->idle_ticks = 250;
+                        it->FreeResource();
+                        pending_count--;
+                        if (!pending_count)
+                            queue_drained = true;
+                    }
+                }
+                else
+                {
+                    int library_handle = (int)library;
+                    it->CreateResource();
+                    GraphicSize size = it->resource->LoadSurface(library_handle, it->graphic_id + 100);
+                    it->width = size.width;
+                    it->height = size.height;
+                    if (size.width == -1)
+                    {
+                        it->idle_ticks++;
+                        break;
+                    }
                     it->is_loaded = true;
+                    it->unfetched_frames = 0;
                     it->idle_ticks = 0;
                     pending_count--;
+                    if (!pending_count)
+                        queue_drained = true;
+                    break;
                 }
-                if (!pending_count)
-                    queue_drained = true;
-                break;
             }
+            it++;
         }
     }
 }
 
 // Frees every map mask that has gone unfetched for the purge age.
-bool MaskGraphics::PurgeUnusedGraphics()
+void MaskGraphics::PurgeUnusedGraphics()
 {
     bool result;
     // An erase ends the walk, so it starts over after each map mask it frees.
@@ -107,7 +130,7 @@ bool MaskGraphics::PurgeUnusedGraphics()
         result = false;
         for (vector<MaskWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->idle_ticks >= 16)
+            if (it->unfetched_frames >= 16)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -116,7 +139,6 @@ bool MaskGraphics::PurgeUnusedGraphics()
             }
         }
     } while (result);
-    return result;
 }
 
 // Frees every map mask and empties the list.
@@ -128,7 +150,11 @@ void MaskGraphics::ReleaseGraphics()
     {
         entries.clear();
         last_index = -1;
-        pending_count = 0;
+        if (pending_count > 0)
+        {
+            pending_count = 0;
+            queue_drained = true;
+        }
     }
 }
 
@@ -140,11 +166,12 @@ bool MaskGraphics::RequestGraphic(int graphic_id)
     char not_queued = true;
     for (it = entries.begin(); it != entries.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     // No map mask is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -160,7 +187,7 @@ MaskWrapper MaskGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }

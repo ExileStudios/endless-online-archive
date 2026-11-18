@@ -1,9 +1,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Gfx_mapblends.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
 #include "Gfx_blend.h"
+
 #pragma package(smart_init)
 
 BlendGraphics::BlendGraphics(char preload)
@@ -45,17 +47,19 @@ void BlendGraphics::AgeGraphics()
 {
     for (vector<BlendWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
-// Loads the first queued blended overlay, opening the library when no load has it open.
+// Loads one waiting blend graphic from its library each call; one that failed to load twice is freed and waits no
+// longer.
 void BlendGraphics::LoadPendingGraphic()
 {
+    vector<BlendWrapper>::iterator it;
     // The call after the blended overlay queue empties closes the library again, unless it is kept open.
     if (queue_drained)
     {
@@ -74,31 +78,50 @@ void BlendGraphics::LoadPendingGraphic()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Shadows).c_str());
             library_open = true;
         }
-        for (vector<BlendWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
+        it = entries.begin();
+        while (it != entries.end())
         {
             if (!it->is_loaded)
             {
-                HMODULE open_library = library;
-                it->CreateResource();
-                GraphicSize size = it->resource->LoadSurface((int)open_library, it->graphic_id + 100);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
+                if (it->idle_ticks > 1)
                 {
+                    if (it->idle_ticks == 2)
+                    {
+                        it->idle_ticks = 250;
+                        it->FreeResource();
+                        pending_count--;
+                        if (!pending_count)
+                            queue_drained = true;
+                    }
+                }
+                else
+                {
+                    int open_library = (int)library;
+                    it->CreateResource();
+                    GraphicSize size = it->resource->LoadSurface(open_library, it->graphic_id + 100);
+                    it->width = size.width;
+                    it->height = size.height;
+                    if (size.width == -1)
+                    {
+                        it->idle_ticks++;
+                        break;
+                    }
                     it->is_loaded = true;
+                    it->unfetched_frames = 0;
                     it->idle_ticks = 0;
                     pending_count--;
+                    if (!pending_count)
+                        queue_drained = true;
+                    break;
                 }
-                if (!pending_count)
-                    queue_drained = true;
-                break;
             }
+            it++;
         }
     }
 }
 
 // Frees every blended overlay that has gone unfetched for the purge age.
-bool BlendGraphics::PurgeUnusedGraphics()
+void BlendGraphics::PurgeUnusedGraphics()
 {
     bool result;
     // An erase ends the walk, so it starts over after each blended overlay it frees.
@@ -107,7 +130,7 @@ bool BlendGraphics::PurgeUnusedGraphics()
         result = false;
         for (vector<BlendWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->idle_ticks >= 16)
+            if (it->unfetched_frames >= 16)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -116,7 +139,6 @@ bool BlendGraphics::PurgeUnusedGraphics()
             }
         }
     } while (result);
-    return result;
 }
 
 // Frees every blended overlay and empties the list.
@@ -128,7 +150,11 @@ void BlendGraphics::ReleaseGraphics()
     {
         entries.clear();
         last_index = -1;
-        pending_count = 0;
+        if (pending_count > 0)
+        {
+            pending_count = 0;
+            queue_drained = true;
+        }
     }
 }
 
@@ -140,11 +166,12 @@ bool BlendGraphics::RequestGraphic(int graphic_id)
     char not_queued = true;
     for (it = entries.begin(); it != entries.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     // No blended overlay is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -160,7 +187,7 @@ BlendWrapper BlendGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }

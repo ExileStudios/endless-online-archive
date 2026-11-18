@@ -9,14 +9,8 @@
 #include "Ctrl_interface.h"
 #include "Gfx_playername.h"
 #include "Gfx_player.h"
-#pragma package(smart_init)
 
-#define PLAYER_BAR_LOW_LENGTH 5
-#define PLAYER_BAR_MID_LENGTH 12
-#define SIT_DIRECTION_PITCH 48
-#define SIT_FRAME_WIDTH 24
-#define STAND_DIRECTION_PITCH 36
-#define STAND_FRAME_WIDTH 18
+#pragma package(smart_init)
 
 // Creates each body sheet and the translucent frame buffer at its fixed size, and sets the view bounds that player
 // frames are clipped to.
@@ -112,7 +106,7 @@ SpriteGraphics::~SpriteGraphics()
 }
 
 // The rect of one standing body frame: gender picks the column block, direction the column, skin the row.
-Windows::TRect SpriteGraphics::GetStandFrameRect(int gender, int direction, int skin)
+TRect SpriteGraphics::GetStandFrameRect(int gender, int direction, int skin)
 {
     TRect stand_frame_rect;
     // Directions 2 and 3 reuse the frames of 1 and 0; the draw mirrors them.
@@ -123,7 +117,7 @@ Windows::TRect SpriteGraphics::GetStandFrameRect(int gender, int direction, int 
         else
             direction = FacingDirection_Down;
     }
-    stand_frame_rect.left = STAND_DIRECTION_PITCH * gender + STAND_FRAME_WIDTH * direction;
+    stand_frame_rect.left = STAND_DIRECTION_PITCH * gender + 18 * direction;
     stand_frame_rect.top = 58 * skin;
     stand_frame_rect.right = STAND_DIRECTION_PITCH * gender + 18 * direction + 18;
     stand_frame_rect.bottom = 58 * skin + 58;
@@ -131,7 +125,7 @@ Windows::TRect SpriteGraphics::GetStandFrameRect(int gender, int direction, int 
 }
 
 // The rect of one walking body frame by gender, direction, skin and walk step, the step held to the sheet's four.
-Windows::TRect SpriteGraphics::GetWalkFrameRect(int gender, int direction, int skin, int frame)
+TRect SpriteGraphics::GetWalkFrameRect(int gender, int direction, int skin, int frame)
 {
     TRect walk_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -153,7 +147,7 @@ Windows::TRect SpriteGraphics::GetWalkFrameRect(int gender, int direction, int s
 }
 
 // The rect of one melee attack body frame by gender, direction, skin and frame, the frame held to the sheet's two.
-Windows::TRect SpriteGraphics::GetAttackFrameRect(int gender, int direction, int skin, int frame)
+TRect SpriteGraphics::GetAttackFrameRect(int gender, int direction, int skin, int frame)
 {
     TRect attack_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -175,7 +169,7 @@ Windows::TRect SpriteGraphics::GetAttackFrameRect(int gender, int direction, int
 }
 
 // The rect of the spell cast body frame by gender, direction and skin.
-Windows::TRect SpriteGraphics::GetSpellCastCellRect(int gender, int direction, int skin)
+TRect SpriteGraphics::GetSpellCastRect(int gender, int direction, int skin)
 {
     TRect cast_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -185,7 +179,7 @@ Windows::TRect SpriteGraphics::GetSpellCastCellRect(int gender, int direction, i
         else
             direction = FacingDirection_Down;
     }
-    cast_frame_rect.left = STAND_DIRECTION_PITCH * gender + STAND_FRAME_WIDTH * direction;
+    cast_frame_rect.left = STAND_DIRECTION_PITCH * gender + 18 * direction;
     cast_frame_rect.top = 62 * skin;
     cast_frame_rect.right = STAND_DIRECTION_PITCH * gender + 18 * direction + 18;
     cast_frame_rect.bottom = 62 * skin + 62;
@@ -193,7 +187,7 @@ Windows::TRect SpriteGraphics::GetSpellCastCellRect(int gender, int direction, i
 }
 
 // The rect of the chair sitting body frame by gender, direction and skin.
-Windows::TRect SpriteGraphics::GetChairSitFrameRect(int gender, int direction, int skin)
+TRect SpriteGraphics::GetChairSitFrameRect(int gender, int direction, int skin)
 {
     TRect chair_sit_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -203,7 +197,7 @@ Windows::TRect SpriteGraphics::GetChairSitFrameRect(int gender, int direction, i
         else
             direction = FacingDirection_Down;
     }
-    chair_sit_frame_rect.left = SIT_DIRECTION_PITCH * gender + SIT_FRAME_WIDTH * direction;
+    chair_sit_frame_rect.left = SIT_DIRECTION_PITCH * gender + 24 * direction;
     chair_sit_frame_rect.top = 52 * skin;
     chair_sit_frame_rect.right = SIT_DIRECTION_PITCH * gender + 24 * direction + 24;
     chair_sit_frame_rect.bottom = 52 * skin + 52;
@@ -211,7 +205,7 @@ Windows::TRect SpriteGraphics::GetChairSitFrameRect(int gender, int direction, i
 }
 
 // The rect of the floor sitting body frame by gender, direction and skin.
-Windows::TRect SpriteGraphics::GetFloorSitFrameRect(int gender, int direction, int skin)
+TRect SpriteGraphics::GetFloorSitFrameRect(int gender, int direction, int skin)
 {
     TRect floor_sit_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -221,7 +215,7 @@ Windows::TRect SpriteGraphics::GetFloorSitFrameRect(int gender, int direction, i
         else
             direction = FacingDirection_Down;
     }
-    floor_sit_frame_rect.left = SIT_DIRECTION_PITCH * gender + SIT_FRAME_WIDTH * direction;
+    floor_sit_frame_rect.left = SIT_DIRECTION_PITCH * gender + 24 * direction;
     floor_sit_frame_rect.top = 43 * skin;
     floor_sit_frame_rect.right = SIT_DIRECTION_PITCH * gender + 24 * direction + 24;
     floor_sit_frame_rect.bottom = 43 * skin + 43;
@@ -229,7 +223,7 @@ Windows::TRect SpriteGraphics::GetFloorSitFrameRect(int gender, int direction, i
 }
 
 // The rect of the ranged attack body frame by gender, direction and skin.
-Windows::TRect SpriteGraphics::GetRangedAttackFrameRect(int gender, int direction, int skin)
+TRect SpriteGraphics::GetRangedAttackFrameRect(int gender, int direction, int skin)
 {
     TRect ranged_attack_frame_rect;
     if (direction >= FacingDirection_Up)
@@ -247,7 +241,7 @@ Windows::TRect SpriteGraphics::GetRangedAttackFrameRect(int gender, int directio
 }
 
 // The rect of the face strip for one gender and skin: one row holding every emote face side by side.
-Windows::TRect SpriteGraphics::GetFaceStripRect(int gender, int skin)
+TRect SpriteGraphics::GetFaceFrameRect(int gender, int skin)
 {
     TRect face_strip_rect;
     face_strip_rect.left = 0;
@@ -444,10 +438,8 @@ void SpriteGraphics::LoadFaceSheet(int library, int resource_id)
 // Draws a player's standing frame unclipped at a screen position, facing the player's direction.
 void SpriteGraphics::DrawPlayerAt(Player player, int hair_style, int hair_color, int x, int y)
 {
-    int screen_x = 0;
-    int screen_y = 0;
-    screen_x = x;
-    screen_y = y;
+    int screen_x = x;
+    int screen_y = y;
     if (player.direction >= FacingDirection_Up)
     {
         blt_fx->FX = 2;
@@ -467,7 +459,8 @@ void SpriteGraphics::DrawPlayerAt(Player player, int hair_style, int hair_color,
         frame_rect.left += 18;
         frame_rect.right += 18;
     }
-    if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+    int facing = player.direction;
+    if (facing == FacingDirection_Down || facing == FacingDirection_Right)
         BlitFrame(frame_rect, player.resources->front_sheet, player.resources->GetFrameRect(0), false, true);
     else
         BlitFrame(frame_rect, player.resources->back_sheet, player.resources->GetFrameRect(0), false, true);
@@ -477,7 +470,7 @@ void SpriteGraphics::DrawPlayerAt(Player player, int hair_style, int hair_color,
 // floor, sitting on a chair, else standing. Each state also draws the overhead health bar and damage number while
 // they show, and the standing and sitting states draw the emote face. With draw_buffered set the frame goes to the
 // translucent buffer, which is then blended over the map.
-void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
+void SpriteGraphics::DrawPlayer(Player player, char draw_buffered, int x_offset)
 {
     if (player.graphics_pending)
         player_load_stage = player.load_progress;
@@ -529,7 +522,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             frame_rect.left = screen_x - 28;
                             frame_rect.right = screen_x + 40;
                         }
-                        if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                        if (player.attack_direction == FacingDirection_Down ||
+                            player.attack_direction == FacingDirection_Right)
                         {
                             frame_rect.top = screen_y - 17;
                             frame_rect.bottom = screen_y + 67;
@@ -560,13 +554,14 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             frame_rect.left += 18;
                             frame_rect.right += 18;
                         }
-                        if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
-                            BlitFrame(frame_rect, player.resources->front_sheet,
-                                player.resources->GetFrameRect(10), true, true);
+                        if (player.attack_direction == FacingDirection_Down ||
+                            player.attack_direction == FacingDirection_Right)
+                            BlitFrame(frame_rect, player.resources->front_sheet, player.resources->GetFrameRect(10),
+                                true, true);
                         else
-                            BlitFrame(frame_rect, player.resources->back_sheet,
-                                player.resources->GetFrameRect(10), true, true);
-                        if ((char)draw_buffered)
+                            BlitFrame(frame_rect, player.resources->back_sheet, player.resources->GetFrameRect(10),
+                                true, true);
+                        if (draw_buffered)
                             DrawTranslucentBuffer(frame_rect);
                     }
                     else
@@ -589,7 +584,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             frame_rect.left = screen_x - 28;
                             frame_rect.right = screen_x + 40;
                         }
-                        if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                        if (player.attack_direction == FacingDirection_Down ||
+                            player.attack_direction == FacingDirection_Right)
                         {
                             frame_rect.top = screen_y - 17;
                             frame_rect.bottom = screen_y + 67;
@@ -612,13 +608,14 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                         frame_rect.left += 18;
                         frame_rect.right += 18;
                     }
-                    if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                    if (player.attack_direction == FacingDirection_Down ||
+                        player.attack_direction == FacingDirection_Right)
                         BlitFrame(frame_rect, player.resources->front_sheet,
                             player.resources->GetFrameRect(attack_frame), true, true);
                     else
                         BlitFrame(frame_rect, player.resources->back_sheet,
                             player.resources->GetFrameRect(attack_frame), true, true);
-                    if ((char)draw_buffered)
+                    if (draw_buffered)
                         DrawTranslucentBuffer(frame_rect);
                 }
                 else
@@ -635,7 +632,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                                 attack_bar_x = screen_x - 2;
                             else
                                 attack_bar_x = screen_x + 2;
-                            if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                            if (player.attack_direction == FacingDirection_Down ||
+                                player.attack_direction == FacingDirection_Right)
                                 attack_bar_y = screen_y + 1;
                         }
                     }
@@ -645,7 +643,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             attack_bar_x = screen_x - 6;
                         else
                             attack_bar_x = screen_x + 6;
-                        if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                        if (player.attack_direction == FacingDirection_Down ||
+                            player.attack_direction == FacingDirection_Right)
                             attack_bar_y = screen_y + 3;
                         else
                             attack_bar_y = screen_y - 1;
@@ -659,18 +658,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(attack_bar_x - 16, attack_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(attack_bar_x - 16, attack_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(attack_bar_x - 16, attack_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -685,7 +684,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                                 attack_damage_x = screen_x - 2;
                             else
                                 attack_damage_x = screen_x + 2;
-                            if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                            if (player.attack_direction == FacingDirection_Down ||
+                                player.attack_direction == FacingDirection_Right)
                                 attack_damage_y = screen_y + 1;
                         }
                     }
@@ -695,7 +695,8 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             attack_damage_x = screen_x - 6;
                         else
                             attack_damage_x = screen_x + 6;
-                        if ((player.attack_direction == FacingDirection_Down) || player.attack_direction == FacingDirection_Right)
+                        if (player.attack_direction == FacingDirection_Down ||
+                            player.attack_direction == FacingDirection_Right)
                             attack_damage_y = screen_y + 3;
                         else
                             attack_damage_y = screen_y - 1;
@@ -709,21 +710,24 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                             MainForm->gfx->interface_graphics->miss_label_rect);
                     else
                     {
-                        for (int i = 1; i <= player.damage_digits; i++)
+                        for (int attack_digit_index = 1; attack_digit_index <= player.damage_digits;
+                            attack_digit_index++)
                         {
-                            int attack_digit = StrToInt(String(attack_damage_text[i]));
+                            int attack_digit = StrToInt(attack_damage_text[attack_digit_index]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(attack_damage_x - 5 - 8 * player.damage_digits / 2 +
-                                    8 * i, 2 * player.damage_timer + attack_damage_y - 52 - 2 * player.gender,
+                                    8 * attack_digit_index,
+                                    2 * player.damage_timer + attack_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, attack_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        attack_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(attack_damage_x - 5 - 8 * player.damage_digits / 2 +
-                                    8 * i, 2 * player.damage_timer + attack_damage_y - 52 - 2 * player.gender,
+                                    8 * attack_digit_index,
+                                    2 * player.damage_timer + attack_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, attack_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        attack_digit));
                         }
                     }
                 }
@@ -746,9 +750,9 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                         BlitFrame(frame_rect, player.resources->front_sheet, player.resources->GetFrameRect(7), true,
                             true);
                     else
-                        BlitFrame(frame_rect, player.resources->back_sheet,
-                            player.resources->GetFrameRect(7), true, true);
-                    if ((char)draw_buffered)
+                        BlitFrame(frame_rect, player.resources->back_sheet, player.resources->GetFrameRect(7), true,
+                            true);
+                    if (draw_buffered)
                         DrawTranslucentBuffer(frame_rect);
                 }
                 else
@@ -764,18 +768,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -783,27 +787,24 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     String pose_damage_text = IntToStr(player.damage_amount);
                     for (int j = 1; j <= player.damage_digits; j++)
                     {
-                        int pose_digit = StrToInt(String(pose_damage_text[j]));
+                        int pose_digit = StrToInt(pose_damage_text[j]);
                         if (player.damage_amount <= 0 && !player.damage_heal)
                             MainForm->gfx->game->BlitClipped(screen_x - 13,
                                 2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
                                 MainForm->gfx->interface_graphics->hud_sheet,
                                 MainForm->gfx->interface_graphics->miss_label_rect);
+                        else if (!player.damage_heal)
+                            MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * j,
+                                2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
+                                MainForm->gfx->interface_graphics->hud_sheet,
+                                MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                    pose_digit));
                         else
-                        {
-                            if (!player.damage_heal)
-                                MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * j,
-                                    2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
-                                    MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, pose_digit));
-                            else
-                                MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * j,
-                                    2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
-                                    MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, pose_digit));
-                        }
+                            MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * j,
+                                2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
+                                MainForm->gfx->interface_graphics->hud_sheet,
+                                MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                    pose_digit));
                     }
                 }
             }
@@ -839,7 +840,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.bottom = 4 * player.jump_frame + screen_y + 53;
                 }
                 // The jump lifts the body most in its middle step.
-                if (!player.jump_frame || player.jump_frame == 2)
+                if (player.jump_frame == 0 || player.jump_frame == 2)
                 {
                     frame_rect.top = frame_rect.top - 14;
                     frame_rect.bottom = frame_rect.bottom - 14;
@@ -854,7 +855,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     BlitFrame(frame_rect, player.resources->front_sheet, player.resources->GetFrameRect(1), true, true);
                 else
                     BlitFrame(frame_rect, player.resources->back_sheet, player.resources->GetFrameRect(1), true, true);
@@ -882,7 +883,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                         move_bar_x = screen_x + 32 - (8 * player.jump_frame + 8);
                         move_bar_y = 4 * player.jump_frame + screen_y - 12;
                     }
-                    if (!player.jump_frame || player.jump_frame == 2)
+                    if (player.jump_frame == 0 || player.jump_frame == 2)
                     {
                         move_bar_y -= 14;
                         move_bar_y -= 14;
@@ -901,18 +902,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(move_bar_x - 16, move_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(move_bar_x - 16, move_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(move_bar_x - 16, move_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -939,7 +940,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                         move_damage_x = screen_x + 32 - (8 * player.jump_frame + 8);
                         move_damage_y = 4 * player.jump_frame + screen_y - 12;
                     }
-                    if (!player.jump_frame || player.jump_frame == 2)
+                    if (player.jump_frame == 0 || player.jump_frame == 2)
                     {
                         move_damage_y -= 14;
                         move_damage_y -= 14;
@@ -959,23 +960,23 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     {
                         for (int k = 1; k <= player.damage_digits; k++)
                         {
-                            int move_digit = StrToInt(String(move_damage_text[k]));
+                            int move_digit = StrToInt(move_damage_text[k]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(move_damage_x - 5 - 8 * player.damage_digits / 2 +
                                     8 * k, 2 * player.damage_timer + move_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, move_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        move_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(move_damage_x - 5 - 8 * player.damage_digits / 2 +
                                     8 * k, 2 * player.damage_timer + move_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, move_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        move_digit));
                         }
                     }
                 }
-                if ((char)draw_buffered)
+                if (draw_buffered)
                     DrawTranslucentBuffer(frame_rect);
             }
             if (player.walking && no_state_drawn)
@@ -1014,7 +1015,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     BlitFrame(frame_rect, player.resources->front_sheet,
                         player.resources->GetFrameRect(player.walk_frame + 1), true, true);
                 else
@@ -1053,18 +1054,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(walk_bar_x - 16, walk_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(walk_bar_x - 16, walk_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(walk_bar_x - 16, walk_bar_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -1101,23 +1102,23 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     {
                         for (int m = 1; m <= player.damage_digits; m++)
                         {
-                            int walk_digit = StrToInt(String(walk_damage_text[m]));
+                            int walk_digit = StrToInt(walk_damage_text[m]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(walk_damage_x - 5 - 8 * player.damage_digits / 2 +
                                     8 * m, 2 * player.damage_timer + walk_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, walk_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        walk_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(walk_damage_x - 5 - 8 * player.damage_digits / 2 +
                                     8 * m, 2 * player.damage_timer + walk_damage_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, walk_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        walk_digit));
                         }
                     }
                 }
-                if ((char)draw_buffered)
+                if (draw_buffered)
                     DrawTranslucentBuffer(frame_rect);
             }
             if (player.sitting_on_floor && no_state_drawn)
@@ -1130,7 +1131,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                 {
                     frame_rect.top = screen_y - 5;
                     frame_rect.bottom = screen_y + 79;
@@ -1149,7 +1150,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     emote_lowered = true;
                     direction = player.direction;
                     height_offset = player.gender;
-                    if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                    if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     {
                         emote_rect.left = screen_x + player.direction / 3 + 2;
                         emote_rect.right = screen_x + player.direction / 3 + 15;
@@ -1170,18 +1171,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 5 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 5 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 5 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -1196,23 +1197,23 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     {
                         for (int n = 1; n <= player.damage_digits; n++)
                         {
-                            int floor_sit_digit = StrToInt(String(floor_sit_damage_text[n]));
+                            int floor_sit_digit = StrToInt(floor_sit_damage_text[n]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * n,
                                     2 * player.damage_timer + screen_y - 35 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, floor_sit_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        floor_sit_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * n,
                                     2 * player.damage_timer + screen_y - 35 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, floor_sit_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        floor_sit_digit));
                         }
                     }
                 }
-                if ((char)draw_buffered)
+                if (draw_buffered)
                     DrawTranslucentBuffer(frame_rect);
             }
             if (player.sitting_on_chair && no_state_drawn)
@@ -1225,7 +1226,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                 {
                     frame_rect.top = screen_y - 10;
                     frame_rect.bottom = screen_y + 74;
@@ -1243,7 +1244,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     emote_lowered = true;
                     direction = player.direction;
                     height_offset = player.gender;
-                    if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                    if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     {
                         emote_rect.left = screen_x + player.direction / 3 + 2;
                         emote_rect.right = screen_x + player.direction / 3 + 15;
@@ -1264,18 +1265,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 10 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 10 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 10 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -1290,23 +1291,23 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     {
                         for (int ii = 1; ii <= player.damage_digits; ii++)
                         {
-                            int chair_sit_digit = StrToInt(String(chair_sit_damage_text[ii]));
+                            int chair_sit_digit = StrToInt(chair_sit_damage_text[ii]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * ii,
                                     2 * player.damage_timer + screen_y - 39 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, chair_sit_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        chair_sit_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * ii,
                                     2 * player.damage_timer + screen_y - 39 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, chair_sit_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        chair_sit_digit));
                         }
                     }
                 }
-                if ((char)draw_buffered)
+                if (draw_buffered)
                     DrawTranslucentBuffer(frame_rect);
             }
             // A finished attack or cast step also falls back to the standing frame.
@@ -1321,7 +1322,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     BlitFrame(frame_rect, player.resources->front_sheet, player.resources->GetFrameRect(0), true, true);
                 else
                     BlitFrame(frame_rect, player.resources->back_sheet, player.resources->GetFrameRect(0), true, true);
@@ -1330,7 +1331,7 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     emote_pass = true;
                     direction = player.direction;
                     height_offset = player.gender;
-                    if ((player.direction == FacingDirection_Down) || player.direction == FacingDirection_Right)
+                    if (player.direction == FacingDirection_Down || player.direction == FacingDirection_Right)
                     {
                         emote_rect.left = screen_x + player.direction / 3 + 2;
                         emote_rect.right = screen_x + player.direction / 3 + 15;
@@ -1351,18 +1352,18 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     if (player.health_bar_width <= PLAYER_BAR_LOW_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 2,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Red,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_LOW_LENGTH &&
                         player.health_bar_width <= PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 1,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Yellow,
                             player.health_bar_width));
                     if (player.health_bar_width > PLAYER_BAR_MID_LENGTH)
                         MainForm->gfx->game->BlitClipped(screen_x - 16, screen_y - 23 - 2 * player.gender,
                             MainForm->gfx->interface_graphics->hud_sheet,
-                            Gfx_interface_GetHealthBarRect((int)MainForm->gfx->interface_graphics, 0,
+                            MainForm->gfx->interface_graphics->GetHealthBarFillRect(HealthBarFill_Green,
                             player.health_bar_width));
                 }
                 if (player.damage_shown)
@@ -1377,23 +1378,23 @@ void SpriteGraphics::DrawPlayer(Player player, int draw_buffered, int x_offset)
                     {
                         for (int jj = 1; jj <= player.damage_digits; jj++)
                         {
-                            int stand_digit = StrToInt(String(stand_damage_text[jj]));
+                            int stand_digit = StrToInt(stand_damage_text[jj]);
                             if (!player.damage_heal)
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * jj,
                                     2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Damage, stand_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Damage,
+                                        stand_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(screen_x - 5 - 8 * player.damage_digits / 2 + 8 * jj,
                                     2 * player.damage_timer + screen_y - 52 - 2 * player.gender,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
-                                    DamageDigitStyle_Heal, stand_digit));
+                                    MainForm->gfx->interface_graphics->GetDamageDigitRect(DamageDigitStyle_Heal,
+                                        stand_digit));
                         }
                     }
                 }
-                if ((char)draw_buffered)
+                if (draw_buffered)
                     DrawTranslucentBuffer(frame_rect);
             }
         }
@@ -1411,7 +1412,7 @@ void SpriteGraphics::DrawPreviewPlayers(int group)
     int player_x;
     if (MainForm->players->GetCount() >= 1)
     {
-        for (i = 0; i < (int)MainForm->players->GetCount(); i++)
+        for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
         {
             Player handle = MainForm->players->GetPlayer(i);
             if (handle.draw_group == group)
@@ -1437,9 +1438,9 @@ void SpriteGraphics::DrawPreviewPlayers(int group)
                     frame_rect.left += 18;
                     frame_rect.right += 18;
                 }
-                if ((handle.direction == FacingDirection_Down) || handle.direction == FacingDirection_Right)
-                    BlitFrame(frame_rect, handle.resources->front_sheet, handle.resources->GetFrameRect(0),
-                        false, true);
+                if (handle.direction == FacingDirection_Down || handle.direction == FacingDirection_Right)
+                    BlitFrame(frame_rect, handle.resources->front_sheet, handle.resources->GetFrameRect(0), false,
+                        true);
                 else
                     BlitFrame(frame_rect, handle.resources->back_sheet, handle.resources->GetFrameRect(0), false, true);
             }
@@ -1450,11 +1451,8 @@ void SpriteGraphics::DrawPreviewPlayers(int group)
 // Blits one frame of a player sheet. Clipped frames off the view are skipped. With the frame buffer in use the
 // frame, or in the emote pass the face placed by direction and height, goes into the translucent buffer; otherwise
 // the frame is clipped to the view and blitted to the screen, keyed or not, mirrored as the player faces.
-void SpriteGraphics::BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet, Windows::TRect source_rect, bool clip,
-    bool keyed)
+void SpriteGraphics::BlitFrame(TRect dest_rect, TDx_DrawSurface *sheet, TRect source_rect, bool clip, bool keyed)
 {
-    int dest_width;
-    int dest_height;
     if (!clip)
     {
         if (keyed)
@@ -1465,9 +1463,9 @@ void SpriteGraphics::BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet,
     }
     else
     {
-        unsigned char result = 1;
-        dest_width = dest_rect.right - dest_rect.left;
-        dest_height = dest_rect.bottom - dest_rect.top;
+        char result = 1;
+        int dest_width = dest_rect.right - dest_rect.left;
+        int dest_height = dest_rect.bottom - dest_rect.top;
         if (dest_rect.left + dest_width < view_left)
             result = 0;
         if (dest_rect.top + dest_height < view_top)
@@ -1478,13 +1476,13 @@ void SpriteGraphics::BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet,
             result = 0;
         if (result)
         {
-            TRect clipped_dest = ClipToView(dest_rect);
-            dest_rect = clipped_dest;
+            dest_rect = ClipToView(dest_rect);
             if (use_frame_buffer)
             {
                 if (player_load_stage > 1)
                 {
-                    TRect face_left, unused_rect;
+                    TRect face_left;
+                    char unused_bytes[16];
                     if (!emote_pass)
                     {
                         face_left.left = 0;
@@ -1513,21 +1511,12 @@ void SpriteGraphics::BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet,
                     }
                 }
             }
+            else if (keyed)
+                MainForm->OffscreenSurface->Blt(&dest_rect, sheet, &GetClippedSourceRect(source_rect),
+                    DDBLT_DDFX | DDBLT_KEYSRC | DDBLT_WAIT, blt_fx);
             else
-            {
-                if (keyed)
-                {
-                    TRect keyed_clipped_source = GetClippedSourceRect(source_rect);
-                    MainForm->OffscreenSurface->Blt(&dest_rect, sheet, &keyed_clipped_source,
-                        DDBLT_DDFX | DDBLT_KEYSRC | DDBLT_WAIT, blt_fx);
-                }
-                else
-                {
-                    TRect clipped_source = GetClippedSourceRect(source_rect);
-                    MainForm->OffscreenSurface->Blt(&dest_rect, sheet, &clipped_source, DDBLT_DDFX | DDBLT_WAIT,
-                        blt_fx);
-                }
-            }
+                MainForm->OffscreenSurface->Blt(&dest_rect, sheet, &GetClippedSourceRect(source_rect),
+                    DDBLT_DDFX | DDBLT_WAIT, blt_fx);
         }
     }
 }
@@ -1536,10 +1525,11 @@ void SpriteGraphics::BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet,
 void SpriteGraphics::DrawTranslucentBuffer(TRect dest_rect)
 {
     int dest_width;
-    int dest_height;
+    int buffer_left;
+    int buffer_top;
     char result = 1;
     dest_width = dest_rect.right - dest_rect.left;
-    dest_height = dest_rect.bottom - dest_rect.top;
+    int dest_height = dest_rect.bottom - dest_rect.top;
     if (dest_rect.left + dest_width < view_left)
         result = 0;
     if (dest_rect.top + dest_height < view_top)
@@ -1551,7 +1541,7 @@ void SpriteGraphics::DrawTranslucentBuffer(TRect dest_rect)
     if (result)
     {
         TRect clipped_left = ClipToView(dest_rect);
-        Windows::TRect buffer_rect;
+        TRect buffer_rect;
         buffer_rect.left = 0;
         buffer_rect.top = 0;
         buffer_rect.right = 68;
@@ -1559,8 +1549,8 @@ void SpriteGraphics::DrawTranslucentBuffer(TRect dest_rect)
         // Past the view's top or left edge, the visible part is the buffer's bottom-right corner.
         if (dest_rect.top < 8 || dest_rect.left < 9)
         {
-            int buffer_left = 68 - (clipped_left.right - clipped_left.left);
-            int buffer_top = 84 - (clipped_left.bottom - clipped_left.top);
+            buffer_left = 68 - (clipped_left.right - clipped_left.left);
+            buffer_top = 84 - (clipped_left.bottom - clipped_left.top);
             buffer_rect.left = buffer_left;
             buffer_rect.top = buffer_top;
             buffer_rect.right = 68;
@@ -1575,14 +1565,9 @@ void SpriteGraphics::DrawTranslucentBuffer(TRect dest_rect)
 // each npc a balloon or its hover name; and the hover label of each map item under the mouse.
 void SpriteGraphics::DrawNameLabel()
 {
-    int npc_label_x;
-    int npc_label_y;
-    int i;
-    int j;
-    int k;
     if (MainForm->players->GetCount() >= 1)
     {
-        for (i = 0; i < (int)MainForm->players->GetCount(); i++)
+        for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
         {
             Player player = MainForm->players->GetPlayer(i);
             // A player with a health bar or damage number showing gets no label or balloon.
@@ -1591,11 +1576,9 @@ void SpriteGraphics::DrawNameLabel()
                 if (player.emoting)
                 {
                     // A hidden player's emote shows only to that player.
-                    if (!player.hidden || MainForm->net_client->GetPlayerId() == player.player_id)
-                    {
-                        if (!player.walking && !player.walk_start && !player.jumping && !player.jump_start)
-                            player.DrawEmote();
-                    }
+                    if ((!player.hidden || MainForm->net_client->GetPlayerId() == player.player_id) &&
+                        !player.walking && !player.walk_start && !player.jumping && !player.jump_start)
+                        player.DrawEmote();
                 }
                 else if (player.balloon_shown)
                     player.DrawBalloon();
@@ -1622,7 +1605,7 @@ void SpriteGraphics::DrawNameLabel()
     }
     if (MainForm->npcs->GetCount() >= 1)
     {
-        for (j = 0; j < (int)MainForm->npcs->GetCount(); j++)
+        for (int j = 0; j < (int)MainForm->npcs->GetCount(); j++)
         {
             Npc npc = MainForm->npcs->GetNpc(j);
             if (!npc.health_bar_start && !npc.health_bar_shown && !npc.damage_start && !npc.damage_shown)
@@ -1631,10 +1614,12 @@ void SpriteGraphics::DrawNameLabel()
                     npc.DrawBalloon();
                 else if (npc.label_shown && !npc.walking && !npc.attacking && !npc.alt_attacking)
                 {
-                    npc_label_x = 32 * npc.x - 32 * npc.y + MainForm->map->GetScrollOffsetX() + 306 -
-                        (MainForm->gfx->hover_label->text_width - 4) / 2;
-                    npc_label_y = 16 * npc.x + 16 * npc.y + MainForm->map->GetScrollOffsetY() + 135 -
-                        MainForm->gfx->hover_label->text_height;
+                    int npc_label_x =
+                        32 * npc.x - 32 * npc.y + MainForm->map->GetScrollOffsetX() + 306 -
+                            (MainForm->gfx->hover_label->text_width - 4) / 2;
+                    int npc_label_y =
+                        16 * npc.x + 16 * npc.y + MainForm->map->GetScrollOffsetY() + 135 -
+                            MainForm->gfx->hover_label->text_height;
                     npc_label_x += MainForm->animation->interface_controller->shake_offset;
                     // The npc's head height lifts the label above that graphic.
                     npc_label_y -= MainForm->npcs->head_heights[npc.graphic - 1];
@@ -1644,23 +1629,21 @@ void SpriteGraphics::DrawNameLabel()
             }
         }
     }
-    if (MainForm->map_items->GetCount() >= 1)
+    if (MainForm->map_items->GetCount() >= 1 && MainForm->map_items->hover_label_shown)
     {
-        if (MainForm->map_items->hover_label_shown)
+        for (int k = 0; k < (int)MainForm->map_items->GetCount(); k++)
         {
-            for (k = 0; k < (int)MainForm->map_items->GetCount(); k++)
+            MapItem handle = MainForm->map_items->GetItem(k);
+            if (handle.label_shown)
             {
-                MapItem handle = MainForm->map_items->GetItem(k);
-                if (handle.label_shown)
-                {
-                    int item_label_x = 32 * handle.x - 32 * handle.y + MainForm->map->GetScrollOffsetX() + 306 -
+                int item_label_x =
+                    32 * handle.x - 32 * handle.y + MainForm->map->GetScrollOffsetX() + 306 -
                         (MainForm->gfx->hover_label->text_width - 4) / 2;
                     int item_label_y = 16 * handle.x + 16 * handle.y + MainForm->map->GetScrollOffsetY() + 135 -
                         MainForm->gfx->hover_label->text_height;
-                    item_label_x += MainForm->animation->interface_controller->shake_offset;
-                    MainForm->gfx->game->BlitClipped(item_label_x, item_label_y, MainForm->gfx->hover_label->surface,
-                        MainForm->gfx->hover_label->surface_rect);
-                }
+                item_label_x += MainForm->animation->interface_controller->shake_offset;
+                MainForm->gfx->game->BlitClipped(item_label_x, item_label_y, MainForm->gfx->hover_label->surface,
+                    MainForm->gfx->hover_label->surface_rect);
             }
         }
     }
@@ -1676,7 +1659,7 @@ DEFINE_GET_CLIPPED_SOURCE_RECT(SpriteGraphics)
 void SpriteGraphics::ShowNameLabel(String text, int color_index)
 {
     int text_width;
-    unsigned int label_height;
+    int label_height;
     HDC dc;
     text_width = 0;
     label_height = 0;
@@ -1706,20 +1689,19 @@ void SpriteGraphics::ShowNameLabel(String text, int color_index)
 // Wraps a chat line into at most six balloon lines and opens the balloon over the player, when balloons are on.
 void SpriteGraphics::ShowSpeechBalloon(String text, int player_id, int style)
 {
-    int text_width;
-    int text_height;
-    int next_line_start;
-    HDC dc;
+    int line_start;
+    int j;
     if (MainForm->config->GetShowBalloons())
     {
         int wrap_width = 150;
-        text_width = 0;
-        text_height = 0;
+        int text_width = 0;
+        int text_height = 0;
         String trimmed_text = text.Trim();
-        next_line_start = 1;
+        int next_line_start = 1;
         String balloon_lines[6];
         for (int i = 0; i <= 5; i++)
             balloon_lines[i] = "";
+        HDC dc;
         if (MainForm->OffscreenSurface->GetDC(&dc))
         {
             try
@@ -1732,43 +1714,46 @@ void SpriteGraphics::ShowSpeechBalloon(String text, int player_id, int style)
                 MainForm->draw_canvas->Font->Size = 8;
                 for (int line_index = 0; line_index <= 5; line_index++)
                 {
-                    if (text.Length() < next_line_start)
-                        continue;
-                    int line_start;
-                    line_start = next_line_start;
-                    char seeking_break = true;
-                    for (int j = next_line_start; j <= text.Length() && seeking_break; j++)
+                    if (text.Length() >= next_line_start)
                     {
-                        // A line breaks at a space once it is fairly wide, or anywhere once it reaches the wrap width.
-                        if (!((text[j] == ' ' &&
-                            MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
-                            wrap_width - 50) ||
-                            MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
-                            wrap_width || j == text.Length()))
-                            continue;
-                        if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
-                            wrap_width || j == text.Length())
+                        line_start = next_line_start;
+                        char seeking_break = true;
+                        for (j = next_line_start; j <= text.Length() && seeking_break; j++)
                         {
-                            if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >
-                                text_width - 4)
-                                text_width = MainForm->draw_canvas->TextWidth(text.SubString(line_start,
-                                    j - line_start)) + 4;
-                            balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1);
-                            text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
-                            next_line_start = j + 1;
-                            seeking_break = false;
-                        }
-                        else
-                        {
-                            if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start) + "-") >
-                                text_width - 4)
-                                text_width = MainForm->draw_canvas->TextWidth(text.SubString(line_start,
-                                    j - line_start) + "-") + 4;
-                            // A line cut inside a word gets a hyphen.
-                            balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1) + "-";
-                            text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
-                            next_line_start = j + 1;
-                            seeking_break = false;
+                            // A line breaks at a space once it is fairly wide, or anywhere once it reaches the wrap width.
+                            if ((text[j] == ' ' &&
+                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                    wrap_width - 50) ||
+                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                    wrap_width || j == text.Length())
+                            {
+                                if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
+                                    wrap_width || j == text.Length())
+                                {
+                                    if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >
+                                        text_width - 4)
+                                        text_width =
+                                            MainForm->draw_canvas->TextWidth(text.SubString(line_start,
+                                                j - line_start)) + 4;
+                                    balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1);
+                                    text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
+                                    next_line_start = j + 1;
+                                    seeking_break = false;
+                                }
+                                else
+                                {
+                                    if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start) +
+                                        "-") > text_width - 4)
+                                        text_width =
+                                            MainForm->draw_canvas->TextWidth(text.SubString(line_start,
+                                                j - line_start) + "-") + 4;
+                                    // A line cut inside a word gets a hyphen.
+                                    balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1) + "-";
+                                    text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
+                                    next_line_start = j + 1;
+                                    seeking_break = false;
+                                }
+                            }
                         }
                     }
                 }
@@ -1806,15 +1791,21 @@ void SpriteGraphics::FreeEmoteBuffer()
 void SpriteGraphics::DrawLayerToEmoteBuffer(int x_offset, int y_offset, int library, int resource_id)
 {
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     if (emote_buffer_created)
     {
         MainForm->resource_bitmap->Width = 0;
         MainForm->resource_bitmap->Height = 0;
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+        try
+        {
+            MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+        }
+        catch (...)
+        {
+            return;
+        }
         MainForm->resource_bitmap->TransparentColor = clBlack;
         MainForm->resource_bitmap->Transparent = true;
-        // A canvas Draw by default; with BitBlt drawing configured, TransparentBlt with the same key.
         if (!MainForm->config->GetUseBitBltDraw())
         {
             if (emote_buffer->surface->GetDC(&dc))
@@ -1834,14 +1825,14 @@ void SpriteGraphics::DrawLayerToEmoteBuffer(int x_offset, int y_offset, int libr
         }
         else
         {
-            CompatibleDC = CreateCompatibleDC(0);
-            SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+            compatible_dc = CreateCompatibleDC(0);
+            SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
             if (emote_buffer->surface->GetDC(&dc))
             {
                 try
                 {
                     TransparentBlt(dc, 0 - x_offset, 0 - y_offset, MainForm->resource_bitmap->Width,
-                        MainForm->resource_bitmap->Height, CompatibleDC, 0, 0, MainForm->resource_bitmap->Width,
+                        MainForm->resource_bitmap->Height, compatible_dc, 0, 0, MainForm->resource_bitmap->Width,
                         MainForm->resource_bitmap->Height, 0);
                 }
                 catch (Exception &)
@@ -1849,7 +1840,7 @@ void SpriteGraphics::DrawLayerToEmoteBuffer(int x_offset, int y_offset, int libr
                 }
                 emote_buffer->surface->ReleaseDC(dc);
             }
-            DeleteDC(CompatibleDC);
+            DeleteDC(compatible_dc);
         }
     }
 }
@@ -1857,18 +1848,24 @@ void SpriteGraphics::DrawLayerToEmoteBuffer(int x_offset, int y_offset, int libr
 // Draws a hat bitmap into the emote buffer at an offset, see-through in the colour of one fixed pixel of the bitmap.
 void SpriteGraphics::DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset, int library, int resource_id)
 {
+    char key_red;
+    int get_b_value;
+    unsigned char key_blue;
+    unsigned char key_green;
+    HDC dc;
+    HDC compatible_dc;
     if (emote_buffer_created)
     {
         MainForm->resource_bitmap->Width = 0;
         MainForm->resource_bitmap->Height = 0;
         MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-        int Pixel = MainForm->resource_bitmap->Canvas->Pixels[1][32];
-        BYTE key_red = GetRValue(Pixel);
-        BYTE key_blue = GetBValue(Pixel);
-        BYTE key_green = GetGValue(Pixel);
-        MainForm->resource_bitmap->TransparentColor = (TColor)RGB(key_red, key_green, key_blue);
+        get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
+        key_red = get_b_value;
+        key_blue = get_b_value >> 16;
+        key_green = (unsigned short)get_b_value >> 8;
+        MainForm->resource_bitmap->TransparentColor =
+            (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
         MainForm->resource_bitmap->Transparent = true;
-        HDC dc;
         // A canvas Draw by default; with BitBlt drawing configured, TransparentBlt keyed to that pixel's colour.
         if (!MainForm->config->GetUseBitBltDraw())
         {
@@ -1888,22 +1885,23 @@ void SpriteGraphics::DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset
         }
         else
         {
-            HDC CompatibleDC = CreateCompatibleDC(0);
-            SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+            compatible_dc = CreateCompatibleDC(0);
+            SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
             if (emote_buffer->surface->GetDC(&dc))
             {
                 try
                 {
                     TransparentBlt(dc, 0 - x_offset, 0 - y_offset, MainForm->resource_bitmap->Width,
-                        MainForm->resource_bitmap->Height, CompatibleDC, 0, 0, MainForm->resource_bitmap->Width,
-                        MainForm->resource_bitmap->Height, RGB(key_red, key_green, key_blue));
+                        MainForm->resource_bitmap->Height, compatible_dc, 0, 0, MainForm->resource_bitmap->Width,
+                        MainForm->resource_bitmap->Height,
+                        (unsigned int)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16)));
                 }
                 catch (Exception &)
                 {
                 }
                 emote_buffer->surface->ReleaseDC(dc);
             }
-            DeleteDC(CompatibleDC);
+            DeleteDC(compatible_dc);
         }
     }
 }

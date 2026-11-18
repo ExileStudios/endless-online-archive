@@ -4,7 +4,7 @@
 #include "Gfx_effect.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 EffectResource::EffectResource()
@@ -36,20 +36,18 @@ EffectResource::~EffectResource()
 }
 
 // One frame of an effect: the sheet cut into the effect's frame count, or the whole of a narrow sheet.
-Windows::TRect EffectResource::GetFrameRect(int frame)
+TRect EffectResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
-    int right;
-    EffectResource *third_self_copy = this;
-    EffectResource *second_self_copy = this;
-    EffectResource *self_copy = this;
-    right = sheet_width;
+    EffectResource *this_copy = this;
+    EffectResource *second_this_copy = this;
+    int right = sheet_width;
     if (right > 80)
     {
         right = right / frame_count;
         frame_rect.left = right * frame;
         frame_rect.top = 0;
-        frame_rect.right = right * frame + right;
+        frame_rect.right = right + right * frame;
         frame_rect.bottom = sheet_height;
     }
     else
@@ -63,14 +61,13 @@ Windows::TRect EffectResource::GetFrameRect(int frame)
         return frame_rect;
 }
 
-// Loads the layers an effect has, from consecutive bitmap resources, and returns the size of one frame.
-// The size is -1 when a layer could not be drawn onto its surface.
 GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
 {
     int layer;
     int effect_index;
     GraphicSize size;
     HDC dc;
+    HDC compatible_dc;
     layer = 0;
     // Each effect owns three resource ids in a row, one per layer.
     effect_index = (base_resource_id - 101) / 3;
@@ -85,7 +82,14 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
             size.width = -1;
             MainForm->resource_bitmap->Width = 0;
             MainForm->resource_bitmap->Height = 0;
-            MainForm->resource_bitmap->LoadFromResourceID(library, base_resource_id + layer);
+            try
+            {
+                MainForm->resource_bitmap->LoadFromResourceID(library, base_resource_id + layer);
+            }
+            catch (...)
+            {
+                return size;
+            }
             surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
             surface_desc->SCaps = surface_caps;
             surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -180,13 +184,13 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
             }
             else
             {
-                HDC CompatibleDC = CreateCompatibleDC(0);
-                SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+                compatible_dc = CreateCompatibleDC(0);
+                SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
                 if (!layer && layer0_surface->GetDC(&dc))
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -200,7 +204,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -214,7 +218,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -224,7 +228,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                     }
                     layer2_surface->ReleaseDC(dc);
                 }
-                DeleteDC(CompatibleDC);
+                DeleteDC(compatible_dc);
             }
             if (size.width > 0)
             {

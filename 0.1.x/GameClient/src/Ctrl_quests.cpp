@@ -5,6 +5,8 @@
 #include "Tmainform.h"
 #include "Ctrl_guild.h"
 #include "Ctrl_trade.h"
+#include "Ctrl_msgboard.h"
+
 #pragma package(smart_init)
 
 QuestController::QuestController()
@@ -85,11 +87,11 @@ void QuestController::LoadQuestList(String reply_data, String separator)
             quest_token = reply_data;
             reply_data = "";
         }
-        token_end = reply_data.Pos(separator);
-        if (token_end > 0)
+        next_end = reply_data.Pos(separator);
+        if (next_end > 0)
         {
-            detail_token = reply_data.SubString(1, token_end - 1);
-            reply_data.Delete(1, token_end);
+            detail_token = reply_data.SubString(1, next_end - 1);
+            reply_data.Delete(1, next_end);
         }
         else
         {
@@ -107,16 +109,16 @@ void QuestController::LoadQuestList(String reply_data, String separator)
             numbers_token = "n/a";
             reply_data = "";
         }
-        quest_entries->Add(quest_token + '\xFF' + detail_token + '\xFF' + numbers_token);
+        quest_entries->Add(quest_token + (char)-1 + detail_token + (char)-1 + numbers_token);
     } while (third_sep_pos > 0 && reply_data.Length() > 2);
     quest_entries->Sort();
     for (int i = 0; i < quest_entries->Count; i++)
     {
         String entry = quest_entries->Strings[i];
-        int first_sep_pos = entry.Pos('\xFF');
+        int first_sep_pos = entry.Pos((char)-1);
         String quest_text = entry.SubString(1, first_sep_pos - 1);
         entry.Delete(1, first_sep_pos);
-        first_sep_pos = entry.Pos('\xFF');
+        first_sep_pos = entry.Pos((char)-1);
         String detail_text = entry.SubString(1, first_sep_pos - 1);
         entry.Delete(1, first_sep_pos);
         int icon_type = MainForm->net_client->DecodeNumber(entry.SubString(1, 2));
@@ -138,7 +140,7 @@ void QuestController::LoadQuestList(String reply_data, String separator)
             icon_type = 3;
         if (icon_type > 3)
             icon_type = 0;
-        first_sep_pos = entry.Pos('\xFF');
+        first_sep_pos = entry.Pos((char)-1);
         entry.Delete(1, first_sep_pos);
         AddText(IntToStr(icon_type), quest_text, detail_text, progress_text, false);
     }
@@ -309,8 +311,7 @@ void QuestController::MouseMove(int x, int y)
             window_y = 19;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= this->window_y + 43 || y >= this->window_y + 243 || x <= this->window_x + 10 ||
-        x >= this->window_x + 449 || this->is_dragging))
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 10 && x < window_x + 449 && !is_dragging)
     {
         int line = (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
         if (line > 11)
@@ -328,7 +329,7 @@ void QuestController::MouseMove(int x, int y)
         hovered_line = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < this->window_x + 288 || x > this->window_x + 378 || y < this->window_y + 253 || y > this->window_y + 279))
+    if (x >= window_x + 288 && x <= window_x + 378 && y >= window_y + 253 && y <= window_y + 279)
     {
         if (!history_button_hovered)
         {
@@ -341,7 +342,7 @@ void QuestController::MouseMove(int x, int y)
         history_button_hovered = false;
         MainForm->redraw_needed = true;
     }
-    if (!(x < this->window_x + 380 || x > this->window_x + 470 || y < this->window_y + 253 || y > this->window_y + 279))
+    if (x >= window_x + 380 && x <= window_x + 470 && y >= window_y + 253 && y <= window_y + 279)
     {
         if (!close_hovered)
         {
@@ -395,9 +396,7 @@ void QuestController::UpdateScrollHover(int x, int y)
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line of the quests or the history.
 void QuestController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -410,9 +409,9 @@ void QuestController::DragScrollThumb(int y)
             line_count = history_lines->Count;
         if (line_count > 12)
         {
-            thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
-            scaled_line = (line_count - 12.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
+            double scaled_line = (line_count - 12.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }
@@ -425,16 +424,14 @@ void QuestController::DragScrollThumb(int y)
 // Scrolls the quests or the history up one line and moves the scroll thumb to match.
 void QuestController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
     int line_count = lines->Count;
     if (showing_history == 1)
         line_count = history_lines->Count;
     if (line_count > 12 && top_line > 0)
     {
         top_line--;
-        scroll_fraction = (double)top_line / (double)(line_count - 12);
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (line_count - 12);
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;
@@ -452,8 +449,8 @@ void QuestController::ScrollDown()
     if (result - 12 > top_line)
     {
         top_line++;
-        scroll_fraction = (double)top_line / (double)(result - 12);
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (result - 12);
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;

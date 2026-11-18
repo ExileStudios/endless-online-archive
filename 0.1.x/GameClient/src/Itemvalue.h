@@ -13,7 +13,10 @@ enum EifItemType
     EifItemType_Currency = 2,
     EifItemType_Heal = 3,
     EifItemType_Teleport = 4,
+    EifItemType_Spell = 5,
     EifItemType_ExpReward = 6,
+    EifItemType_StatReward = 7,
+    EifItemType_SkillReward = 8,
     EifItemType_Key = 9,
     EifItemType_Weapon = 10,
     EifItemType_Shield = 11,
@@ -46,20 +49,20 @@ struct ItemValue
     short type;
     short subtype;
     short special;
-    short hp;
-    short tp;
-    short min_damage;
-    short max_damage;
-    short accuracy;
-    short evade;
-    short armor;
-    short return_damage;
-    short bonus_str;
-    short bonus_int;
-    short bonus_wis;
-    short bonus_agi;
-    short bonus_con;
-    short bonus_cha;
+    unsigned short hp;
+    unsigned short tp;
+    int min_damage;
+    int max_damage;
+    int accuracy;
+    int evade;
+    int armor;
+    int return_damage;
+    unsigned short bonus_str;
+    unsigned short bonus_int;
+    unsigned short bonus_wis;
+    unsigned short bonus_agi;
+    unsigned short bonus_con;
+    unsigned short bonus_cha;
     short light_resist;
     short dark_resist;
     short earth_resist;
@@ -67,16 +70,16 @@ struct ItemValue
     short water_resist;
     short fire_resist;
     int spec_value;
-    short gender;
+    unsigned short gender;
     short spec3;
     short required_level;
     short required_class;
-    short required_str;
-    short required_int;
-    short required_wis;
-    short required_agi;
-    short required_con;
-    short required_cha;
+    unsigned short required_str;
+    unsigned short required_int;
+    unsigned short required_wis;
+    unsigned short required_agi;
+    unsigned short required_con;
+    unsigned short required_cha;
     short weight;
     short size;
     short spare_byte;

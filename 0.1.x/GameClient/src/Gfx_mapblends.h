@@ -1,6 +1,7 @@
 #ifndef Gfx_mapblendsH
 #define Gfx_mapblendsH
 
+#include <new>
 #include <vector.h>
 
 #include "Gfx_mapblend.h"
@@ -11,18 +12,17 @@ struct BlendGraphics
     vector<BlendWrapper> entries;
     int last_index;
     int pending_count;
-    int queue_drained;
+    bool queue_drained;
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char unused_bytes[6];
 
     BlendGraphics(char preload);
     ~BlendGraphics();
     void ReopenLibrary();
     void AgeGraphics();
     void LoadPendingGraphic();
-    bool PurgeUnusedGraphics();
+    void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
     BlendWrapper GetGraphic(int graphic_id);

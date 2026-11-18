@@ -3,11 +3,11 @@
 
 #include "Gfx_playername.h"
 #include "Tmainform.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 // Draws the capitalised name onto a label surface sized to the text, in the colour that color_index picks.
-PlayerNameGraphics::PlayerNameGraphics(int label_width, unsigned int label_height, int color_index, String name)
+PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int color_index, String name)
 {
     HDC dc;
     text_width = label_width;
@@ -56,18 +56,18 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, unsigned int label_heigh
             }
             if (color_index == LabelColor_LightBlue)
             {
-                MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
-                MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
+                MainForm->draw_canvas->Pen->Color = (TColor)0xE7B790;
+                MainForm->draw_canvas->Font->Color = (TColor)0xE7B790;
             }
             if (color_index == LabelColor_Violet)
             {
-                MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
-                MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
+                MainForm->draw_canvas->Pen->Color = (TColor)14327000;
+                MainForm->draw_canvas->Font->Color = (TColor)14327000;
             }
             if (color_index == LabelColor_Gold)
             {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xA5F0FF;
-                MainForm->draw_canvas->Font->Color = (TColor)0xA5F0FF;
+                MainForm->draw_canvas->Pen->Color = (TColor)0x5BC8FB;
+                MainForm->draw_canvas->Font->Color = (TColor)0x5BC8FB;
             }
             if (color_index == LabelColor_Cream)
             {

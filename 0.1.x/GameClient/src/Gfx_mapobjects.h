@@ -1,10 +1,11 @@
 #ifndef Gfx_mapobjectsH
 #define Gfx_mapobjectsH
 
+#include <new>
 #include <vector.h>
 
 #include "Gfx_mapobject.h"
-struct GraphicSize;
+#include "Gfx_bank.h"
 
 // The map objects of the map: loaded on demand from their library, one per call, and freed when unused.
 struct ObjectGraphics
@@ -12,18 +13,17 @@ struct ObjectGraphics
     vector<ObjectWrapper> entries;
     int last_index;
     int pending_count;
-    int queue_drained;
+    bool queue_drained;
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char unused_bytes[6];
 
     ObjectGraphics(char preload);
     ~ObjectGraphics();
     void ReopenLibrary();
     void AgeGraphics();
     void LoadPendingGraphic();
-    bool PurgeUnusedGraphics();
+    void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
     ObjectWrapper GetGraphic(int graphic_id);

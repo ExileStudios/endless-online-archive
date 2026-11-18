@@ -4,9 +4,8 @@
 #include "Ctrl_news.h"
 #include "Tmainform.h"
 #include "Ctrl_chat.h"
-#pragma package(smart_init)
 
-#define NEWS_VISIBLE_LINES 7
+#pragma package(smart_init)
 
 NewslistController::NewslistController()
 {
@@ -93,9 +92,9 @@ void NewslistController::MouseDown(int x, int y)
 // Adds one news item wrapped to the panel's width, with a blank line before each item after the first.
 void NewslistController::AddNewsItem(String text)
 {
+    int j;
+    int piece_start;
     HDC dc;
-    int piece_start = 0;
-    int j = 0;
     if (text.Length() > 1)
     {
         if (lines->Count > 0)
@@ -107,7 +106,7 @@ void NewslistController::AddNewsItem(String text)
         int piece_count = 0;
         int next_start = 1;
         int continuation_indent = 0;
-        String wrapped_pieces[MAX_WRAP_PIECES];
+        String wrapped_pieces[10];
         if (MainForm->OffscreenSurface->GetDC(&dc))
         {
             try
@@ -121,35 +120,36 @@ void NewslistController::AddNewsItem(String text)
                 {
                     for (int i = 0; i <= 12; i++)
                     {
-                        if (text.Length() < next_start)
-                            continue;
-                        piece_count++;
-                        piece_start = next_start;
-                        char searching = true;
-                        for (j = next_start; j <= text.Length() && searching; j++)
+                        if (text.Length() >= next_start)
                         {
-                            int piece_indent = 0;
-                            if (i > 0)
-                                piece_indent = continuation_indent;
-                            if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
-                                max_width - 40 - piece_indent) ||
-                                // A line breaks at a space once nearly full, or inside a word with a hyphen once full
-                                MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
-                                max_width - piece_indent || j == text.Length())
+                            piece_count++;
+                            piece_start = next_start;
+                            char searching = true;
+                            for (j = next_start; j <= text.Length() && searching; j++)
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) <=
-                                    max_width || j == text.Length())
+                                int piece_indent = 0;
+                                if (i > 0)
+                                    piece_indent = continuation_indent;
+                                if ((text[j] == ' ' &&
+                                    // A line breaks at a space once nearly full, or inside a word with a hyphen once full
+                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                        max_width - 40 - piece_indent) ||
+                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                        max_width - piece_indent || j == text.Length())
                                 {
-                                    wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
-                                    next_start = j + 1;
-                                    searching = false;
-                                }
-                                else
-                                {
-                                    wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
-                                    next_start = j + 1;
-                                    searching = false;
+                                    if (MainForm->draw_canvas->TextWidth(text.SubString(piece_start,
+                                        j - piece_start)) <= max_width || j == text.Length())
+                                    {
+                                        wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
+                                        next_start = j + 1;
+                                        searching = false;
+                                    }
+                                    else
+                                    {
+                                        wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
+                                        next_start = j + 1;
+                                        searching = false;
+                                    }
                                 }
                             }
                         }
@@ -207,7 +207,7 @@ void NewslistController::ScrollUp()
     if (lines->Count > NEWS_VISIBLE_LINES && top_line > 0)
     {
         top_line--;
-        double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
+        double scroll_fraction = (double)top_line / (lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -221,7 +221,7 @@ void NewslistController::ScrollDown()
     if (lines->Count - 7 > top_line)
     {
         top_line++;
-        double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
+        double scroll_fraction = (double)top_line / (lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -232,9 +232,7 @@ void NewslistController::ScrollDown()
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line from its position.
 void NewslistController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -244,9 +242,9 @@ void NewslistController::DragScrollThumb(int y)
             thumb_offset = 50;
         if (lines->Count > NEWS_VISIBLE_LINES)
         {
-            thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
-            scaled_line = (lines->Count - 7.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
+            double scaled_line = (lines->Count - 7.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }
@@ -270,7 +268,53 @@ void NewslistController::MouseMove(int x, int y)
 }
 
 // Drags a grabbed thumb and tracks the hovered arrows; moving off an arrow stops its scrolling.
-DEFINE_HELP_UPDATE_SCROLL_HOVER(NewslistController)
+void NewslistController::UpdateScrollHover(int x, int y)
+{
+    bool changed = false;
+    if (y >= 365 && y <= 432)
+        DragScrollThumb(y);
+    if (x >= 569 && x <= 585)
+    {
+        if (y >= 350 && y <= 365)
+        {
+            if (!scroll_up_hovered)
+            {
+                scroll_up_hovered = true;
+                changed = true;
+            }
+        }
+        else if (scroll_up_hovered)
+        {
+            scroll_up_hovered = false;
+            scroll_up_held = false;
+            changed = true;
+        }
+        if (y >= 432 && y <= 447)
+        {
+            if (!scroll_down_hovered)
+            {
+                scroll_down_hovered = true;
+                changed = true;
+            }
+        }
+        else if (scroll_down_hovered)
+        {
+            scroll_down_hovered = false;
+            scroll_down_held = false;
+            changed = true;
+        }
+    }
+    else if (scroll_up_hovered || scroll_down_hovered)
+    {
+        scroll_up_hovered = false;
+        scroll_down_hovered = false;
+        scroll_up_held = false;
+        scroll_down_held = false;
+        changed = true;
+    }
+    if (changed)
+        scroll_dirty = true;
+}
 
 // Tells whether the scroll bar needs drawing again, and clears the flag.
 DEFINE_TEST_AND_CLEAR_SCROLL_DIRTY(NewslistController)

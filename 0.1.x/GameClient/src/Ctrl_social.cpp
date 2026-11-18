@@ -5,8 +5,9 @@
 #include "Tmainform.h"
 #include "Ctrl_guild.h"
 #include "Ctrl_game.h"
+#include <io.h>
+
 #pragma package(smart_init)
-#define SHORT_NAME_LENGTH 3
 
 SocialController::SocialController()
 {
@@ -148,28 +149,25 @@ void SocialController::ToggleIgnore(String name)
 // Takes the name off the friend list and adds it to the ignore list unless it is there already.
 void SocialController::AddIgnore(String name)
 {
-    char is_listed = false;
-    int other_index = friend_names->Count - 1;
-    while (other_index >= 0)
+    int other_index;
+    char was_listed = false;
+    for (other_index = friend_names->Count - 1; other_index >= 0; other_index--)
     {
         if (LowerCase(friend_names->Strings[other_index]) == LowerCase(name))
         {
             friend_names->Delete(other_index);
             break;
         }
-        other_index--;
     }
-    int index = this->ignored_names->Count - 1;
-    while (index >= 0)
+    for (int index = ignored_names->Count - 1; index >= 0; index--)
     {
         if (LowerCase(ignored_names->Strings[index]) == LowerCase(name))
         {
-            is_listed = true;
+            was_listed = true;
             break;
         }
-        index--;
     }
-    if (!is_listed)
+    if (!was_listed)
     {
         ignored_names->Add(name);
         ignored_names->Sort();
@@ -179,29 +177,26 @@ void SocialController::AddIgnore(String name)
 // Takes the name off the ignore list, then adds it to the friend list, or takes it off when it is there.
 void SocialController::ToggleFriend(String name)
 {
-    char was_listed = false;
-    int other_index = ignored_names->Count - 1;
-    while (other_index >= 0)
+    int other_index = 0;
+    char is_listed = false;
+    for (other_index = ignored_names->Count - 1; other_index >= 0; other_index--)
     {
         if (LowerCase(ignored_names->Strings[other_index]) == LowerCase(name))
         {
             ignored_names->Delete(other_index);
             break;
         }
-        other_index--;
     }
-    int index = this->friend_names->Count - 1;
-    while (index >= 0)
+    for (int index = friend_names->Count - 1; index >= 0; index--)
     {
         if (LowerCase(friend_names->Strings[index]) == LowerCase(name))
         {
             friend_names->Delete(index);
-            was_listed = true;
+            is_listed = true;
             break;
         }
-        index--;
     }
-    if (!was_listed)
+    if (!is_listed)
     {
         friend_names->Add(name);
         friend_names->Sort();
@@ -265,8 +260,9 @@ void SocialController::AddOnlineName(String name)
 // True when the name, in any case, is in the server's list of players online.
 bool SocialController::IsOnline(String name)
 {
+    int index;
     bool is_online = false;
-    for (int index = online_names->Count - 1; index >= 0; index--)
+    for (index = online_names->Count - 1; index >= 0; index--)
     {
         if (LowerCase(online_names->Strings[index]) == LowerCase(name))
         {
@@ -309,7 +305,7 @@ void SocialController::SaveFriendList()
     {
         if (friend_names->Strings[i].Length() < 13 && friend_names->Strings[i].Length() > SHORT_NAME_LENGTH)
         {
-            if (friend_names->Strings[i][1] == 35)
+            if (friend_names->Strings[i][1] == '#')
                 friend_names->Delete(i);
         }
         else
@@ -317,9 +313,9 @@ void SocialController::SaveFriendList()
     }
     friend_names->Sort();
     // Reads "# Endless Online 0.28 [ friend list ]".
-    std::string first_header_line = "#]  Etnsdllie sdsn eOfnriil n[e  802.";
+    string first_header_line = "#]  Etnsdllie sdsn eOfnriil n[e  802.";
     // Reads "# List of friend characters, use a new line for each name".
-    std::string second_header_line = "#e mLains th cfaoe  ifrofre nedn lcih awreanc tae ress,u ";
+    string second_header_line = "#e mLains th cfaoe  ifrofre nedn lcih awreanc tae ress,u ";
     friend_names->Insert(0, "");
     friend_names->Insert(0, UnscrambleString(3, second_header_line.begin(), second_header_line.end()));
     friend_names->Insert(0, "");
@@ -360,68 +356,7 @@ bool SocialController::IsFriend(String name)
 // Turns a stored text back into plain text in two steps:
 // 1 = every other character from the first, in order, then the rest from last to first
 // 2 = each run of characters whose code divides by divisor is turned around
-String SocialController::UnscrambleString(int divisor, unsigned char *data_begin,
-    unsigned char *data_end)
-{
-    int divisor_copy;
-    char to_first_list;
-    String result = "";
-    divisor_copy = divisor;
-    try
-    {
-        std::stack<char > char_stack;
-        std::queue<char > first_deque_base;
-        to_first_list = true;
-        while (data_begin != data_end)
-        {
-            if (to_first_list)
-            {
-                first_deque_base.push(*(char *)data_begin);
-                to_first_list = false;
-            }
-            else
-            {
-                char_stack.push(*(char *)data_begin);
-                to_first_list = true;
-            }
-            data_begin++;
-        }
-        while (!char_stack.empty())
-        {
-            first_deque_base.push(char_stack.top());
-            char_stack.pop();
-        }
-        char_stack.empty();
-        while (!first_deque_base.empty())
-        {
-            char current_char = first_deque_base.front();
-            first_deque_base.pop();
-            unsigned char current_char_copy = current_char;
-            int current_char_int = current_char_copy;
-            if (!(current_char_int % divisor_copy))
-                char_stack.push(current_char);
-            else
-            {
-                while (!char_stack.empty())
-                {
-                    result.Insert(char_stack.top(), result.Length() + 1);
-                    char_stack.pop();
-                }
-                result.Insert(current_char, result.Length() + 1);
-            }
-        }
-        while (!char_stack.empty())
-        {
-            result.Insert(char_stack.top(), result.Length() + 1);
-            char_stack.pop();
-        }
-    }
-    catch (...)
-    {
-        result = "";
-    }
-    return result;
-}
+DEFINE_UNSCRAMBLE_STRING(SocialController)
 
 void SocialController::OnTimer()
 {
@@ -456,7 +391,7 @@ void SocialController::OnMouseClick(int mouse_x, int mouse_y, int button)
         if (mouse_y > window_y + 43 && mouse_y < window_y + 243 && window_x + 17 < mouse_x && window_x + 252 > mouse_x)
         {
             is_dragging_window = false;
-            int row = scroll_offset + (mouse_y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+            int row = (mouse_y - window_y - 47) / 16 + scroll_offset;
             if (!list_kind)
             {
                 if (friend_names->Count <= row)
@@ -547,8 +482,8 @@ void SocialController::OnMouseMove(int mouse_x, int mouse_y)
             window_y = 19;
         MainForm->redraw_needed = true;
     }
-    if (!(mouse_y <= this->window_y + 43 || mouse_y >= this->window_y + 243 || mouse_x <= this->window_x + 17 ||
-        mouse_x >= this->window_x + 252 || this->is_dragging_window))
+    if (mouse_y > window_y + 43 && mouse_y < window_y + 243 && mouse_x > window_x + 17 && mouse_x < window_x + 252 &&
+        !is_dragging_window)
     {
         int row = (mouse_y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
         if (row > 11)
@@ -568,8 +503,7 @@ void SocialController::OnMouseMove(int mouse_x, int mouse_y)
         hover_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(mouse_x < this->window_x + 48 || mouse_x > this->window_x + 138 || mouse_y < this->window_y + 253 ||
-        mouse_y > this->window_y + 279))
+    if (mouse_x >= window_x + 48 && mouse_x <= window_x + 138 && mouse_y >= window_y + 253 && mouse_y <= window_y + 279)
     {
         if (!add_button_hover)
         {
@@ -582,8 +516,8 @@ void SocialController::OnMouseMove(int mouse_x, int mouse_y)
         add_button_hover = false;
         MainForm->redraw_needed = true;
     }
-    if (!(mouse_x < this->window_x + 144 || mouse_x > this->window_x + 234 || mouse_y < this->window_y + 253 ||
-        mouse_y > this->window_y + 279))
+    if (mouse_x >= window_x + 144 && mouse_x <= window_x + 234 && mouse_y >= window_y + 253 &&
+        mouse_y <= window_y + 279)
     {
         if (!close_button_hover)
         {
@@ -638,9 +572,7 @@ void SocialController::UpdateScrollbarHover(int mouse_x, int mouse_y)
 // Scrolls the list to match the thumb: 152 pixels of track over the names past the 12 shown.
 void SocialController::DragScrollbar(int mouse_y)
 {
-    double thumb_ratio;
-    double scaled_offset;
-    int unused_int;
+    int new_offset;
     if (is_dragging_thumb)
     {
         int thumb_position = mouse_y - thumb_grab_offset - window_y;
@@ -653,9 +585,9 @@ void SocialController::DragScrollbar(int mouse_y)
             name_count = ignored_names->Count;
         if (name_count > 12)
         {
-            thumb_ratio = thumb_position / NPC_THUMB_TRAVEL;
-            scaled_offset = (name_count - 12.0) * thumb_ratio;
-            int new_offset = scaled_offset;
+            double thumb_ratio = thumb_position / NPC_THUMB_TRAVEL;
+            double scaled_offset = (name_count - 12.0) * thumb_ratio;
+            new_offset = scaled_offset;
             if (new_offset != scroll_offset)
                 scroll_offset = new_offset;
         }
@@ -668,16 +600,14 @@ void SocialController::DragScrollbar(int mouse_y)
 // Scrolls the list up a name and moves the thumb to match.
 void SocialController::ScrollUp()
 {
-    double offset_ratio;
-    double thumb_position;
     int name_count = friend_names->Count;
     if (list_kind == 1)
         name_count = ignored_names->Count;
     if (name_count > 12 && scroll_offset > 0)
     {
         scroll_offset--;
-        offset_ratio = (double)scroll_offset / (double)(name_count - 12);
-        thumb_position = NPC_THUMB_TRAVEL * offset_ratio;
+        double offset_ratio = (double)scroll_offset / (name_count - 12);
+        double thumb_position = NPC_THUMB_TRAVEL * offset_ratio;
         scrollbar_position = thumb_position;
         scroll_moved_flag = true;
         MainForm->redraw_needed = true;
@@ -695,8 +625,8 @@ void SocialController::ScrollDown()
     if (result - 12 > scroll_offset)
     {
         scroll_offset++;
-        offset_ratio = (double)scroll_offset / (double)(result - 12);
-        thumb_position = NPC_THUMB_TRAVEL * offset_ratio;
+        double offset_ratio = (double)scroll_offset / (result - 12);
+        double thumb_position = NPC_THUMB_TRAVEL * offset_ratio;
         scrollbar_position = thumb_position;
         scroll_moved_flag = true;
         MainForm->redraw_needed = true;

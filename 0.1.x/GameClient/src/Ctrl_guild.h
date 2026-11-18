@@ -20,7 +20,6 @@ enum GuildPage
     GuildPage_Rank = 12,
     GuildPage_MemberList = 15
 };
-#define NPC_TEXT_LINE_HEIGHT 16
 
 // The guild master's window: menu pages for guild information, joining, creating and managing a guild, and text
 // pages whose link line starts the chosen request, with a scroll bar for the text.
@@ -82,14 +81,14 @@ struct GuildController
     void ClearText();
 };
 
+
 // Moves a dragged window, kept on screen, and tracks the hovered line and the close button.
 // Shared body: a class defines its MouseMove with DEFINE_MOUSE_MOVE(TheClass); each class has its own
-// UpdateScrollHover, is_dragging, window_x, drag_offset_x, window_y, drag_offset_y, lines, hovered_line, close_hovered.
+// UpdateScrollHover, is_dragging, window_x, drag_offset_x, window_y, drag_offset_y, lines, hovered_line,
+// close_hovered.
 #define DEFINE_MOUSE_MOVE(Class) \
 void Class::MouseMove(int x, int y) \
 { \
-    int line; \
-    int local; \
     UpdateScrollHover(x, y); \
     if (is_dragging) \
     { \
@@ -105,10 +104,9 @@ void Class::MouseMove(int x, int y) \
             window_y = 19; \
         MainForm->redraw_needed = true; \
     } \
-    if (!(y <= window_y + 43 || y >= window_y + 243 || x <= window_x + 17 || x >= window_x + 252 || is_dragging)) \
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging) \
     { \
-        /* The hovered line is a row on screen, not a line of the text */ \
-        line = (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT; \
+        int line = (y - window_y - 47) / 16; \
         if (line > 11) \
             line = -1; \
         if (lines->Count <= line) \
@@ -119,15 +117,12 @@ void Class::MouseMove(int x, int y) \
             MainForm->redraw_needed = true; \
         } \
     } \
-    else \
+    else if (hovered_line >= 0) \
     { \
-        if (hovered_line >= 0) \
-        { \
-            hovered_line = -1; \
-            MainForm->redraw_needed = true; \
-        } \
+        hovered_line = -1; \
+        MainForm->redraw_needed = true; \
     } \
-    if (!(x < window_x + 92 || x > window_x + 182 || y < window_y + 253 || y > window_y + 279)) \
+    if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279) \
     { \
         if (!close_hovered) \
         { \
@@ -135,13 +130,10 @@ void Class::MouseMove(int x, int y) \
             MainForm->redraw_needed = true; \
         } \
     } \
-    else \
+    else if (close_hovered) \
     { \
-        if (close_hovered) \
-        { \
-            close_hovered = false; \
-            MainForm->redraw_needed = true; \
-        } \
+        close_hovered = false; \
+        MainForm->redraw_needed = true; \
     } \
 }
 

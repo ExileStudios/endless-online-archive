@@ -1,7 +1,6 @@
 #ifndef ItemskillH
 #define ItemskillH
 
-// One skill on the skill grid: its place, id and level.
 struct SkillItem
 {
     int grid_x;

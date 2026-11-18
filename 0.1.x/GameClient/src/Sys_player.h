@@ -8,6 +8,22 @@ enum CharacterSlotState
     CharacterSlotState_Taken = 2
 };
 
+struct Balloon;
+struct PlayerResources;
+
+#define EMOTE_FRAME_COUNT 3
+#define PLAYER_BAR_LOW_LENGTH 5
+#define PLAYER_BAR_MID_LENGTH 12
+
+enum FacingDirection
+{
+    FacingDirection_Current = -1,
+    FacingDirection_Down = 0,
+    FacingDirection_Left = 1,
+    FacingDirection_Up = 2,
+    FacingDirection_Right = 3
+};
+
 enum HatGraphic
 {
     HatGraphic_None = 0,
@@ -48,18 +64,6 @@ enum ShieldGraphic
     ShieldGraphic_FireForceWings = 19
 };
 
-enum FacingDirection
-{
-    FacingDirection_Current = -1,
-    FacingDirection_Down = 0,
-    FacingDirection_Left = 1,
-    FacingDirection_Up = 2,
-    FacingDirection_Right = 3
-};
-
-struct Balloon;
-struct PlayerResources;
-
 // One player on the map: position, looks, equipment and the state of every animation.
 struct Player
 {
@@ -68,19 +72,19 @@ struct Player
     char graphics_pending;
     char reload_requested;
     int load_progress;
-    bool sheets_cleared;
-    bool walk_sheets_loaded;
-    bool walk_tail_sheets_loaded;
-    bool stand_sheet_loaded;
-    bool sit_sheets_loaded;
-    bool attack_sheets_loaded;
-    bool extra_sheets_loaded;
-    bool cast_sheets_loaded;
-    bool emote_sheets_loaded;
+    char sheets_cleared;
+    char walk_sheets_loaded;
+    char walk_tail_sheets_loaded;
+    char stand_sheet_loaded;
+    char sit_sheets_loaded;
+    char attack_sheets_loaded;
+    char extra_sheets_loaded;
+    char cast_sheets_loaded;
+    char emote_sheets_loaded;
     char hover_label_shown;
     String name;
     String secondary_name;
-    bool text_label_shown;
+    char text_label_shown;
     char text_label_blinking;
     int text_label_timer;
     String text_before_guild_tag;
@@ -88,20 +92,20 @@ struct Player
     String text_after_guild_tag;
     char dying;
     int death_countdown;
-    bool hiding;
+    char hiding;
     int hide_countdown;
-    bool unhiding;
+    char unhiding;
     unsigned char unhide_countdown;
     int record_value_a;
     int record_value_b;
     int character_id;
     int display_number;
-    bool level_up_pending;
+    char level_up_pending;
     int player_id;
     int record_value_d;
     int draw_group;
     char redraw;
-    bool emote_start;
+    char emote_start;
     char emoting;
     int emote_id;
     int emote_first_frame;
@@ -112,8 +116,8 @@ struct Player
     char walking;
     int walk_direction;
     int walk_frame;
-    bool jump_start;
-    bool jumping;
+    char jump_start;
+    char jumping;
     int jump_direction;
     int jump_frame;
     char attack_start;
@@ -121,7 +125,7 @@ struct Player
     int attack_direction;
     int attack_frame;
     char silent_attack;
-    bool cast_start;
+    char cast_start;
     char casting;
     int cast_direction;
     int cast_frame;
@@ -135,15 +139,15 @@ struct Player
     char effect_base_layer;
     char effect_blend_layer;
     char effect_solid_layer;
-    bool sitting_on_chair;
+    char sitting_on_chair;
     int chair_direction;
-    bool sitting_on_floor;
+    char sitting_on_floor;
     int floor_direction;
-    bool chair_sit_start;
-    bool floor_sit_start;
-    bool stand_up_start;
+    char chair_sit_start;
+    char floor_sit_start;
+    char stand_up_start;
     char recenter_view;
-    bool pose_flag;
+    char pose_flag;
     int target_x;
     int target_y;
     int target_direction;
@@ -199,7 +203,7 @@ struct Player
     int player_hair_color, char start_pending);
     ~Player();
     void ShowBalloon(String *lines, int width, int height, int tinted);
-    Windows::TPoint GetAnimatedPosition(int screen_x, int screen_y);
+    TPoint GetAnimatedPosition(int screen_x, int screen_y);
     void DrawEmote();
     void DrawBalloon();
     void DrawHoverLabel();

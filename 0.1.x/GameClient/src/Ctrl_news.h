@@ -3,6 +3,8 @@
 
 #include <Classes.hpp>
 
+#define NEWS_VISIBLE_LINES 7
+
 // The news panel: the news items from the server's welcome reply, with a scroll bar and a blinking hint.
 struct NewslistController
 {

@@ -1,22 +1,26 @@
 #ifndef ItemvaluesH
 #define ItemvaluesH
 
+#include <fstream>
+#include <new>
+#include <string>
 #include <vector.h>
 
 #include "Itemvalue.h"
+
+#define PUB_RECORDS_PER_FILE 900
 
 // The item file: pub/dat001.eif onward, 900 items to a file, kept as one list in item id order.
 struct ItemValues
 {
     char is_downloading;
-    unsigned char download_requested;
+    bool download_requested;
     int expected_part_count;
     int received_part_count;
     char is_loaded;
     int checksum_high;
     int checksum_low;
     int record_count;
-    char unused_bytes[4];
     vector<ItemValue> records;
     int unused_value;
     String file_prefix;
@@ -28,17 +32,15 @@ struct ItemValues
     void Load();
     void DeleteFiles();
     void AddItem(int item_id, String name, short graphic, short type, short subtype, short special,
-        short hp, short tp, short min_damage,
-        short max_damage, short accuracy, short evade,
-        short armor, short return_damage, short bonus_str,
-        short bonus_int, short bonus_wis, short bonus_agi,
-        short bonus_con, short bonus_cha, short light_resist,
-        short dark_resist, short earth_resist, short air_resist,
-        short water_resist, short fire_resist, int spec_value, short gender,
-        short spec3, short required_level, short required_class, short required_str,
-        short required_int, short required_wis, short required_agi, short required_con, short required_cha,
-        short element, short element_power, short weight, short spare_byte,
-        short size);
+    short hp, short tp, int min_damage, int max_damage,
+    int accuracy, int evade, int armor, int return_damage,
+    short bonus_str, short bonus_int, short bonus_wis,
+    short bonus_agi, short bonus_con, short bonus_cha,
+    short light_resist, short dark_resist, short earth_resist,
+    short air_resist, short water_resist, short fire_resist, int spec_value,
+    short gender, short spec3, short required_level, short required_class, short required_str,
+    short required_int, short required_wis, short required_agi, short required_con, short required_cha,
+    short element, short element_power, short weight, short spare_byte, short size);
     void Clear();
     ItemValue GetItem(int item_id);
     int GetWeight(int item_id);

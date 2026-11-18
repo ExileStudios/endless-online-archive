@@ -8,6 +8,7 @@
 #include "Gfx_game.h"
 #include "Ctrl_interface.h"
 #include "Gfx_playername.h"
+
 #pragma package(smart_init)
 
 Player::Player()
@@ -156,7 +157,7 @@ void Player::ShowBalloon(String *lines, int width, int height, int tinted)
     balloon_width = width;
     balloon_height = height;
     balloon_shown = true;
-    balloon_timer = text_length / 3 + 24;
+    balloon_timer = (short)(text_length / 3) + 24;
     redraw = true;
 }
 
@@ -213,29 +214,27 @@ Windows::TPoint Player::GetAnimatedPosition(int screen_x, int screen_y)
             position.y = 4 * jump_frame + position.y - 12;
         }
         // A jump also lifts the player, highest on the middle frame.
-        if (!jump_frame || jump_frame == 2)
+        if (jump_frame == 0 || jump_frame == 2)
             position.y = position.y - 14;
         if (jump_frame == 1)
             position.y = position.y - 22;
     }
     if (sitting_on_chair)
     {
-        int chair_facing = direction;
-        if (!(chair_facing != FacingDirection_Down && chair_facing != FacingDirection_Right))
+        if (direction == FacingDirection_Down || direction == FacingDirection_Right)
             position.y += 14;
         else
             position.y += 16;
     }
     if (sitting_on_floor)
     {
-        int floor_facing = direction;
-        if (!(floor_facing != FacingDirection_Down && floor_facing != FacingDirection_Right))
+        if (direction == FacingDirection_Down || direction == FacingDirection_Right)
             position.y += 19;
         else
         {
-            if (floor_facing == FacingDirection_Left)
+            if (direction == FacingDirection_Left)
                 position.x += 3;
-            if (floor_facing == FacingDirection_Up)
+            if (direction == FacingDirection_Up)
                 position.x -= 3;
             position.y += 21;
         }
@@ -244,7 +243,7 @@ Windows::TPoint Player::GetAnimatedPosition(int screen_x, int screen_y)
     {
         int current_attack_frame = attack_frame;
         // The lunge toward the facing direction covers frames 1 to 3.
-        if (current_attack_frame >= 1 && current_attack_frame <= 3)
+        if (attack_frame >= 1 && attack_frame <= 3)
         {
             if (MainForm->weapon_mapper->IsRangedWeapon(weapon))
             {
@@ -261,7 +260,7 @@ Windows::TPoint Player::GetAnimatedPosition(int screen_x, int screen_y)
                         position.x += 3;
                     if (attack_direction == FacingDirection_Right)
                     {
-                        position.x = position.x + (gender + 2);
+                        position.x = gender + position.x + 2;
                         position.y += gender;
                     }
                 }
@@ -298,18 +297,15 @@ void Player::DrawEmote()
     if (emote_step < 2)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
-            170);
+            MainForm->gfx->interface_graphics->GetWideIconRect(emote_first_frame + emote_frame - 1), 170);
     if (emote_step == 2)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
-            150);
+            MainForm->gfx->interface_graphics->GetWideIconRect(emote_first_frame + emote_frame - 1), 150);
     if (emote_step == 3)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
-            130);
+            MainForm->gfx->interface_graphics->GetWideIconRect(emote_first_frame + emote_frame - 1), 130);
 }
 
 // Draws the balloon centred above the player.

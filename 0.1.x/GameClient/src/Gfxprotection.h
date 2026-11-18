@@ -6,6 +6,36 @@ enum TileBitmap
     TileBitmap_ItemSlot = 100
 };
 
+enum GfxLibrary
+{
+    GfxLibrary_MenuInterface = 1,
+    GfxLibrary_GameInterface = 2,
+    GfxLibrary_MapTiles = 3,
+    GfxLibrary_MapObjects = 4,
+    GfxLibrary_MapMasks = 5,
+    GfxLibrary_MapWalls = 6,
+    GfxLibrary_MapTops = 7,
+    GfxLibrary_CharacterBodies = 8,
+    GfxLibrary_MaleHair = 9,
+    GfxLibrary_FemaleHair = 10,
+    GfxLibrary_MaleBoots = 11,
+    GfxLibrary_FemaleBoots = 12,
+    GfxLibrary_MaleArmor = 13,
+    GfxLibrary_FemaleArmor = 14,
+    GfxLibrary_MaleHats = 15,
+    GfxLibrary_FemaleHats = 16,
+    GfxLibrary_MaleWeapons = 17,
+    GfxLibrary_FemaleWeapons = 18,
+    GfxLibrary_MaleShields = 19,
+    GfxLibrary_FemaleShields = 20,
+    GfxLibrary_Npcs = 21,
+    GfxLibrary_Shadows = 22,
+    GfxLibrary_MapItems = 23,
+    GfxLibrary_Effects = 24,
+    GfxLibrary_MapIcons = 25,
+    GfxLibrary_VisualDocuments = 26
+};
+
 enum MenuBitmap
 {
     MenuBitmap_Intro = 101,
@@ -97,35 +127,7 @@ enum InterfaceBitmap
     InterfaceBitmap_CaptchaBackground = 177
 };
 
-enum GfxLibrary
-{
-    GfxLibrary_MenuInterface = 1,
-    GfxLibrary_GameInterface = 2,
-    GfxLibrary_MapTiles = 3,
-    GfxLibrary_MapObjects = 4,
-    GfxLibrary_MapMasks = 5,
-    GfxLibrary_MapWalls = 6,
-    GfxLibrary_MapTops = 7,
-    GfxLibrary_CharacterBodies = 8,
-    GfxLibrary_MaleHair = 9,
-    GfxLibrary_FemaleHair = 10,
-    GfxLibrary_MaleBoots = 11,
-    GfxLibrary_FemaleBoots = 12,
-    GfxLibrary_MaleArmor = 13,
-    GfxLibrary_FemaleArmor = 14,
-    GfxLibrary_MaleHats = 15,
-    GfxLibrary_FemaleHats = 16,
-    GfxLibrary_MaleWeapons = 17,
-    GfxLibrary_FemaleWeapons = 18,
-    GfxLibrary_MaleShields = 19,
-    GfxLibrary_FemaleShields = 20,
-    GfxLibrary_Npcs = 21,
-    GfxLibrary_Shadows = 22,
-    GfxLibrary_MapItems = 23,
-    GfxLibrary_Effects = 24,
-    GfxLibrary_MapIcons = 25,
-    GfxLibrary_VisualDocuments = 26
-};
+#include <vector.h>
 
 struct BankGraphics;
 struct BarberGraphics;
@@ -154,6 +156,12 @@ struct TileGraphics;
 struct TopGraphics;
 struct TradeGraphics;
 struct WallGraphics;
+struct WallWrapper;
+
+#include "Gfx_useritem.h"
+
+#define INTERFACE_GFX_FILE 2
+#define SLOT_GFX_FILE 3
 
 // Owns every graphics object: the map lists made at start-up, the screen and window graphics made and freed as they
 // open and close, and the loaders that fill them from the graphics files.
@@ -164,7 +172,7 @@ struct GfxController
     InterfaceGraphics *interface_graphics;
     GameGraphics *game;
     SpriteGraphics *sprites;
-    NpcGraphics *npcs;
+    NpcGraphics *npc_cache;
     PlayerNameGraphics *hover_label;
     TradeGraphics *trade;
     ShopGraphics *shop;
@@ -229,7 +237,7 @@ struct GfxController
     void FreeBarberGraphics();
     void CreateChestGraphics();
     void FreeChestGraphics();
-    void CreateHoverLabel(int text_width, unsigned int height, int label_style, String text);
+    void CreateHoverLabel(int text_width, int height, int label_style, String text);
     void FreeHoverLabel();
     void CreateGameGraphics();
     void FreeGameGraphics();

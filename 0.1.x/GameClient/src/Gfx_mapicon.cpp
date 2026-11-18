@@ -3,12 +3,7 @@
 
 #include "Gfx_mapicon.h"
 #include "Gfx_icon.h"
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 IconWrapper::IconWrapper()
@@ -21,6 +16,8 @@ IconWrapper::IconWrapper(int requested_id)
     is_loaded = false;
     was_used = false;
     idle_ticks = 0;
+    fetched = false;
+    unfetched_frames = 0;
 }
 
 IconWrapper::~IconWrapper()
@@ -29,6 +26,18 @@ IconWrapper::~IconWrapper()
 
 void IconWrapper::CreateResource()
 {
-    if (!is_loaded)
+    if (!was_used)
+    {
         resource = new IconResource();
+        was_used = true;
+    }
+}
+
+void IconWrapper::FreeResource()
+{
+    if (is_loaded)
+    {
+        delete resource;
+        was_used = false;
+    }
 }

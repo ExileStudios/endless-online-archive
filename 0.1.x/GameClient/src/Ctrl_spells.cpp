@@ -1,14 +1,21 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Ctrl_spells.h"
 #include "Tmainform.h"
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Ctrl_musician.h"
 #include "Packetoperations.h"
 #include "Ctrl_status.h"
+#include "Ctrl_group.h"
+#include "Ctrl_skills.h"
+#include "Ctrl_tooltip.h"
+#include "Gfx_mapicons.h"
+
 #pragma package(smart_init)
 
+// No spell selected, hovered, dragged or being cast.
 SpellController::SpellController()
 {
     last_hover_col = -1;
@@ -31,6 +38,10 @@ SpellController::SpellController()
     thumb_grabbed = false;
     unused_reset_flag = true;
     train_confirm_ticks = 0;
+    tooltip = new Tooltip(252, 350);
+    tooltip->SetFlipEdge(566, 55);
+    tooltip->SetBottomLimit(446, 10);
+    tooltip->SetRaise(-1);
 }
 
 SpellController::~SpellController()
@@ -59,7 +70,7 @@ void SpellController::Tick()
             is_casting = false;
             int player_id = MainForm->net_client->GetPlayerId();
             // Kind 0 is cast toward the facing direction, 1 at an npc, 2 at a player, 3 at the group
-            if (!cast_target_kind)
+            if (cast_target_kind == CastTarget_None)
                 MainForm->animation->game->CastUntargetedSpell(cast_spell_id);
             if (cast_target_kind == CastTarget_Npc)
             {
@@ -141,26 +152,27 @@ DEFINE_SKILL_MOUSE_MOVE(SpellController)
 
 DEFINE_SKILL_UPDATE_SCROLL_HOVER(SpellController)
 
-// Tracks the spell under the mouse and shows its name in the status bar. While a spell is dragged, any cell counts.
+// Tracks the spell under the mouse and shows its tip and its name in the status bar. While a spell is dragged, any
+// cell counts.
 void SpellController::UpdateHover(int x, int y)
 {
-    char found;
-    HDC dc;
-    int col;
-    int result;
-    int message_type;
-    col = (x - 201) / SLOT_GRID_CELL_WIDTH;
-    result = (y - 339) / SLOT_GRID_CELL_HEIGHT;
+    vector<SpellItem>::iterator it;
+    int screen_row;
+    int grid_row;
+    int status_kind;
+    int col = (x - 201) / SLOT_GRID_CELL_WIDTH;
+    screen_row = (y - 339) / SLOT_GRID_CELL_HEIGHT;
     last_mouse_x = x;
     last_mouse_y = y;
-    if (result >= 0 && result <= 1 && col >= 0 && col <= 7 && x > 201 && y > 333)
+    // Only the panel's grid of two rows and eight columns counts.
+    if (screen_row >= 0 && screen_row <= 1 && col >= 0 && col <= 7 && x > 201 && y > 333)
     {
         if (is_dragging)
         {
             hover_col = col;
-            hover_row = result;
+            hover_row = screen_row;
             last_hover_col = col;
-            last_hover_row = result;
+            last_hover_row = screen_row;
             hover_text_width = 0;
             has_hover = true;
             selection_dirty = true;
@@ -168,10 +180,11 @@ void SpellController::UpdateHover(int x, int y)
         }
         else
         {
-            found = false;
-            for (vector<SpellItem>::iterator it = spells.begin(); it != spells.end(); it++)
+            char found = false;
+            it = spells.begin();
+            while (it != spells.end())
             {
-                int grid_row = result + top_row;
+                grid_row = top_row + screen_row;
                 if (col == it->grid_x && grid_row == it->grid_y && it->is_visible)
                 {
                     found = true;
@@ -182,31 +195,23 @@ void SpellController::UpdateHover(int x, int y)
                         hover_row = it->grid_y - top_row;
                         last_hover_col = it->grid_x;
                         last_hover_row = it->grid_y - top_row;
-                        hover_text = MainForm->skill_values->GetName(it->spell_id);
-                        message_type = MainForm->skill_values->GetCategory(it->spell_id) + 7;
+                        tooltip->ShowSpell(it->spell_id);
+                        tooltip->SetAnchorX(45 * last_hover_col);
+                        tooltip->SetAnchorY(52 * last_hover_row);
                         if (hover_message_delay < 1)
-                            MainForm->animation->interface_controller->ShowStatusMessage(message_type, hover_text);
+                        {
+                            SkillValue skill = MainForm->skill_values->GetSkill(hover_spell_id);
+                            status_kind = MainForm->skill_values->GetCategory(it->spell_id) + 7;
+                            MainForm->animation->interface_controller->ShowStatusMessage(status_kind, skill.name);
+                        }
                         hover_alt_frame = 0;
                         has_hover = true;
                         selection_dirty = true;
                         is_dirty = true;
-                        hover_text_width = 0;
-                        if (MainForm->OffscreenSurface->GetDC(&dc))
-                        {
-                            try
-                            {
-                                MainForm->text_canvas->Handle = dc;
-                                hover_text_width = MainForm->text_canvas->TextWidth(hover_text);
-                                MainForm->text_canvas->Handle = 0;
-                            }
-                            catch (Exception &)
-                            {
-                            }
-                            result = MainForm->OffscreenSurface->ReleaseDC(dc);
-                        }
                     }
                     break;
                 }
+                it++;
             }
             if (!found)
             {
@@ -217,7 +222,6 @@ void SpellController::UpdateHover(int x, int y)
                     hover_col = -1;
                     hover_row = -1;
                     hover_spell_id = -1;
-                    hover_text = "";
                 }
                 hover_alt_frame = 0;
                 has_hover = false;
@@ -233,34 +237,31 @@ void SpellController::UpdateHover(int x, int y)
             hover_col = -1;
             hover_row = -1;
             hover_spell_id = -1;
-            hover_text = "";
         }
         hover_alt_frame = 0;
         has_hover = false;
     }
 }
 
-// A click on the spell panel. The left button picks up and selects a spell, drops a dragged one on a cell, swapping
-// it with the spell there, or uses it on a second quick click. Also handles the scroll bar and the training buttons.
+// A click on the spell panel. The left button picks up and selects a spell, or drops a dragged one on a cell,
+// swapping it with the spell there; a double click casts it. Also handles the scroll bar and the training buttons.
 void SpellController::MouseDown(int x, int y, int button)
 {
-    char cancel_drag;
-    char used;
-    char swapped;
-    int drag_row;
-    char found;
-    HDC dc;
-    int col;
+    vector<SpellItem>::iterator spell_item;
     int row;
     vector<SpellItem>::iterator clicked;
     int grid_row;
     int drag_col;
-    cancel_drag = false;
+    vector<SpellItem>::iterator dragged;
+    vector<SpellItem>::iterator other;
+    vector<SpellItem>::iterator moved;
+    vector<SpellItem>::iterator placed;
+    char cancel_drag = false;
     if (x >= 201 && x <= 560)
     {
         if (y >= 339 && y <= 440)
         {
-            col = (x - 201) / SLOT_GRID_CELL_WIDTH;
+            int col = (x - 201) / SLOT_GRID_CELL_WIDTH;
             row = (y - 339) / SLOT_GRID_CELL_HEIGHT;
             if (row >= 0 && row <= 1 && col >= 0 && col <= 7)
             {
@@ -271,14 +272,13 @@ void SpellController::MouseDown(int x, int y, int button)
                         // A second click soon after the first uses the spell
                         if (click_ticks < 3)
                         {
-                            vector<SpellItem>::iterator it;
-                            used = false;
-                            for (it = spells.begin(); it != spells.end(); it++)
+                            char used = false;
+                            for (clicked = spells.begin(); clicked != spells.end(); clicked++)
                             {
-                                int grid_row = row + top_row;
-                                if (col == it->grid_x && grid_row == it->grid_y)
+                                grid_row = row + top_row;
+                                if (col == clicked->grid_x && grid_row == clicked->grid_y)
                                 {
-                                    UseSpell(it->grid_x, it->grid_y, it->spell_id);
+                                    UseSpell(clicked->grid_x, clicked->grid_y, clicked->spell_id);
                                     used = true;
                                     break;
                                 }
@@ -293,94 +293,99 @@ void SpellController::MouseDown(int x, int y, int button)
                                 selected_text_width = 0;
                             }
                         }
-                        vector<SpellItem>::iterator it;
-                        swapped = false;
-                        drag_row = -1;
+                        char swapped = false;
                         drag_col = -1;
+                        int drag_row = -1;
                         row += top_row;
-                        for (it = spells.begin(); it != spells.end(); it++)
+                        for (dragged = spells.begin(); dragged != spells.end(); dragged++)
                         {
-                            if (drag_spell_id == it->spell_id)
+                            if (drag_spell_id == dragged->spell_id)
                             {
-                                drag_col = it->grid_x;
-                                drag_row = it->grid_y;
+                                drag_col = dragged->grid_x;
+                                drag_row = dragged->grid_y;
                             }
                         }
-                        for (vector<SpellItem>::iterator it = spells.begin(); it != spells.end(); it++)
+                        for (other = spells.begin(); other != spells.end(); other++)
                         {
-                            if (col == it->grid_x && row == it->grid_y && drag_spell_id != it->spell_id)
+                            if ((col == other->grid_x))
                             {
-                                it->grid_x = drag_col;
-                                it->grid_y = drag_row;
-                                it->is_visible = true;
-                                swapped = true;
-                                break;
+                                if (row == other->grid_y && drag_spell_id != other->spell_id)
+                                {
+                                    other->grid_x = drag_col;
+                                    other->grid_y = drag_row;
+                                    other->is_visible = true;
+                                    swapped = true;
+                                    break;
+                                }
                             }
                         }
                         if (!swapped)
                         {
-                            vector<SpellItem>::iterator it;
-                            for (it = spells.begin(); it != spells.end(); it++)
+                            for (moved = spells.begin(); moved != spells.end(); moved++)
                             {
-                                if (drag_spell_id != it->spell_id)
-                                    continue;
-                                it->grid_x = col;
-                                it->grid_y = row;
-                                it->is_visible = true;
-                                cancel_drag = true;
+                                if (drag_spell_id == moved->spell_id)
+                                {
+                                    moved->grid_x = col;
+                                    moved->grid_y = row;
+                                    moved->is_visible = true;
+                                    cancel_drag = true;
+                                }
                             }
                         }
                         else
                         {
-                            vector<SpellItem>::iterator it;
-                            for (it = spells.begin(); it != spells.end(); it++)
+                            for (placed = spells.begin(); placed != spells.end(); placed++)
                             {
-                                if (drag_spell_id != it->spell_id)
-                                    continue;
-                                it->grid_x = col;
-                                it->grid_y = row;
-                                it->is_visible = true;
-                                cancel_drag = true;
+                                if (drag_spell_id == placed->spell_id)
+                                {
+                                    placed->grid_x = col;
+                                    placed->grid_y = row;
+                                    placed->is_visible = true;
+                                    cancel_drag = true;
+                                }
                             }
                         }
                         SaveLayout();
                     }
                     else if (!is_casting)
                     {
-                        vector<SpellItem>::iterator it;
                         click_ticks = 0;
                         click_col = col;
                         click_row = row;
                         row += top_row;
-                        found = false;
-                        for (it = spells.begin(); it != spells.end(); it++)
+                        char found = false;
+                        for (spell_item = spells.begin(); spell_item != spells.end(); spell_item++)
                         {
-                            if (col == it->grid_x && row == it->grid_y)
+                            if (col == spell_item->grid_x && row == spell_item->grid_y)
                             {
                                 MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                 found = true;
-                                is_dragging = true;
-                                drag_started = false;
-                                drag_delay_ticks = 0;
-                                drag_x = x;
-                                drag_y = y;
-                                drag_spell_id = it->spell_id;
-                                drag_icon = MainForm->skill_values->GetIcon(it->spell_id);
-                                awaiting_target = false;
-                                selected_spell_id = it->spell_id;
-                                selected_spell_level = it->level;
-                                selected_spell_icon = MainForm->skill_values->GetIcon(it->spell_id);
-                                selected_spell_category = MainForm->skill_values->GetCategory(it->spell_id);
-                                selected_spell_type = MainForm->skill_values->GetType(it->spell_id);
-                                selected_target_kind = MainForm->skill_values->GetTargetRestriction(it->spell_id);
-                                selected_spell_name = MainForm->skill_values->GetName(it->spell_id);
-                                clicked_spell_id = it->spell_id;
-                                clicked_col = it->grid_x;
-                                clicked_row = it->grid_y;
-                                it->is_visible = false;
-                                MainForm->dragging = true;
+                                if (selected_spell_id == spell_item->spell_id)
+                                {
+                                    is_dragging = true;
+                                    drag_started = false;
+                                    drag_delay_ticks = 0;
+                                    drag_x = x;
+                                    drag_y = y;
+                                    drag_spell_id = spell_item->spell_id;
+                                    drag_icon = MainForm->skill_values->GetIcon(spell_item->spell_id);
+                                    spell_item->is_visible = false;
+                                    MainForm->dragging = true;
+                                }
                                 selection_dirty = true;
                                 is_dirty = true;
+                                clicked_spell_id = spell_item->spell_id;
+                                clicked_col = spell_item->grid_x;
+                                clicked_row = spell_item->grid_y;
+                                awaiting_target = false;
+                                selected_spell_id = spell_item->spell_id;
+                                selected_spell_level = spell_item->level;
+                                selected_spell_icon = MainForm->skill_values->GetIcon(spell_item->spell_id);
+                                selected_spell_category = MainForm->skill_values->GetCategory(spell_item->spell_id);
+                                selected_spell_type = MainForm->skill_values->GetType(spell_item->spell_id);
+                                selected_target_kind =
+                                    MainForm->skill_values->GetTargetRestriction(spell_item->spell_id);
+                                selected_spell_name = MainForm->skill_values->GetName(spell_item->spell_id);
                                 selected_text_width = 0;
                                 HDC dc;
                                 if (MainForm->OffscreenSurface->GetDC(&dc))
@@ -388,7 +393,7 @@ void SpellController::MouseDown(int x, int y, int button)
                                     try
                                     {
                                         MainForm->text_canvas->Handle = dc;
-                                        selected_text_width = MainForm->text_canvas->TextWidth(hover_text);
+                                        selected_text_width = MainForm->text_canvas->TextWidth(selected_spell_name);
                                         MainForm->text_canvas->Handle = 0;
                                     }
                                     catch (Exception &)
@@ -419,8 +424,7 @@ void SpellController::MouseDown(int x, int y, int button)
     }
     else
     {
-        // Outside the grid a drag is cancelled, except over the scroll bar
-        if (x > 585)
+        if (x < 190 || x > 585)
             cancel_drag = true;
         if (y < 339 || y > 440)
             cancel_drag = true;
@@ -522,14 +526,15 @@ void SpellController::CancelDrag()
 // Writes the spell in each grid cell, or 0 for an empty one, to the registry.
 void SpellController::SaveLayout()
 {
-    int j;
     int slot_spell_id;
+    vector<SpellItem>::iterator it;
+    int slot;
     for (int i = 0; i < 4; i++)
     {
-        for (j = 0; j < 8; j++)
+        for (int j = 0; j < 8; j++)
         {
             slot_spell_id = 0;
-            for (vector<SpellItem>::iterator it = spells.begin(); it != spells.end(); it++)
+            for (it = spells.begin(); it != spells.end(); it++)
             {
                 if (j == it->grid_x && i == it->grid_y)
                 {
@@ -537,7 +542,7 @@ void SpellController::SaveLayout()
                     break;
                 }
             }
-            int slot = j + 8 * i;
+            slot = j + 8 * i;
             MainForm->registry->WriteSlotValue(LayoutKey_Spells, slot, slot_spell_id);
         }
     }
@@ -597,26 +602,30 @@ char SpellController::HasSpell(int spell_id)
 // Puts a spell in the first free cell, row by row, and saves that cell; false when the grid is full.
 char SpellController::AddSpell(int spell_id, int level)
 {
-    char placed;
-    int free_col;
-    int free_row;
-    placed = false;
-    for (int i = 0; i < 4 && !placed; i++)
+    int col;
+    vector<SpellItem>::iterator it;
+    char occupied;
+    char placed = false;
+    for (int i = 0; i < 4 && placed == 0; i++)
     {
-        for (int j = 0; j < 8 && !placed; j++)
+        col = 0;
+        int free_col;
+        int free_row;
+        while (col < 8 && !placed)
         {
-            char occupied = false;
-            for (vector<SpellItem>::iterator it = spells.begin(); it != spells.end(); it++)
+            occupied = false;
+            for (it = spells.begin(); it != spells.end(); it++)
             {
-                if (j == it->grid_x && i == it->grid_y)
+                if (col == it->grid_x && i == it->grid_y)
                     occupied = true;
             }
             if (!occupied)
             {
-                free_col = j;
+                free_col = col;
                 free_row = i;
                 placed = true;
             }
+            col++;
         }
         if (placed)
         {
@@ -638,13 +647,18 @@ char SpellController::AddSpell(int spell_id, int level)
 // The icon of each placed spell is requested.
 void SpellController::RestoreLayout()
 {
+    vector<SpellItem>::iterator it;
+    int cell_col;
+    vector<SpellItem>::iterator saved_slot;
+    int slot_spell_id;
+    int added_icon;
     saved_slots.clear();
     for (int i = 0; i < 32; i++)
     {
-        int slot_spell_id = MainForm->registry->ReadSlotValue(LayoutKey_Spells, i);
+        slot_spell_id = MainForm->registry->ReadSlotValue(LayoutKey_Spells, i);
         if (slot_spell_id > 0)
         {
-            int cell_col = i % 8;
+            cell_col = i % 8;
             int cell_row = i / 8;
             SpellItem handle(slot_spell_id);
             handle.grid_y = cell_row;
@@ -652,34 +666,35 @@ void SpellController::RestoreLayout()
             saved_slots.insert(saved_slots.end(), handle);
         }
     }
-    vector<SpellItem>::iterator it;
-    for (it = known_spells.begin(); it != known_spells.end(); it++)
+    it = known_spells.begin();
+    while (it != known_spells.end())
     {
         char matched = false;
-        for (vector<SpellItem>::iterator saved_slot = saved_slots.begin(); saved_slot != saved_slots.end() && !matched;
-            saved_slot++)
+        saved_slot = saved_slots.begin();
+        while (saved_slot != saved_slots.end() && !matched)
         {
-            if (saved_slot->spell_id != it->spell_id)
-                continue;
-            it->is_placed = true;
-            matched = true;
-            SpellItem placed_spell(it->spell_id);
-            placed_spell.grid_x = saved_slot->grid_x;
-            placed_spell.grid_y = saved_slot->grid_y;
-            placed_spell.level = it->level;
-            spells.insert(spells.end(), placed_spell);
-            int restored_icon = MainForm->skill_values->GetIcon(it->spell_id);
-            MainForm->gfx->icons->RequestGraphic(restored_icon);
+            if (saved_slot->spell_id == it->spell_id)
+            {
+                it->is_placed = true;
+                matched = true;
+                SpellItem placed_spell(it->spell_id);
+                placed_spell.grid_x = saved_slot->grid_x;
+                placed_spell.grid_y = saved_slot->grid_y;
+                placed_spell.level = (int)it->level;
+                spells.insert(spells.end(), placed_spell);
+                int restored_icon = MainForm->skill_values->GetIcon(it->spell_id);
+                MainForm->gfx->icons->RequestGraphic(restored_icon);
+            }
+            saved_slot++;
         }
+        it++;
     }
     for (it = known_spells.begin(); it != known_spells.end(); it++)
     {
-        if (it->is_placed)
-            continue;
-        if (AddSpell(it->spell_id, it->level))
+        if (!it->is_placed && AddSpell(it->spell_id, it->level))
         {
             it->is_placed = true;
-            int added_icon = MainForm->skill_values->GetIcon(it->spell_id);
+            added_icon = MainForm->skill_values->GetIcon(it->spell_id);
             MainForm->gfx->icons->RequestGraphic(added_icon);
         }
     }
@@ -721,16 +736,14 @@ void SpellController::UseSlot(int col, int row)
 // waits for one; one without a target is chanted and cast at once; a group spell needs a group of two or more.
 void SpellController::UseSpell(int col, int row, int spell_id)
 {
-    int target_type;
-    HDC dc;
-    int check_result;
-    int tp_cost;
     int sp_cost;
     char was_casting;
+    int target_type;
+    HDC dc;
     if (use_cooldown <= 0)
     {
         use_cooldown = 2;
-        tp_cost = MainForm->skill_values->GetTpCost(spell_id);
+        int tp_cost = MainForm->skill_values->GetTpCost(spell_id);
         sp_cost = MainForm->skill_values->GetSpCost(spell_id);
         bool blocked = false;
         if (!blocked)
@@ -754,113 +767,98 @@ void SpellController::UseSpell(int col, int row, int spell_id)
         if (!blocked)
         {
             was_casting = false;
-            // Using a spell during a cast only clears the selection
             if (MainForm->animation->interface_controller->spells->IsCasting())
             {
+                // Using a spell during a cast only clears the selection
                 MainForm->animation->interface_controller->spells->ClearSelection();
                 was_casting = true;
             }
-            if (!MainForm->map->IsActionBlocked())
+            if (!MainForm->map->IsActionBlocked() && !MainForm->animation->IsSitDelayed() &&
+                !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) && !was_casting)
             {
-                if (!MainForm->animation->IsSitDelayed())
+                target_type = MainForm->skill_values->GetTargetType(spell_id);
+                // This type only opens the musician window, and only with some weapons held
+                if (MainForm->skill_values->GetType(spell_id) == 2)
                 {
-                    if (!MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()))
+                    awaiting_target = false;
+                    selected_spell_id = -1;
+                    selected_spell_icon = -1;
+                    use_cooldown = 10;
+                    int check_result = MainForm->players->GetWeapon(MainForm->net_client->GetPlayerId());
+                    if (check_result == 49 || check_result == 50)
+                        MainForm->animation->musician->Open();
+                    return;
+                }
+                if (target_type == 0 || target_type == 2)
+                {
+                    awaiting_target = true;
+                    selected_spell_id = spell_id;
+                    selected_spell_icon = MainForm->skill_values->GetIcon(spell_id);
+                    selected_spell_category = MainForm->skill_values->GetCategory(spell_id);
+                    selected_spell_type = MainForm->skill_values->GetType(spell_id);
+                    selected_target_kind = MainForm->skill_values->GetTargetRestriction(spell_id);
+                    selected_spell_name = MainForm->skill_values->GetName(spell_id);
+                    clicked_spell_id = spell_id;
+                    clicked_col = col;
+                    clicked_row = row;
+                    selected_text_width = 0;
+                    if (MainForm->OffscreenSurface->GetDC(&dc))
                     {
-                        if (!MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()))
+                        try
                         {
-                            if (!MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()))
-                            {
-                                if (!MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) &&
-                                    !was_casting)
-                                {
-                                    target_type = MainForm->skill_values->GetTargetType(spell_id);
-                                    // This type only opens the musician window, and only with some weapons held
-                                    if (MainForm->skill_values->GetType(spell_id) == 2)
-                                    {
-                                        awaiting_target = false;
-                                        selected_spell_id = -1;
-                                        selected_spell_icon = -1;
-                                        use_cooldown = 10;
-                                        check_result = MainForm->players->GetWeapon(MainForm->net_client->GetPlayerId());
-                                        if (check_result == 49 || check_result == 50)
-                                            MainForm->animation->musician->Open();
-                                        return;
-                                    }
-                                    else
-                                    {
-                                        if (!target_type || target_type == 2)
-                                        {
-                                            awaiting_target = true;
-                                            selected_spell_id = spell_id;
-                                            selected_spell_icon = MainForm->skill_values->GetIcon(spell_id);
-                                            selected_spell_category = MainForm->skill_values->GetCategory(spell_id);
-                                            selected_spell_type = MainForm->skill_values->GetType(spell_id);
-                                            selected_target_kind = MainForm->skill_values->GetTargetRestriction(spell_id);
-                                            selected_spell_name = MainForm->skill_values->GetName(spell_id);
-                                            clicked_spell_id = spell_id;
-                                            clicked_col = col;
-                                            clicked_row = row;
-                                            selected_text_width = 0;
-                                            if (MainForm->OffscreenSurface->GetDC(&dc))
-                                            {
-                                                try
-                                                {
-                                                    MainForm->text_canvas->Handle = dc;
-                                                    selected_text_width = MainForm->text_canvas->TextWidth(hover_text);
-                                                    MainForm->text_canvas->Handle = 0;
-                                                }
-                                                catch (Exception &)
-                                                {
-                                                }
-                                                MainForm->OffscreenSurface->ReleaseDC(dc);
-                                            }
-                                            MainForm->redraw_needed = true;
-                                            MainForm->sfx->PlaySfx(SfxSound_Select);
-                                            MainForm->animation->interface_controller->ShowStatusMessage(selected_spell_category +
-                                                7, selected_spell_name + " " + MainForm->strings->GetText(GameText_WasSelected));
-                                        }
-                                        if (target_type == 1)
-                                        {
-                                            awaiting_target = false;
-                                            selected_spell_id = -1;
-                                            selected_spell_icon = -1;
-                                            use_cooldown = 10;
-                                            String shout_text = MainForm->skill_values->GetShout(spell_id);
-                                            MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(),
-                                                shout_text, LabelColor_Silver, true, SHOUT_LABEL_TICKS);
-                                            MainForm->net_client->sender->SendSpellChant(spell_id);
-                                            BeginCast(spell_id, CastTarget_None, -1);
-                                        }
-                                        if (target_type == 3)
-                                        {
-                                            if (MainForm->animation->interface_controller->group->members.size() > 1)
-                                            {
-                                                awaiting_target = false;
-                                                selected_spell_id = -1;
-                                                selected_spell_icon = -1;
-                                                use_cooldown = 10;
-                                                String group_shout_text = MainForm->skill_values->GetShout(spell_id);
-                                                MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(),
-                                                    group_shout_text, LabelColor_Silver, true, SHOUT_LABEL_TICKS);
-                                                MainForm->net_client->sender->SendSpellChant(spell_id);
-                                                BeginCast(spell_id, CastTarget_Group, -1);
-                                            }
-                                            else
-                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                                    MainForm->strings->GetText(GameText_SelectedItemOnlyWorks));
-                                        }
-                                    }
-                                }
-                            }
+                            MainForm->text_canvas->Handle = dc;
+                            selected_text_width = MainForm->text_canvas->TextWidth(selected_spell_name);
+                            MainForm->text_canvas->Handle = 0;
                         }
+                        catch (Exception &)
+                        {
+                        }
+                        MainForm->OffscreenSurface->ReleaseDC(dc);
                     }
+                    MainForm->redraw_needed = true;
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                    MainForm->animation->interface_controller->ShowStatusMessage(selected_spell_category + 7,
+                        selected_spell_name + " " + MainForm->strings->GetText(GameText_WasSelected));
+                }
+                if (target_type == 1)
+                {
+                    awaiting_target = false;
+                    selected_spell_id = -1;
+                    selected_spell_icon = -1;
+                    use_cooldown = 10;
+                    String shout_text = MainForm->skill_values->GetShout(spell_id);
+                    MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), shout_text, LabelColor_Silver,
+                        true, SHOUT_LABEL_TICKS);
+                    MainForm->net_client->sender->SendSpellChant(spell_id);
+                    BeginCast(spell_id, CastTarget_None, -1);
+                }
+                if (target_type == 3)
+                {
+                    if (MainForm->animation->interface_controller->group->members.size() > 1)
+                    {
+                        awaiting_target = false;
+                        selected_spell_id = -1;
+                        selected_spell_icon = -1;
+                        use_cooldown = 10;
+                        String group_shout_text = MainForm->skill_values->GetShout(spell_id);
+                        MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), group_shout_text,
+                            LabelColor_Silver, true, SHOUT_LABEL_TICKS);
+                        MainForm->net_client->sender->SendSpellChant(spell_id);
+                        BeginCast(spell_id, CastTarget_Group, -1);
+                    }
+                    else
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                            MainForm->strings->GetText(GameText_SelectedItemOnlyWorks));
                 }
             }
         }
     }
 }
 
-char SpellController::IsCasting()
+bool SpellController::IsCasting()
 {
     return is_casting;
 }

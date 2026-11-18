@@ -1,6 +1,9 @@
 #ifndef NpcvaluesH
 #define NpcvaluesH
 
+#include <fstream>
+#include <new>
+#include <string>
 #include <vector.h>
 
 #include "Npcvalue.h"
@@ -23,24 +26,18 @@ enum NpcType
     NpcType_Trainer = 14,
     NpcType_Quest = 15
 };
-struct NpcTypeInfo
-{
-    int npc_type;
-    int behavior_id;
-};
 
 // The NPC file: pub/dtn001.enf onward, 900 NPCs to a file, kept as one list in NPC id order.
 struct NpcValues
 {
     char is_downloading;
-    unsigned char download_requested;
+    bool download_requested;
     int expected_part_count;
     int received_part_count;
     char is_loaded;
     int checksum_high;
     int checksum_low;
     int record_count;
-    char unused_bytes[4];
     vector<NpcValue> records;
     int unused_value;
     String file_prefix;
@@ -61,7 +58,7 @@ struct NpcValues
     void Clear();
     int GetGraphic(int npc_id);
     String GetName(int npc_id);
-    NpcTypeInfo GetType(int npc_id);
+    TPoint GetType(int npc_id);
     unsigned int Count();
     int DecodeNumber(String encoded);
 };

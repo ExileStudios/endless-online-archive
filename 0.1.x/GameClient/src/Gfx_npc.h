@@ -1,11 +1,11 @@
 #ifndef Gfx_npcH
 #define Gfx_npcH
 
-class TDDBltFX;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
 
 // The two sheets of one npc graphic, front view and back view: a row of equal frames each.
 struct NpcResources
@@ -26,13 +26,12 @@ struct NpcResources
 
     NpcResources();
     ~NpcResources();
-    void CreateSheets(int library, int resource_id, char has_idle_animation);
+    bool CreateSheets(void *library, int resource_id, char has_idle_animation);
     int GetFrameWidth();
     int GetFrameHeight();
-    void LoadFrontFrame(int frame, int library, int resource_id);
-    void LoadBackFrame(int frame, int library, int resource_id);
-    Windows::TRect GetFrameRect(int frame);
+    bool LoadFrontFrame(int frame, void *library, int resource_id);
+    bool LoadBackFrame(int frame, void *library, int resource_id);
+    TRect GetFrameRect(int frame);
 };
-
 
 #endif

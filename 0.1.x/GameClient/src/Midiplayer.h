@@ -10,11 +10,13 @@ struct Dx_MidiPlayer
 
     Dx_MidiPlayer();
     ~Dx_MidiPlayer();
+    char Initialize();
+    int SetVolume(int volume);
     void Play(String music_path);
     void Stop();
     bool InitDirectMusic();
     void ReleaseDirectMusic();
-    bool LoadSegment(LPCSTR file_name);
+    bool LoadSegment(char *file_name);
     void PlaySegment();
     void StopSegment();
     char IsSegmentPlaying();

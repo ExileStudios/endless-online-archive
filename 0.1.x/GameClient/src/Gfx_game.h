@@ -1,15 +1,23 @@
 #ifndef Gfx_gameH
 #define Gfx_gameH
 
-#define MSGBOARD_MODE_WRITE 2
+#include <TDDBltFX.H>
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
 
+#define BOOK_ROW_HEIGHT 16
 #define BUTTON_COLUMN_PITCH 91
 #define BUTTON_ROW_PITCH 29
-class TDDBltFX;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#define INPUT_FORM_ROW_HEIGHT 23
+#define ITEM_AMOUNT_ROW_HEIGHT 37
+#define ITEM_NAME_ROW_HEIGHT 37
+#define ITEM_TYPE_GENDERED 12
+#define LIST_HIGHLIGHT_ROW_HEIGHT 16
+#define LIST_ROW_HEIGHT 16
+#define MENU_HIGHLIGHT_ROW_HEIGHT 37
+#define MSGBOARD_MODE_WRITE 2
 
 // The game screen's boxes and windows: the message, text, input and amount boxes, the input form, the npc and
 // player windows (chest, shop, bank, locker, guild, inn, law, learn, quests, board, trade, book, paperdoll and
@@ -26,42 +34,40 @@ struct GameGraphics
     TDx_DrawSurface *book_surface;
     TDDBltFX *black_fill_fx;
     TDDBltFX *view_fill_fx;
-    Windows::TRect view_clip_rect;
-    Windows::TRect view_rect;
-    Windows::TRect message_box_rect;
-    Windows::TRect text_box_rect;
-    Windows::TRect input_box_rect;
-    Windows::TRect player_menu_shadow_rect;
-    Windows::TRect player_menu_rect;
-    Windows::TRect book_rect;
-    Windows::TRect list_scrollbar_rect;
-    Windows::TRect amount_box_rect;
-    Windows::TRect junk_title_rect;
-    Windows::TRect amount_title_rect;
-    Windows::TRect trade_title_rect;
-    Windows::TRect shop_title_rect;
-    Windows::TRect bank_title_rect;
-    Windows::TRect tall_row_highlight_rect;
-    Windows::TRect item_row_highlight_rect;
-    int short_highlight_left;
-    int short_highlight_top;
-    int short_highlight_right;
-    int short_highlight_bottom;
-    Windows::TRect row_highlight_rect;
-    Windows::TRect narrow_row_highlight_rect;
+    TRect view_clip_rect;
+    TRect view_rect;
+    TRect message_box_rect;
+    TRect text_box_rect;
+    TRect input_box_rect;
+    TRect player_menu_shadow_rect;
+    TRect player_menu_rect;
+    TRect book_rect;
+    TRect list_scrollbar_rect;
+    TRect amount_box_rect;
+    TRect junk_title_rect;
+    TRect amount_title_rect;
+    TRect trade_title_rect;
+    TRect shop_title_rect;
+    TRect bank_title_rect;
+    TRect cell_highlight_rect;
+    TRect tall_row_highlight_rect;
+    TRect item_row_highlight_rect;
+    TRect short_highlight_rect;
+    TRect row_highlight_rect;
+    TRect narrow_row_highlight_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;
 
     GameGraphics();
     ~GameGraphics();
-    Windows::TRect GetListBoxBodyRect(int item_count);
-    Windows::TRect GetListBoxFooterRect(int footer);
-    Windows::TRect GetIconRect(int icon);
-    Windows::TPoint GetPaperdollSlotOffset(int item_size);
-    void BlitClippedAlpha(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect, int alpha);
-    void BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect);
-    bool BlitClipped(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect);
+    TRect GetListBoxBodyRect(int item_count);
+    TRect GetListBoxFooterRect(int footer);
+    TRect GetIconRect(int icon);
+    TPoint GetPaperdollSlotOffset(int item_size);
+    void BlitClippedAlpha(int x, int y, TDx_DrawSurface *source, TRect source_rect, int alpha);
+    void BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, TRect source_rect);
+    bool BlitClipped(int x, int y, TDx_DrawSurface *source, TRect source_rect);
     void DrawMessageBoxText();
     void DrawTextBoxText();
     void DrawListBox();
@@ -114,16 +120,17 @@ struct GameGraphics
     void DrawBookButtons();
     void DrawPaperdollButtons();
     void DrawItemAmountButtons();
-    Windows::TRect GetPaperdollFrameRect(int frame);
-    Windows::TRect GetButtonRect(int button, int state);
-    Windows::TRect ClipSourceRect(int x, int y, Windows::TRect source_rect);
+    TRect GetPaperdollFrameRect(int frame);
+    TRect GetPopupItemRect(int row);
+    TRect GetButtonRect(int button, int state);
+    TRect ClipSourceRect(int x, int y, TRect source_rect);
     void LoadButtonSheet(int library, int resource_id);
     void LoadPopupMenu(int library, int resource_id);
     void LoadListBoxBackground(int library, int resource_id);
     void LoadInputBoxBackground(int library, int resource_id);
     void LoadMessageBoxBackground(int library, int resource_id);
     void LoadTextBoxBackground(int library, int resource_id);
-    void DrawListBoxText();
+    void DrawFormText();
     void DrawChestText();
     void DrawBarberText();
     void DrawJukeboxText();
@@ -146,8 +153,6 @@ struct GameGraphics
     void DrawPaperdollText();
     void LoadPaperdollBackground(int library, int resource_id);
     void LoadBookBackground(int library, int resource_id);
-    Windows::TRect GetMenuRowRect(int row);
 };
-
 
 #endif

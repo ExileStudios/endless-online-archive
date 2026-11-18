@@ -4,7 +4,7 @@
 #include "Gfx_subitem.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 SubItemResource::SubItemResource()

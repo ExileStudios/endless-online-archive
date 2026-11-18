@@ -10,6 +10,11 @@
 #include "Ctrl_memo.h"
 #include "Packetoperations.h"
 #include "Ctrl_status.h"
+#include "Ctrl_inventory.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_shop.h"
+
 #pragma package(smart_init)
 
 GuildController::GuildController()
@@ -91,6 +96,7 @@ int GuildController::GetTopLine()
 // management rows also check the guild rank. Otherwise the scroll bar and moving the window.
 void GuildController::MouseDown(int x, int y, int button)
 {
+    int gold;
     char row_handled = false;
     if (button == 0 || button == 1)
     {
@@ -168,7 +174,7 @@ void GuildController::MouseDown(int x, int y, int button)
                             MainForm->strings->GetDialogText(DialogText_DisbandGuild, true));
                     if (page == GuildPage_Bank)
                     {
-                        int gold = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
+                        gold = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
                         // The amount box opens only with at least this much gold carried
                         if (gold >= 1000)
                         {
@@ -194,7 +200,7 @@ void GuildController::MouseDown(int x, int y, int button)
                     }
                 }
             }
-            if (this->page == GuildPage_Lookup && row >= 0 && row <= 1)
+            if (page == GuildPage_Lookup && row >= 0 && row <= 1)
             {
                 if (!row)
                 {
@@ -213,7 +219,7 @@ void GuildController::MouseDown(int x, int y, int button)
                     MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_GuildTag);
                 }
             }
-            if (this->page == GuildPage_Manage && row >= 0 && row <= 4)
+            if (page == GuildPage_Manage && row >= 0 && row <= 4)
             {
                 if (MainForm->animation->interface_controller->status->IsInGuild())
                 {
@@ -342,57 +348,30 @@ void GuildController::MouseDown(int x, int y, int button)
     }
     if (!row_handled)
     {
-        if (this->window_x + 252 <= x)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + scroll_thumb_offset + 58 <= y &&
+            window_y + scroll_thumb_offset + 73 >= y)
         {
-            if (this->window_x + 267 >= x)
-            {
-                if (this->window_y + this->scroll_thumb_offset + 58 <= y)
-                {
-                    if (this->window_y + this->scroll_thumb_offset + 73 >= y)
-                    {
-                        this->thumb_grabbed = true;
-                        this->thumb_grab_offset = y - this->scroll_thumb_offset - this->window_y;
-                        this->DragScrollThumb(y);
-                    }
-                }
-            }
+            thumb_grabbed = true;
+            thumb_grab_offset = y - scroll_thumb_offset - window_y;
+            DragScrollThumb(y);
         }
-        if (this->window_x + 252 <= x)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + 44 <= y && window_y + 59 >= y)
         {
-            if (this->window_x + 267 >= x)
-            {
-                if (this->window_y + 44 <= y)
-                {
-                    if (this->window_y + 59 >= y)
-                    {
-                        this->scroll_up_held = true;
-                        this->scroll_repeat_delay = 4;
-                        this->ScrollUp();
-                    }
-                }
-            }
+            scroll_up_held = true;
+            scroll_repeat_delay = 4;
+            ScrollUp();
         }
-        if (this->window_x + 252 <= x)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + 228 <= y && window_y + 243 >= y)
         {
-            if (this->window_x + 267 >= x)
-            {
-                if (this->window_y + 228 <= y)
-                {
-                    if (this->window_y + 243 >= y)
-                    {
-                        this->scroll_down_held = true;
-                        this->scroll_repeat_delay = 4;
-                        this->ScrollDown();
-                    }
-                }
-            }
+            scroll_down_held = true;
+            scroll_repeat_delay = 4;
+            ScrollDown();
         }
-        if (this->window_x <= x && this->window_x + 284 >= x && y >= this->window_y && this->window_y + 290 >= y &&
-            !this->thumb_grabbed)
+        if (window_x <= x && window_x + 284 >= x && y >= window_y && window_y + 290 >= y && !thumb_grabbed)
         {
-            this->is_dragging = true;
-            this->drag_offset_x = x - this->window_x;
-            this->drag_offset_y = y - this->window_y;
+            is_dragging = true;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
         }
     }
 }
@@ -416,8 +395,7 @@ void GuildController::MouseMove(int x, int y)
             window_y = 19;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= this->window_y + 43 || y >= this->window_y + 243 || x <= this->window_x + 17 ||
-        x >= this->window_x + 252 || this->is_dragging))
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         if (page == GuildPage_Main)
         {
@@ -464,8 +442,7 @@ void GuildController::MouseMove(int x, int y)
     }
     if (page == GuildPage_Main)
     {
-        if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -481,8 +458,7 @@ void GuildController::MouseMove(int x, int y)
     }
     else
     {
-        if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 144 && x <= window_x + 234 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -495,8 +471,7 @@ void GuildController::MouseMove(int x, int y)
             close_hovered = false;
             MainForm->redraw_needed = true;
         }
-        if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 48 && x <= window_x + 138 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!back_hovered)
             {
@@ -518,9 +493,7 @@ DEFINE_UPDATE_SCROLL_HOVER(GuildController)
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line of a text page from its position.
 void GuildController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -533,9 +506,9 @@ void GuildController::DragScrollThumb(int y)
             int line_count = lines->Count;
             if (line_count > 12)
             {
-                thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
-                scaled_line = (line_count - 12.0) * thumb_fraction;
-                int new_top_line = scaled_line;
+                double thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
+                double scaled_line = (line_count - 12.0) * thumb_fraction;
+                new_top_line = scaled_line;
                 if (new_top_line != top_line)
                     top_line = new_top_line;
             }
@@ -549,16 +522,14 @@ void GuildController::DragScrollThumb(int y)
 // Scrolls a text page up one line and moves the scroll thumb to match.
 void GuildController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
     if (page >= GuildPage_Join)
     {
         int line_count = lines->Count;
         if (line_count > 12 && top_line > 0)
         {
             top_line--;
-            scroll_fraction = (double)top_line / (double)(line_count - 12);
-            thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+            double scroll_fraction = (double)top_line / (line_count - 12);
+            double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
             scroll_thumb_offset = thumb_pos;
             scroll_changed = true;
             MainForm->redraw_needed = true;
@@ -577,8 +548,8 @@ void GuildController::ScrollDown()
         if (line_count - 12 > top_line)
         {
             top_line++;
-            scroll_fraction = (double)top_line / (double)(line_count - 12);
-            thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+            double scroll_fraction = (double)top_line / (line_count - 12);
+            double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
             scroll_thumb_offset = thumb_pos;
             scroll_changed = true;
             MainForm->redraw_needed = true;

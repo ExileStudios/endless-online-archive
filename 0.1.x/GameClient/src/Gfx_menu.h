@@ -1,11 +1,17 @@
 #ifndef Gfx_menuH
 #define Gfx_menuH
 
-class TDDBltFX;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#define MENU_ARTWORK_X 229
+#define MENU_ARTWORK_Y 70
+#define MENU_BUTTON_PITCH 40
+#define SIDE_ARTWORK_X 42
+#define SIDE_ARTWORK_Y 140
 
 // The menu screens' surfaces: the backdrop, artwork, panels, buttons, the soft keypad and the boxes and forms drawn
 // over them.
@@ -32,18 +38,18 @@ struct MenuGraphics
     int background_id;
     int artwork_id;
     char unused_bytes[4];
-    Windows::TRect background_rect;
-    Windows::TRect message_box_rect;
-    Windows::TRect create_character_rect;
-    Windows::TRect list_box_rect;
-    Windows::TRect up_key_rect;
-    Windows::TRect down_key_rect;
-    Windows::TRect left_key_rect;
-    Windows::TRect right_key_rect;
-    Windows::TRect lower_wide_key_rect;
-    Windows::TRect upper_wide_key_rect;
-    Windows::TRect small_key_rect;
-    Windows::TRect message_icon_rect;
+    TRect background_rect;
+    TRect message_box_rect;
+    TRect create_character_rect;
+    TRect list_box_rect;
+    TRect up_key_rect;
+    TRect down_key_rect;
+    TRect left_key_rect;
+    TRect right_key_rect;
+    TRect lower_wide_key_rect;
+    TRect upper_wide_key_rect;
+    TRect small_key_rect;
+    TRect message_icon_rect;
     int artwork_width;
     int artwork_height;
     TDDSurfaceDesc *background_desc;
@@ -55,12 +61,12 @@ struct MenuGraphics
 
     MenuGraphics();
     ~MenuGraphics();
-    Windows::TRect GetKeyRect(int column, int row);
-    Windows::TRect GetScrollIconRect(int icon);
-    Windows::TRect GetMainMenuButtonRect(int button, int state);
-    Windows::TRect GetWideButtonRect(int button, int state);
-    Windows::TRect GetSmallButtonRect(int button, int state);
-    Windows::TRect GetCornerButtonRect(int state);
+    TRect GetKeyRect(int column, int row);
+    TRect GetScrollIconRect(int icon);
+    TRect GetMainMenuButtonRect(int button, int state);
+    TRect GetWideButtonRect(int button, int state);
+    TRect GetSmallButtonRect(int button, int state);
+    TRect GetCornerButtonRect(int state);
     void LoadBackground(int library, int resource_id);
     void LoadScrollIcons(int library, int resource_id);
     void LoadLabelSheet(int library, int resource_id);

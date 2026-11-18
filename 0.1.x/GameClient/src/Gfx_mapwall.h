@@ -12,7 +12,9 @@ struct WallWrapper
     unsigned short height;
     char is_loaded;
     char was_used;
-    unsigned short idle_ticks;
+    unsigned char idle_ticks;
+    char fetched;
+    unsigned short unfetched_frames;
 
     WallWrapper();
     WallWrapper(int requested_id);

@@ -3,30 +3,57 @@
 
 #include "Midiplayer.h"
 #include <mem.h>
-#include <string.h>
 #include <dmusici.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+#include <_str.h>
+#include <objbase.h>
+
 #pragma package(smart_init)
 
 IDirectMusicPerformance *music_performance = NULL;
-HWND music_window;
+int music_window;
 IDirectMusicSegment *music_segment;
 IDirectMusicLoader *music_loader;
 
 Dx_MidiPlayer::Dx_MidiPlayer()
 {
+    is_initialized = false;
+}
+
+char Dx_MidiPlayer::Initialize()
+{
+    if (is_initialized)
+        return is_initialized;
     is_initialized = InitDirectMusic();
     is_playing = false;
+    return is_initialized;
 }
 
 Dx_MidiPlayer::~Dx_MidiPlayer()
 {
     ReleaseDirectMusic();
+}
+
+// Sets the music volume from 0 to 100 on a square curve and returns the level set.
+int Dx_MidiPlayer::SetVolume(int volume)
+{
+    if (volume < 0)
+        volume = 0;
+    if (volume > 100)
+        volume = 100;
+    int level = 70;
+    try
+    {
+        level = (100 - volume) * level / 100;
+        level *= level;
+        level = -level + 100;
+    }
+    catch (...)
+    {
+    }
+    if (level > 100)
+        level = 100;
+    music_performance->SetGlobalParam(GUID_PerfMasterVolume, &level, 4);
+    return level;
 }
 
 // Stops the tune that plays, then loads and starts the tune at music_path.
@@ -54,7 +81,7 @@ bool Dx_MidiPlayer::InitDirectMusic()
     if (CoCreateInstance(CLSID_DirectMusicPerformance, 0, CLSCTX_INPROC, IID_IDirectMusicPerformance,
         (void **)&music_performance) < 0)
         return false;
-    if (music_performance->Init(0, 0, music_window) < 0)
+    if (music_performance->Init(0, 0, (HWND)music_window) < 0)
         return false;
     if (music_performance->AddPort(0) < 0)
         return false;
@@ -87,24 +114,24 @@ void Dx_MidiPlayer::ReleaseDirectMusic()
 }
 
 // Loads a MIDI file as the segment, searching from the current folder, and downloads its instruments.
-bool Dx_MidiPlayer::LoadSegment(LPCSTR file_name)
+bool Dx_MidiPlayer::LoadSegment(char *file_name)
 {
     DMUS_OBJECTDESC object_desc;
-    char Buffer[MAX_PATH];
-    WCHAR WideCharStr[MAX_PATH];
-    WCHAR Source[MAX_PATH];
-    if (!GetCurrentDirectoryA(MAX_PATH, Buffer))
+    char buffer[MAX_PATH];
+    WCHAR wide_char_str[260];
+    WCHAR source[260];
+    if (GetCurrentDirectoryA(MAX_PATH, buffer) == NULL)
         return false;
-    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, Buffer, -1, WideCharStr, MAX_PATH);
-    if (music_loader->SetSearchDirectory(GUID_DirectMusicAllTypes, WideCharStr, 0) < 0)
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, buffer, -1, wide_char_str, MAX_PATH);
+    if (music_loader->SetSearchDirectory(GUID_DirectMusicAllTypes, wide_char_str, 0) < 0)
         return false;
     memset(&object_desc, 0, sizeof(object_desc));
     object_desc.dwSize = 848;
-    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, file_name, -1, Source, MAX_PATH);
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, file_name, -1, source, MAX_PATH);
     object_desc.guidClass = CLSID_DirectMusicSegment;
-    wcscpy(object_desc.wszFileName, Source);
+    wcscpy(object_desc.wszFileName, source);
     object_desc.dwValidData = 18;
-    if (music_loader->GetObject(&object_desc, IID_IDirectMusicSegment, (void **)&music_segment) < 0)
+    if (music_loader->GetObject(&object_desc, IID_IDirectMusicSegment, (LPVOID *)&music_segment) < 0)
         return false;
     if (music_segment->SetParam(GUID_StandardMIDIFile, -1, 0, 0, music_performance) < 0)
         return false;

@@ -6,6 +6,7 @@
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
+
 #pragma package(smart_init)
 
 SettingsController::SettingsController()
@@ -34,25 +35,32 @@ void SettingsController::MarkDirty()
 // When sound or music is marked unavailable, a message box offers to start it.
 void SettingsController::MouseDown(int x, int y)
 {
-    int language;
+    // The left column: sound, music, keyboard layout, language and private messages;
+    // the right one: balloons, shadows, the word filter, the chat log and requests.
     if (x >= 317 && x <= 336)
     {
         if (y >= 355 && y <= 370)
         {
             is_dirty = true;
-            if (MainForm->config->GetSoundAvailable())
+            if (MainForm->config->GetSoundAvailable() > 0)
             {
-                if (MainForm->config->GetSoundEnabled())
+                if (MainForm->config->GetSoundVolume() >= 100)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                    MainForm->config->SetSoundEnabled(0);
+                    MainForm->config->SetSoundVolume(0);
                     MainForm->sfx->SetSoundEnabled(0);
                     MainForm->sfx->FadeOutAmbientSound();
                 }
+                else if (MainForm->config->GetSoundVolume() <= 0)
+                {
+                    MainForm->config->SetSoundVolume(50);
+                    MainForm->sfx->SetSoundEnabled(50);
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                }
                 else
                 {
-                    MainForm->config->SetSoundEnabled(1);
-                    MainForm->sfx->SetSoundEnabled(1);
+                    MainForm->config->SetSoundVolume(100);
+                    MainForm->sfx->SetSoundEnabled(100);
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                 }
             }
@@ -68,15 +76,23 @@ void SettingsController::MouseDown(int x, int y)
         {
             MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
             is_dirty = true;
-            if (MainForm->config->GetMusicAvailable())
+            if (MainForm->config->GetMusicAvailable() > 0)
             {
-                if (MainForm->config->GetMusicEnabled())
+                if (MainForm->config->GetMusicVolume() >= 100)
                 {
-                    MainForm->sfx->StopMusic();
+                    MainForm->sfx->SetMusicVolume(0);
                     MainForm->config->SetMusicEnabled(0);
                 }
+                else if (MainForm->config->GetMusicVolume() <= 0)
+                {
+                    MainForm->sfx->SetMusicVolume(50);
+                    MainForm->config->SetMusicEnabled(50);
+                }
                 else
-                    MainForm->config->SetMusicEnabled(1);
+                {
+                    MainForm->sfx->SetMusicVolume(100);
+                    MainForm->config->SetMusicEnabled(100);
+                }
             }
             else
             {
@@ -99,7 +115,7 @@ void SettingsController::MouseDown(int x, int y)
         if (y >= 409 && y <= 424)
         {
             MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-            language = MainForm->config->GetLanguage();
+            int language = MainForm->config->GetLanguage();
             is_dirty = true;
             if (language <= 2)
             {
@@ -160,21 +176,15 @@ void SettingsController::MouseDown(int x, int y)
                 MainForm->config->SetFilterEnabled(true);
                 MainForm->config->SetStrictFilter(false);
             }
-            else
+            else if (MainForm->config->GetFilterEnabled() && !MainForm->config->GetStrictFilter())
             {
-                if (MainForm->config->GetFilterEnabled() && !MainForm->config->GetStrictFilter())
-                {
-                    MainForm->config->SetFilterEnabled(true);
-                    MainForm->config->SetStrictFilter(true);
-                }
-                else
-                {
-                    if (MainForm->config->GetFilterEnabled() && MainForm->config->GetStrictFilter())
-                    {
-                        MainForm->config->SetFilterEnabled(false);
-                        MainForm->config->SetStrictFilter(false);
-                    }
-                }
+                MainForm->config->SetFilterEnabled(true);
+                MainForm->config->SetStrictFilter(true);
+            }
+            else if (MainForm->config->GetFilterEnabled() && MainForm->config->GetStrictFilter())
+            {
+                MainForm->config->SetFilterEnabled(false);
+                MainForm->config->SetStrictFilter(false);
             }
         }
         if (y >= 409 && y <= 424)

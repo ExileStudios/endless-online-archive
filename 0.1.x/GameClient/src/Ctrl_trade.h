@@ -2,9 +2,12 @@
 #define Ctrl_tradeH
 
 #include <vector.h>
-#define NPC_THUMB_TRAVEL 152.0
+
+struct Tooltip;
 
 #include "Iteminventory.h"
+
+#define TRADE_VISIBLE_ROWS 5
 
 // The trade window: both players' offers in two scrolling lists, each side's status text, and the wait before the
 // agree button works again.
@@ -14,6 +17,7 @@ struct TradeController
     vector<InventoryItem> own_items;
     bool agree_hovered;
     bool cancel_hovered;
+    Tooltip *tooltip;
     char is_visible;
     int unused_index;
     int hovered_row;
@@ -80,15 +84,14 @@ struct TradeController
     void MouseUp();
 };
 
+
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line of a text page from its position.
 // Shared body: a class defines its DragScrollThumb with DEFINE_DRAG_SCROLL_THUMB(TheClass); each class has its own
 // thumb_grabbed, thumb_grab_offset, window_y, page, lines, top_line, scroll_thumb_offset, scroll_changed.
 #define DEFINE_DRAG_SCROLL_THUMB(Class) \
 void Class::DragScrollThumb(int y) \
 { \
-    double thumb_fraction; \
-    double scaled_line; \
-    int unused_int; \
+    int new_top_line; \
     if (thumb_grabbed) \
     { \
         int thumb_offset = y - thumb_grab_offset - window_y; \
@@ -101,9 +104,9 @@ void Class::DragScrollThumb(int y) \
             int line_count = lines->Count; \
             if (line_count > 12) \
             { \
-                thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL; \
-                scaled_line = (line_count - 12.0) * thumb_fraction; \
-                int new_top_line = scaled_line; \
+                double thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL; \
+                double scaled_line = (line_count - 12.0) * thumb_fraction; \
+                new_top_line = scaled_line; \
                 if (new_top_line != top_line) \
                     top_line = new_top_line; \
             } \
@@ -114,15 +117,55 @@ void Class::DragScrollThumb(int y) \
     } \
 }
 
+// Scrolls a text page up one line and moves the scroll thumb to match.
+// Shared body: a class defines its ScrollUp with DEFINE_SCROLL_UP(TheClass); each class has its own page, lines,
+// top_line, scroll_thumb_offset, scroll_changed.
+#define DEFINE_SCROLL_UP(Class) \
+void Class::ScrollUp() \
+{ \
+    if (page >= 4) \
+    { \
+        int line_count = lines->Count; \
+        if (line_count > 12 && top_line > 0) \
+        { \
+            top_line--; \
+            double scroll_fraction = (double)top_line / (line_count - 12); \
+            double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
+            scroll_thumb_offset = thumb_pos; \
+            scroll_changed = true; \
+            MainForm->redraw_needed = true; \
+        } \
+    } \
+}
+
+// Scrolls a text page down one line and moves the scroll thumb to match.
+// Shared body: a class defines its ScrollDown with DEFINE_SCROLL_DOWN(TheClass); each class has its own page, lines,
+// top_line, scroll_thumb_offset, scroll_changed.
+#define DEFINE_SCROLL_DOWN(Class) \
+void Class::ScrollDown() \
+{ \
+    if (page >= 4) \
+    { \
+        int line_count = lines->Count; \
+        if (line_count - 12 > top_line) \
+        { \
+            top_line++; \
+            double scroll_fraction = (double)top_line / (line_count - 12); \
+            double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
+            scroll_thumb_offset = thumb_pos; \
+            scroll_changed = true; \
+            MainForm->redraw_needed = true; \
+        } \
+    } \
+}
+
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line from its position.
-// Shared body: a class defines its DragScrollThumb with DEFINE_MEMO_DRAG_SCROLL_THUMB(TheClass); each class has its
-// own thumb_grabbed, thumb_grab_offset, window_y, lines, top_line, scroll_thumb_offset, scroll_changed.
+// Shared body: a class defines its DragScrollThumb with DEFINE_MEMO_DRAG_SCROLL_THUMB(TheClass); each class has its own
+// thumb_grabbed, thumb_grab_offset, window_y, lines, top_line, scroll_thumb_offset, scroll_changed.
 #define DEFINE_MEMO_DRAG_SCROLL_THUMB(Class) \
 void Class::DragScrollThumb(int y) \
 { \
-    double thumb_fraction; \
-    double scaled_line; \
-    int unused_int; \
+    int new_top_line; \
     if (thumb_grabbed) \
     { \
         int thumb_offset = y - thumb_grab_offset - window_y; \
@@ -133,78 +176,13 @@ void Class::DragScrollThumb(int y) \
         int line_count = lines->Count; \
         if (line_count > 12) \
         { \
-            thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL; \
-            scaled_line = (line_count - 12.0) * thumb_fraction; \
-            int new_top_line = scaled_line; \
+            double thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL; \
+            double scaled_line = (line_count - 12.0) * thumb_fraction; \
+            new_top_line = scaled_line; \
             if (new_top_line != top_line) \
                 top_line = new_top_line; \
         } \
         scroll_thumb_offset = thumb_offset; \
-        scroll_changed = true; \
-        MainForm->redraw_needed = true; \
-    } \
-}
-
-// Scrolls a text page down one line and moves the scroll thumb to match.
-// Shared body: a class defines its ScrollDown with DEFINE_SCROLL_DOWN(TheClass); each class has its own page, lines,
-// top_line, scroll_thumb_offset, scroll_changed.
-#define DEFINE_SCROLL_DOWN(Class) \
-void Class::ScrollDown() \
-{ \
-    double scroll_fraction; \
-    double thumb_pos; \
-    if (page >= 4) \
-    { \
-        int line_count = lines->Count; \
-        if (line_count - 12 > top_line) \
-        { \
-            top_line++; \
-            scroll_fraction = (double)top_line / (double)(line_count - 12); \
-            thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
-            scroll_thumb_offset = thumb_pos; \
-            scroll_changed = true; \
-            MainForm->redraw_needed = true; \
-        } \
-    } \
-}
-
-// Scrolls a text page up one line and moves the scroll thumb to match.
-// Shared body: a class defines its ScrollUp with DEFINE_SCROLL_UP(TheClass); each class has its own page, lines,
-// top_line, scroll_thumb_offset, scroll_changed.
-#define DEFINE_SCROLL_UP(Class) \
-void Class::ScrollUp() \
-{ \
-    double scroll_fraction; \
-    double thumb_pos; \
-    if (page >= 4) \
-    { \
-        int line_count = lines->Count; \
-        if (line_count > 12 && top_line > 0) \
-        { \
-            top_line--; \
-            scroll_fraction = (double)top_line / (double)(line_count - 12); \
-            thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
-            scroll_thumb_offset = thumb_pos; \
-            scroll_changed = true; \
-            MainForm->redraw_needed = true; \
-        } \
-    } \
-}
-
-// Shared body: a class defines its ScrollDown with DEFINE_MEMO_SCROLL_DOWN(TheClass); each class has its own lines,
-// top_line, scroll_thumb_offset, scroll_changed.
-#define DEFINE_MEMO_SCROLL_DOWN(Class) \
-void Class::ScrollDown() \
-{ \
-    double scroll_fraction; \
-    double thumb_pos; \
-    int result = lines->Count; \
-    if (result - 12 > top_line) \
-    { \
-        top_line++; \
-        scroll_fraction = (double)top_line / (double)(result - 12); \
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
-        scroll_thumb_offset = thumb_pos; \
         scroll_changed = true; \
         MainForm->redraw_needed = true; \
     } \
@@ -215,14 +193,29 @@ void Class::ScrollDown() \
 #define DEFINE_MEMO_SCROLL_UP(Class) \
 void Class::ScrollUp() \
 { \
-    double scroll_fraction; \
-    double thumb_pos; \
     int line_count = lines->Count; \
     if (line_count > 12 && top_line > 0) \
     { \
         top_line--; \
-        scroll_fraction = (double)top_line / (double)(line_count - 12); \
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
+        double scroll_fraction = (double)top_line / (line_count - 12); \
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
+        scroll_thumb_offset = thumb_pos; \
+        scroll_changed = true; \
+        MainForm->redraw_needed = true; \
+    } \
+}
+
+// Shared body: a class defines its ScrollDown with DEFINE_MEMO_SCROLL_DOWN(TheClass); each class has its own lines,
+// top_line, scroll_thumb_offset, scroll_changed.
+#define DEFINE_MEMO_SCROLL_DOWN(Class) \
+void Class::ScrollDown() \
+{ \
+    int result = lines->Count; \
+    if (result - 12 > top_line) \
+    { \
+        top_line++; \
+        double scroll_fraction = (double)top_line / (result - 12); \
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
         scroll_thumb_offset = thumb_pos; \
         scroll_changed = true; \
         MainForm->redraw_needed = true; \

@@ -2,12 +2,7 @@
 #pragma hdrstop
 
 #include "Sys_edits.h"
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 Edits::Edits()
@@ -24,8 +19,6 @@ Edits::~Edits()
 
 void Edits::Clear()
 {
-    int unused_int;
-    int second_unused_int;
     if (GetCount() >= 1)
     {
         edits.clear();
@@ -59,9 +52,11 @@ void Edits::TimerTick()
         }
     }
     if (caret_blink_on)
+    {
         caret_blink_on = false;
-    else
-        caret_blink_on = true;
+        return;
+    }
+    caret_blink_on = true;
 }
 
 bool Edits::ConsumeTickRedraw()
@@ -78,14 +73,10 @@ bool Edits::ConsumeTickRedraw()
 // Types into the focused box when it is editable and not full.
 void Edits::TypeText(String text)
 {
-    char allowed;
-    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    vector<Edit>::iterator it = edits.begin();
+    while (it != edits.end())
     {
-        if (!it->focused)
-            continue;
-        if (!it->editable)
-            continue;
-        if (it->text.Length() < it->max_length)
+        if (it->focused && it->editable && it->text.Length() < it->max_length)
         {
             String old_text = it->text;
             if (text.Length() >= 1)
@@ -94,7 +85,6 @@ void Edits::TypeText(String text)
                 if (it->multi_line)
                     it->scroll_offset = 0;
             }
-            // A numeric box keeps its value inside its range; with a top value under 10 a digit replaces it.
             if (it->numeric)
             {
                 if (text == "0" || text == "1" || text == "2" || text == "3" || text == "4" || text == "5" ||
@@ -115,13 +105,9 @@ void Edits::TypeText(String text)
                             if (StrToInt(new_text) <= it->max_value)
                             {
                                 if (StrToInt(new_text) >= it->min_value)
-                                {
                                     it->AppendText(text);
-                                }
                                 else
-                                {
                                     it->text = IntToStr(it->min_value);
-                                }
                             }
                             else
                                 it->text = IntToStr(it->max_value);
@@ -142,8 +128,7 @@ void Edits::TypeText(String text)
                     it->AppendText(text);
                 else
                 {
-                    allowed = true;
-                    char allowed_copy = allowed;
+                    char allowed = true;
                     String filter_text = text;
                     // Each filter level refuses more: punctuation, quotes and accented letters,
                     // then the marks . _ - ~ @, then digits, then spaces.
@@ -154,12 +139,11 @@ void Edits::TypeText(String text)
                             filter_text == "#" || filter_text == "$" || filter_text == "%" || filter_text == "&" ||
                             filter_text == "?" || filter_text == "\\" || filter_text == "+" || filter_text == "/" ||
                             filter_text == "^" || filter_text == "(" || filter_text == ")" || filter_text == "*" ||
-                            filter_text == (char)126 || filter_text == (char)91 || filter_text == (char)93 ||
-                            filter_text == (char)124 || filter_text == (char)(-27) || filter_text == (char)(-10) ||
-                            filter_text == (char)(-28) || filter_text == (char)(-59) || filter_text == (char)(-42) ||
-                            filter_text == (char)(-60) || text == (char)34 || filter_text == (char)(-89) ||
-                            filter_text == (char)(-24) || filter_text == (char)(-25) || filter_text == (char)(-32) ||
-                            filter_text == (char)(-23))
+                            filter_text == '~' || filter_text == '[' || filter_text == ']' || filter_text == '|' ||
+                            filter_text == (char)-27 || filter_text == (char)-10 || filter_text == (char)-28 ||
+                            filter_text == (char)-59 || filter_text == (char)-42 || filter_text == (char)-60 ||
+                            text == '"' || filter_text == (char)-89 || filter_text == (char)-24 ||
+                            filter_text == (char)-25 || filter_text == (char)-32 || filter_text == (char)-23)
                             allowed = false;
                     }
                     if (it->char_filter >= EditCharFilter_AlphanumericSpaces)
@@ -188,6 +172,7 @@ void Edits::TypeText(String text)
                 text_changed = true;
             break;
         }
+        it++;
     }
 }
 
@@ -196,11 +181,7 @@ void Edits::TypeLineBreak()
 {
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
-        if (!it->focused)
-            continue;
-        if (!it->editable)
-            continue;
-        if (it->text.Length() < it->max_length)
+        if (it->focused && it->editable && it->text.Length() < it->max_length)
         {
             if (it->multi_line)
                 it->AppendChar(13);
@@ -212,26 +193,39 @@ void Edits::TypeLineBreak()
     }
 }
 
-// Empties the focused box; a numeric box goes back to its lowest value.
-void Edits::ClearFocusedText()
+// Clears the focused box's text, or resets a number box to its least value; true when its text changed.
+char Edits::ClearFocusedText()
 {
+    char cleared = false;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (it->focused && it->editable)
         {
             if (it->text.Length() >= 1)
+            {
                 it->dirty = true;
+                cleared = true;
+            }
             if (it->multi_line)
                 it->scroll_offset = 0;
             if (it->change_notify)
                 text_changed = true;
+            // A number box goes back to its least value instead of empty.
             if (it->numeric)
-                it->text = IntToStr(it->min_value);
+            {
+                cleared = false;
+                if (it->text != IntToStr(it->min_value))
+                {
+                    it->text = IntToStr(it->min_value);
+                    cleared = true;
+                }
+            }
             else
                 it->ClearText();
             break;
         }
     }
+    return cleared;
 }
 
 void Edits::Backspace()
@@ -253,7 +247,7 @@ void Edits::Backspace()
 }
 
 // Adds a box, which takes the focus from the others.
-void Edits::AddEdit(int id, unsigned int screen_group, int x, int y, int width, int height)
+void Edits::AddEdit(int id, int screen_group, int x, int y, int width, int height)
 {
     UnfocusAll();
     Edit handle(id, screen_group, x, y, width, height);
@@ -283,8 +277,9 @@ void Edits::UnfocusAll()
 // Moves the focus to the box that was clicked.
 void Edits::FocusClickedEdit(Edit edit_x)
 {
+    vector<Edit>::iterator it;
     UnfocusAll();
-    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    for (it = edits.begin(); it != edits.end(); it++)
     {
         if (it->id == String(edit_x.id))
         {
@@ -302,7 +297,7 @@ void Edits::FocusEdit(int id)
         if (id == it->id)
         {
             it->focused = true;
-            return;
+            break;
         }
     }
 }
@@ -334,12 +329,13 @@ bool Edits::IsFocused(int id)
     vector<Edit>::iterator it;
     for (it = edits.begin(); it != edits.end(); it++)
     {
-        if (id != it->id)
-            continue;
-        if (it->focused)
+        if ((id == it->id))
         {
-            focused = true;
-            break;
+            if (it->focused)
+            {
+                focused = true;
+                break;
+            }
         }
     }
     return focused;
@@ -394,7 +390,7 @@ unsigned int Edits::GetCount()
 
 void Edits::MoveNext()
 {
-    if (GetCount() > (unsigned int)current_index)
+    if (GetCount() > current_index)
         current_index++;
 }
 
@@ -402,15 +398,17 @@ void Edits::MoveNext()
 void Edits::MoveFirst()
 {
     if (GetCount() >= 1)
+    {
         current_index = 0;
-    else
-        current_index = -1;
+        return;
+    }
+    current_index = -1;
 }
 
 bool Edits::IsAtEnd()
 {
     bool at_end = false;
-    if (GetCount() == (unsigned int)current_index || !GetCount())
+    if (GetCount() == current_index || !GetCount())
         at_end = true;
     return at_end;
 }
@@ -418,7 +416,6 @@ bool Edits::IsAtEnd()
 // Makes the box numeric within the range, with the top value capped.
 void Edits::SetNumericRange(int id, int min_value, int max_value)
 {
-    int limit;
     vector<Edit>::iterator it;
     for (it = edits.begin(); it != edits.end(); it++)
     {
@@ -426,11 +423,10 @@ void Edits::SetNumericRange(int id, int min_value, int max_value)
         {
             it->numeric = true;
             it->min_value = min_value;
-            limit = max_value;
-            it->max_value = limit;
-            if (limit > 10000000)
+            it->max_value = max_value;
+            if (it->max_value > 10000000)
                 it->max_value = 10000000;
-            return;
+            break;
         }
     }
 }
@@ -492,7 +488,7 @@ void Edits::SetPosition(int id, int x, int y)
         {
             it->x = x;
             it->y = y;
-            return;
+            break;
         }
     }
 }
@@ -551,19 +547,15 @@ void Edits::SetPendingScroll(int id, int offset)
 
 void Edits::SetScrollOffset(int id, int offset)
 {
-    int max_offset;
-    int wanted;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (id == it->id && it->multi_line)
         {
-            wanted = offset;
-            it->scroll_offset = wanted;
-            max_offset = it->line_count - it->visible_line_count;
-            if (max_offset > 0)
+            it->scroll_offset = offset;
+            if (it->line_count - it->visible_line_count > 0)
             {
-                if (wanted > max_offset)
-                    it->scroll_offset = max_offset;
+                if (it->scroll_offset > it->line_count - it->visible_line_count)
+                    it->scroll_offset = it->line_count - it->visible_line_count;
             }
             else
                 it->scroll_offset = 0;
@@ -578,21 +570,19 @@ void Edits::SetScrollOffset(int id, int offset)
 // The scroll offset counts lines back from the end, and typing returns it to 0.
 void Edits::ScrollUp(int id)
 {
-    int max_offset;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (id == it->id && it->multi_line)
         {
             it->scroll_offset++;
-            max_offset = it->line_count - it->visible_line_count;
-            if (max_offset > 0)
+            if (it->line_count - it->visible_line_count > 0)
             {
-                if (max_offset < it->scroll_offset)
-                    it->scroll_offset = max_offset;
+                if (it->line_count - it->visible_line_count < it->scroll_offset)
+                    it->scroll_offset = it->line_count - it->visible_line_count;
+                return;
             }
-            else
-                it->scroll_offset = 0;
-            break;
+            it->scroll_offset = 0;
+            return;
         }
     }
 }
@@ -639,27 +629,24 @@ int Edits::GetFirstVisibleLine(int id)
 // Sets how many lines show, and applies a scroll offset that was waiting for that count.
 void Edits::SetVisibleLineCount(int id, int count)
 {
-    int max_offset;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (id == it->id && it->multi_line)
         {
             it->visible_line_count = count;
-            if (it->pending_scroll >= 0)
+            if (it->pending_scroll < 0)
+                break;
+            it->scroll_offset = it->pending_scroll;
+            it->pending_scroll = -1;
+            if (it->line_count - it->visible_line_count > 0)
             {
-                it->scroll_offset = it->pending_scroll;
-                it->pending_scroll = -1;
-                max_offset = it->line_count - it->visible_line_count;
-                if (max_offset > 0)
-                {
-                    if (max_offset < it->scroll_offset)
-                        it->scroll_offset = max_offset;
-                }
-                else
-                    it->scroll_offset = 0;
-                if (it->scroll_offset < 0)
-                    it->scroll_offset = 0;
+                if (it->line_count - it->visible_line_count < it->scroll_offset)
+                    it->scroll_offset = it->line_count - it->visible_line_count;
             }
+            else
+                it->scroll_offset = 0;
+            if (it->scroll_offset < 0)
+                it->scroll_offset = 0;
             return;
         }
     }
@@ -841,19 +828,18 @@ bool Edits::HasFewDistinctChars(String text)
     }
     if (distinct_count >= 3)
         few_distinct = false;
-    i = 0;
     return few_distinct;
 }
 
 // A loose email test: five characters or more, an @ after the first, and a dot after the @.
 bool Edits::IsValidEmail(String address)
 {
-    bool valid;
+    int i;
     char has_at = false;
-    valid = false;
+    bool valid = false;
     if (address.Length() >= 5)
     {
-        for (int i = 2; i <= address.Length(); i++)
+        for (i = 2; i <= address.Length(); i++)
         {
             if (address[i] == '@')
                 has_at = true;

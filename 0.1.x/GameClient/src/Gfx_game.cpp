@@ -37,18 +37,23 @@
 #include "Gfx_trade.h"
 #include "Ctrl_status.h"
 #include "Gfx_subitem.h"
+#include <vector.h>
+#include "Ctrl_chest.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_skills.h"
+#include "Ctrl_spells.h"
+#include "Ctrl_tooltip.h"
+#include "Ctrl_trade.h"
+#include "Gfx_mapicons.h"
+#include "Gfx_mapitems.h"
+
 #pragma package(smart_init)
 
-#define ITEM_TYPE_GENDERED 12
-#define BOOK_ROW_HEIGHT 16
-#define ITEM_AMOUNT_ROW_HEIGHT 37
-#define ITEM_NAME_ROW_HEIGHT 37
-#define LIST_HIGHLIGHT_ROW_HEIGHT 16
-#define LIST_ROW_HEIGHT 16
-#define MENU_HIGHLIGHT_ROW_HEIGHT 37
-
-// Creates the box, button, popup menu, paperdoll and book surfaces at their fixed sizes and sets the view rects and
-// the source rects of the amount box, its title strips and the row highlights.
+// Creates the box, button, popup menu, paperdoll, captcha and document surfaces at their fixed sizes and sets the
+// view rects and the source rects of the amount box, its title strips and the row highlights.
 GameGraphics::GameGraphics()
 {
     button_sheet = new TDx_DrawSurface(NULL);
@@ -151,6 +156,10 @@ GameGraphics::GameGraphics()
     bank_title_rect.left = 39;
     bank_title_rect.right = 281;
     bank_title_rect.bottom = 289;
+    cell_highlight_rect.top = 405;
+    cell_highlight_rect.left = 0;
+    cell_highlight_rect.right = 58;
+    cell_highlight_rect.bottom = 441;
     tall_row_highlight_rect.top = 405;
     tall_row_highlight_rect.left = 0;
     tall_row_highlight_rect.right = 232;
@@ -163,10 +172,10 @@ GameGraphics::GameGraphics()
     item_row_highlight_rect.left = 0;
     item_row_highlight_rect.right = 232;
     item_row_highlight_rect.bottom = 441;
-    short_highlight_top = 405;
-    short_highlight_left = 0;
-    short_highlight_right = 173;
-    short_highlight_bottom = 441;
+    short_highlight_rect.top = 405;
+    short_highlight_rect.left = 0;
+    short_highlight_rect.right = 173;
+    short_highlight_rect.bottom = 441;
     row_highlight_rect.top = 405;
     row_highlight_rect.left = 0;
     row_highlight_rect.right = 232;
@@ -186,7 +195,7 @@ GameGraphics::GameGraphics()
 }
 
 // The input form body for a row count: with fewer than five rows the body is cut shorter by one row height each.
-Windows::TRect GameGraphics::GetListBoxBodyRect(int item_count)
+TRect GameGraphics::GetListBoxBodyRect(int item_count)
 {
     TRect list_box_body_rect;
     if (item_count < 5)
@@ -201,7 +210,7 @@ Windows::TRect GameGraphics::GetListBoxBodyRect(int item_count)
 }
 
 // One of the input form's three footer pieces, for forms of four, three or two rows.
-Windows::TRect GameGraphics::GetListBoxFooterRect(int footer)
+TRect GameGraphics::GetListBoxFooterRect(int footer)
 {
     TRect list_box_footer_rect;
     list_box_footer_rect.left = 0;
@@ -212,7 +221,7 @@ Windows::TRect GameGraphics::GetListBoxFooterRect(int footer)
 }
 
 // One window menu icon of the control sheet, nine to a row.
-Windows::TRect GameGraphics::GetIconRect(int icon)
+TRect GameGraphics::GetIconRect(int icon)
 {
     TRect icon_rect;
     int row = 0;
@@ -265,7 +274,7 @@ GameGraphics::~GameGraphics()
 
 // The offset that centres an item of a given size in a paperdoll equipment box: sizes from four on are two
 // columns wide.
-Windows::TPoint GameGraphics::GetPaperdollSlotOffset(int item_size)
+TPoint GameGraphics::GetPaperdollSlotOffset(int item_size)
 {
     TPoint result;
     int slot_width = 23;
@@ -285,20 +294,21 @@ Windows::TPoint GameGraphics::GetPaperdollSlotOffset(int item_size)
 // Blends a source rect into the map view at a view position with an alpha level, clipped to the view.
 void GameGraphics::BlitClippedAlpha(int x, int y, TDx_DrawSurface *source, TRect source_rect, int alpha)
 {
-    char result = 1;
+    int clipped_x;
+    char visible = true;
     int width = source_rect.right - source_rect.left;
     int height = source_rect.bottom - source_rect.top;
     if (x + width < view_rect.left)
-        result = 0;
+        visible = false;
     if (y + height < view_rect.top)
-        result = 0;
+        visible = false;
     if (x > view_clip_rect.right)
-        result = 0;
+        visible = false;
     if (y > view_clip_rect.bottom)
-        result = 0;
-    if (result)
+        visible = false;
+    if (visible)
     {
-        int clipped_x = x;
+        clipped_x = x;
         int clipped_y = y;
         if (clipped_x <= view_rect.left)
             clipped_x = view_rect.left;
@@ -328,7 +338,7 @@ void GameGraphics::BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, T
         result = 0;
     if (result)
     {
-        int clipped_x = x;
+        clipped_x = x;
         int clipped_y = y;
         if (clipped_x <= view_rect.left)
             clipped_x = view_rect.left;
@@ -345,8 +355,6 @@ void GameGraphics::BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, T
 // any of it was in view.
 bool GameGraphics::BlitClipped(int x, int y, TDx_DrawSurface *source, TRect source_rect)
 {
-    int clipped_x;
-    int clipped_y;
     bool visible = true;
     int width = source_rect.right - source_rect.left;
     int height = source_rect.bottom - source_rect.top;
@@ -360,8 +368,8 @@ bool GameGraphics::BlitClipped(int x, int y, TDx_DrawSurface *source, TRect sour
         visible = false;
     if (visible)
     {
-        clipped_x = x;
-        clipped_y = y;
+        int clipped_x = x;
+        int clipped_y = y;
         if (view_rect.left >= clipped_x)
             clipped_x = view_rect.left;
         if (view_rect.top >= clipped_y)
@@ -391,9 +399,9 @@ void GameGraphics::DrawMessageBoxText()
     if (MainForm->draw_canvas->TextWidth(MainForm->animation->game->message_lines[0]) > 250)
     {
         String message = MainForm->animation->game->message_lines[0];
-        line_start = 1;
-        line_end = 1;
-        line_index = 0;
+        int line_start = 1;
+        int line_end = 1;
+        int line_index = 0;
         do
         {
             if (MainForm->draw_canvas->TextWidth(message.SubString(line_start, line_end)) >= 250 ||
@@ -438,8 +446,8 @@ void GameGraphics::DrawMessageBoxText()
 void GameGraphics::DrawTextBoxText()
 {
     int width_limit;
-    int i;
-    int j;
+    int line_index;
+    char line_full;
     MainForm->draw_canvas->Brush->Color = clWhite;
     MainForm->draw_canvas->Brush->Style = bsClear;
     MainForm->draw_canvas->Font->Color = (TColor)0xC8F0F0;
@@ -448,7 +456,7 @@ void GameGraphics::DrawTextBoxText()
     if (MainForm->animation->game->large_box_text.Length() > 0)
     {
         width_limit = 254;
-        int line_index = 0;
+        line_index = 0;
         String remaining = MainForm->animation->game->large_box_text;
         do
         {
@@ -460,8 +468,8 @@ void GameGraphics::DrawTextBoxText()
             }
             else
             {
-                char line_full = false;
-                for (i = 1; i <= remaining.Length(); i++)
+                line_full = false;
+                for (int i = 1; i <= remaining.Length(); i++)
                 {
                     if (remaining[i] == ' ' || i == remaining.Length())
                     {
@@ -490,7 +498,7 @@ void GameGraphics::DrawTextBoxText()
     MainForm->draw_canvas->TextOut(MainForm->animation->game->large_box_x + 20,
         MainForm->animation->game->large_box_y + 12, MainForm->animation->game->large_box_title);
     MainForm->draw_canvas->Font->Color = (TColor)0xD6E6E6;
-    for (j = 0; j < 6; j++)
+    for (int j = 0; j < 6; j++)
         MainForm->draw_canvas->TextOut(MainForm->animation->game->large_box_x + 20,
             MainForm->animation->game->large_box_y + 16 * j + 40, MainForm->animation->game->large_box_lines[j]);
 }
@@ -499,7 +507,6 @@ void GameGraphics::DrawTextBoxText()
 // than five rows the scroll bar, arrows and thumb.
 void GameGraphics::DrawListBox()
 {
-    GameController *controller;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->game->form_x, MainForm->animation->game->form_y,
         list_box_surface, &GetListBoxBodyRect(MainForm->animation->game->form_row_count), DDBLTFAST_WAIT);
     if (MainForm->animation->game->form_row_count > 5)
@@ -523,12 +530,11 @@ void GameGraphics::DrawListBox()
             MainForm->animation->game->form_y + 157 - 23 * missing_rows, list_box_surface,
             &GetListBoxFooterRect(footer), DDBLTFAST_WAIT);
     }
-    controller = MainForm->animation->game;
-    if (controller->form_row_count > 5)
+    if (MainForm->animation->game->form_row_count > 5)
     {
-        if (controller->form_scroll_up_hovered)
-            MainForm->OffscreenSurface->BltFast(controller->form_x + 284, controller->form_y + 71,
-                MainForm->gfx->interface_graphics->scroll_icons,
+        if (MainForm->animation->game->form_scroll_up_hovered)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->game->form_x + 284,
+                MainForm->animation->game->form_y + 71, MainForm->gfx->interface_graphics->scroll_icons,
                 &MainForm->gfx->interface_graphics->GetScrollIconRect(16), DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->game->form_x + 284,
@@ -564,9 +570,9 @@ void GameGraphics::DrawInputBoxText()
     if (MainForm->draw_canvas->TextWidth(MainForm->animation->game->input_box_lines[0]) > 210)
     {
         String prompt = MainForm->animation->game->input_box_lines[0];
-        line_end = 1;
+        int line_end = 1;
         line_start = 1;
-        line_index = 0;
+        int line_index = 0;
         do
         {
             if (MainForm->draw_canvas->TextWidth(prompt.SubString(line_start, line_end)) >= 210 ||
@@ -762,9 +768,6 @@ void GameGraphics::DrawItemAmountText()
 // items.
 void GameGraphics::DrawChestWindow()
 {
-    int item_count;
-    int row;
-    int amount;
     int graphic;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->chest->window_x, MainForm->animation->chest->window_y,
         MainForm->gfx->chest->background_surface, &MainForm->gfx->chest->background_rect, DDBLTFAST_WAIT);
@@ -772,15 +775,15 @@ void GameGraphics::DrawChestWindow()
         MainForm->blitter->AlphaBlt(MainForm->animation->chest->window_x + 18,
             37 * MainForm->animation->chest->hovered_row + MainForm->animation->chest->window_y + 23,
             MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &item_row_highlight_rect, 12);
-    item_count = MainForm->animation->chest->items.size();
-    row = 0;
+    int item_count = MainForm->animation->chest->items.size();
+    int row = 0;
     for (int i = 0; i < item_count && i < 5; i++)
     {
         MainForm->OffscreenSurface->BltFast(MainForm->animation->chest->window_x + 18,
             MainForm->animation->chest->window_y + 37 * row + 27, MainForm->gfx->chest->item_slot_surface,
             &MainForm->gfx->chest->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         int item_id = MainForm->animation->chest->items[i].item_id;
-        amount = MainForm->animation->chest->items[i].amount;
+        int amount = MainForm->animation->chest->items[i].amount;
         graphic = MainForm->item_values->GetGraphic(item_id) - 1;
         if (graphic >= 0)
         {
@@ -823,8 +826,7 @@ void GameGraphics::DrawBarberWindow()
     if (MainForm->animation->barber->hovered_row >= 0)
         MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 19,
             37 * MainForm->animation->barber->hovered_row + MainForm->animation->barber->window_y + 23,
-            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet,
-            (TRect *)&short_highlight_left, 12);
+            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &short_highlight_rect, 12);
     MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 24,
         MainForm->animation->barber->window_y + 23, MainForm->gfx->interface_graphics->control_sheet, &GetIconRect(6),
         DDBLTFAST_WAIT);
@@ -851,12 +853,11 @@ void GameGraphics::DrawMusicianWindow()
     {
         int cell_column = MainForm->animation->musician->hovered_note_col;
         int cell_row = MainForm->animation->musician->hovered_note_row;
-        grid_x = MainForm->animation->musician->window_x + 15;
-        grid_y = MainForm->animation->musician->window_y + 15;
+        int grid_x = MainForm->animation->musician->window_x + 15;
+        int grid_y = MainForm->animation->musician->window_y + 15;
         MainForm->OffscreenSurface->BltFast(20 * cell_column + grid_x, 20 * cell_row + grid_y,
-            MainForm->gfx->musician->cell_sheet_surface,
-            &MainForm->gfx->musician->GetCellRect(cell_column, cell_row), DDBLTFAST_WAIT);
-        return;
+            MainForm->gfx->musician->cell_sheet_surface, &MainForm->gfx->musician->GetCellRect(cell_column, cell_row),
+            DDBLTFAST_WAIT);
     }
 }
 
@@ -880,18 +881,15 @@ void GameGraphics::DrawJukeboxWindow()
 // Draws the experience window background and the bullet icons of its eight lines.
 void GameGraphics::DrawStatWindow()
 {
-    int icon_x;
-    int icon_y;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->stat->window_x, MainForm->animation->stat->window_y,
         MainForm->gfx->stat->surface, &MainForm->gfx->stat->surface_rect, DDBLTFAST_WAIT);
-    for (int i = 0; i < 8; i++)
+    for (int row = 0; row < 8; row++)
     {
-        icon_x = MainForm->animation->stat->window_x + 22;
-        icon_y = MainForm->animation->stat->window_y + LIST_ROW_HEIGHT * i + 48;
+        int icon_x = MainForm->animation->stat->window_x + 22;
+        int icon_y = MainForm->animation->stat->window_y + LIST_ROW_HEIGHT * row + 48;
         MainForm->OffscreenSurface->BltFast(icon_x, icon_y, MainForm->gfx->interface_graphics->list_icons,
-            &MainForm->gfx->interface_graphics->GetListIconRect(0, 0),
-            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        if (i < 3)
+            &MainForm->gfx->interface_graphics->GetListIconRect(0, 0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (row < 3)
             MainForm->OffscreenSurface->BltFast(icon_x + 120, icon_y, MainForm->gfx->interface_graphics->list_icons,
                 &MainForm->gfx->interface_graphics->GetListIconRect(1, 0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
@@ -917,47 +915,58 @@ void GameGraphics::DrawBankWindow()
         DDBLTFAST_WAIT);
 }
 
-// Draws the locker window: background, hovered row highlight, a slot with the item graphic for each visible item,
+// Draws the locker window: background, the hovered item highlight, each visible item's graphic in the four-wide grid,
 // and the scroll arrows and thumb.
 void GameGraphics::DrawLockerWindow()
 {
-    int top_row;
-    int item_count;
-    int row;
-    int i;
+    bool loop_entered = false;
     int graphic;
+    int item_id;
+    int index;
+    int count;
+    int drawn;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->locker->window_x, MainForm->animation->locker->window_y,
         MainForm->gfx->shop->background_surface, &MainForm->gfx->shop->background_rect, DDBLTFAST_WAIT);
-    if (MainForm->animation->locker->hovered_row >= 0)
-        MainForm->blitter->AlphaBlt(MainForm->animation->locker->window_x + 16,
-            MENU_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->locker->hovered_row +
-            MainForm->animation->locker->window_y + 49, MainForm->OffscreenSurface,
-            MainForm->gfx->interface_graphics->control_sheet, &tall_row_highlight_rect, 12);
-    top_row = MainForm->animation->locker->GetTopRow();
-    item_count = MainForm->animation->locker->items.size();
-    row = 0;
-    for (i = top_row; i < item_count && top_row + 5 > i; i++)
+    if (MainForm->animation->locker->hovered_slot >= 0)
+        MainForm->blitter->AlphaBlt(MainForm->animation->locker->window_x +
+            57 * MainForm->animation->locker->hovered_col + 16,
+            MainForm->animation->locker->window_y + 37 * MainForm->animation->locker->hovered_row + 49,
+            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &cell_highlight_rect, 12);
+    index = 4 * MainForm->animation->locker->GetTopRow();
+    count = MainForm->animation->locker->items.size();
+    drawn = 0;
+    // Five rows show, from the top row.
+    for (int row = 0; row < 5 && index < count; row++)
     {
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->locker->window_x + 18,
-            MainForm->animation->locker->window_y + 37 * row + 50, MainForm->gfx->shop->item_slot_surface,
-            &MainForm->gfx->shop->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        int item_id = MainForm->animation->locker->items[i].item_id;
-        graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-        if (graphic >= 0)
+        loop_entered = true;
+        int col = 0;
+        while (col < 4 && index < count)
         {
-            if (MainForm->gfx->items->RequestGraphic(graphic))
+            loop_entered = true;
+            int slot_x = MainForm->animation->locker->window_x + 57 * col + 18;
+            int slot_y = MainForm->animation->locker->window_y + 37 * row;
+            MainForm->OffscreenSurface->BltFast(slot_x, slot_y + 50, MainForm->gfx->shop->item_slot_surface,
+                &MainForm->gfx->shop->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            item_id = MainForm->animation->locker->items[index].item_id;
+            graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+            index++;
+            if (graphic >= 0)
             {
-                GraphicSize size = MainForm->gfx->items->GetGraphicSize(graphic);
-                int item_x = MainForm->animation->locker->window_x + 40 - size.width / 2;
-                int item_y = MainForm->animation->locker->window_y + 37 * row + 58 - size.height / 2;
-                MainForm->gfx->game->BlitClipped(item_x, item_y,
-                    MainForm->gfx->items->GetGraphic(graphic).resource->surface,
-                    MainForm->gfx->items->GetGraphic(graphic).resource->surface_rect);
+                if (MainForm->gfx->items->RequestGraphic(graphic))
+                {
+                    GraphicSize graphic_size = MainForm->gfx->items->GetGraphicSize(graphic);
+                    item_id = slot_x + 21;
+                    item_id -= graphic_size.width / 2;
+                    int item_x = slot_y + 58 - graphic_size.height / 2;
+                    MainForm->gfx->game->BlitClipped(item_id, item_x,
+                        MainForm->gfx->items->GetGraphic(graphic).resource->surface,
+                        MainForm->gfx->items->GetGraphic(graphic).resource->surface_rect);
+                }
+                else
+                    MainForm->redraw_needed = true;
             }
-            else
-                MainForm->redraw_needed = true;
+            col++;
         }
-        row++;
     }
     if (MainForm->animation->locker->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->locker->window_x + 252,
@@ -1027,14 +1036,11 @@ void GameGraphics::DrawGuildWindow()
                     MainForm->animation->guild->window_y + 49, MainForm->OffscreenSurface,
                 MainForm->gfx->interface_graphics->control_sheet, &tall_row_highlight_rect, 12);
     }
-    else
-    {
-        if (MainForm->animation->guild->hovered_row >= 0)
-            MainForm->blitter->AlphaBlt(MainForm->animation->guild->window_x + 16,
-                LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->guild->hovered_row +
-                MainForm->animation->guild->window_y + 47, MainForm->OffscreenSurface,
-                MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect, 12);
-    }
+    else if (MainForm->animation->guild->hovered_row >= 0)
+        MainForm->blitter->AlphaBlt(MainForm->animation->guild->window_x + 16,
+            LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->guild->hovered_row + MainForm->animation->guild->window_y +
+                47, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect,
+            12);
     if (MainForm->animation->guild->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->guild->window_x + 252,
             MainForm->animation->guild->window_y + 44, MainForm->gfx->interface_graphics->scroll_icons,
@@ -1232,14 +1238,10 @@ void GameGraphics::DrawInnWindow()
                     49, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet,
                 &tall_row_highlight_rect, 12);
     }
-    else
-    {
-        if (MainForm->animation->inn->hovered_row >= 0)
-            MainForm->blitter->AlphaBlt(MainForm->animation->inn->window_x + 16,
-                LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->inn->hovered_row + MainForm->animation->inn->window_y +
-                47, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect,
-                12);
-    }
+    else if (MainForm->animation->inn->hovered_row >= 0)
+        MainForm->blitter->AlphaBlt(MainForm->animation->inn->window_x + 16,
+            LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->inn->hovered_row + MainForm->animation->inn->window_y + 47,
+            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect, 12);
     if (MainForm->animation->inn->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->inn->window_x + 252,
             MainForm->animation->inn->window_y + 44, MainForm->gfx->interface_graphics->scroll_icons,
@@ -1294,14 +1296,10 @@ void GameGraphics::DrawLawWindow()
                     49, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet,
                 &tall_row_highlight_rect, 12);
     }
-    else
-    {
-        if (MainForm->animation->law->hovered_row >= 0)
-            MainForm->blitter->AlphaBlt(MainForm->animation->law->window_x + 16,
-                LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->law->hovered_row + MainForm->animation->law->window_y +
-                47, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect,
-                12);
-    }
+    else if (MainForm->animation->law->hovered_row >= 0)
+        MainForm->blitter->AlphaBlt(MainForm->animation->law->window_x + 16,
+            LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->law->hovered_row + MainForm->animation->law->window_y + 47,
+            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect, 12);
     if (MainForm->animation->law->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->law->window_x + 252,
             MainForm->animation->law->window_y + 44, MainForm->gfx->interface_graphics->scroll_icons,
@@ -1341,8 +1339,8 @@ void GameGraphics::DrawLawWindow()
 // quest line (or of each history line), and the scroll arrows and thumb.
 void GameGraphics::DrawQuestWindow()
 {
-    int i;
-    int j;
+    int history_end_x;
+    int top_line;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->quests->window_x, MainForm->animation->quests->window_y,
         MainForm->gfx->message_board->surface, &MainForm->gfx->message_board->GetFrameRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->quests->hovered_line >= 0)
@@ -1358,10 +1356,10 @@ void GameGraphics::DrawQuestWindow()
     }
     if (!MainForm->animation->quests->showing_history)
     {
-        int top_line = MainForm->animation->quests->GetTopLine();
+        top_line = MainForm->animation->quests->GetTopLine();
         int line_count = MainForm->animation->quests->lines->Count;
         int row = 0;
-        for (i = top_line; i < line_count && i < top_line + 12; i++)
+        for (int i = top_line; i < line_count && i < top_line + 12; i++)
         {
             String quest_line = MainForm->animation->quests->lines->Strings[i];
             if (quest_line.Length() > 0)
@@ -1389,7 +1387,7 @@ void GameGraphics::DrawQuestWindow()
         int history_top_line = MainForm->animation->quests->GetTopLine();
         int history_line_count = MainForm->animation->quests->history_lines->Count;
         int history_row = 0;
-        for (j = history_top_line; j < history_line_count && j < history_top_line + 12; j++)
+        for (int j = history_top_line; j < history_line_count && j < history_top_line + 12; j++)
         {
             String history_line = MainForm->animation->quests->history_lines->Strings[j];
             if (history_line.Length() > 0)
@@ -1399,9 +1397,8 @@ void GameGraphics::DrawQuestWindow()
                 int history_icon_y = MainForm->animation->quests->window_y + 16 * history_row + 47;
                 MainForm->OffscreenSurface->BltFast(history_icon_x, history_icon_y,
                     MainForm->gfx->interface_graphics->list_icons,
-                    &MainForm->gfx->interface_graphics->GetListIconRect(0, 5),
-                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                int history_end_x = history_icon_x + 268;
+                    &MainForm->gfx->interface_graphics->GetListIconRect(0, 5), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                history_end_x = history_icon_x + 268;
                 MainForm->OffscreenSurface->BltFast(history_end_x, history_icon_y,
                     MainForm->gfx->interface_graphics->list_icons,
                     &MainForm->gfx->interface_graphics->GetListIconRect(1, 0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
@@ -1503,27 +1500,25 @@ void GameGraphics::DrawMsgBoardWindow()
 // scroll arrows, the menu icons on the first page, and the scroll thumb.
 void GameGraphics::DrawShopWindow()
 {
-    int top_row;
-    int item_count;
-    int row;
-    int i;
     int graphic;
+    int item_id;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x, MainForm->animation->shop->window_y,
         MainForm->gfx->shop->background_surface, &MainForm->gfx->shop->background_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->shop->hovered_row >= 0)
         MainForm->blitter->AlphaBlt(MainForm->animation->shop->window_x + 16,
             MENU_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->shop->hovered_row + MainForm->animation->shop->window_y +
-            49, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &tall_row_highlight_rect,
-            12);
-    top_row = MainForm->animation->shop->GetTopRow();
-    item_count = MainForm->animation->shop->shown_items.size();
-    row = 0;
-    for (i = top_row; i < item_count && top_row + 5 > i; i++)
+                49, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet,
+            &tall_row_highlight_rect, 12);
+    int top_row = MainForm->animation->shop->GetTopRow();
+    int item_count = MainForm->animation->shop->shown_items.size();
+    int row = 0;
+    int i = top_row;
+    while (i < item_count && top_row + 5 > i)
     {
         MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x + 18,
             MainForm->animation->shop->window_y + 37 * row + 50, MainForm->gfx->shop->item_slot_surface,
             &MainForm->gfx->shop->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        int item_id = MainForm->animation->shop->shown_items[i].item_id;
+        item_id = MainForm->animation->shop->shown_items[i].item_id;
         graphic = MainForm->item_values->GetGraphic(item_id) - 1;
         if (graphic >= 0)
         {
@@ -1540,6 +1535,7 @@ void GameGraphics::DrawShopWindow()
                 MainForm->redraw_needed = true;
         }
         row++;
+        i++;
     }
     if (MainForm->animation->shop->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x + 252,
@@ -1557,7 +1553,7 @@ void GameGraphics::DrawShopWindow()
         MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x + 252,
             MainForm->animation->shop->window_y + 228, MainForm->gfx->interface_graphics->scroll_icons,
             &MainForm->gfx->interface_graphics->GetScrollIconRect(8), DDBLTFAST_WAIT);
-    if (!MainForm->animation->shop->page)
+    if (MainForm->animation->shop->page == ShopPage_Menu)
     {
         MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x + 22,
             MainForm->animation->shop->window_y + 50, MainForm->gfx->interface_graphics->control_sheet, &GetIconRect(0),
@@ -1581,12 +1577,11 @@ void GameGraphics::DrawShopWindow()
 // skill page, the scroll arrows, the menu icons on the first page, and the scroll thumb.
 void GameGraphics::DrawLearnWindow()
 {
+    int icon_id;
     int top_line;
     int skill_count;
     int row;
     TPoint icon_width;
-    int i;
-    int icon_id;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->learn->window_x, MainForm->animation->learn->window_y,
         MainForm->gfx->shop->background_surface, &MainForm->gfx->shop->background_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->learn->page <= LearnPage_SkillList)
@@ -1606,7 +1601,8 @@ void GameGraphics::DrawLearnWindow()
         top_line = MainForm->animation->learn->GetTopLine();
         skill_count = MainForm->animation->learn->offered_skills.size();
         row = 0;
-        for (i = top_line; i < skill_count && i < top_line + 5; i++)
+        int i = top_line;
+        while (i < skill_count && i < top_line + 5)
         {
             int arg = MainForm->animation->learn->shown_skills[i].skill_id;
             icon_id = MainForm->skill_values->GetIcon(arg);
@@ -1620,12 +1616,13 @@ void GameGraphics::DrawLearnWindow()
                     int icon_y = MainForm->animation->learn->window_y + 37 * row + 58 - icon_width.y / 2;
                     MainForm->gfx->game->BlitClipped(icon_x, icon_y,
                         MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                        MainForm->gfx->icons->GetGraphic(icon_id).resource->GetFrameRect(0));
+                        MainForm->gfx->icons->GetGraphic(icon_id).resource->GetIconRect(0));
                 }
                 else
                     MainForm->redraw_needed = true;
             }
             row++;
+            i++;
         }
     }
     if (MainForm->animation->learn->scroll_up_hovered)
@@ -1666,14 +1663,10 @@ void GameGraphics::DrawLearnWindow()
 // each visible item of the partner's offer (left) and the player's own offer (right).
 void GameGraphics::DrawTradeWindow()
 {
-    int top_row;
-    int item_count;
-    int partner_amount;
     int graphic;
-    int own_amount;
     int own_graphic;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->trade->window_x, MainForm->animation->trade->window_y,
-        MainForm->gfx->trade->background_surface, (TRect *)&MainForm->gfx->trade->background_left, DDBLTFAST_WAIT);
+        MainForm->gfx->trade->background_surface, &MainForm->gfx->trade->background_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->trade->hovered_row >= 0)
         MainForm->blitter->AlphaBlt(MainForm->animation->trade->window_x + 282,
             37 * MainForm->animation->trade->hovered_row + MainForm->animation->trade->window_y + 47,
@@ -1710,8 +1703,8 @@ void GameGraphics::DrawTradeWindow()
         MainForm->OffscreenSurface->BltFast(MainForm->animation->trade->window_x + 518,
             MainForm->animation->trade->window_y + 228, MainForm->gfx->interface_graphics->scroll_icons,
             &MainForm->gfx->interface_graphics->GetScrollIconRect(8), DDBLTFAST_WAIT);
-    top_row = MainForm->animation->trade->GetPartnerTopRow();
-    item_count = MainForm->animation->trade->partner_items.size();
+    int top_row = MainForm->animation->trade->GetPartnerTopRow();
+    int item_count = MainForm->animation->trade->partner_items.size();
     int row = 0;
     for (int i = top_row; i < item_count && top_row + 5 > i; i++)
     {
@@ -1719,7 +1712,7 @@ void GameGraphics::DrawTradeWindow()
             MainForm->animation->trade->window_y + 37 * row + 50, MainForm->gfx->trade->item_slot_surface,
             &MainForm->gfx->trade->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         int partner_item_id = MainForm->animation->trade->partner_items[i].item_id;
-        partner_amount = MainForm->animation->trade->partner_items[i].amount;
+        int partner_amount = MainForm->animation->trade->partner_items[i].amount;
         graphic = MainForm->item_values->GetGraphic(partner_item_id) - 1;
         if (graphic >= 0)
         {
@@ -1758,7 +1751,7 @@ void GameGraphics::DrawTradeWindow()
             MainForm->animation->trade->window_y + 37 * row + 50, MainForm->gfx->trade->item_slot_surface,
             &MainForm->gfx->trade->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         int own_item_id = MainForm->animation->trade->own_items[j].item_id;
-        own_amount = MainForm->animation->trade->own_items[j].amount;
+        int own_amount = MainForm->animation->trade->own_items[j].amount;
         own_graphic = MainForm->item_values->GetGraphic(own_item_id) - 1;
         if (own_graphic >= 0)
         {
@@ -1802,18 +1795,15 @@ void GameGraphics::DrawTradeWindow()
 // scroll bar with its arrows and thumb.
 void GameGraphics::DrawBookWindow()
 {
+    int status_icon;
     int window_x;
     int window_y;
     int top_line;
-    int line_count;
-    int row;
-    int icon_x;
-    int icon_y;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->book->window_x, MainForm->animation->book->window_y,
         book_surface, &book_rect, DDBLTFAST_WAIT);
     window_x = MainForm->animation->book->window_x;
     window_y = MainForm->animation->book->window_y;
-    int status_icon = 9;
+    status_icon = 9;
     if (MainForm->animation->book->icon_type == 4)
         status_icon = 12;
     if (MainForm->animation->book->icon_type == 9)
@@ -1827,16 +1817,16 @@ void GameGraphics::DrawBookWindow()
     MainForm->OffscreenSurface->BltFast(window_x + 241, window_y + 262, MainForm->gfx->interface_graphics->small_icons,
         &MainForm->gfx->interface_graphics->GetSmallIconRect(status_icon), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     top_line = MainForm->animation->book->GetTopLine();
-    line_count = MainForm->animation->book->lines->Count;
-    row = 0;
+    int line_count = MainForm->animation->book->lines->Count;
+    int row = 0;
     for (int i = top_line; i < line_count && i < top_line + 14; i++)
     {
         String line = MainForm->animation->book->lines->Strings[i];
         if (line.Length() > 0)
         {
             MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-            icon_x = MainForm->animation->book->window_x + 26;
-            icon_y = MainForm->animation->book->window_y + BOOK_ROW_HEIGHT * row + 41;
+            int icon_x = MainForm->animation->book->window_x + 26;
+            int icon_y = MainForm->animation->book->window_y + BOOK_ROW_HEIGHT * row + 41;
             MainForm->OffscreenSurface->BltFast(icon_x, icon_y, MainForm->gfx->interface_graphics->list_icons,
                 &MainForm->gfx->interface_graphics->GetListIconRect(0, 0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             // Only non-empty lines take a row, so blank lines are skipped.
@@ -1872,15 +1862,16 @@ void GameGraphics::DrawBookWindow()
 // box; the weapon, armor, shield and hat are centred by item size.
 void GameGraphics::DrawPaperdollWindow()
 {
+    int status_icon;
     int window_x;
-    int window_y;
+    int origin_y;
     TPoint slot_offset;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->paperdoll->window_x,
         MainForm->animation->paperdoll->window_y, paperdoll_surface,
         &GetPaperdollFrameRect(MainForm->animation->paperdoll->frame_index), DDBLTFAST_WAIT);
     window_x = MainForm->animation->paperdoll->window_x;
-    window_y = MainForm->animation->paperdoll->window_y;
-    int status_icon = 9;
+    origin_y = MainForm->animation->paperdoll->window_y;
+    status_icon = 9;
     if (MainForm->animation->paperdoll->icon_type == 4)
         status_icon = 12;
     if (MainForm->animation->paperdoll->icon_type == 9)
@@ -1891,15 +1882,14 @@ void GameGraphics::DrawPaperdollWindow()
         status_icon = 15;
     if (MainForm->animation->paperdoll->icon_type == 6)
         status_icon = 10;
-    MainForm->OffscreenSurface->BltFast(window_x + 241, window_y + 262, MainForm->gfx->interface_graphics->small_icons,
-        &MainForm->gfx->interface_graphics->GetSmallIconRect(status_icon),
-        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    MainForm->OffscreenSurface->BltFast(window_x + 241, origin_y + 262, MainForm->gfx->interface_graphics->small_icons,
+        &MainForm->gfx->interface_graphics->GetSmallIconRect(status_icon), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->paperdoll->weapon_graphic > 0)
     {
         slot_offset = GetPaperdollSlotOffset(MainForm->animation->paperdoll->weapon_item_size);
         if (MainForm->gfx->items->RequestSubItemGraphic(MainForm->animation->paperdoll->weapon_graphic))
-            MainForm->OffscreenSurface->BltFast(slot_offset.x + MainForm->animation->paperdoll->window_x + 21,
-                slot_offset.y + MainForm->animation->paperdoll->window_y + 80,
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->paperdoll->window_x + slot_offset.x + 21,
+                MainForm->animation->paperdoll->window_y + slot_offset.y + 80,
                 MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->weapon_graphic).resource->surface,
                 &MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->weapon_graphic).resource->surface_rect,
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
@@ -1910,8 +1900,8 @@ void GameGraphics::DrawPaperdollWindow()
     {
         slot_offset = GetPaperdollSlotOffset(MainForm->animation->paperdoll->armor_item_size);
         if (MainForm->gfx->items->RequestSubItemGraphic(MainForm->animation->paperdoll->armor_graphic))
-            MainForm->OffscreenSurface->BltFast(slot_offset.x + MainForm->animation->paperdoll->window_x + 86,
-                slot_offset.y + MainForm->animation->paperdoll->window_y + 80,
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->paperdoll->window_x + slot_offset.x + 86,
+                MainForm->animation->paperdoll->window_y + slot_offset.y + 80,
                 MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->armor_graphic).resource->surface,
                 &MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->armor_graphic).resource->surface_rect,
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
@@ -1922,8 +1912,8 @@ void GameGraphics::DrawPaperdollWindow()
     {
         slot_offset = GetPaperdollSlotOffset(MainForm->animation->paperdoll->shield_item_size);
         if (MainForm->gfx->items->RequestSubItemGraphic(MainForm->animation->paperdoll->shield_graphic))
-            MainForm->OffscreenSurface->BltFast(slot_offset.x + MainForm->animation->paperdoll->window_x + 151,
-                slot_offset.y + MainForm->animation->paperdoll->window_y + 80,
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->paperdoll->window_x + slot_offset.x + 151,
+                MainForm->animation->paperdoll->window_y + slot_offset.y + 80,
                 MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->shield_graphic).resource->surface,
                 &MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->paperdoll->shield_graphic).resource->surface_rect,
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
@@ -2252,7 +2242,7 @@ void GameGraphics::DrawSocialButtons()
 // Draws the guild window's close button on the first page, or close and back on the others, lit under the mouse.
 void GameGraphics::DrawGuildButtons()
 {
-    if (!MainForm->animation->guild->page)
+    if (MainForm->animation->guild->page == GuildPage_Main)
     {
         if (MainForm->animation->guild->close_hovered)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->guild->window_x + 96,
@@ -2301,13 +2291,11 @@ void GameGraphics::DrawReportButtons()
 // list.
 void GameGraphics::DrawDialogButtons()
 {
-    int right_button;
     int left_button = MainForm->animation->dialog->prev_button_kind;
-    right_button = MainForm->animation->dialog->next_button_kind;
-    char single_button = MainForm->animation->dialog->showing_quest_list;
-    if (single_button)
+    int right_button = MainForm->animation->dialog->next_button_kind;
+    if (MainForm->animation->dialog->showing_quest_list)
         right_button = 1;
-    if (!single_button)
+    if (!MainForm->animation->dialog->showing_quest_list)
     {
         if (MainForm->animation->dialog->prev_button_hovered)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->dialog->window_x + 89,
@@ -2414,7 +2402,7 @@ void GameGraphics::DrawLawButtons()
 // Draws the skill master window's close button on the first page, or close and back on the others.
 void GameGraphics::DrawLearnButtons()
 {
-    if (!MainForm->animation->learn->page)
+    if (MainForm->animation->learn->page == LearnPage_Menu)
     {
         if (MainForm->animation->learn->close_hovered)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->learn->window_x + 96,
@@ -2449,7 +2437,7 @@ void GameGraphics::DrawLearnButtons()
 // Draws the shop window's close button on the first page, or close and back on the others, lit under the mouse.
 void GameGraphics::DrawShopButtons()
 {
-    if (!MainForm->animation->shop->page)
+    if (MainForm->animation->shop->page == ShopPage_Menu)
     {
         if (MainForm->animation->shop->close_hovered)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->shop->window_x + 96,
@@ -2550,18 +2538,18 @@ void GameGraphics::DrawItemAmountButtons()
 }
 
 // One paperdoll background frame on the paperdoll sheet.
-Windows::TRect GameGraphics::GetPaperdollFrameRect(int frame)
+TRect GameGraphics::GetPaperdollFrameRect(int frame)
 {
     TRect paperdoll_frame_rect;
     paperdoll_frame_rect.left = 0;
-    paperdoll_frame_rect.top = TALL_FRAME_HEIGHT * frame;
+    paperdoll_frame_rect.top = 290 * frame;
     paperdoll_frame_rect.right = 380;
     paperdoll_frame_rect.bottom = 290 * frame + 290;
     return paperdoll_frame_rect;
 }
 
 // The highlight of one row of the player popup menu on the popup menu sheet.
-Windows::TRect GameGraphics::GetMenuRowRect(int row)
+TRect GameGraphics::GetPopupItemRect(int row)
 {
     TRect menu_row_rect;
     menu_row_rect.left = 109;
@@ -2572,7 +2560,7 @@ Windows::TRect GameGraphics::GetMenuRowRect(int row)
 }
 
 // One button of the button sheet, plain or lit.
-Windows::TRect GameGraphics::GetButtonRect(int button, int state)
+TRect GameGraphics::GetButtonRect(int button, int state)
 {
     TRect button_rect;
     button_rect.left = BUTTON_COLUMN_PITCH * state;
@@ -2583,7 +2571,7 @@ Windows::TRect GameGraphics::GetButtonRect(int button, int state)
 }
 
 // Trims a source rect by how far a blit at a view position would run past each side of the view.
-Windows::TRect GameGraphics::ClipSourceRect(int x, int y, Windows::TRect source_rect)
+TRect GameGraphics::ClipSourceRect(int x, int y, TRect source_rect)
 {
     TRect clipped;
     clipped = source_rect;
@@ -2743,9 +2731,9 @@ void GameGraphics::LoadTextBoxBackground(int library, int resource_id)
 }
 
 // Draws the input form title, caption and the labels of up to five rows from the top row.
-void GameGraphics::DrawListBoxText()
+void GameGraphics::DrawFormText()
 {
-    int end_row;
+    int drawn;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = (TColor)0xC8F0F0;
@@ -2757,13 +2745,13 @@ void GameGraphics::DrawListBoxText()
     MainForm->text_canvas->TextOut(MainForm->animation->game->form_x + 20, MainForm->animation->game->form_y + 40,
         MainForm->animation->game->form_caption);
     int top_row = MainForm->animation->game->GetInputFormTopRow();
-    end_row = top_row + 5;
-    int row = 0;
-    for (int i = top_row; i < end_row && row < MainForm->animation->game->form_row_count; i++)
+    int end_row = top_row + 5;
+    drawn = 0;
+    for (int i = top_row; i < end_row && drawn < MainForm->animation->game->form_row_count; i++)
     {
         MainForm->text_canvas->TextOut(MainForm->animation->game->form_x + 26,
-            MainForm->animation->game->form_y + 23 * row + 69, MainForm->animation->game->form_row_labels[i]);
-        row++;
+            MainForm->animation->game->form_y + 23 * drawn + 69, MainForm->animation->game->form_row_labels[i]);
+        drawn++;
     }
     // While a message or text box is open, the row edits' text is drawn here in the small font.
     if (MainForm->animation->game->message_visible || MainForm->animation->game->large_box_visible)
@@ -2780,29 +2768,22 @@ void GameGraphics::DrawListBoxText()
 // Draws each chest item's name and amount; an item of type 12 also shows its gender word.
 void GameGraphics::DrawChestText()
 {
-    int item_count;
-    int row;
-    int item_id;
-    int amount;
-    int item_type;
-    int text_x;
-    int text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    item_count = MainForm->animation->chest->items.size();
-    row = 0;
+    int item_count = MainForm->animation->chest->items.size();
+    int row = 0;
     for (int i = 0; i < item_count && i < 5; i++)
     {
-        item_id = MainForm->animation->chest->items[i].item_id;
-        amount = MainForm->animation->chest->items[i].amount;
+        int item_id = MainForm->animation->chest->items[i].item_id;
+        int amount = MainForm->animation->chest->items[i].amount;
         String item_name = MainForm->item_values->GetName(item_id);
-        item_type = MainForm->item_values->GetType(item_id);
-        text_x = MainForm->animation->chest->window_x + 76;
-        text_y = MainForm->animation->chest->window_y + 37 * row + 30;
+        int item_type = MainForm->item_values->GetType(item_id);
+        int text_x = MainForm->animation->chest->window_x + 76;
+        int text_y = MainForm->animation->chest->window_y + 37 * row + 30;
         MainForm->text_canvas->TextOut(text_x, text_y, MainForm->net_client->Capitalize(item_name));
         text_y = MainForm->animation->chest->window_y + 37 * row + 45;
         if (item_type == ITEM_TYPE_GENDERED)
@@ -2887,6 +2868,9 @@ void GameGraphics::DrawJukeboxText()
 // the per-hour rates over all play and over the session, and the best and last gains.
 void GameGraphics::DrawStatText()
 {
+    int elapsed_minutes;
+    int elapsed_ms;
+    int elapsed_days;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -2896,53 +2880,61 @@ void GameGraphics::DrawStatText()
     int window_x = MainForm->animation->stat->window_x;
     int window_y = MainForm->animation->stat->window_y;
     TDateTime now = Now();
+    TTimeStamp start_stamp;
     // The session length in minutes comes from the day and millisecond parts of the two timestamps.
-    TTimeStamp start_stamp = DateTimeToTimeStamp(MainForm->animation->interface_controller->status->usage_start_time);
-    TTimeStamp now_stamp = DateTimeToTimeStamp(now);
-    int elapsed_ms = now_stamp.Time - start_stamp.Time;
-    int elapsed_minutes = now_stamp.Date - start_stamp.Date;
-    elapsed_minutes = 1440 * elapsed_minutes + elapsed_ms / 60000;
-    int session_rate = elapsed_minutes;
+    start_stamp = DateTimeToTimeStamp(MainForm->animation->interface_controller->status->usage_start_time);
+    TTimeStamp now_stamp;
+    now_stamp = DateTimeToTimeStamp(now);
+    int session_rate;
+    double session_rate_scaled;
+    double session_rate_hourly;
+    int total_rate;
+    double total_rate_scaled;
+    double total_rate_hourly;
+    int text_y;
+    elapsed_ms = now_stamp.Time - start_stamp.Time;
+    elapsed_days = now_stamp.Date - start_stamp.Date;
+    elapsed_minutes = elapsed_ms / 60000 + 1440 * elapsed_days;
+    session_rate = elapsed_minutes;
     if (!session_rate)
         session_rate = 1;
     if (session_rate < 60)
     {
         if (session_rate > 0)
         {
-            double session_rate_scaled = (double)(60 / session_rate) *
-                (double)MainForm->animation->interface_controller->status->total_exp_gained;
+            session_rate_scaled =
+                (double)(60 / session_rate) * MainForm->animation->interface_controller->status->total_exp_gained;
             session_rate = session_rate_scaled;
         }
     }
     else
     {
-        double session_rate_hourly = (double)MainForm->animation->interface_controller->status->total_exp_gained /
-            (double)(session_rate / 60);
+        session_rate_hourly =
+            (double)MainForm->animation->interface_controller->status->total_exp_gained / (session_rate / 60);
         session_rate = session_rate_hourly;
     }
-    int total_rate = MainForm->animation->interface_controller->status->usage_minutes + elapsed_minutes;
+    total_rate = MainForm->animation->interface_controller->status->usage_minutes + elapsed_minutes;
     if (!total_rate)
         total_rate = 1;
     if (total_rate < 60)
     {
         if (total_rate > 0)
         {
-            double total_rate_scaled = (double)(60 / total_rate) *
-                (double)MainForm->animation->interface_controller->status->total_exp_gained;
+            total_rate_scaled =
+                (double)(60 / total_rate) * MainForm->animation->interface_controller->status->total_exp_gained;
             total_rate = total_rate_scaled;
         }
     }
     else
     {
-        double total_rate_hourly = (double)MainForm->animation->interface_controller->status->experience /
-            (double)(total_rate / 60);
+        total_rate_hourly = (double)MainForm->animation->interface_controller->status->experience / (total_rate / 60);
         total_rate = total_rate_hourly;
     }
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->strings->GetText(GameText_Performance));
     for (int i = 0; i < 8; i++)
     {
         int text_x = MainForm->animation->stat->window_x + 40;
-        int text_y = MainForm->animation->stat->window_y + LIST_ROW_HEIGHT * i + 48;
+        text_y = MainForm->animation->stat->window_y + LIST_ROW_HEIGHT * i + 48;
         MainForm->text_canvas->TextOut(text_x, text_y, MainForm->strings->GetText(i + 288));
         if (!i)
             MainForm->text_canvas->TextOut(text_x + 120, text_y,
@@ -2972,23 +2964,20 @@ void GameGraphics::DrawStatText()
 // Draws the bank balance right-aligned and the two text lines of each of its three rows.
 void GameGraphics::DrawBankText()
 {
-    int window_y;
-    int text_x;
-    int window_x = 0;
-    int text_y = 0;
+    int text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->bank->window_x;
-    window_y = MainForm->animation->bank->window_y;
+    int window_x = MainForm->animation->bank->window_x;
+    int window_y = MainForm->animation->bank->window_y;
     String balance_text = IntToStr(MainForm->animation->bank->bank_gold);
     int value = MainForm->text_canvas->TextWidth(balance_text);
     MainForm->text_canvas->TextOut(window_x + 240 - value, window_y + 22, balance_text);
     text_y = MainForm->animation->bank->window_y + 60;
-    text_x = MainForm->animation->bank->window_x + 76;
+    int text_x = MainForm->animation->bank->window_x + 76;
     String gold_name = LowerCase(MainForm->item_values->GetName(ItemId_Gold));
     MainForm->text_canvas->TextOut(text_x, text_y, MainForm->strings->GetText(GameText_Deposit));
     MainForm->text_canvas->TextOut(text_x, text_y + 14,
@@ -3006,13 +2995,8 @@ void GameGraphics::DrawBankText()
 // an empty book shows one fixed line instead.
 void GameGraphics::DrawQuestText()
 {
+    int state_x;
     int top_line;
-    int line_count;
-    int row;
-    int text_x;
-    int text_y;
-    int i;
-    int j;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3025,16 +3009,16 @@ void GameGraphics::DrawQuestText()
     if (!MainForm->animation->quests->showing_history)
     {
         top_line = MainForm->animation->quests->GetTopLine();
-        line_count = MainForm->animation->quests->lines->Count;
-        row = 0;
-        for (i = top_line; i < line_count && i < top_line + 12; i++)
+        int line_count = MainForm->animation->quests->lines->Count;
+        int row = 0;
+        for (int i = top_line; i < line_count && i < top_line + 12; i++)
         {
             String quest_line = MainForm->animation->quests->lines->Strings[i];
             if (quest_line.Length() > 0)
             {
                 MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-                text_x = MainForm->animation->quests->window_x + 42;
-                text_y = MainForm->animation->quests->window_y + LIST_ROW_HEIGHT * row + 48;
+                int text_x = MainForm->animation->quests->window_x + 42;
+                int text_y = MainForm->animation->quests->window_y + LIST_ROW_HEIGHT * row + 48;
                 MainForm->text_canvas->TextOut(text_x, text_y, quest_line);
                 MainForm->text_canvas->Font->Style = TFontStyles();
                 int column_x = text_x + 145;
@@ -3050,7 +3034,7 @@ void GameGraphics::DrawQuestText()
             }
             row++;
         }
-        if (!MainForm->animation->quests->lines->Count)
+        if (MainForm->animation->quests->lines->Count == 0)
         {
             MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
             int empty_text_x = MainForm->animation->quests->window_x + 24;
@@ -3064,7 +3048,7 @@ void GameGraphics::DrawQuestText()
         int history_top_line = MainForm->animation->quests->GetTopLine();
         int history_line_count = MainForm->animation->quests->history_lines->Count;
         int history_row = 0;
-        for (j = history_top_line; j < history_line_count && j < history_top_line + 12; j++)
+        for (int j = history_top_line; j < history_line_count && j < history_top_line + 12; j++)
         {
             String history_line = MainForm->animation->quests->history_lines->Strings[j];
             if (history_line.Length() > 0)
@@ -3074,8 +3058,8 @@ void GameGraphics::DrawQuestText()
                 int history_text_y = MainForm->animation->quests->window_y + 16 * history_row + 48;
                 MainForm->text_canvas->TextOut(history_text_x, history_text_y, history_line);
                 MainForm->text_canvas->Font->Style = TFontStyles();
-                int value = history_text_x + 268;
-                MainForm->text_canvas->TextOut(value, history_text_y,
+                state_x = history_text_x + 268;
+                MainForm->text_canvas->TextOut(state_x, history_text_y,
                     MainForm->strings->GetText(GameText_QuestCompleted));
             }
             history_row++;
@@ -3090,8 +3074,8 @@ void GameGraphics::DrawMsgBoardText()
     int window_x;
     int window_y;
     int top_line;
-    int i;
-    int local;
+    int post_count;
+    int row;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3108,9 +3092,9 @@ void GameGraphics::DrawMsgBoardText()
     {
         MainForm->text_canvas->TextOut(window_x + 18, window_y + 15, MainForm->strings->GetText(GameText_TownBoard));
         top_line = MainForm->animation->message_board->GetTopLine();
-        int post_count = MainForm->animation->message_board->posts.size();
-        int row = 0;
-        for (i = top_line; i < post_count && i < top_line + 12; i++)
+        post_count = MainForm->animation->message_board->posts.size();
+        row = 0;
+        for (int i = top_line; i < post_count && i < top_line + 12; i++)
         {
             String author = MainForm->animation->message_board->posts[i].author;
             String subject = MainForm->animation->message_board->posts[i].subject;
@@ -3174,44 +3158,47 @@ void GameGraphics::DrawSocialText()
     }
 }
 
-// Draws the locker title with its item count and each visible item's name and amount.
+// Draws the locker's item count and the amount of each visible item held more than once.
 void GameGraphics::DrawLockerText()
 {
+    int amount;
+    int index;
+    int window_x;
+    int window_y;
+    int count;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    int window_x = MainForm->animation->locker->window_x;
-    int window_y = MainForm->animation->locker->window_y;
-    String title = MainForm->animation->locker->title + " [" + IntToStr(MainForm->animation->locker->items.size()) +
-        "]";
+    MainForm->text_canvas->Font->Color = (TColor)0xE1E1E1;
+    window_x = MainForm->animation->locker->window_x;
+    window_y = MainForm->animation->locker->window_y;
+    String title =
+        MainForm->animation->locker->title + " [" + IntToStr(MainForm->animation->locker->items.size()) + "]";
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, title);
-    int top_row = MainForm->animation->locker->GetTopRow();
-    int item_count = MainForm->animation->locker->items.size();
+    MainForm->text_canvas->Font->Color = (TColor)0x646482;
+    index = 4 * MainForm->animation->locker->GetTopRow();
+    count = MainForm->animation->locker->items.size();
     int row = 0;
-    for (int i = top_row; i < item_count && i < top_row + 5; i++)
+    while (row < 5 && index < count)
     {
-        int item_id = MainForm->animation->locker->items[i].item_id;
-        int amount = MainForm->animation->locker->items[i].amount;
-        String item_name = MainForm->item_values->GetName(item_id);
-        int item_type = MainForm->item_values->GetType(item_id);
-        int text_x = MainForm->animation->locker->window_x + 86;
-        int text_y = MainForm->animation->locker->window_y + ITEM_NAME_ROW_HEIGHT * row + 54;
-        MainForm->text_canvas->TextOut(text_x, text_y, MainForm->net_client->Capitalize(item_name));
-        text_y = MainForm->animation->locker->window_y + ITEM_AMOUNT_ROW_HEIGHT * row + 68;
-        if (item_type == ITEM_TYPE_GENDERED)
+        for (int col = 0; col < 4 && index < count; col++)
         {
-            if (!MainForm->item_values->GetGender(item_id))
-                MainForm->text_canvas->TextOut(text_x, text_y,
-                    "x " + IntToStr(amount) + "  (" + MainForm->strings->GetText(GameText_Female) + ")");
-            else
-                MainForm->text_canvas->TextOut(text_x, text_y,
-                    "x " + IntToStr(amount) + "  (" + MainForm->strings->GetText(GameText_Male) + ")");
+            int slot_x = MainForm->animation->locker->window_x + 57 * col + 64;
+            int slot_y = MainForm->animation->locker->window_y + 37 * row + 48;
+            amount = MainForm->animation->locker->items[index].amount;
+            index++;
+            if (amount > 1)
+            {
+                if (amount < 10)
+                    MainForm->text_canvas->TextOut(slot_x + 2, slot_y + 23, IntToStr(amount));
+                else if (amount < 100)
+                    MainForm->text_canvas->TextOut(slot_x + 1, slot_y + 23, IntToStr(amount));
+                else if (amount >= 100)
+                    MainForm->text_canvas->TextOut(slot_x, slot_y + 23, "99+");
+            }
         }
-        else
-            MainForm->text_canvas->TextOut(text_x, text_y, "x " + IntToStr(amount));
         row++;
     }
 }
@@ -3219,33 +3206,19 @@ void GameGraphics::DrawLockerText()
 // Draws the guild window title and the text of the current page: the four menu pages, or the visible list lines.
 void GameGraphics::DrawGuildText()
 {
-    int window_x;
-    int text_y;
-    int page1_text_y;
-    int page2_text_y;
-    int page3_text_y;
-    int window_y;
-    int text_x;
-    int page1_text_x;
-    int page2_text_x;
-    int page3_text_x;
-    int top_line;
-    int line_count;
-    int row;
-    int i;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->guild->window_x;
-    window_y = MainForm->animation->guild->window_y;
+    int window_x = MainForm->animation->guild->window_x;
+    int window_y = MainForm->animation->guild->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->guild->title);
     if (MainForm->animation->guild->page == GuildPage_Main)
     {
-        text_y = MainForm->animation->guild->window_y + 54;
-        text_x = MainForm->animation->guild->window_x + 78;
+        int text_y = MainForm->animation->guild->window_y + 54;
+        int text_x = MainForm->animation->guild->window_x + 78;
         MainForm->text_canvas->TextOut(text_x, text_y, MainForm->strings->GetText(GameText_Information2));
         MainForm->text_canvas->TextOut(text_x, text_y + 14, MainForm->strings->GetText(GameText_LearnMoreAboutGuilds));
         MainForm->text_canvas->TextOut(text_x, text_y + 37, MainForm->strings->GetText(GameText_Administration));
@@ -3258,8 +3231,8 @@ void GameGraphics::DrawGuildText()
     }
     if (MainForm->animation->guild->page == GuildPage_Membership)
     {
-        page1_text_y = MainForm->animation->guild->window_y + 54;
-        page1_text_x = MainForm->animation->guild->window_x + 78;
+        int page1_text_y = MainForm->animation->guild->window_y + 54;
+        int page1_text_x = MainForm->animation->guild->window_x + 78;
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y, MainForm->strings->GetText(GameText_JoinGuild));
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y + 14,
             MainForm->strings->GetText(GameText_JoinExistingGuild));
@@ -3274,8 +3247,8 @@ void GameGraphics::DrawGuildText()
     }
     if (MainForm->animation->guild->page == GuildPage_Manage)
     {
-        page2_text_y = MainForm->animation->guild->window_y + 54;
-        page2_text_x = MainForm->animation->guild->window_x + 78;
+        int page2_text_y = MainForm->animation->guild->window_y + 54;
+        int page2_text_x = MainForm->animation->guild->window_x + 78;
         MainForm->text_canvas->TextOut(page2_text_x, page2_text_y, MainForm->strings->GetText(GameText_ModifyGuild));
         MainForm->text_canvas->TextOut(page2_text_x, page2_text_y + 14,
             MainForm->strings->GetText(GameText_ChangeYourGuildDetails));
@@ -3295,8 +3268,8 @@ void GameGraphics::DrawGuildText()
     }
     if (MainForm->animation->guild->page == GuildPage_Lookup)
     {
-        page3_text_y = MainForm->animation->guild->window_y + 54;
-        page3_text_x = MainForm->animation->guild->window_x + 78;
+        int page3_text_y = MainForm->animation->guild->window_y + 54;
+        int page3_text_x = MainForm->animation->guild->window_x + 78;
         MainForm->text_canvas->TextOut(page3_text_x, page3_text_y, MainForm->strings->GetText(GameText_GuildLookup));
         MainForm->text_canvas->TextOut(page3_text_x, page3_text_y + 14,
             MainForm->strings->GetText(GameText_ViewGuildDetails));
@@ -3307,9 +3280,10 @@ void GameGraphics::DrawGuildText()
     }
     if (MainForm->animation->guild->page >= GuildPage_Join)
     {
-        top_line = MainForm->animation->guild->GetTopLine();
-        line_count = MainForm->animation->guild->lines->Count;
-        row = 0;
+        int top_line = MainForm->animation->guild->GetTopLine();
+        int line_count = MainForm->animation->guild->lines->Count;
+        int row = 0;
+        int i;
         for (i = top_line; i < line_count && top_line + 12 > i; i++)
         {
             String list_line = MainForm->animation->guild->lines->Strings[i];
@@ -3345,9 +3319,6 @@ void GameGraphics::DrawGuildText()
 void GameGraphics::DrawReportText()
 {
     int top_line;
-    int line_count;
-    int row;
-    int i;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3358,9 +3329,9 @@ void GameGraphics::DrawReportText()
     int window_y = MainForm->animation->report->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->report->title);
     top_line = MainForm->animation->report->GetTopLine();
-    line_count = MainForm->animation->report->lines->Count;
-    row = 0;
-    for (i = top_line; i < line_count && i < top_line + 12; i++)
+    int line_count = MainForm->animation->report->lines->Count;
+    int row = 0;
+    for (int i = top_line; i < line_count && i < top_line + 12; i++)
     {
         String line = MainForm->animation->report->lines->Strings[i];
         if (line.Length() > 0)
@@ -3383,8 +3354,7 @@ void GameGraphics::DrawReportText()
             if (MainForm->animation->report->line_values->Strings[i].Length() > 0)
             {
                 int value_x = text_x + 220;
-                value_x = value_x -
-                    MainForm->text_canvas->TextWidth(MainForm->animation->report->line_values->Strings[i]);
+                value_x -= MainForm->text_canvas->TextWidth(MainForm->animation->report->line_values->Strings[i]);
                 MainForm->text_canvas->TextOut(value_x, text_y, MainForm->animation->report->line_values->Strings[i]);
             }
         }
@@ -3399,12 +3369,6 @@ void GameGraphics::DrawDialogText()
     int window_x;
     int window_y;
     int top_line;
-    int line_count;
-    int row;
-    int i;
-    int j;
-    int other_text_x;
-    int other_text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3418,9 +3382,9 @@ void GameGraphics::DrawDialogText()
         String title = MainForm->animation->dialog->npc_name + " - " + MainForm->animation->dialog->quest_name;
         MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, title);
         top_line = MainForm->animation->dialog->GetTopLine();
-        line_count = MainForm->animation->dialog->lines->Count;
-        row = 0;
-        for (i = top_line; i < line_count && i < top_line + 6; i++)
+        int line_count = MainForm->animation->dialog->lines->Count;
+        int row = 0;
+        for (int i = top_line; i < line_count && i < top_line + 6; i++)
         {
             String line = MainForm->animation->dialog->lines->Strings[i];
             if (line.Length() > 0)
@@ -3455,14 +3419,14 @@ void GameGraphics::DrawDialogText()
         int other_top_line = MainForm->animation->dialog->GetTopLine();
         int other_line_count = MainForm->animation->dialog->quest_names->Count;
         int other_row = 0;
-        for (j = other_top_line; j < other_line_count && j < other_top_line + 6; j++)
+        for (int j = other_top_line; j < other_line_count && j < other_top_line + 6; j++)
         {
             String other_line = MainForm->animation->dialog->quest_names->Strings[j];
             if (other_line.Length() > 0)
             {
                 MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-                other_text_x = MainForm->animation->dialog->window_x + 22;
-                other_text_y = MainForm->animation->dialog->window_y + LIST_ROW_HEIGHT * other_row + 48;
+                int other_text_x = MainForm->animation->dialog->window_x + 22;
+                int other_text_y = MainForm->animation->dialog->window_y + LIST_ROW_HEIGHT * other_row + 48;
                 MainForm->text_canvas->TextOut(other_text_x, other_text_y, other_line);
                 MainForm->text_canvas->Font->Style = TFontStyles();
             }
@@ -3475,11 +3439,6 @@ void GameGraphics::DrawDialogText()
 void GameGraphics::DrawMemoText()
 {
     int top_line;
-    int line_count;
-    int row;
-    int text_x;
-    int text_y;
-    int i;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3490,23 +3449,22 @@ void GameGraphics::DrawMemoText()
     int window_y = MainForm->animation->memo->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->memo->title);
     top_line = MainForm->animation->memo->GetTopLine();
-    line_count = MainForm->animation->memo->lines->Count;
-    row = 0;
-    for (i = top_line; i < line_count && i < top_line + 12; i++)
+    int line_count = MainForm->animation->memo->lines->Count;
+    int row = 0;
+    for (int i = top_line; i < line_count && i < top_line + 12; i++)
     {
         String line = MainForm->animation->memo->lines->Strings[i];
         if (line.Length() > 0)
         {
             MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-            text_x = MainForm->animation->memo->window_x + 22;
-            text_y = MainForm->animation->memo->window_y + LIST_ROW_HEIGHT * row + 48;
+            int text_x = MainForm->animation->memo->window_x + 22;
+            int text_y = MainForm->animation->memo->window_y + LIST_ROW_HEIGHT * row + 48;
             MainForm->text_canvas->TextOut(text_x, text_y, line);
             MainForm->text_canvas->Font->Style = TFontStyles();
             if (MainForm->animation->memo->line_values->Strings[i].Length() > 0)
             {
                 int value_x = text_x + 220;
-                value_x = value_x -
-                    MainForm->text_canvas->TextWidth(MainForm->animation->memo->line_values->Strings[i]);
+                value_x -= MainForm->text_canvas->TextWidth(MainForm->animation->memo->line_values->Strings[i]);
                 MainForm->text_canvas->TextOut(value_x, text_y, MainForm->animation->memo->line_values->Strings[i]);
             }
         }
@@ -3517,33 +3475,19 @@ void GameGraphics::DrawMemoText()
 // Draws the inn's npc name and the text of its two menu pages, or the visible list lines with their links.
 void GameGraphics::DrawInnText()
 {
-    int top_line;
-    int line_count;
-    int row;
-    int text_y;
-    int text_x;
-    int page1_text_y;
-    int page1_text_x;
-    int i;
-    int window_x;
-    int window_y;
-    int list_text_x;
-    int list_text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->inn->window_x;
-    window_y = MainForm->animation->inn->window_y;
+    int window_x = MainForm->animation->inn->window_x;
+    int window_y = MainForm->animation->inn->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->inn->npc_name);
     if (!MainForm->animation->inn->page)
     {
-        text_y = MainForm->animation->inn->window_y;
-        text_x = MainForm->animation->inn->window_x;
-        text_x += 78;
-        text_y += 54;
+        int text_y = MainForm->animation->inn->window_y + 54;
+        int text_x = MainForm->animation->inn->window_x + 78;
         MainForm->text_canvas->TextOut(text_x, text_y, MainForm->strings->GetText(GameText_RegistrationService2));
         MainForm->text_canvas->TextOut(text_x, text_y + 14,
             MainForm->strings->GetText(GameText_CitizenRegistrationService));
@@ -3552,10 +3496,8 @@ void GameGraphics::DrawInnText()
     }
     if (MainForm->animation->inn->page == 1)
     {
-        page1_text_y = MainForm->animation->inn->window_y;
-        page1_text_x = MainForm->animation->inn->window_x;
-        page1_text_x += 78;
-        page1_text_y += 54;
+        int page1_text_y = MainForm->animation->inn->window_y + 54;
+        int page1_text_x = MainForm->animation->inn->window_x + 78;
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y, MainForm->strings->GetText(GameText_SignUp));
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y + 14,
             MainForm->strings->GetText(GameText_BecomeCitizen));
@@ -3566,9 +3508,10 @@ void GameGraphics::DrawInnText()
     }
     if (MainForm->animation->inn->page >= 6)
     {
-        top_line = MainForm->animation->inn->GetTopLine();
-        line_count = MainForm->animation->inn->lines->Count;
-        row = 0;
+        int top_line = MainForm->animation->inn->GetTopLine();
+        int line_count = MainForm->animation->inn->lines->Count;
+        int row = 0;
+        int i;
         for (i = top_line; i < line_count && i < top_line + 12; i++)
         {
             String line = MainForm->animation->inn->lines->Strings[i];
@@ -3586,8 +3529,8 @@ void GameGraphics::DrawInnText()
                 else
                     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
             }
-            list_text_x = MainForm->animation->inn->window_x + 22;
-            list_text_y = MainForm->animation->inn->window_y + LIST_ROW_HEIGHT * row + 48;
+            int list_text_x = MainForm->animation->inn->window_x + 22;
+            int list_text_y = MainForm->animation->inn->window_y + LIST_ROW_HEIGHT * row + 48;
             MainForm->text_canvas->TextOut(list_text_x, list_text_y, line);
             MainForm->text_canvas->Font->Style = TFontStyles();
             row++;
@@ -3598,43 +3541,27 @@ void GameGraphics::DrawInnText()
 // Draws the law npc's name and the text of its two menu pages, or the visible list lines with their links.
 void GameGraphics::DrawLawText()
 {
-    int top_line;
-    int line_count;
-    int row;
-    int text_y;
-    int text_x;
-    int page1_text_y;
-    int page1_text_x;
-    int i;
-    int window_x;
-    int window_y;
-    int list_text_x;
-    int list_text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->law->window_x;
-    window_y = MainForm->animation->law->window_y;
+    int window_x = MainForm->animation->law->window_x;
+    int window_y = MainForm->animation->law->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->law->npc_name);
     if (!MainForm->animation->law->page)
     {
-        text_y = MainForm->animation->law->window_y;
-        text_x = MainForm->animation->law->window_x;
-        text_x += 78;
-        text_y += 54;
+        int text_y = MainForm->animation->law->window_y + 54;
+        int text_x = MainForm->animation->law->window_x + 78;
         MainForm->text_canvas->TextOut(text_x, text_y, MainForm->strings->GetText(GameText_RegistrationService));
         MainForm->text_canvas->TextOut(text_x, text_y + 14,
             MainForm->strings->GetText(GameText_RequestMarriageOrDivorce));
     }
     if (MainForm->animation->law->page == 1)
     {
-        page1_text_y = MainForm->animation->law->window_y;
-        page1_text_x = MainForm->animation->law->window_x;
-        page1_text_x += 78;
-        page1_text_y += 54;
+        int page1_text_y = MainForm->animation->law->window_y + 54;
+        int page1_text_x = MainForm->animation->law->window_x + 78;
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y, MainForm->strings->GetText(GameText_Marriage));
         MainForm->text_canvas->TextOut(page1_text_x, page1_text_y + 14,
             MainForm->strings->GetText(GameText_RequestWeddingApproval));
@@ -3644,9 +3571,10 @@ void GameGraphics::DrawLawText()
     }
     if (MainForm->animation->law->page >= 6)
     {
-        top_line = MainForm->animation->law->GetTopLine();
-        line_count = MainForm->animation->law->lines->Count;
-        row = 0;
+        int top_line = MainForm->animation->law->GetTopLine();
+        int line_count = MainForm->animation->law->lines->Count;
+        int row = 0;
+        int i;
         for (i = top_line; i < line_count && i < top_line + 12; i++)
         {
             String line = MainForm->animation->law->lines->Strings[i];
@@ -3664,8 +3592,8 @@ void GameGraphics::DrawLawText()
                 else
                     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
             }
-            list_text_x = MainForm->animation->law->window_x + 22;
-            list_text_y = MainForm->animation->law->window_y + LIST_ROW_HEIGHT * row + 48;
+            int list_text_x = MainForm->animation->law->window_x + 22;
+            int list_text_y = MainForm->animation->law->window_y + LIST_ROW_HEIGHT * row + 48;
             MainForm->text_canvas->TextOut(list_text_x, list_text_y, line);
             MainForm->text_canvas->Font->Style = TFontStyles();
             row++;
@@ -3673,8 +3601,8 @@ void GameGraphics::DrawLawText()
     }
 }
 
-// Draws the skill master's npc name and its page: the offered and known skill counts, each offered skill's name
-// with a link line, or the visible list lines.
+// Draws the skill master's text for its page: the menu with the known skill and spell counts, the offered skills, or
+// the visible lines of a text page.
 void GameGraphics::DrawLearnText()
 {
     MainForm->text_canvas->Brush->Color = clWhite;
@@ -3686,6 +3614,8 @@ void GameGraphics::DrawLearnText()
     int window_x = MainForm->animation->learn->window_x;
     int window_y = MainForm->animation->learn->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->learn->npc_name);
+    if (MainForm->animation->learn->tooltip->IsVisible())
+        MainForm->text_canvas->Font->Color = (TColor)0x46484B;
     if (MainForm->animation->learn->page == LearnPage_Menu)
     {
         int text_y = MainForm->animation->learn->window_y + 54;
@@ -3760,19 +3690,16 @@ void GameGraphics::DrawLearnText()
 // price.
 void GameGraphics::DrawShopText()
 {
-    int window_x;
-    int window_y;
-    int i;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->shop->window_x;
-    window_y = MainForm->animation->shop->window_y;
+    int window_x = MainForm->animation->shop->window_x;
+    int window_y = MainForm->animation->shop->window_y;
     MainForm->text_canvas->TextOut(window_x + 22, window_y + 17, MainForm->animation->shop->npc_name);
-    if (!MainForm->animation->shop->page)
+    if (MainForm->animation->shop->page == ShopPage_Menu)
     {
         int text_y = MainForm->animation->shop->window_y + 54;
         int text_x = MainForm->animation->shop->window_x + 78;
@@ -3790,10 +3717,12 @@ void GameGraphics::DrawShopText()
                     MainForm->strings->GetText(GameText_ItemsAccepted));
         }
     }
+    if (MainForm->animation->shop->tooltip->IsVisible())
+        MainForm->text_canvas->Font->Color = (TColor)0x46484B;
     int top_row = MainForm->animation->shop->GetTopRow();
     int item_count = MainForm->animation->shop->shown_items.size();
     int row = 0;
-    for (i = top_row; i < item_count && i < top_row + 5; i++)
+    for (int i = top_row; i < item_count && i < top_row + 5; i++)
     {
         int item_id = MainForm->animation->shop->shown_items[i].item_id;
         ShopItem &shop_item = MainForm->animation->shop->shown_items[i];
@@ -3841,10 +3770,10 @@ void GameGraphics::DrawShopText()
 // Draws both trade sides' names with their item counts and status texts, and each visible item's name and amount.
 void GameGraphics::DrawTradeText()
 {
+    int partner_row;
     int window_x;
     int window_y;
     int partner_count;
-    int partner_row;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
@@ -3875,6 +3804,8 @@ void GameGraphics::DrawTradeText()
     int top_row = MainForm->animation->trade->GetPartnerTopRow();
     int item_count = MainForm->animation->trade->partner_items.size();
     partner_row = 0;
+    if (MainForm->animation->trade->tooltip->IsVisible())
+        MainForm->text_canvas->Font->Color = (TColor)0x46484B;
     for (int i = top_row; i < item_count && top_row + 5 > i; i++)
     {
         int partner_item_id = MainForm->animation->trade->partner_items[i].item_id;
@@ -3886,6 +3817,7 @@ void GameGraphics::DrawTradeText()
         MainForm->text_canvas->TextOut(partner_text_x, partner_text_y,
             MainForm->net_client->Capitalize(partner_item_name));
         partner_text_y = MainForm->animation->trade->window_y + ITEM_AMOUNT_ROW_HEIGHT * partner_row + 68;
+        // Items of type 12 show the gender they are for beside the amount.
         if (partner_item_type == EifItemType_Armor)
         {
             if (!MainForm->item_values->GetGender(partner_item_id))
@@ -3899,10 +3831,12 @@ void GameGraphics::DrawTradeText()
             MainForm->text_canvas->TextOut(partner_text_x, partner_text_y, "x " + IntToStr(partner_amount));
         partner_row++;
     }
+    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
     top_row = MainForm->animation->trade->GetOwnTopRow();
     item_count = MainForm->animation->trade->own_items.size();
     partner_row = 0;
-    for (int j = top_row; j < item_count && top_row + 5 > j; j++)
+    int j;
+    for (j = top_row; j < item_count && top_row + 5 > j; j++)
     {
         int own_item_id = MainForm->animation->trade->own_items[j].item_id;
         int own_amount = MainForm->animation->trade->own_items[j].amount;
@@ -3931,21 +3865,14 @@ void GameGraphics::DrawTradeText()
 void GameGraphics::DrawBookText()
 {
     int top_line;
-    int line_count;
-    int row;
-    int window_x;
-    int window_y;
-    int i;
-    int text_x;
-    int text_y;
     MainForm->text_canvas->Brush->Color = clWhite;
     MainForm->text_canvas->Brush->Style = bsClear;
     MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    window_x = MainForm->animation->book->window_x;
-    window_y = MainForm->animation->book->window_y;
+    int window_x = MainForm->animation->book->window_x;
+    int window_y = MainForm->animation->book->window_y;
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 23, MainForm->animation->book->player_name);
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 53, MainForm->animation->book->home_name);
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 83, MainForm->animation->book->class_name);
@@ -3954,16 +3881,16 @@ void GameGraphics::DrawBookText()
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 203, MainForm->animation->book->guild_name);
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 233, MainForm->animation->book->guild_rank_name);
     top_line = MainForm->animation->book->GetTopLine();
-    line_count = MainForm->animation->book->lines->Count;
-    row = 0;
-    for (i = top_line; i < line_count && i < top_line + 14; i++)
+    int line_count = MainForm->animation->book->lines->Count;
+    int row = 0;
+    for (int i = top_line; i < line_count && i < top_line + 14; i++)
     {
         String line = MainForm->animation->book->lines->Strings[i];
         if (line.Length() > 0)
         {
             MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-            text_x = MainForm->animation->book->window_x + 49;
-            text_y = MainForm->animation->book->window_y + BOOK_ROW_HEIGHT * row + 41;
+            int text_x = MainForm->animation->book->window_x + 49;
+            int text_y = MainForm->animation->book->window_y + BOOK_ROW_HEIGHT * row + 41;
             MainForm->text_canvas->TextOut(text_x, text_y, line);
             MainForm->text_canvas->Font->Style = TFontStyles();
             row++;
@@ -3971,7 +3898,7 @@ void GameGraphics::DrawBookText()
     }
 }
 
-// Draws the paperdoll's info lines beside the equipment.
+// Draws the paperdoll's character details, dimmed while a slot is hovered.
 void GameGraphics::DrawPaperdollText()
 {
     MainForm->text_canvas->Brush->Color = clWhite;
@@ -3980,6 +3907,8 @@ void GameGraphics::DrawPaperdollText()
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
+    if (MainForm->animation->paperdoll->HasHoveredSlot())
+        MainForm->text_canvas->Font->Color = (TColor)0x5A5A5A;
     int window_x = MainForm->animation->paperdoll->window_x;
     int window_y = MainForm->animation->paperdoll->window_y;
     MainForm->text_canvas->TextOut(window_x + 231, window_y + 23, MainForm->animation->paperdoll->player_name);

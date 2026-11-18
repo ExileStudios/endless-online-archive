@@ -7,7 +7,7 @@ struct NpcResources;
 // One npc on the map: record id, graphic, position and the state of each animation, with a queue of balloons.
 struct Npc
 {
-    unsigned int index;
+    int index;
     int npc_id;
     int graphic;
     int idle_frame;
@@ -18,6 +18,7 @@ struct Npc
     char graphics_pending;
     char reload_requested;
     int load_stage;
+    unsigned char load_failures;
     char label_shown;
     String name;
     int hidden;
@@ -30,8 +31,8 @@ struct Npc
     char attacking;
     int attack_direction;
     int attack_frame;
-    bool alt_attack_start;
-    bool alt_attacking;
+    char alt_attack_start;
+    char alt_attacking;
     int alt_attack_direction;
     int alt_attack_frame;
     char effect_start;
@@ -78,7 +79,7 @@ struct Npc
     Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing);
     ~Npc();
     void CreateResources();
-    Windows::TPoint GetAnimatedPosition(int screen_x, int screen_y);
+    TPoint GetAnimatedPosition(int screen_x, int screen_y);
     void ShowBalloon(String *lines, int width, int height, int tinted);
     void DrawBalloon();
     void CloseBalloon();

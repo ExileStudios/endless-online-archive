@@ -6,6 +6,8 @@
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
+#include "Ctrl_inventory.h"
+
 #pragma package(smart_init)
 
 BankController::BankController()
@@ -46,90 +48,80 @@ void BankController::Close()
 // more opens the amount box. Otherwise starts moving the window.
 void BankController::MouseDown(int x, int y, int button)
 {
-    char handled;
-    int row;
-    int upgrade_price;
-    handled = false;
+    int result;
+    int gold;
+    char handled = false;
     if (button == 0 || button == 1)
     {
-        if (window_y + 50 < y && window_y + 170 > y && window_x + 17 < x)
+        if (window_y + 50 < y && window_y + 170 > y && window_x + 17 < x && window_x + 252 > x)
         {
-            if (window_x + 252 > x)
+            int row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
+            result = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
+            if (!row)
             {
-                row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
-                int result = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
-                if (!row)
+                handled = true;
+                if (result > 0)
                 {
-                    handled = true;
-                    if (result > 0)
-                    {
-                        if (result == 1)
-                            MainForm->net_client->sender->SendBankDeposit(npc_session_id, 1);
-                        else
-                        {
-                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_BankDeposit, result, ItemId_Gold, 0);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
-                    }
+                    if (result == 1)
+                        MainForm->net_client->sender->SendBankDeposit(npc_session_id, 1);
                     else
                     {
-                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                            MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, false),
-                            MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, true));
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                            MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, true));
+                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_BankDeposit, result, ItemId_Gold, 0);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
-                if (row == 1)
+                else
                 {
-                    handled = true;
-                    if (bank_gold > 0)
-                    {
-                        if (bank_gold == 1)
-                            MainForm->net_client->sender->SendBankWithdraw(npc_session_id, 1);
-                        else
-                        {
-                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_BankWithdraw, bank_gold, ItemId_Gold,
-                                0);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
-                    }
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, false),
+                        MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, true));
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                        MainForm->strings->GetDialogText(DialogText_CouldNotDeposit, true));
+                }
+            }
+            if (row == 1)
+            {
+                handled = true;
+                if (bank_gold > 0)
+                {
+                    if (bank_gold == 1)
+                        MainForm->net_client->sender->SendBankWithdraw(npc_session_id, 1);
                     else
                     {
-                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                            MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, false),
-                            MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, true));
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                            MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, true));
+                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_BankWithdraw, bank_gold, ItemId_Gold, 0);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
-                if (row == 2)
+                else
                 {
-                    // Each upgrade costs more than the one before
-                    upgrade_price = 1000 * locker_upgrade_level + 1000;
-                    int gold = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
-                    if (locker_upgrade_level > 6)
-                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                            MainForm->strings->GetDialogText(DialogText_LockerUpgradeImpossible, false),
-                            MainForm->strings->GetDialogText(DialogText_LockerUpgradeImpossible, true));
-                    else
-                    {
-                        if (gold < upgrade_price)
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                MainForm->strings->GetDialogText(DialogText_WarningEnough, false),
-                                MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
-                                LowerCase(MainForm->item_values->GetName(ItemId_Gold)));
-                        else
-                        {
-                            String price_text = IntToStr(upgrade_price);
-                            price_text = price_text + " " + LowerCase(MainForm->item_values->GetName(ItemId_Gold)) +
-                                "?";
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel,
-                                ConfirmAction_BuyLockerUpgrade,
-                                MainForm->strings->GetDialogText(DialogText_LockerUpgradeLike, false),
-                                MainForm->strings->GetDialogText(DialogText_LockerUpgradeLike, true) + price_text);
-                        }
-                    }
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, false),
+                        MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, true));
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                        MainForm->strings->GetDialogText(DialogText_CouldNotWithdraw, true));
+                }
+            }
+            if (row == 2)
+            {
+                // Each upgrade costs more than the one before
+                int upgrade_price = 1000 * locker_upgrade_level + 1000;
+                gold = MainForm->animation->interface_controller->inventory->GetItemAmount(1);
+                if (locker_upgrade_level > 6)
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_LockerUpgradeImpossible, false),
+                        MainForm->strings->GetDialogText(DialogText_LockerUpgradeImpossible, true));
+                else if (gold < upgrade_price)
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, false),
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
+                            LowerCase(MainForm->item_values->GetName(ItemId_Gold)));
+                else
+                {
+                    String price_text = IntToStr(upgrade_price);
+                    price_text = price_text + " " + LowerCase(MainForm->item_values->GetName(ItemId_Gold)) + "?";
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_BuyLockerUpgrade,
+                        MainForm->strings->GetDialogText(DialogText_LockerUpgradeLike, false),
+                        MainForm->strings->GetDialogText(DialogText_LockerUpgradeLike, true) + price_text);
                 }
             }
         }
@@ -162,7 +154,7 @@ void BankController::MouseMove(int x, int y)
             window_y = 74;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= window_y + 50 || y >= window_y + 170 || x <= window_x + 17 || x >= window_x + 252 || is_dragging))
+    if (y > window_y + 50 && y < window_y + 170 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         int row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
         if (row > 2)
@@ -178,7 +170,7 @@ void BankController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < window_x + 91 || x > window_x + 181 || y < window_y + 192 || y > window_y + 218))
+    if (x >= window_x + 91 && x <= window_x + 181 && y >= window_y + 192 && y <= window_y + 218)
     {
         if (!close_hovered)
         {

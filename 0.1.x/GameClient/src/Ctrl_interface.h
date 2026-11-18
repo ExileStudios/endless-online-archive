@@ -1,6 +1,24 @@
 #ifndef Ctrl_interfaceH
 #define Ctrl_interfaceH
 
+#include <vector.h>
+
+struct ChatController;
+struct GameBars;
+struct GroupController;
+struct HelpController;
+struct InventoryController;
+struct NewslistController;
+struct PlayerlistController;
+struct SettingsController;
+struct SkillController;
+struct SpellController;
+struct StatusController;
+
+#include "Ctrl_groupmember.h"
+
+#define STATUS_MESSAGE_EXPIRED 2
+
 enum StatusCategory
 {
     StatusCategory_Button = 1,
@@ -14,18 +32,6 @@ enum StatusCategory
     StatusCategory_Hotkey = 9,
     StatusCategory_Locker = 10
 };
-
-struct ChatController;
-struct GameBars;
-struct GroupController;
-struct HelpController;
-struct InventoryController;
-struct NewslistController;
-struct PlayerlistController;
-struct SettingsController;
-struct SkillController;
-struct SpellController;
-struct StatusController;
 
 // The game screen's interface: the panel buttons, the status line, the screen shake and the panel controllers.
 struct InterfaceController
@@ -82,11 +88,12 @@ struct InterfaceController
     InterfaceController();
     ~InterfaceController();
     void Logout();
-    void RequestFullRedraw();
+    void InvalidateActivePanel();
+    void RequestFullRedraw(unsigned char countdown);
     void Invalidate();
     void OnMouseMove(int mouse_x, int mouse_y);
-    bool UpdateCornerHover(int mouse_x, int mouse_y);
-    bool UpdateButtonHover(int mouse_x, int mouse_y);
+    void UpdateCornerHover(int mouse_x, int mouse_y);
+    void UpdateButtonHover(int mouse_x, int mouse_y);
     bool TakeInvalidated();
     bool IsFullRedrawPending();
     void ClearFullRedraw();

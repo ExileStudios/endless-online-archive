@@ -1,10 +1,14 @@
 #ifndef Ctrl_msgboardH
 #define Ctrl_msgboardH
 
+#include <new>
 #include <vector.h>
-#define POST_MESSAGE_EDIT 21
 
 #include "Sys_msg.h"
+
+#define FIRST_LOCAL_POST_ID 50000
+#define MSGBOARD_THUMB_TRAVEL 122.0
+#define MSGBOARD_VISIBLE_POSTS 12
 
 // The message board window: the board's post list, one post read in the subject and body edits, or a new post
 // being written, with a scroll bar for the list or the body.
@@ -28,10 +32,9 @@ struct MsgBoardController
     char scroll_down_hovered;
     char unused_bytes[4];
     int next_local_post_id;
-    char second_unused_bytes[4];
     vector<Msg> posts;
     char scroll_changed;
-    char third_unused_bytes[7];
+    char second_unused_bytes[7];
     int top_line;
     int scroll_thumb_offset;
     char scroll_up_held;
@@ -42,7 +45,7 @@ struct MsgBoardController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char fourth_unused_bytes[8];
+    char third_unused_bytes[4];
 
     MsgBoardController();
     ~MsgBoardController();

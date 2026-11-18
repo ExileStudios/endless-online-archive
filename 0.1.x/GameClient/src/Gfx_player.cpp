@@ -3,9 +3,8 @@
 
 #include "Gfx_player.h"
 #include "Tmainform.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
-#define PLAYER_FRAME_WIDTH 68
 
 PlayerResources::PlayerResources()
 {
@@ -83,115 +82,22 @@ void PlayerResources::ClearSheets()
     back_sheet->Blt(&sheet_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
 }
 
-// Draws one layer bitmap into a frame slot of the front player sheet at an offset; its black stays see-through.
-void PlayerResources::DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
+bool PlayerResources::DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
 {
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
     MainForm->resource_bitmap->TransparentColor = clBlack;
     MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (front_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(x_offset + 68 * frame_slot, y_offset, MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            front_sheet->ReleaseDC(dc);
-        }
-    }
-    else
-    {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
-        if (front_sheet->GetDC(&dc))
-        {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, CompatibleDC, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
-            }
-            catch (Exception &)
-            {
-            }
-            front_sheet->ReleaseDC(dc);
-        }
-        DeleteDC(CompatibleDC);
-    }
-}
-
-// Draws one layer bitmap into a frame slot of the back player sheet at an offset; its black stays see-through.
-void PlayerResources::DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
-{
-    HDC dc;
-    HDC CompatibleDC;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    MainForm->resource_bitmap->TransparentColor = clBlack;
-    MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (back_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(x_offset + 68 * frame_slot, y_offset, MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            back_sheet->ReleaseDC(dc);
-        }
-    }
-    else
-    {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
-        if (back_sheet->GetDC(&dc))
-        {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, CompatibleDC, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
-            }
-            catch (Exception &)
-            {
-            }
-            back_sheet->ReleaseDC(dc);
-        }
-        DeleteDC(CompatibleDC);
-    }
-}
-
-// Like DrawFrontLayer, but the see-through colour is read from a pixel of the layer bitmap itself.
-void PlayerResources::DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
-{
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    int Pixel = MainForm->resource_bitmap->Canvas->Pixels[1][32];
-    BYTE red = GetRValue(Pixel);
-    BYTE blue = GetBValue(Pixel);
-    BYTE green = GetGValue(Pixel);
-    MainForm->resource_bitmap->TransparentColor = (TColor)RGB(red, green, blue);
-    MainForm->resource_bitmap->Transparent = true;
-    HDC dc;
     if (!MainForm->config->GetUseBitBltDraw())
     {
         if (front_sheet->GetDC(&dc))
@@ -212,38 +118,42 @@ void PlayerResources::DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int
     }
     else
     {
-        HDC CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (front_sheet->GetDC(&dc))
         {
             try
             {
                 TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, CompatibleDC, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, RGB(red, green, blue));
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
             }
             catch (Exception &)
             {
             }
             front_sheet->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
+    return true;
 }
 
-// Like DrawBackLayer, but the see-through colour is read from a pixel of the layer bitmap itself.
-void PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
+bool PlayerResources::DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
 {
+    HDC dc;
+    HDC compatible_dc;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    int Pixel = MainForm->resource_bitmap->Canvas->Pixels[1][32];
-    BYTE red = GetRValue(Pixel);
-    BYTE blue = GetBValue(Pixel);
-    BYTE green = GetGValue(Pixel);
-    MainForm->resource_bitmap->TransparentColor = (TColor)RGB(red, green, blue);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    MainForm->resource_bitmap->TransparentColor = clBlack;
     MainForm->resource_bitmap->Transparent = true;
-    HDC dc;
     if (!MainForm->config->GetUseBitBltDraw())
     {
         if (back_sheet->GetDC(&dc))
@@ -264,23 +174,158 @@ void PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int 
     }
     else
     {
-        HDC CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (back_sheet->GetDC(&dc))
         {
             try
             {
                 TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, CompatibleDC, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, RGB(red, green, blue));
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
             }
             catch (Exception &)
             {
             }
             back_sheet->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
+    return true;
+}
+
+bool PlayerResources::DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
+    int resource_id)
+{
+    char key_red;
+    int get_b_value;
+    unsigned char key_blue;
+    unsigned char key_green;
+    HDC dc;
+    HDC compatible_dc;
+    MainForm->resource_bitmap->Width = 0;
+    MainForm->resource_bitmap->Height = 0;
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
+    key_red = get_b_value;
+    key_blue = get_b_value >> 16;
+    key_green = (unsigned short)get_b_value >> 8;
+    MainForm->resource_bitmap->TransparentColor =
+        (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
+    MainForm->resource_bitmap->Transparent = true;
+    if (!MainForm->config->GetUseBitBltDraw())
+    {
+        if (front_sheet->GetDC(&dc))
+        {
+            try
+            {
+                MainForm->draw_canvas->Handle = dc;
+                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
+                    MainForm->resource_bitmap);
+                MainForm->draw_canvas->Handle = 0;
+            }
+            catch (Exception &)
+            {
+                MainForm->CountDrawError();
+            }
+            front_sheet->ReleaseDC(dc);
+        }
+    }
+    else
+    {
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
+        if (front_sheet->GetDC(&dc))
+        {
+            try
+            {
+                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
+                    (unsigned int)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16)));
+            }
+            catch (Exception &)
+            {
+            }
+            front_sheet->ReleaseDC(dc);
+        }
+        DeleteDC(compatible_dc);
+    }
+    return true;
+}
+
+bool PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
+    int resource_id)
+{
+    char key_red;
+    int get_b_value;
+    unsigned char key_blue;
+    unsigned char key_green;
+    HDC dc;
+    HDC compatible_dc;
+    MainForm->resource_bitmap->Width = 0;
+    MainForm->resource_bitmap->Height = 0;
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
+    get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
+    key_red = get_b_value;
+    key_blue = get_b_value >> 16;
+    key_green = (unsigned short)get_b_value >> 8;
+    MainForm->resource_bitmap->TransparentColor =
+        (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
+    MainForm->resource_bitmap->Transparent = true;
+    if (!MainForm->config->GetUseBitBltDraw())
+    {
+        if (back_sheet->GetDC(&dc))
+        {
+            try
+            {
+                MainForm->draw_canvas->Handle = dc;
+                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
+                    MainForm->resource_bitmap);
+                MainForm->draw_canvas->Handle = 0;
+            }
+            catch (Exception &)
+            {
+                MainForm->CountDrawError();
+            }
+            back_sheet->ReleaseDC(dc);
+        }
+    }
+    else
+    {
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
+        if (back_sheet->GetDC(&dc))
+        {
+            try
+            {
+                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
+                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
+                    (unsigned int)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16)));
+            }
+            catch (Exception &)
+            {
+            }
+            back_sheet->ReleaseDC(dc);
+        }
+        DeleteDC(compatible_dc);
+    }
+    return true;
 }
 
 // Draws a name onto the name tag surface in the colour that color_index picks.
@@ -351,7 +396,7 @@ void PlayerResources::RenderNameTag(String text, int color_index)
 }
 
 // One frame of a player sheet.
-Windows::TRect PlayerResources::GetFrameRect(int frame)
+TRect PlayerResources::GetFrameRect(int frame)
 {
     TRect frame_rect;
     frame_rect.left = 68 * frame;
@@ -362,7 +407,7 @@ Windows::TRect PlayerResources::GetFrameRect(int frame)
 }
 
 // One face of the emote strip.
-Windows::TRect PlayerResources::GetEmoteFaceRect(int emote_index)
+TRect PlayerResources::GetEmoteFaceRect(int emote_index)
 {
     TRect emote_face_rect;
     emote_face_rect.left = 13 * emote_index;

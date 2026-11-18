@@ -1,6 +1,7 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Ctrl_shop.h"
 #include "Tmainform.h"
 #include "Ctrl_guild.h"
 #include "Ctrl_game.h"
@@ -9,9 +10,12 @@
 #include "Ctrl_law.h"
 #include "Ctrl_memo.h"
 #include "Ctrl_status.h"
-#pragma package(smart_init)
+#include "Ctrl_inventory.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_tooltip.h"
 
-#define SHOP_VISIBLE_ROWS 5
+#pragma package(smart_init)
 
 ShopController::ShopController()
 {
@@ -32,6 +36,8 @@ ShopController::ShopController()
     scroll_up_held = false;
     scroll_down_held = false;
     is_dragging = false;
+    tooltip = new Tooltip(76, 50);
+    tooltip->SetFlipEdge(630, 63);
 }
 
 ShopController::~ShopController()
@@ -64,13 +70,7 @@ void ShopController::Open(String npc, int session_id)
 }
 
 // Hides the window and frees its graphics.
-void ShopController::Close()
-{
-    is_visible = false;
-    npc_session_id = -1;
-    MainForm->gfx->FreeShopGraphics();
-    MainForm->redraw_needed = true;
-}
+DEFINE_CLOSE(ShopController)
 
 // Adds a recipe with up to four ingredients and their amounts, once per item.
 void ShopController::AddCraftItem(int item_id, int first_ingredient_id, int first_ingredient_amount,
@@ -104,12 +104,12 @@ void ShopController::AddCraftItem(int item_id, int first_ingredient_id, int firs
 // Adds an item to the buy list or the sell list; an item listed again adds to its amount.
 void ShopController::AddTradeItem(int list_type, int item_id, int item_id_copy, int price, int amount)
 {
-    char buy_found;
     char sell_found;
+    vector<ShopItem>::iterator walk;
     if (list_type == ShopList_Buy)
     {
+        char buy_found = false;
         vector<ShopItem>::iterator it;
-        buy_found = false;
         for (it = buy_items.begin(); it != buy_items.end(); it++)
         {
             if (item_id == it->item_id)
@@ -129,14 +129,13 @@ void ShopController::AddTradeItem(int list_type, int item_id, int item_id_copy, 
     }
     else
     {
-        vector<ShopItem>::iterator it;
         sell_found = false;
-        for (it = sell_items.begin(); it != sell_items.end(); it++)
+        for (walk = sell_items.begin(); walk != sell_items.end(); walk++)
         {
-            if (item_id == it->item_id)
+            if (item_id == walk->item_id)
             {
                 sell_found = true;
-                it->max_amount += amount;
+                walk->max_amount += amount;
                 break;
             }
         }
@@ -187,83 +186,88 @@ int ShopController::CountSellableItems()
 // On the craft list: shows the recipe. Otherwise the scroll bar and moving the window.
 void ShopController::MouseDown(int x, int y, int button)
 {
+    vector<ShopItem>::iterator j;
+    vector<ShopItem>::iterator k;
+    int carried_amount;
+    vector<CraftItem>::iterator i;
     char handled = false;
-    if ((button == 0 || button == 1) && this->window_y + 43 < y && this->window_y + 243 > y)
+    if ((!button || button == 1) && window_y + 43 < y && window_y + 243 > y && window_x + 17 < x && window_x + 252 > x)
     {
-        if (window_x + 17 < x && window_x + 252 > x)
+        is_dragging = false;
+        int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
+        if (page == ShopPage_Menu)
         {
-            is_dragging = false;
-            int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
-            if (page == ShopPage_Menu)
+            if (!row)
             {
-                if (!row)
+                handled = true;
+                if (buy_items.size() <= 0)
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, false),
+                        MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, true));
+                else
                 {
-                    handled = true;
-                    if (this->buy_items.size() <= 0)
-                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                            MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, false),
-                            MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, true));
-                    else
-                    {
-                        shown_items.clear();
-                        for (vector<ShopItem>::iterator j = buy_items.begin(); j != buy_items.end(); j++)
-                            shown_items.insert(shown_items.end(), *j);
-                        page = ShopPage_Buy;
-                    }
+                    shown_items.clear();
+                    for (j = buy_items.begin(); j != buy_items.end(); j++)
+                        shown_items.insert(shown_items.end(), *j);
+                    page = ShopPage_Buy;
                 }
-                if (row == 1)
+            }
+            if (row == 1)
+            {
+                handled = true;
+                if (sell_items.size() <= 0)
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_RefusedBuying, false),
+                        MainForm->strings->GetDialogText(DialogText_RefusedBuying, true));
+                else
                 {
-                    handled = true;
-                    if (this->sell_items.size() <= 0)
+                    shown_items.clear();
+                    for (k = sell_items.begin(); k != sell_items.end(); k++)
+                    {
+                        carried_amount =
+                            MainForm->animation->interface_controller->inventory->GetItemAmount(k->item_id);
+                        // Only items the inventory holds are offered for sale, with the amount carried
+                        if (carried_amount > 0)
+                        {
+                            k->max_amount = carried_amount;
+                            shown_items.insert(shown_items.end(), *k);
+                        }
+                    }
+                    if (!shown_items.size())
                         MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_RefusedBuying, false),
                             MainForm->strings->GetDialogText(DialogText_RefusedBuying, true));
                     else
-                    {
-                        shown_items.clear();
-                        for (vector<ShopItem>::iterator k = sell_items.begin(); k != sell_items.end(); k++)
-                        {
-                            int carried_amount = MainForm->animation->interface_controller->inventory->GetItemAmount(k->item_id);
-                            // Only items the inventory holds are offered for sale, with the amount carried
-                            if (carried_amount > 0)
-                            {
-                                k->max_amount = carried_amount;
-                                shown_items.insert(shown_items.end(), *k);
-                            }
-                        }
-                        if (!this->shown_items.size())
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                MainForm->strings->GetDialogText(DialogText_RefusedBuying, false),
-                                MainForm->strings->GetDialogText(DialogText_RefusedBuying, true));
-                        else
-                            page = ShopPage_Sell;
-                    }
-                }
-                if (row == 2)
-                {
-                    handled = true;
-                    if (craft_items.size() > 0)
-                    {
-                        shown_items.clear();
-                        for (vector<CraftItem>::iterator m = craft_items.begin(); m != craft_items.end(); m++)
-                        {
-                            int ingredient_count = 0;
-                            for (int ingredient = 0; ingredient < MAX_CRAFT_INGREDIENTS; ingredient++)
-                            {
-                                if (m->ingredient_ids[ingredient] > 0 && m->ingredient_amounts[ingredient] > 0)
-                                    ingredient_count++;
-                            }
-                            ShopItem handle(m->item_id);
-                            handle.price = ingredient_count;
-                            shown_items.insert(shown_items.end(), handle);
-                        }
-                        page = ShopPage_Craft;
-                    }
+                        page = ShopPage_Sell;
                 }
             }
-            else
+            if (row == 2)
             {
-                if (page == ShopPage_Buy && row >= 0 && (int)shown_items.size() > row)
+                handled = true;
+                if (craft_items.size() > 0)
+                {
+                    shown_items.clear();
+                    for (vector<CraftItem>::iterator m = craft_items.begin(); m != craft_items.end(); m++)
+                    {
+                        int ingredient_count = 0;
+                        for (int ingredient = 0; ingredient < MAX_CRAFT_INGREDIENTS; ingredient++)
+                        {
+                            if (m->ingredient_ids[ingredient] > 0 && m->ingredient_amounts[ingredient] > 0)
+                                ingredient_count++;
+                        }
+                        ShopItem handle(m->item_id);
+                        handle.price = ingredient_count;
+                        shown_items.insert(shown_items.end(), handle);
+                    }
+                    page = ShopPage_Craft;
+                }
+            }
+        }
+        else
+        {
+            if (page == ShopPage_Buy && row >= 0)
+            {
+                if ((int)shown_items.size() > row)
                 {
                     handled = true;
                     int buy_item_id = MainForm->animation->shop->shown_items[row].item_id;
@@ -334,7 +338,10 @@ void ShopController::MouseDown(int x, int y, int button)
                         MainForm->edits->caret_enabled = false;
                     }
                 }
-                if (page == ShopPage_Sell && row >= 0 && (int)shown_items.size() > row)
+            }
+            if (page == ShopPage_Sell && row >= 0)
+            {
+                if ((int)shown_items.size() > row)
                 {
                     handled = true;
                     int sell_item_id = MainForm->animation->shop->shown_items[row].item_id;
@@ -364,35 +371,36 @@ void ShopController::MouseDown(int x, int y, int button)
                         MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
-                if (page == ShopPage_Craft && row >= 0 && (int)shown_items.size() > row)
+            }
+            if (page == ShopPage_Craft && row >= 0 && (int)shown_items.size() > row)
+            {
+                handled = true;
+                int craft_item_id = MainForm->animation->shop->shown_items[row].item_id;
+                int craft_max_amount;
+                craft_max_amount = MainForm->animation->shop->shown_items[row].max_amount;
+                String craft_item_name = MainForm->item_values->GetName(craft_item_id);
+                MainForm->animation->shop->selected_item_id = craft_item_id;
+                MainForm->animation->shop->selected_amount = 1;
+                String craft_text;
+                int buttons = 2;
+                char recipe_found = false;
+                MainForm->animation->game->large_box_lines[1] = "";
+                MainForm->animation->game->large_box_lines[2] = "";
+                MainForm->animation->game->large_box_lines[3] = "";
+                MainForm->animation->game->large_box_lines[4] = "";
+                MainForm->animation->game->large_box_lines[5] = "";
+                i = craft_items.begin();
+                while (i != craft_items.end())
                 {
-                    handled = true;
-                    int craft_item_id = MainForm->animation->shop->shown_items[row].item_id;
-                    int craft_max_amount = MainForm->animation->shop->shown_items[row].max_amount;
-                    String craft_item_name = MainForm->item_values->GetName(craft_item_id);
-                    MainForm->animation->shop->selected_item_id = craft_item_id;
-                    MainForm->animation->shop->selected_amount = 1;
-                    String craft_text;
-                    int buttons = 2;
-                    char recipe_found = false;
-                    MainForm->animation->game->large_box_lines[1] = "";
-                    MainForm->animation->game->large_box_lines[2] = "";
-                    MainForm->animation->game->large_box_lines[3] = "";
-                    MainForm->animation->game->large_box_lines[4] = "";
-                    MainForm->animation->game->large_box_lines[5] = "";
-                    vector<CraftItem>::iterator i;
-                    for (i = this->craft_items.begin(); i != this->craft_items.end(); i++)
+                    if (craft_item_id == i->item_id)
                     {
-                        if (craft_item_id == i->item_id)
+                        recipe_found = true;
+                        for (int craft_ingredient = 0; craft_ingredient < MAX_CRAFT_INGREDIENTS; craft_ingredient++)
                         {
-                            recipe_found = true;
-                            for (int craft_ingredient = 0; craft_ingredient < MAX_CRAFT_INGREDIENTS; craft_ingredient++)
+                            if (i->ingredient_ids[craft_ingredient] > 0 && i->ingredient_amounts[craft_ingredient] > 0)
                             {
-                                if (i->ingredient_ids[craft_ingredient] <= 0)
-                                    continue;
-                                if (i->ingredient_amounts[craft_ingredient] <= 0)
-                                    continue;
-                                int carried_ingredient_amount = MainForm->animation->interface_controller->inventory->GetItemAmount(i->ingredient_ids[craft_ingredient]);
+                                int carried_ingredient_amount =
+                                    MainForm->animation->interface_controller->inventory->GetItemAmount(i->ingredient_ids[craft_ingredient]);
                                 int needed_ingredient_amount = i->ingredient_amounts[craft_ingredient];
                                 String ingredient_name =
                                     MainForm->item_values->GetName(i->ingredient_ids[craft_ingredient]);
@@ -401,73 +409,65 @@ void ShopController::MouseDown(int x, int y, int button)
                                 MainForm->animation->game->large_box_lines[craft_ingredient + 2] =
                                     "+  " + IntToStr(needed_ingredient_amount) + " " + ingredient_name;
                             }
-                            break;
                         }
+                        break;
                     }
-                    // The box offers crafting only when every ingredient is carried in full
-                    if (recipe_found)
-                    {
-                        craft_text = MainForm->strings->GetText(GameText_PutIngredientsTogether);
-                        buttons = 3;
-                    }
-                    else
-                        craft_text = MainForm->strings->GetText(GameText_YouDontHaveAll);
-                    MainForm->animation->game->ShowLargeMessageBox(buttons, LargeBoxKind_CraftItem,
-                        MainForm->strings->GetText(GameText_Ingredients) + " " + craft_item_name, craft_text);
-                    MainForm->edits->caret_enabled = false;
+                    i++;
                 }
-                if (page == ShopPage_Unknown4 && row >= 0 && (int)shown_items.size() > row)
-                    handled = true;
+                // The box offers crafting only when every ingredient is carried in full
+                if (recipe_found)
+                {
+                    craft_text = MainForm->strings->GetText(GameText_PutIngredientsTogether);
+                    buttons = 3;
+                }
+                else
+                    craft_text = MainForm->strings->GetText(GameText_YouDontHaveAll);
+                MainForm->animation->game->ShowLargeMessageBox(buttons, LargeBoxKind_CraftItem,
+                    MainForm->strings->GetText(GameText_Ingredients) + " " + craft_item_name, craft_text);
+                MainForm->edits->caret_enabled = false;
             }
+            if (page == ShopPage_Unknown4 && row >= 0 && (int)shown_items.size() > row)
+                handled = true;
         }
     }
     if (!handled)
     {
-        if (this->window_x + 252 <= x && this->window_x + 267 >= x &&
-            this->window_y + this->scroll_thumb_offset + 58 <= y &&
-            this->window_y + this->scroll_thumb_offset + 73 >= y)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + scroll_thumb_offset + 58 <= y &&
+            window_y + scroll_thumb_offset + 73 >= y)
         {
             thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
-        if (window_x + 252 <= x && window_x + 267 >= x && window_y + 44 <= y)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + 44 <= y && window_y + 59 >= y)
         {
-            if (window_y + 59 >= y)
-            {
-                scroll_up_held = true;
-                scroll_repeat_delay = 4;
-                ScrollUp();
-            }
+            scroll_up_held = true;
+            scroll_repeat_delay = 4;
+            ScrollUp();
         }
-        if (window_x + 252 <= x && window_x + 267 >= x)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + 228 <= y && window_y + 243 >= y)
         {
-            if (window_y + 228 <= y && window_y + 243 >= y)
-            {
-                scroll_down_held = true;
-                scroll_repeat_delay = 4;
-                ScrollDown();
-            }
+            scroll_down_held = true;
+            scroll_repeat_delay = 4;
+            ScrollDown();
         }
-        if (window_x <= x)
+        if (window_x <= x && window_x + 284 >= x && y >= window_y && window_y + 290 >= y && !thumb_grabbed)
         {
-            if (window_x + 284 >= x && y >= window_y && window_y + 290 >= y && !thumb_grabbed)
-            {
-                is_dragging = true;
-                drag_offset_x = x - window_x;
-                drag_offset_y = y - window_y;
-            }
+            is_dragging = true;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
         }
     }
 }
 
-// Moves a dragged window, kept on screen; tracks the hovered row, names a hovered buy or craft item in the status
-// bar, and tracks the close and back buttons.
+// Moves a dragged window, kept on screen; tracks the hovered row, names a hovered item with the class it needs and
+// its weight in the status bar, shows its tip, and tracks the close and back buttons.
 void ShopController::MouseMove(int x, int y)
 {
     int item_id;
     int row;
     UpdateScrollHover(x, y);
+    // A dragged window stays inside the game view.
     if (is_dragging)
     {
         window_x = x - drag_offset_x;
@@ -501,28 +501,36 @@ void ShopController::MouseMove(int x, int y)
         }
         if (row != hovered_row)
         {
-            if (row != -1)
+            if (row != -1 && (page == ShopPage_Buy || page == ShopPage_Craft))
             {
-                if (page == ShopPage_Buy || page == ShopPage_Craft)
+                String tooltip_text =
+                    MainForm->net_client->Capitalize(MainForm->item_values->GetName(shown_items[row].item_id));
+                if (page == ShopPage_Buy)
                 {
-                    String tooltip_text = MainForm->net_client->Capitalize(
-                        MainForm->item_values->GetName(shown_items[row].item_id));
-                    if (page == ShopPage_Buy)
-                    {
-                        tooltip_text = tooltip_text + ", ";
-                        tooltip_text = tooltip_text + IntToStr((unsigned int)shown_items[row].price) + " " +
+                    tooltip_text = tooltip_text + ", ";
+                    tooltip_text =
+                        tooltip_text + IntToStr((unsigned int)shown_items[row].price) + " " +
                             MainForm->item_values->GetName(ItemId_Gold);
-                    }
-                    int required_class = MainForm->item_values->GetClassRequirement(shown_items[row].item_id);
-                    if (required_class > 0)
-                        tooltip_text = tooltip_text + ", " + MainForm->class_values->GetName(required_class);
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                        tooltip_text);
                 }
+                int required_class = MainForm->item_values->GetClassRequirement(shown_items[row].item_id);
+                if (required_class > 0)
+                    tooltip_text = tooltip_text + ", " + MainForm->class_values->GetName(required_class);
+                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, tooltip_text);
             }
             hovered_row = row;
             MainForm->redraw_needed = true;
         }
+        // On pages 1 and 3 the icon under the mouse shows its item's tip.
+        if (x < window_x + 76 && hovered_row >= 0 && (page == ShopPage_Buy || page == ShopPage_Craft))
+        {
+            item_id = MainForm->animation->shop->shown_items[hovered_row + GetTopRow()].item_id;
+            tooltip->ShowItemCount(item_id, 1);
+            tooltip->SetAnchorX(window_x);
+            tooltip->SetAnchorY(37 * row + window_y);
+            MainForm->redraw_needed = true;
+        }
+        else if (tooltip->Hide())
+            MainForm->redraw_needed = true;
     }
     else if (hovered_row >= 0)
     {
@@ -531,8 +539,7 @@ void ShopController::MouseMove(int x, int y)
     }
     if (page == ShopPage_Menu)
     {
-        if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -540,19 +547,15 @@ void ShopController::MouseMove(int x, int y)
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = false;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
     else
     {
-        if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 144 && x <= window_x + 234 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -560,16 +563,12 @@ void ShopController::MouseMove(int x, int y)
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = false;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
-        if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 48 && x <= window_x + 138 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!back_hovered)
             {
@@ -577,27 +576,21 @@ void ShopController::MouseMove(int x, int y)
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (back_hovered)
         {
-            if (back_hovered)
-            {
-                back_hovered = false;
-                MainForm->redraw_needed = true;
-            }
+            back_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
 }
 
 // Lights the scroll arrow under the mouse and drags a grabbed thumb.
-DEFINE_UPDATE_SCROLL_HOVER(ShopController)
+DEFINE_SHOP_UPDATE_SCROLL_HOVER(ShopController)
 
 // Follows a grabbed scroll thumb, kept on its track, and picks the top row from its position.
 void ShopController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_row;
-    int unused_int;
-    int second_unused_int;
+    int new_top_row;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -607,9 +600,9 @@ void ShopController::DragScrollThumb(int y)
             thumb_offset = 152;
         if (shown_items.size() > SHOP_VISIBLE_ROWS)
         {
-            thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
-            scaled_row = (shown_items.size() - 5.0) * thumb_fraction;
-            int new_top_row = scaled_row;
+            double thumb_fraction = thumb_offset / NPC_THUMB_TRAVEL;
+            double scaled_row = (shown_items.size() - 5.0) * thumb_fraction;
+            new_top_row = scaled_row;
             if (new_top_row != top_row)
                 top_row = new_top_row;
         }
@@ -622,15 +615,11 @@ void ShopController::DragScrollThumb(int y)
 // Scrolls the list up one row and moves the scroll thumb to match.
 void ShopController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
-    int unused_int;
-    int second_unused_int;
     if ((int)shown_items.size() > SHOP_VISIBLE_ROWS && top_row > 0)
     {
         top_row--;
-        scroll_fraction = (double)top_row / (double)(shown_items.size() - 5);
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_row / (shown_items.size() - 5);
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;
@@ -640,15 +629,11 @@ void ShopController::ScrollUp()
 // Scrolls the list down one row and moves the scroll thumb to match.
 void ShopController::ScrollDown()
 {
-    double scroll_fraction;
-    double thumb_pos;
-    int unused_int;
-    int second_unused_int;
     if ((int)shown_items.size() - 5 > top_row)
     {
         top_row++;
-        scroll_fraction = (double)top_row / (double)(shown_items.size() - 5);
-        thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_row / (shown_items.size() - 5);
+        double thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;

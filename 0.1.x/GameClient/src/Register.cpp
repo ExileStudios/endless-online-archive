@@ -3,12 +3,7 @@
 
 #include "Register.h"
 #include <Registry.hpp>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 WinRegister::WinRegister()
@@ -74,7 +69,7 @@ void WinRegister::WriteSlotValue(int slot_type, int slot_index, int value)
     if (slot_type == LayoutKey_Macros)
         current_key = macros_key;
     TRegIniFile *registry = new TRegIniFile(current_key);
-    registry->RootKey = HKEY_CURRENT_USER;
+    registry->RootKey = (void *)-2147483647;
     try
     {
         registry->WriteInteger("", value_prefix + IntToStr(slot_index), value);
@@ -88,7 +83,9 @@ void WinRegister::WriteSlotValue(int slot_type, int slot_index, int value)
 // Reads one slot the same way; -1 when it is not there.
 int WinRegister::ReadSlotValue(int slot_type, int slot_index)
 {
-    int Integer = -1;
+    int integer;
+    TRegIniFile *registry;
+    integer = -1;
     if (!slot_type)
         current_key = "";
     if (slot_type == LayoutKey_Inventory)
@@ -99,17 +96,17 @@ int WinRegister::ReadSlotValue(int slot_type, int slot_index)
         current_key = skills_key;
     if (slot_type == LayoutKey_Macros)
         current_key = macros_key;
-    TRegIniFile *registry = new TRegIniFile(current_key);
-    registry->RootKey = HKEY_CURRENT_USER;
+    registry = new TRegIniFile(current_key);
+    registry->RootKey = (void *)-2147483647;
     try
     {
-        Integer = registry->ReadInteger("", value_prefix + IntToStr(slot_index), Integer);
+        integer = registry->ReadInteger("", value_prefix + IntToStr(slot_index), integer);
     }
     __finally
     {
         delete registry;
     }
-    return Integer;
+    return integer;
 }
 
 void Register_UnusedLiterals1()
@@ -123,4 +120,3 @@ void Register_UnusedLiterals1()
     "";
     "";
 }
-

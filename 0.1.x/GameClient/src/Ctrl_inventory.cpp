@@ -1,16 +1,19 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Ctrl_inventory.h"
 #include "Tmainform.h"
 #include "Ctrl_paperdoll.h"
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
 #include "Ctrl_status.h"
-#pragma package(smart_init)
+#include "Ctrl_locker.h"
+#include "Ctrl_tooltip.h"
+#include "Ctrl_trade.h"
+#include "Gfx_mapitems.h"
 
-#define DRAG_DELAY_IDLE 1000
-#define INVENTORY_CELL_SIZE 26
+#pragma package(smart_init)
 
 InventoryController::InventoryController()
 {
@@ -27,6 +30,9 @@ InventoryController::InventoryController()
     is_dragging = false;
     dragging_from_paperdoll = false;
     input_enabled = true;
+    tooltip = new Tooltip(145, 342);
+    tooltip->SetFlipEdge(474, 36);
+    tooltip->SetBottomLimit(446, 10);
 }
 
 InventoryController::~InventoryController()
@@ -59,7 +65,6 @@ void InventoryController::Clear()
 {
     left_button_hovered = false;
     right_button_hovered = false;
-    hover_text = "";
     items.clear();
     trial_backup.clear();
 }
@@ -77,8 +82,8 @@ char InventoryController::TestAddItem(int item_id)
     if (trial_backup.size() > 0)
     {
         items.clear();
-        for (vector<InventoryItem>::iterator it = trial_backup.begin(); it != trial_backup.end(); it++)
-            items.insert(items.end(), *it);
+        for (vector<InventoryItem>::iterator saved = trial_backup.begin(); saved != trial_backup.end(); saved++)
+            items.insert(items.end(), *saved);
         trial_backup.clear();
     }
     input_enabled = true;
@@ -89,20 +94,17 @@ char InventoryController::TestAddItem(int item_id)
 // The items are put back as they were.
 char InventoryController::CanFitTradeItems()
 {
-    char fits;
-    volatile char unused_byte;
-    volatile char second_unused_byte;
-    volatile char third_unused_byte;
-    int j = 0;
-    int k = 0;
-    fits = true;
+    int j;
+    int k;
+    char fits = true;
     input_enabled = false;
+    // A trial run: the own offer goes out and the partner's comes in, then the inventory is put back.
     trial_backup.clear();
     for (vector<InventoryItem>::iterator i = items.begin(); i != items.end(); i++)
         trial_backup.insert(trial_backup.end(), *i);
-    for (j = 0; (unsigned int)j < MainForm->animation->trade->own_items.size(); j++)
+    for (j = 0; j < MainForm->animation->trade->own_items.size(); j++)
         RemoveItem(MainForm->animation->trade->own_items[j].item_id, MainForm->animation->trade->own_items[j].amount);
-    for (k = 0; (unsigned int)k < MainForm->animation->trade->partner_items.size(); k++)
+    for (k = 0; k < MainForm->animation->trade->partner_items.size(); k++)
     {
         if (!AddItem(MainForm->animation->trade->partner_items[k].item_id,
             MainForm->animation->trade->partner_items[k].amount))
@@ -113,10 +115,12 @@ char InventoryController::CanFitTradeItems()
     }
     if (trial_backup.size() > 0)
     {
-        items.clear();
+        vector<InventoryItem> *item_list = &items;
+        item_list->clear();
         for (vector<InventoryItem>::iterator m = trial_backup.begin(); m != trial_backup.end(); m++)
             items.insert(items.end(), *m);
-        trial_backup.clear();
+        vector<InventoryItem> *backup_list = &trial_backup;
+        backup_list->clear();
     }
     input_enabled = true;
     return fits;
@@ -410,13 +414,30 @@ void InventoryController::MouseMove(int x, int y)
     }
     UpdateButtonHover(x, y);
     UpdateItemHover(x, y);
+    mouse_x = x;
+    mouse_y = y;
 }
 
-// Works out the cells under the mouse: the drop target of a dragged item, or the item to name in the status bar.
+void InventoryController::RefreshHover()
+{
+    hover_col = -1;
+    hover_row = -1;
+    MouseMove(mouse_x, mouse_y);
+}
+
+// Tracks the inventory cell under the mouse: while dragging it checks where the item would fit, otherwise it shows
+// the hovered item's tip with its amount and weight.
 void InventoryController::UpdateItemHover(int x, int y)
 {
+    InventoryItem *i;
+    int result;
+    int col;
+    InventoryItem *m;
+    int other_size;
+    int j;
+    int k;
     int row;
-    int drag_extra_cols;
+    int wide;
     int drag_extra_rows;
     int overlap_count;
     int item_extra_cols;
@@ -424,14 +445,7 @@ void InventoryController::UpdateItemHover(int x, int y)
     char uncounted;
     char found;
     int extra_rows;
-    HDC dc;
-    int col = 0;
-    int drag_size;
-    int item_size;
-    int j;
-    int k;
-    int result;
-    int extra_cols;
+    int dc;
     // Cells are squares from the grid's top-left corner
     col = (x - 114) / INVENTORY_CELL_SIZE;
     row = (y - 339) / INVENTORY_CELL_SIZE;
@@ -441,24 +455,23 @@ void InventoryController::UpdateItemHover(int x, int y)
     {
         if (is_dragging)
         {
-            drag_size = drag_item_size;
             // A size above 3 is two columns wide; the rest of the size is the extra rows
-            if (drag_size > 3)
+            if (drag_item_size > ITEM_SIZE_MAX_NARROW)
             {
-                drag_extra_cols = 1;
-                drag_extra_rows = drag_size - 4;
+                wide = 1;
+                drag_extra_rows = drag_item_size - 4;
             }
             else
             {
-                drag_extra_cols = 0;
-                drag_extra_rows = drag_size;
+                wide = 0;
+                drag_extra_rows = drag_item_size;
             }
-            if (drag_extra_cols >= 1)
+            if (wide >= 1)
                 col = (x - 126) / INVENTORY_CELL_SIZE;
             if (drag_extra_rows >= 1)
                 row = (y - 339 - 12 * drag_extra_rows) / INVENTORY_CELL_SIZE;
-            if (col + drag_extra_cols > 13)
-                col = 13 - drag_extra_cols;
+            if (wide + col > 13)
+                col = 13 - wide;
             if (row + drag_extra_rows > 3)
                 row = 3 - drag_extra_rows;
             if (col < 0)
@@ -466,34 +479,38 @@ void InventoryController::UpdateItemHover(int x, int y)
             if (row < 0)
                 row = 0;
             overlap_count = 0;
-            for (vector<InventoryItem>::iterator i = items.begin(); i != items.end(); i++)
+            i = items.begin();
+            while (i != items.end())
             {
-                if (i->item_id == drag_item_id)
-                    continue;
-                item_size = MainForm->item_values->GetSize(i->item_id);
-                if (item_size > 3)
+                if (drag_item_id != i->item_id)
                 {
-                    item_extra_cols = 1;
-                    item_extra_rows = item_size - 4;
-                }
-                else
-                {
-                    item_extra_cols = 0;
-                    item_extra_rows = item_size;
-                }
-                uncounted = true;
-                for (j = 0; j <= drag_extra_cols; j++)
-                {
-                    for (k = 0; k <= drag_extra_rows; k++)
+                    other_size = MainForm->item_values->GetSize(i->item_id);
+                    if (other_size > 3)
                     {
-                        if (col + j >= i->grid_x && col + j <= item_extra_cols + i->grid_x && k + row >= i->grid_y &&
-                            k + row <= i->grid_y + item_extra_rows && i->is_visible && uncounted)
+                        item_extra_cols = 1;
+                        item_extra_rows = other_size - 4;
+                    }
+                    else
+                    {
+                        item_extra_cols = 0;
+                        item_extra_rows = other_size;
+                    }
+                    uncounted = true;
+                    for (j = 0; j <= wide; j++)
+                    {
+                        for (k = 0; k <= drag_extra_rows; k++)
                         {
-                            overlap_count++;
-                            uncounted = false;
+                            if (col + j >= i->grid_x && col + j <= i->grid_x + item_extra_cols &&
+                                row + k >= i->grid_y && row + k <= i->grid_y + item_extra_rows && i->is_visible &&
+                                uncounted)
+                            {
+                                overlap_count++;
+                                uncounted = false;
+                            }
                         }
                     }
                 }
+                i++;
             }
             // Dropping on one item swaps it; on two or more the drop is refused
             if (overlap_count < 2)
@@ -502,7 +519,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                 drop_blocked = true;
             hover_col = col;
             hover_row = row;
-            hover_col_end = col + drag_extra_cols;
+            hover_col_end = col + wide;
             hover_row_end = row + drag_extra_rows;
             hover_text_width = 0;
             has_hover = true;
@@ -512,21 +529,24 @@ void InventoryController::UpdateItemHover(int x, int y)
         else
         {
             found = false;
-            for (vector<InventoryItem>::iterator m = items.begin(); m != items.end(); m++)
+            m = items.begin();
+            while (m != items.end())
             {
                 result = MainForm->item_values->GetSize(m->item_id);
                 if (result > 3)
                 {
-                    extra_cols = 1;
-                    extra_rows = result - 4;
+                    extra_rows = 1;
+                    dc = result - 4;
+                    tooltip->SetFlipExtra(26);
                 }
                 else
                 {
-                    extra_cols = 0;
-                    extra_rows = result;
+                    extra_rows = 0;
+                    dc = result;
+                    tooltip->SetFlipExtra(0);
                 }
-                if (col >= m->grid_x && col <= extra_cols + m->grid_x && m->grid_y <= row &&
-                    m->grid_y + extra_rows >= row && m->is_visible)
+                if (col >= m->grid_x && col <= m->grid_x + extra_rows && m->grid_y <= row && m->grid_y + dc >= row &&
+                    m->is_visible)
                 {
                     found = true;
                     if (hover_col != m->grid_x || hover_row != m->grid_y)
@@ -535,45 +555,33 @@ void InventoryController::UpdateItemHover(int x, int y)
                         hover_item_id = m->item_id;
                         hover_col = m->grid_x;
                         hover_row = m->grid_y;
-                        hover_col_end = m->grid_x + extra_cols;
-                        hover_row_end = m->grid_y + extra_rows;
-                        if (m->amount > 1)
-                        {
-                            // Gold shows its amount first, other stacks show it after the name
-                            if (m->item_id == ItemId_Gold)
-                                hover_text = IntToStr(m->amount) + " " + MainForm->item_values->GetName(m->item_id);
-                            else
-                                hover_text = MainForm->item_values->GetName(m->item_id) + " x" + IntToStr(m->amount);
-                        }
-                        else if (m->item_id == ItemId_Gold)
-                            hover_text = IntToStr(m->amount) + " " + MainForm->item_values->GetName(m->item_id);
-                        else
-                            hover_text = MainForm->item_values->GetName(m->item_id);
+                        hover_col_end = m->grid_x + extra_rows;
+                        hover_row_end = m->grid_y;
+                        tooltip->ShowItemCount(m->item_id, (int)m->amount);
+                        tooltip->SetAnchorX(26 * hover_col_end);
+                        tooltip->SetAnchorY(26 * hover_row_end);
+                        if (hover_row_end <= 1)
+                            tooltip->SetVerticalAlign(TooltipAlign_Below);
+                        if (hover_row_end >= 2)
+                            tooltip->SetVerticalAlign(TooltipAlign_Above);
                         if (hover_message_delay < 1)
+                        {
+                            ItemValue item_value = MainForm->item_values->GetItem(m->item_id);
+                            int item_weight = item_value.weight;
+                            if (item_value.type == EifItemType_General)
+                                item_weight = (int)m->amount * item_weight;
+                            String status_text = item_value.name + ", " + IntToStr(item_weight) + " weight";
                             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Item,
-                                hover_text);
-                        hover_item_special = MainForm->item_values->GetSpecial(m->item_id);
+                                status_text);
+                        }
                         drop_blocked = false;
                         has_hover = true;
                         hover_dirty = true;
                         items_dirty = true;
-                        hover_text_width = 0;
-                        if (MainForm->OffscreenSurface->GetDC(&dc))
-                        {
-                            try
-                            {
-                                MainForm->text_canvas->Handle = dc;
-                                hover_text_width = MainForm->text_canvas->TextWidth(hover_text);
-                                MainForm->text_canvas->Handle = 0;
-                            }
-                            catch (Exception &)
-                            {
-                            }
-                            result = MainForm->OffscreenSurface->ReleaseDC(dc);
-                        }
                     }
                     break;
                 }
+                m++;
             }
             if (!found)
             {
@@ -584,7 +592,6 @@ void InventoryController::UpdateItemHover(int x, int y)
                     hover_col = -1;
                     hover_row = -1;
                     hover_item_id = -1;
-                    hover_text = "";
                 }
                 drop_blocked = false;
                 has_hover = false;
@@ -600,17 +607,31 @@ void InventoryController::UpdateItemHover(int x, int y)
             hover_col = -1;
             hover_row = -1;
             hover_item_id = -1;
-            hover_text = "";
         }
         drop_blocked = false;
         has_hover = false;
     }
 }
 
-// A click in the inventory: the paperdoll button, the drop and junk buttons, picking up, placing or swapping an item.
-// While an item from the paperdoll is dragged, a click in the grid asks to unequip it, another button puts it back.
+// A click in the inventory: the drop and junk buttons drop or destroy the dragged item, asking an amount for a stack;
+// in the grid a click picks up or places an item, a double click uses it, and a dragged item goes to the open window.
 void InventoryController::MouseDown(int x, int y, int button)
 {
+    vector<InventoryItem>::iterator other;
+    vector<InventoryItem>::iterator entry;
+    vector<InventoryItem>::iterator it;
+    vector<InventoryItem>::iterator slot;
+    int picked_item_size;
+    int picked_extra_cols;
+    int picked_extra_rows;
+    int slot_wide;
+    int placed_item_size;
+    int j;
+    int dy;
+    vector<InventoryItem>::iterator dragged;
+    int slot_size;
+    int slot_rows;
+    int item_type;
     if (!dragging_from_paperdoll)
     {
         char can_click = true;
@@ -625,27 +646,64 @@ void InventoryController::MouseDown(int x, int y, int button)
         }
         else
         {
-            // The drop button: a stack asks for the amount first
-            if (is_dragging && x >= 492 && x <= 530 && y >= 398 && y <= 436)
+            if (x >= 492 && x <= 530 && y >= 398 && y <= 436)
             {
-                char can_drop = true;
-                if (MainForm->item_values->GetSpecial(drag_item_id) == ItemSpecial_Bound)
+                if (is_dragging)
                 {
-                    can_drop = false;
-                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                        MainForm->strings->GetDialogText(DialogText_LoreItem, false),
-                        MainForm->strings->GetDialogText(DialogText_LoreItem, true));
-                    MainForm->edits->caret_enabled = false;
+                    char drop_allowed = true;
+                    if (MainForm->item_values->GetSpecial(drag_item_id) == ItemSpecial_Bound)
+                    {
+                        drop_allowed = false;
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                            MainForm->strings->GetDialogText(DialogText_LoreItem, false),
+                            MainForm->strings->GetDialogText(DialogText_LoreItem, true));
+                        MainForm->edits->caret_enabled = false;
+                    }
+                    if (drop_allowed && MainForm->map->GetMapId() == MainForm->animation->game->restricted_map_id)
+                    {
+                        drop_allowed = false;
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                            MainForm->strings->GetText(GameText_Warning),
+                            MainForm->strings->GetText(GameText_YouCannotDropItems));
+                        MainForm->edits->caret_enabled = false;
+                    }
+                    if (drop_allowed)
+                    {
+                        if (GetItemAmount(drag_item_id) < 2)
+                        {
+                            if (drag_item_id == ItemId_Gold)
+                            {
+                                if (!GetItemAmount(drag_item_id))
+                                {
+                                    String gold_name = MainForm->item_values->GetName(ItemId_Gold);
+                                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                                        MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + gold_name);
+                                }
+                                else
+                                    MainForm->net_client->sender->SendDropItem(drag_item_id, 1, -1, -1);
+                            }
+                            else
+                                MainForm->net_client->sender->SendDropItem(drag_item_id, 1, -1, -1);
+                        }
+                        else
+                        {
+                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_DropItem,
+                                GetItemAmount(drag_item_id), drag_item_id, 0);
+                            input_enabled = false;
+                        }
+                    }
+                    CancelDrag();
+                    UpdateItemHover(x, y);
                 }
-                if (can_drop && MainForm->map->GetMapId() == MainForm->animation->game->restricted_map_id)
-                {
-                    can_drop = false;
+                else
                     MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                        MainForm->strings->GetText(GameText_Warning),
-                        MainForm->strings->GetText(GameText_YouCannotDropItems));
-                    MainForm->edits->caret_enabled = false;
-                }
-                if (can_drop)
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, false),
+                        MainForm->strings->GetText(GameText_DragItemToThis));
+            }
+            // The junk button: a stack asks for the amount first
+            if (x >= 533 && x <= 571 && y >= 398 && y <= 436)
+            {
+                if (is_dragging)
                 {
                     if (GetItemAmount(drag_item_id) < 2)
                     {
@@ -653,119 +711,86 @@ void InventoryController::MouseDown(int x, int y, int button)
                         {
                             if (!GetItemAmount(drag_item_id))
                             {
-                                String gold_name = MainForm->item_values->GetName(ItemId_Gold);
+                                String drop_gold_name = MainForm->item_values->GetName(ItemId_Gold);
                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                    MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + gold_name);
+                                    MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + drop_gold_name);
                             }
                             else
-                            {
-                                MainForm->net_client->sender->SendDropItem(drag_item_id, 1, -1, -1);
-                            }
+                                MainForm->net_client->sender->SendJunkItem(drag_item_id, 1);
                         }
                         else
-                        {
-                            MainForm->net_client->sender->SendDropItem(drag_item_id, 1, -1, -1);
-                        }
+                            MainForm->net_client->sender->SendJunkItem(drag_item_id, 1);
                     }
                     else
                     {
-                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_DropItem, GetItemAmount(drag_item_id), drag_item_id, 0);
+                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_JunkItem, GetItemAmount(drag_item_id),
+                            drag_item_id, 0);
                         input_enabled = false;
                     }
-                }
-                CancelDrag();
-                UpdateItemHover(x, y);
-            }
-            // The junk button: a stack asks for the amount first
-            if (x >= 533 && x <= 571 && y >= 398 && y <= 436)
-            {
-                if (GetItemAmount(drag_item_id) < 2)
-                {
-                    if (drag_item_id == ItemId_Gold)
-                    {
-                        if (!GetItemAmount(drag_item_id))
-                        {
-                            String junk_gold_name = MainForm->item_values->GetName(ItemId_Gold);
-                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + junk_gold_name);
-                        }
-                        else
-                        {
-                            MainForm->net_client->sender->SendJunkItem(drag_item_id, 1);
-                        }
-                    }
-                    else
-                    {
-                        MainForm->net_client->sender->SendJunkItem(drag_item_id, 1);
-                    }
+                    CancelDrag();
+                    UpdateItemHover(x, y);
                 }
                 else
-                {
-                    MainForm->animation->game->OpenAmountBox(AmountBoxKind_JunkItem, GetItemAmount(drag_item_id), drag_item_id, 0);
-                    input_enabled = false;
-                }
-                CancelDrag();
-                UpdateItemHover(x, y);
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, false),
+                        MainForm->strings->GetText(GameText_DragItemToThisButton));
             }
         }
-        if (input_enabled)
+        if (input_enabled && can_click)
         {
-            if (can_click)
+            char cancel_drag = false;
+            int grid_col = (x - 114) / INVENTORY_CELL_SIZE;
+            int row = (y - 339) / INVENTORY_CELL_SIZE;
+            if (!button)
             {
-                char cancel_drag = false;
-                int col = (x - 114) / INVENTORY_CELL_SIZE;
-                int row = (y - 339) / INVENTORY_CELL_SIZE;
-                if (!button)
+                if (row >= 0 && row <= 3 && grid_col >= 0 && grid_col <= 13 && x > 109 && y > 333)
                 {
-                    if (!(row < 0 || row > 3 || col < 0 || col > 13 || x <= 109 || y <= 333))
+                    if (MainForm->animation->game->amount_box_visible)
                     {
-                        if (MainForm->animation->game->amount_box_visible)
+                        MainForm->animation->game->amount_box_visible = false;
+                        MainForm->edits->RemoveEdit(EditId_Amount);
+                        MainForm->edits->FocusEdit(EditId_Chat);
+                    }
+                    if (is_dragging)
+                    {
+                        // A second click on the same cell soon after the first uses the item
+                        if (click_ticks < 3 && grid_col == click_col && click_row == row)
+                            UseItem(drag_item_id);
+                        else
                         {
-                            MainForm->animation->game->amount_box_visible = false;
-                            MainForm->edits->RemoveEdit(EditId_Amount);
-                            MainForm->edits->FocusEdit(EditId_Chat);
-                        }
-                        if (this->is_dragging)
-                        {
-                            // A second click on the same cell soon after the first uses the item
-                            if (this->click_ticks < 3 && col == this->click_col && this->click_row == row)
-                                this->UseItem(this->drag_item_id);
+                            int drag_extra_cols;
+                            int drag_extra_rows;
+                            if (drag_item_size > ITEM_SIZE_MAX_NARROW)
+                            {
+                                drag_extra_cols = 1;
+                                drag_extra_rows = drag_item_size - 4;
+                            }
                             else
                             {
-                                int drag_extra_cols;
-                                int drag_extra_rows;
-                                if (this->drag_item_size > ITEM_SIZE_MAX_NARROW)
+                                drag_extra_cols = 0;
+                                drag_extra_rows = drag_item_size;
+                            }
+                            if (drag_extra_cols >= 1)
+                                grid_col = (x - 126) / INVENTORY_CELL_SIZE;
+                            if (drag_extra_rows >= 1)
+                                row = (y - 339 - 12 * drag_extra_rows) / INVENTORY_CELL_SIZE;
+                            if (drag_extra_cols + grid_col > 13)
+                                grid_col = 13 - drag_extra_cols;
+                            if (row + drag_extra_rows > 3)
+                                row = 3 - drag_extra_rows;
+                            if (grid_col < 0)
+                                grid_col = 0;
+                            if (row < 0)
+                                row = 0;
+                            int overlap_count = 0;
+                            int overlapped_item_id = -1;
+                            for (other = items.begin(); other != items.end(); other++)
+                            {
+                                if (drag_item_id != other->item_id)
                                 {
-                                    drag_extra_cols = 1;
-                                    drag_extra_rows = this->drag_item_size - 4;
-                                }
-                                else
-                                {
-                                    drag_extra_cols = 0;
-                                    drag_extra_rows = this->drag_item_size;
-                                }
-                                if (drag_extra_cols >= 1)
-                                    col = (x - 126) / INVENTORY_CELL_SIZE;
-                                if (drag_extra_rows >= 1)
-                                    row = (y - 339 - 12 * drag_extra_rows) / INVENTORY_CELL_SIZE;
-                                if (col + drag_extra_cols > 13)
-                                    col = 13 - drag_extra_cols;
-                                if (row + drag_extra_rows > 3)
-                                    row = 3 - drag_extra_rows;
-                                if (col < 0)
-                                    col = 0;
-                                if (row < 0)
-                                    row = 0;
-                                vector<InventoryItem>::iterator it;
-                                int overlap_count = 0;
-                                int overlapped_item_id = -1;
-                                for (it = this->items.begin(); it != this->items.end(); it++)
-                                {
-                                    if (this->drag_item_id == it->item_id)
-                                        continue;
+                                    placed_item_size = MainForm->item_values->GetSize(other->item_id);
                                     int item_extra_cols;
                                     int item_extra_rows;
-                                    int placed_item_size = MainForm->item_values->GetSize(it->item_id);
                                     if (placed_item_size > 3)
                                     {
                                         item_extra_cols = 1;
@@ -777,167 +802,203 @@ void InventoryController::MouseDown(int x, int y, int button)
                                         item_extra_rows = placed_item_size;
                                     }
                                     char not_counted = true;
-                                    for (int j = 0; j <= drag_extra_cols; j++)
+                                    for (j = 0; j <= drag_extra_cols; j++)
                                     {
-                                        for (int k = 0; k <= drag_extra_rows; k++)
+                                        for (dy = 0; dy <= drag_extra_rows; dy++)
                                         {
-                                            if (col + j >= it->grid_x && col + j <= it->grid_x + item_extra_cols &&
-                                                k + row >= it->grid_y && k + row <= it->grid_y + item_extra_rows &&
-                                                it->is_visible && not_counted)
+                                            if (grid_col + j >= other->grid_x &&
+                                                grid_col + j <= other->grid_x + item_extra_cols &&
+                                                row + dy >= other->grid_y &&
+                                                row + dy <= other->grid_y + item_extra_rows && other->is_visible &&
+                                                not_counted)
                                             {
                                                 overlap_count++;
-                                                overlapped_item_id = it->item_id;
+                                                overlapped_item_id = other->item_id;
                                                 not_counted = false;
                                             }
                                         }
                                     }
                                 }
-                                if (!overlap_count)
+                            }
+                            if (!overlap_count)
+                            {
+                                MainForm->sfx->PlaySfx(SfxSound_ItemPlace);
+                                vector<InventoryItem> *backup = &layout_backup;
+                                backup->clear();
+                                for (dragged = items.begin(); dragged != items.end(); dragged++)
                                 {
-                                    vector<InventoryItem>::iterator it;
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPlace);
-                                    this->layout_backup.clear();
-                                    for (it = this->items.begin(); it != this->items.end(); it++)
+                                    if (dragged->item_id == drag_item_id)
                                     {
-                                        if (it->item_id == this->drag_item_id)
-                                        {
-                                            it->grid_x = col;
-                                            it->grid_y = row;
-                                            it->is_placed = true;
-                                            it->is_visible = true;
-                                            this->RecordLayoutChange(this->drag_item_id, col, row);
-                                            break;
-                                        }
-                                    }
-                                    this->SaveLayoutChanges();
-                                    this->is_dragging = false;
-                                    this->drag_started = false;
-                                    this->drag_delay_ticks = DRAG_DELAY_IDLE;
-                                    this->hover_col = -1;
-                                    this->hover_row = -1;
-                                    this->items_dirty = true;
-                                    this->hover_dirty = true;
-                                    MainForm->dragging = false;
-                                    if (MainForm->animation->trade->is_visible)
-                                    {
-                                        if (MainForm->animation->trade->trade_locked)
-                                        {
-                                            if (!this->CanFitTradeItems())
-                                            {
-                                                MainForm->animation->trade->own_agreed = false;
-                                                MainForm->animation->trade->own_status_text = MainForm->strings->GetText(GameText_Trading);
-                                                MainForm->net_client->sender->SendTradeDisagree();
-                                                MainForm->animation->trade->trade_locked = false;
-                                                MainForm->redraw_needed = true;
-                                            }
-                                        }
+                                        dragged->grid_x = grid_col;
+                                        dragged->grid_y = row;
+                                        dragged->is_placed = true;
+                                        dragged->is_visible = true;
+                                        RecordLayoutChange(drag_item_id, grid_col, row);
+                                        break;
                                     }
                                 }
-                                // The item under the drop is picked up in turn, so the two swap
-                                if (overlap_count == 1)
+                                SaveLayoutChanges();
+                                is_dragging = false;
+                                drag_started = false;
+                                drag_delay_ticks = DRAG_DELAY_IDLE;
+                                hover_col = -1;
+                                hover_row = -1;
+                                items_dirty = true;
+                                hover_dirty = true;
+                                MainForm->dragging = false;
+                                if (MainForm->animation->trade->is_visible &&
+                                    MainForm->animation->trade->trade_locked && !CanFitTradeItems())
                                 {
-                                    int held_item_id;
-                                    int dropped_item_id;
-                                    int dropped_col;
-                                    int dropped_row;
-                                    int picked_item_id;
-                                    int picked_col;
-                                    int picked_row;
-                                    vector<InventoryItem>::iterator it;
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    held_item_id = this->drag_item_id;
-                                    for (it = this->items.begin(); it != this->items.end(); it++)
-                                    {
-                                        if (it->item_id == overlapped_item_id)
-                                        {
-                                            this->hover_item_id = it->item_id;
-                                            this->hover_item_size = MainForm->item_values->GetSize(it->item_id);
-                                            this->drag_x = x;
-                                            this->drag_y = y;
-                                            this->drag_item_id = it->item_id;
-                                            this->drag_item_size = MainForm->item_values->GetSize(it->item_id);
-                                            this->drag_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
-                                            picked_item_id = overlapped_item_id;
-                                            picked_col = it->grid_x;
-                                            picked_row = it->grid_y;
-                                            it->is_visible = false;
-                                        }
-                                        if (it->item_id == held_item_id)
-                                        {
-                                            it->grid_x = col;
-                                            it->grid_y = row;
-                                            dropped_item_id = held_item_id;
-                                            dropped_col = col;
-                                            dropped_row = row;
-                                            it->is_placed = true;
-                                            it->is_visible = true;
-                                        }
-                                    }
-                                    this->RecordLayoutChange(dropped_item_id, dropped_col, dropped_row);
-                                    this->RecordLayoutChange(picked_item_id, picked_col, picked_row);
-                                    this->drag_started = false;
-                                    this->drag_delay_ticks = DRAG_DELAY_IDLE;
-                                    this->items_dirty = true;
-                                    this->hover_dirty = true;
+                                    MainForm->animation->trade->own_agreed = false;
+                                    MainForm->animation->trade->own_status_text =
+                                        MainForm->strings->GetText(GameText_Trading);
+                                    MainForm->net_client->sender->SendTradeDisagree();
+                                    MainForm->animation->trade->trade_locked = false;
+                                    MainForm->redraw_needed = true;
                                 }
                             }
-                        }
-                        else
-                        {
-                            vector<InventoryItem>::iterator it;
-                            this->click_ticks = 0;
-                            this->click_col = col;
-                            this->click_row = row;
-                            this->BackupLayout();
-                            this->ResetLayoutChanges();
-                            for (it = this->items.begin(); it != this->items.end(); it++)
+                            // The item under the drop is picked up in turn, so the two swap
+                            if (overlap_count == 1)
                             {
-                                int picked_extra_cols;
-                                int picked_extra_rows;
-                                int picked_item_size = MainForm->item_values->GetSize(it->item_id);
-                                if (picked_item_size > 3)
+                                MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                                int held_item_id = drag_item_id;
+                                entry = items.begin();
+                                int moved_id;
+                                int moved_col;
+                                int moved_row;
+                                int swapped_id;
+                                int swapped_col;
+                                int swapped_row;
+                                while (entry != items.end())
                                 {
-                                    picked_extra_cols = 1;
-                                    picked_extra_rows = picked_item_size - 4;
+                                    if (entry->item_id == overlapped_item_id)
+                                    {
+                                        hover_item_id = entry->item_id;
+                                        hover_item_size = MainForm->item_values->GetSize(entry->item_id);
+                                        drag_x = x;
+                                        drag_y = y;
+                                        drag_item_id = entry->item_id;
+                                        drag_item_size = MainForm->item_values->GetSize(entry->item_id);
+                                        drag_graphic = MainForm->item_values->GetGraphic(entry->item_id) - 1;
+                                        swapped_id = overlapped_item_id;
+                                        swapped_col = entry->grid_x;
+                                        swapped_row = entry->grid_y;
+                                        entry->is_visible = false;
+                                    }
+                                    if (entry->item_id == held_item_id)
+                                    {
+                                        entry->grid_x = grid_col;
+                                        entry->grid_y = row;
+                                        moved_id = held_item_id;
+                                        moved_col = grid_col;
+                                        moved_row = row;
+                                        entry->is_placed = true;
+                                        entry->is_visible = true;
+                                    }
+                                    entry++;
                                 }
-                                else
-                                {
-                                    picked_extra_cols = 0;
-                                    picked_extra_rows = picked_item_size;
-                                }
-                                if (col >= it->grid_x && col <= it->grid_x + picked_extra_cols && it->grid_y <= row &&
-                                    it->grid_y + picked_extra_rows >= row)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    this->RecordLayoutChange(it->item_id, it->grid_x, it->grid_y);
-                                    this->hover_item_size = picked_item_size;
-                                    this->hover_item_id = it->item_id;
-                                    this->is_dragging = true;
-                                    this->drag_started = false;
-                                    this->drag_delay_ticks = 0;
-                                    this->drag_x = x;
-                                    this->drag_y = y;
-                                    this->drag_item_size = picked_item_size;
-                                    this->drag_item_id = it->item_id;
-                                    this->drag_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
-                                    it->is_visible = false;
-                                    this->items_dirty = true;
-                                    this->hover_dirty = true;
-                                    MainForm->dragging = true;
-                                }
+                                RecordLayoutChange(moved_id, moved_col, moved_row);
+                                RecordLayoutChange(swapped_id, swapped_col, swapped_row);
+                                drag_started = false;
+                                drag_delay_ticks = DRAG_DELAY_IDLE;
+                                items_dirty = true;
+                                hover_dirty = true;
                             }
                         }
                     }
                     else
-                        cancel_drag = true;
+                    {
+                        click_ticks = 0;
+                        click_col = grid_col;
+                        click_row = row;
+                        BackupLayout();
+                        ResetLayoutChanges();
+                        for (it = items.begin(); it != items.end(); it++)
+                        {
+                            picked_item_size = MainForm->item_values->GetSize(it->item_id);
+                            if (picked_item_size > 3)
+                            {
+                                picked_extra_cols = 1;
+                                picked_extra_rows = picked_item_size - 4;
+                            }
+                            else
+                            {
+                                picked_extra_cols = 0;
+                                picked_extra_rows = picked_item_size;
+                            }
+                            if (grid_col >= it->grid_x && grid_col <= it->grid_x + picked_extra_cols &&
+                                it->grid_y <= row && it->grid_y + picked_extra_rows >= row)
+                            {
+                                MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                                RecordLayoutChange(it->item_id, it->grid_x, it->grid_y);
+                                hover_item_size = picked_item_size;
+                                hover_item_id = it->item_id;
+                                is_dragging = true;
+                                drag_started = false;
+                                drag_delay_ticks = 0;
+                                drag_x = x;
+                                drag_y = y;
+                                drag_item_size = picked_item_size;
+                                drag_item_id = it->item_id;
+                                drag_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
+                                it->is_visible = false;
+                                items_dirty = true;
+                                hover_dirty = true;
+                                MainForm->dragging = true;
+                            }
+                        }
+                    }
                 }
                 else
                     cancel_drag = true;
-                if (cancel_drag && is_dragging)
+            }
+            else
+            {
+                cancel_drag = true;
+                if (MainForm->animation->locker->is_visible)
                 {
-                    CancelDrag();
-                    UpdateItemHover(x, y);
+                    int locker_item_id = -1;
+                    for (slot = items.begin(); slot != items.end(); slot++)
+                    {
+                        slot_size = MainForm->item_values->GetSize(slot->item_id);
+                        if (slot_size > 3)
+                        {
+                            slot_wide = 1;
+                            slot_rows = slot_size - 4;
+                        }
+                        else
+                        {
+                            slot_wide = 0;
+                            slot_rows = slot_size;
+                        }
+                        if (grid_col >= slot->grid_x && grid_col <= slot_wide + slot->grid_x && slot->grid_y <= row &&
+                            slot_rows + slot->grid_y >= row)
+                            locker_item_id = slot->item_id;
+                    }
+                    if (locker_item_id > 0)
+                    {
+                        TPoint locker_pos;
+                        locker_pos.x = MainForm->animation->locker->locker_x;
+                        locker_pos.y = MainForm->animation->locker->locker_y;
+                        if (MainForm->animation->locker->GetItemAmount(locker_item_id) < 200)
+                        {
+                            MainForm->net_client->sender->SendLockerAddItem(locker_pos, locker_item_id, 1);
+                            MainForm->animation->interface_controller->inventory->tooltip->Hide();
+                        }
+                        else
+                        {
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                                MainForm->strings->GetDialogText(DialogText_LockerFullStore, false),
+                                MainForm->strings->GetDialogText(DialogText_LockerFullStore, true));
+                            MainForm->edits->caret_enabled = false;
+                        }
+                    }
                 }
+            }
+            if (cancel_drag && is_dragging)
+            {
+                CancelDrag();
+                UpdateItemHover(x, y);
             }
         }
     }
@@ -973,7 +1034,7 @@ void InventoryController::MouseDown(int x, int y, int button)
         // Any other button puts the dragged paperdoll item's picture back in its box
         if (button == 1)
         {
-            int item_type = MainForm->item_values->GetType(this->drag_item_id);
+            item_type = MainForm->item_values->GetType(drag_item_id);
             if (item_type == EifItemType_Weapon)
                 MainForm->animation->paperdoll->weapon_graphic = paperdoll_slot_graphic;
             if (item_type == EifItemType_Shield)
@@ -1007,10 +1068,12 @@ void InventoryController::MouseDown(int x, int y, int button)
                     MainForm->animation->paperdoll->armlet1_graphic = paperdoll_slot_graphic;
             }
             if (item_type == EifItemType_Bracer)
+            {
                 if (!MainForm->animation->paperdoll->bracer2_graphic)
                     MainForm->animation->paperdoll->bracer2_graphic = paperdoll_slot_graphic;
                 else
                     MainForm->animation->paperdoll->bracer2_graphic = paperdoll_slot_graphic;
+            }
             MainForm->redraw_needed = true;
             dragging_from_paperdoll = false;
             CancelDrag();
@@ -1076,6 +1139,7 @@ void InventoryController::MouseUp()
         MouseDown(last_mouse_x, last_mouse_y, 0);
         drag_delay_ticks = DRAG_DELAY_IDLE;
         drag_started = false;
+        return;
     }
     else
     {
@@ -1085,7 +1149,7 @@ void InventoryController::MouseUp()
 }
 
 // Tracks the hover over the paperdoll, drop and junk buttons, naming each in the status bar; true on a change.
-bool InventoryController::UpdateButtonHover(int x, int y)
+void InventoryController::UpdateButtonHover(int x, int y)
 {
     bool result = false;
     if (y >= 338 && y <= 358 && !MainForm->animation->paperdoll->is_visible && !dragging_from_paperdoll)
@@ -1152,7 +1216,6 @@ bool InventoryController::UpdateButtonHover(int x, int y)
     }
     if (result)
         hover_dirty = true;
-    return result;
 }
 
 void InventoryController::ResetLayoutChanges()
@@ -1165,25 +1228,27 @@ void InventoryController::ResetLayoutChanges()
 void InventoryController::RecordLayoutChange(int item_id, int col, int row)
 {
     if (change_count > 17)
-        changes_overflowed = true;
-    else
     {
-        change_item_ids[change_count] = item_id; change_cols[change_count] = col; change_rows[change_count] = row;
-        change_count++;
+        changes_overflowed = true;
+        return;
     }
+    change_item_ids[change_count] = item_id;
+    change_cols[change_count] = col;
+    change_rows[change_count] = row;
+    change_count++;
 }
 
 // Writes every cell of the grid to the registry, with the item in it or 0.
 void InventoryController::SaveLayout()
 {
-    int j;
     int slot_item_id;
+    vector<InventoryItem>::iterator it;
     for (int i = 0; i < 4; i++)
     {
-        for (j = 0; j < 14; j++)
+        for (int j = 0; j < 14; j++)
         {
             slot_item_id = 0;
-            for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
+            for (it = items.begin(); it != items.end(); it++)
             {
                 if (j == it->grid_x && i == it->grid_y)
                 {
@@ -1200,35 +1265,32 @@ void InventoryController::SaveLayout()
 // After an overflow the whole grid is written instead.
 void InventoryController::SaveLayoutChanges()
 {
+    int *change;
     char first;
-    volatile char unused_byte;
-    volatile char second_unused_byte;
-    volatile char third_unused_byte;
-    int slot;
-    int change = 0;
     if (!changes_overflowed)
     {
         first = true;
-        change = 0;
-        while (change < change_count)
+        int i = 0;
+        change = change_cols;
+        while (i < change_count)
         {
             int slot_value = 0;
             char should_write = true;
-            slot = change_cols[change] + 14 * change_rows[change];
+            int slot = change[20] * 14 + *change;
             if (!first)
             {
-                if (!(change % 2))
+                if (i % 2 == 0)
                 {
-                    if (change_cols[change] == change_cols[change - 1] &&
-                        change_rows[change] == change_rows[change - 1])
+                    if (*change == change[-1] && change[20] == change[19])
                         should_write = false;
                 }
                 else
-                    slot_value = change_item_ids[change];
+                    slot_value = change[-20];
             }
             first = false;
             if (should_write)
                 MainForm->registry->WriteSlotValue(LayoutKey_Inventory, slot, slot_value);
+            i++;
             change++;
         }
     }
@@ -1245,7 +1307,7 @@ char InventoryController::HasKey(int key_id)
     found = false;
     for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
     {
-        item_id = it->item_id;
+        int item_id = it->item_id;
         if (MainForm->item_values->GetType(item_id) == 9 && MainForm->item_values->GetSpecValue(item_id) == key_id)
         {
             found = true;
@@ -1258,6 +1320,13 @@ char InventoryController::HasKey(int key_id)
 // True when the item is already held or a free place in the grid fits its size.
 char InventoryController::HasRoomForItem(int item_id)
 {
+    InventoryItem *it;
+    int k;
+    InventoryItem *walk;
+    int item_size;
+    int other_size;
+    int n;
+    int ii;
     char has_room;
     int extra_cols;
     int extra_rows;
@@ -1265,21 +1334,17 @@ char InventoryController::HasRoomForItem(int item_id)
     int overlap_count;
     int other_extra_cols;
     int other_extra_rows;
-    char uncounted;
-    int item_size;
-    int k;
-    int other_size;
-    int n;
-    int ii;
-    vector<InventoryItem>::iterator it;
     has_room = false;
-    for (it = items.begin(); it != items.end(); it++)
+    walk = items.begin();
+    while (walk != items.end())
     {
-        if (item_id == it->item_id)
+        // An item already held always has room, as it adds to the stack.
+        if (item_id == walk->item_id)
         {
             has_room = true;
             break;
         }
+        walk++;
     }
     if (!has_room)
     {
@@ -1294,13 +1359,15 @@ char InventoryController::HasRoomForItem(int item_id)
             extra_cols = 0;
             extra_rows = item_size;
         }
-        for (j = 0; 4 - extra_rows > j && !has_room; j++)
+        j = 0;
+        while (4 - extra_rows > j && !has_room)
         {
-            for (k = 0; k < 14 - extra_cols && !has_room; k++)
+            k = 0;
+            while (k < 14 - extra_cols && !has_room)
             {
-                vector<InventoryItem>::iterator it;
                 overlap_count = 0;
-                for (it = items.begin(); it != items.end(); it++)
+                it = items.begin();
+                while (it != items.end())
                 {
                     other_size = MainForm->item_values->GetSize(it->item_id);
                     if (other_size > 3)
@@ -1313,7 +1380,7 @@ char InventoryController::HasRoomForItem(int item_id)
                         other_extra_cols = 0;
                         other_extra_rows = other_size;
                     }
-                    uncounted = true;
+                    char uncounted = true;
                     for (n = 0; n <= extra_cols; n++)
                     {
                         for (ii = 0; ii <= extra_rows; ii++)
@@ -1326,13 +1393,16 @@ char InventoryController::HasRoomForItem(int item_id)
                             }
                         }
                     }
+                    it++;
                 }
                 if (!overlap_count)
                 {
                     has_room = true;
                     break;
                 }
+                k++;
             }
+            j++;
         }
     }
     return has_room;
@@ -1342,26 +1412,29 @@ char InventoryController::HasRoomForItem(int item_id)
 // A newly placed item's cell is saved in the registry.
 bool InventoryController::AddItem(int item_id, int amount)
 {
+    int try_col;
+    InventoryItem *m;
+    char stacked;
+    InventoryItem *i;
+    int item_size;
+    int other_size;
+    int n;
+    int row_offset;
     bool placed;
     int extra_cols;
     int extra_rows;
     int free_col;
     int free_row;
-    int j;
+    int try_row;
     int overlap_count;
     int other_extra_cols;
     int other_extra_rows;
-    char uncounted;
-    char stacked = false;
-    int item_size;
-    int k = 0;
-    int other_size;
-    int n;
-    int ii;
     placed = true;
     stacked = false;
-    for (vector<InventoryItem>::iterator i = items.begin(); i != items.end(); i++)
+    i = items.begin();
+    while (i != items.end())
     {
+        // An item already held adds to its stack, or takes the new amount.
         if (i->item_id == item_id)
         {
             i->amount += amount;
@@ -1370,10 +1443,12 @@ bool InventoryController::AddItem(int item_id, int amount)
             stacked = true;
             break;
         }
+        i++;
     }
     if (!stacked)
     {
         placed = false;
+        // Sizes 4 and up are two slots wide, and the rest of the size gives the height.
         item_size = MainForm->item_values->GetSize(item_id);
         if (item_size > 3)
         {
@@ -1385,12 +1460,15 @@ bool InventoryController::AddItem(int item_id, int amount)
             extra_cols = 0;
             extra_rows = item_size;
         }
-        for (j = 0; 4 - extra_rows > j && !placed; j++)
+        try_row = 0;
+        while (4 - extra_rows > try_row && !placed)
         {
-            for (k = 0; k < 14 - extra_cols && !placed; k++)
+            try_col = 0;
+            while (try_col < 14 - extra_cols && !placed)
             {
                 overlap_count = 0;
-                for (vector<InventoryItem>::iterator m = items.begin(); m != items.end(); m++)
+                m = items.begin();
+                while (m != items.end())
                 {
                     other_size = MainForm->item_values->GetSize(m->item_id);
                     if (other_size > 3)
@@ -1403,27 +1481,31 @@ bool InventoryController::AddItem(int item_id, int amount)
                         other_extra_cols = 0;
                         other_extra_rows = other_size;
                     }
-                    uncounted = true;
+                    char uncounted = true;
                     for (n = 0; n <= extra_cols; n++)
                     {
-                        for (ii = 0; ii <= extra_rows; ii++)
+                        for (row_offset = 0; row_offset <= extra_rows; row_offset++)
                         {
-                            if (k + n >= m->grid_x && k + n <= m->grid_x + other_extra_cols && ii + j >= m->grid_y &&
-                                ii + j <= m->grid_y + other_extra_rows && uncounted)
+                            if (try_col + n >= m->grid_x && try_col + n <= m->grid_x + other_extra_cols &&
+                                try_row + row_offset >= m->grid_y &&
+                                try_row + row_offset <= m->grid_y + other_extra_rows && uncounted)
                             {
                                 overlap_count++;
                                 uncounted = false;
                             }
                         }
                     }
+                    m++;
                 }
                 if (!overlap_count)
                 {
-                    free_col = k;
-                    free_row = j;
+                    free_col = try_col;
+                    free_row = try_row;
                     placed = true;
                 }
+                try_col++;
             }
+            try_row++;
         }
         if (placed)
         {
@@ -1444,8 +1526,8 @@ bool InventoryController::AddItem(int item_id, int amount)
 // Takes an amount off the item; an item other than gold that runs out leaves the grid and its saved cell.
 char InventoryController::RemoveItem(int item_id, int amount)
 {
-    vector<InventoryItem>::iterator it;
     char result = 1;
+    vector<InventoryItem>::iterator it;
     for (it = items.begin(); it != items.end(); it++)
     {
         if (item_id == it->item_id)
@@ -1454,6 +1536,7 @@ char InventoryController::RemoveItem(int item_id, int amount)
             if (it->item_id == ItemId_Gold)
             {
                 if (it->amount <= 0)
+                    // Item 1 stays in the list at 0; any other item at 0 leaves it, and its saved slot is cleared.
                     it->amount = 0;
             }
             else if (it->amount <= 0)
@@ -1473,7 +1556,7 @@ char InventoryController::RemoveItem(int item_id, int amount)
 // The weight of everything held and equipped: each stack counts its amount, each equipped item once.
 int InventoryController::GetTotalWeight()
 {
-    unsigned int items_weight = 0;
+    int items_weight = 0;
     for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
         items_weight += MainForm->item_values->GetWeight(it->item_id) * (int)it->amount;
     // Then every worn item.
@@ -1536,10 +1619,15 @@ void InventoryController::AddLoadedItem(int item_id, int amount)
 // Places the loaded items at the cells saved in the registry; the rest go to the first free places.
 void InventoryController::PlaceLoadedItems()
 {
+    vector<InventoryItem>::iterator loaded_item;
+    vector<InventoryItem>::iterator saved_slot;
+    int slot_item_id;
+    int pending_graphic;
     saved_slots.clear();
+    // The saved slots of the 17 by 4 grid; a second slot saved for the same item is cleared.
     for (int i = 0; i < 56; i++)
     {
-        int slot_item_id = MainForm->registry->ReadSlotValue(LayoutKey_Inventory, i);
+        slot_item_id = MainForm->registry->ReadSlotValue(LayoutKey_Inventory, i);
         if (slot_item_id > 0)
         {
             int cell_col = i % 14;
@@ -1550,37 +1638,42 @@ void InventoryController::PlaceLoadedItems()
             saved_slots.insert(saved_slots.end(), handle);
         }
     }
-    vector<InventoryItem>::iterator it;
-    for (it = loaded_items.begin(); it != loaded_items.end(); it++)
+    loaded_item = loaded_items.begin();
+    while (loaded_item != loaded_items.end())
     {
         char matched = false;
-        for (vector<InventoryItem>::iterator saved_slot = saved_slots.begin();
-            saved_slot != saved_slots.end() && !matched; saved_slot++)
+        saved_slot = saved_slots.begin();
+        while (saved_slot != saved_slots.end() && !matched)
         {
-            if (saved_slot->item_id != it->item_id)
-                continue;
-            if (saved_slot->item_id == ItemId_Gold)
-                MainForm->animation->interface_controller->status->gold = it->amount;
-            it->is_placed = true;
-            matched = true;
-            InventoryItem placed_item(it->item_id);
-            placed_item.grid_x = saved_slot->grid_x;
-            placed_item.grid_y = saved_slot->grid_y;
-            placed_item.amount = it->amount;
-            items.insert(items.end(), placed_item);
-            int restored_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
-            MainForm->gfx->items->RequestSubItemGraphic(restored_graphic);
+            if (saved_slot->item_id == loaded_item->item_id)
+            {
+                if (saved_slot->item_id == ItemId_Gold)
+                    MainForm->animation->interface_controller->status->gold = loaded_item->amount;
+                loaded_item->is_placed = true;
+                matched = true;
+                InventoryItem placed_item(loaded_item->item_id);
+                placed_item.grid_x = saved_slot->grid_x;
+                placed_item.grid_y = saved_slot->grid_y;
+                placed_item.amount = (int)loaded_item->amount;
+                items.insert(items.end(), placed_item);
+                int restored_graphic = MainForm->item_values->GetGraphic(loaded_item->item_id) - 1;
+                MainForm->gfx->items->RequestSubItemGraphic(restored_graphic);
+            }
+            saved_slot++;
         }
+        loaded_item++;
     }
-    for (it = loaded_items.begin(); it != loaded_items.end(); it++)
+    for (loaded_item = loaded_items.begin(); loaded_item != loaded_items.end(); loaded_item++)
     {
-        if (it->is_placed)
-            continue;
-        if (!AddItem(it->item_id, it->amount))
-            continue;
-        it->is_placed = true;
-        int pending_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
-        MainForm->gfx->items->RequestSubItemGraphic(pending_graphic);
+        if (!loaded_item->is_placed)
+        {
+            if (AddItem(loaded_item->item_id, loaded_item->amount))
+            {
+                loaded_item->is_placed = true;
+                pending_graphic = MainForm->item_values->GetGraphic(loaded_item->item_id) - 1;
+                MainForm->gfx->items->RequestSubItemGraphic(pending_graphic);
+            }
+        }
     }
     input_enabled = true;
     layout_backup.clear();
@@ -1591,9 +1684,7 @@ void InventoryController::PlaceRemainingItems()
 {
     for (vector<InventoryItem>::iterator it = loaded_items.begin(); it != loaded_items.end(); it++)
     {
-        if (it->is_placed)
-            continue;
-        if (AddItem(it->item_id, it->amount))
+        if (!it->is_placed && AddItem(it->item_id, it->amount))
         {
             it->is_placed = true;
             int graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;

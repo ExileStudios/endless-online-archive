@@ -1,10 +1,10 @@
 #ifndef Gfx_introH
 #define Gfx_introH
 
-class TDDBltFX;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
 
 // The surface of the intro picture, kept until the intro ends.
 struct IntroGraphics

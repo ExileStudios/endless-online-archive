@@ -17,6 +17,13 @@ enum Emote
     Emote_Playful = 14
 };
 
+#include <Sysutils.hpp>
+
+#define INPUT_BOX_LINES 2
+#define INPUT_FORM_MAX_ROWS 25
+#define INPUT_FORM_THUMB_TRAVEL 60.0
+#define MESSAGE_BOX_LINES 2
+
 enum AmountBoxKind
 {
     AmountBoxKind_DropItem = 1,
@@ -64,6 +71,14 @@ enum ConfirmAction
     ConfirmAction_CraftItem = 27
 };
 
+enum DialogButtons
+{
+    DialogButtons_Default = 0,
+    DialogButtons_Ok = 1,
+    DialogButtons_Cancel = 2,
+    DialogButtons_OkCancel = 3
+};
+
 enum FormKind
 {
     FormKind_GuildCreate = 1,
@@ -97,20 +112,6 @@ enum LargeBoxKind
     LargeBoxKind_AcceptGuildJoinRequest = 3,
     LargeBoxKind_WeddingRequest = 4
 };
-#define MESSAGE_BOX_LINES 2
-#define NPC_LIST_ROW_HEIGHT 37
-
-enum DialogButtons
-{
-    DialogButtons_Default = 0,
-    DialogButtons_Ok = 1,
-    DialogButtons_Cancel = 2,
-    DialogButtons_OkCancel = 3
-};
-#define INPUT_BOX_LINES 2
-#define INPUT_FORM_MAX_ROWS 25
-
-#define INPUT_FORM_ROW_HEIGHT 23
 
 // The game screen's boxes (message, large message, input box, form, amount box), the player menu, and the own
 // character's actions: walking, sitting, attacking, emotes and using tiles.
@@ -131,7 +132,11 @@ struct GameController
     short form_row_char_filters[INPUT_FORM_MAX_ROWS];
     short form_row_max_lengths[INPUT_FORM_MAX_ROWS];
     short form_row_case_modes[INPUT_FORM_MAX_ROWS];
-    unsigned char form_row_password_flags[INPUT_FORM_MAX_ROWS];
+    char form_row_password_flags[1];
+    char second_row_password_flags[1];
+    char third_row_password_flags[1];
+    char fourth_row_password_flags[1];
+    char fifth_row_password_flags[21];
     bool form_visible;
     int form_x;
     int form_y;
@@ -230,7 +235,8 @@ struct GameController
     bool ToggleSit(int x, int y);
     bool SitOnChair(int x, int y);
     void CastUntargetedSpell(int spell_id);
-    void Attack(char animation_only);
+    void AttackForward(char animation_only);
+    void Attack(char animation_only, int face_direction);
     void PlayEmote(int emote_id);
     void Walk(int direction);
     void OpenPlayerMenu(int x, int y, int target_id, String player_name);

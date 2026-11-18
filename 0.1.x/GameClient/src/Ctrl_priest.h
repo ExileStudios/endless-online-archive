@@ -8,9 +8,8 @@ struct PriestController
 
     PriestController();
     ~PriestController();
+    void SetRequestId(int id);
     int GetRequestId();
 };
-
-int *Ctrl_priest_SetRequestId(int *priest, int request_id);
 
 #endif

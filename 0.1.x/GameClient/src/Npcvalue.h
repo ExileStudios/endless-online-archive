@@ -8,7 +8,7 @@ struct NpcValue
     String name;
     short graphic;
     short race;
-    short boss;
+    unsigned short boss;
     short child;
     short npc_type;
     short behavior_id;
@@ -20,9 +20,9 @@ struct NpcValue
     short evade;
     short armor;
     short return_damage;
-    short element;
+    unsigned short element;
     short element_damage;
-    short element_weakness;
+    unsigned short element_weakness;
     short element_weakness_damage;
     short level;
     int experience;

@@ -30,7 +30,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
         if (action == AC_SYN5)
         {
             MainForm->class_values->received_part_count++;
-            MainForm->class_values->SaveFilePart(DecodeNumber(String(packet[1])), packet.SubString(2, packet.Length()));
+            MainForm->class_values->SaveFilePart(DecodeNumber((char)packet[1]), packet.SubString(2, packet.Length()));
             if (MainForm->class_values->received_part_count > MainForm->class_values->expected_part_count ||
                 !MainForm->class_values->is_downloading)
 ```
@@ -57,32 +57,23 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - spell count: `Packetproces.cpp` `int skill_record_count = DecodeNumber(packet.SubString(34, 2));` the third
     value of the spell group (bytes 30, 32, 34), compared with the spell file's record_count
   - class count: `Packetproces.cpp` `int class_record_count = DecodeNumber(packet.SubString(40, 2));` the third
-    value of the class group (bytes 36, 38, 40), compared with the class file's record_count and not used after that
-  - class count: `Classvalues.cpp` `int last_file_number = total_records / CLASS_RECORDS_PER_FILE + 1;` the class
-    file numbers its parts by its own record count, 250 records to a part
+    value of the class group (bytes 36, 38, 40), compared with the class file's header_record_count and not used after
 - **When it happens:** Each time a character enters the game while the class file on disk differs from the server's (a
-  checksum word or the record count). The welcome reply (family 5, action 3) comes through `Client::ReceiveData`, the
-  class parts (action 244) through `Client::HandleRawPacket`, and `TMainForm::OnIdle` sends the part requests with
-  `RequestGameData`.
+  checksum word or the record count). The welcome reply (`AC_RESULT` of `OP_PLAY`) comes through `Client::ReceiveData`,
+  the class parts (`AC_SYN5`) through `Client::HandleRawPacket`, and `TMainForm::OnIdle` sends the part requests with
+  `RequestGameData` each time `IsRequestDelayDone` allows one.
   - `PacketProcessor::DispatchPacket` is called from `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SET, OP_MAP, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SYN1, OP_PLAY, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SYN2, OP_PLAY, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SYN3, OP_PLAY, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SYN4, OP_PLAY, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_SYN5, OP_PLAY, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SET, OP_MAP, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SYN1, OP_PLAY, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SYN2, OP_PLAY, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SYN3, OP_PLAY, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SYN4, OP_PLAY, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
+    (`processor->DispatchPacket(AC_SYN5, OP_PLAY, frame.SubString(4, frame.Length() - 3));`); `Client::HandleRawPacket`
     (`processor->DispatchPacket(AC_LIST, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));`);
+    `Client::HandleRawPacket` (`processor->DispatchPacket(AC_NEW, OP_MAP, frame.SubString(4, frame.Length() - 3));`);
     `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_NEW, OP_MAP, frame.SubString(4, frame.Length() - 3));`);
-    `Client::HandleRawPacket`
-    (`processor->DispatchPacket(AC_RESULT, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));`);
-    `Client::ReceiveData` (`processor->DispatchPacket(action, family, frame.SubString(3, frame.Length() - 2));`).
+    (`processor->DispatchPacket(AC_RESULT, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));`); `Client::ReceiveData`
+    (`processor->DispatchPacket(action, family, frame.SubString(3, frame.Length() - 2));`).
   - `PacketOperator::RequestGameData` is called from `TMainForm::OnIdle` (`net_client->sender->RequestGameData();`).
   - Search of the tree for `expected_part_count = skill_record_count`: 2 line(s), in Packetproces.cpp.
   - Search of the tree for `/ CLASS_RECORDS_PER_FILE`: 2 line(s), in Classvalues.cpp, Packetproces.cpp.
@@ -113,10 +104,11 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   of the group pass the same message number twice, as reply 10 does with (82, 0) and (82, 1), and the guild window's
   rank check shows message 73 with (73, 0) and (73, 1).
 - **What it does:** Step by step:
-  - `guild_reply` 14 calls `ShowMessageBox` with `GetDialogText(73, 0)` as the title and `GetDialogText(82, 1)` as the
-    text.
-  - The text of message 73, (73, 1), is shown by one line of the tree, in `GuildController::MouseDown`. The text of
-    message 82 is also shown by reply 10, under its own title (82, 0).
+  - `guild_reply` 14 calls `ShowMessageBox` with `GetDialogText(DialogText_RefusedRanking, false)` as the title and
+    `GetDialogText(DialogText_RecruiterNotFoundNeeds, true)`
+    as the text.
+  - The text of message 73, (73, true), is shown by one line of the tree, in `GuildController::MouseDown`. The text of
+    message 82 is also shown by reply 10, under its own title (82, false).
 - **Evidence, from the code and not from the names:**
   - message 73: `Ctrl_guild.cpp`
     `MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None, MainForm->strings->GetDialogText(DialogText_RefusedRanking, false),`
@@ -186,12 +178,12 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 - **Evidence, from the code and not from the names:**
   - group tab: `Ctrl_chat.cpp` `scroll_offsets[4] = group_lines->Count - 7;` the group tab's first shown line is
     kept in scroll_offsets[4]
-  - global tab: `Ctrl_chat.cpp` `global_row = scroll_offsets[3] + (mouse_y - 333) / 14;` a click on the global tab
-    (active_tab 4) reads scroll_offsets[3]
+  - global tab: `Ctrl_chat.cpp` `int global_row = (mouse_y - 333) / 14 + scroll_offsets[3];` a click on the global
+    tab (active_tab 4) reads scroll_offsets[3]
 - **When it happens:** A right click on the text area of the chat panel while the group tab is open.
-  `Sys_mouse_HandleClick` calls `OnMouseClick` for every click on the panel.
-  - `ChatController::OnMouseClick` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->interface_controller->chat->OnMouseClick(x, y, button);`).
+  `Mouser::HandleMouseDown` calls `OnMouseClick` for every click on the panel.
+  - `ChatController::OnMouseClick` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->interface_controller->chat->OnMouseClick(click_x, click_y, button);`).
   - Search of the tree for `scroll_offsets\[3\]`: 7 line(s), in Ctrl_chat.cpp.
   - Reachable with the shipped code: reachable. Any right click on a group line once the group tab and the global tab
     are scrolled to different lines.
@@ -199,7 +191,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   click on the top row puts the sender of group line 0 in the chat box instead of the sender of line 23. When the global
   tab is further down than the group tab has lines, nothing is put in the box.
 
-## A chat message that wraps to more than three lines writes the extra lines past the end of its line list
+## A chat message that wraps to six lines writes the sixth line past the end of its line list
 
 `Ctrl_chat.cpp`, `ChatController::AddLocalMessage`; `Ctrl_chat.cpp`, `ChatController::AddPrivateMessage`; `Ctrl_chat.cpp`, `ChatController::AddGlobalMessage`; `Ctrl_chat.cpp`,
 `ChatController::AddGroupMessage`
@@ -226,17 +218,16 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 - **What the function is for:** The four functions add a message to a chat tab. Each one wraps the text to the chat
   width, 420 pixels, keeps the wrapped lines in a local list, `wrapped_lines`, and then adds them to the tab.
 - **What the line was written to do:** Hold every wrapped line of the message. The evidence: the wrap loop makes up to
-  six lines (`for (int i = 0; i <= 5; i++)`), counts each one in `line_count`, and the add loop reads
-  `wrapped_lines[line_index]` for every counted line.
+  six lines (its counter runs from 0 to 5), counts each one in `line_count`, and the add loop reads one entry of
+  `wrapped_lines` for every counted line.
 - **What it does:** Step by step:
-  - `wrapped_lines` holds three strings in `AddLocalMessage`, `AddPrivateMessage` and `AddGlobalMessage`, and four in
-    `AddGroupMessage`.
-  - Each pass of the wrap loop stores line `i` in `wrapped_lines[i]`, for `i` up to 5. A C++ array does not check its
-    index, so lines 4 to 6 (`i` 3 to 5) are stored in the memory after the list, and in `AddGroupMessage` lines 5 and 6.
-  - The add loop then reads those same places back for the tab.
-- **When it happens:** Every message these functions add whose text needs more than three wrapped lines (more than four
-  for the group tab): about 1,260 pixels of text or more in MS Sans Serif 8. They are called for local, private, global
-  and group chat and for most server notices.
+  - `wrapped_lines` holds five strings in each of the four functions.
+  - Each pass of the wrap loop stores its line in the entry of the loop's counter, for a counter up to 5. A C++ array
+    does not check its index, so the sixth line (counter 5) is stored in the memory after the list.
+  - The add loop then steps through the list four bytes at a time for `line_count` entries and reads that same place
+    back for the tab.
+- **When it happens:** Every message these functions add whose text needs six wrapped lines: about 2,100 pixels of text
+  or more in MS Sans Serif 8. They are called for local, private, global and group chat and for most server notices.
   - Search of the tree for `AddLocalMessage\(`: 31 line(s), in Ctrl_chat.cpp, Ctrl_chat.h, Packetproces.cpp,
     Sys_keyboard.cpp.
   - Search of the tree for `AddPrivateMessage\(`: 5 line(s), in Ctrl_chat.cpp, Ctrl_chat.h, Packetproces.cpp,
@@ -275,6 +266,7 @@ void FFileLog::Open(String path)
   `try` with `catch (...)` setting `is_open` to 0, and `WriteLine`, `Close` and the destructor all test `is_open` before
   they use `file`.
 - **What it does:** Step by step:
+  - `access` tests that the file exists; only then does `Open` call `fopen` and set `is_open`.
   - `fopen` (a C library call) reports a file it cannot open by returning NULL; it does not throw, so the `catch` block
     does not run.
   - `is_open` is set to 1 whatever `fopen` returned.
@@ -302,7 +294,7 @@ void FFileLog::Open(String path)
 int ItemValues::GetGraphic(int item_id)
 {
     int graphic = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         graphic = records[item_id - 1].graphic;
     return graphic;
     }
@@ -322,7 +314,7 @@ int ItemValues::GetGraphic(int item_id)
     record
 - **When it happens:** Every caller that asks for a value of the last item: the inventory, paperdoll, shop, chest,
   locker and map code call these getters. `UseItem` reads the type first.
-  - Search of the tree for `Count\(\) > \(unsigned int\)item_id`: 9 line(s), in Itemvalues.cpp.
+  - Search of the tree for `Count\(\) > \(unsigned int\)item_id`: 0 line(s).
   - Search of the tree for `item_values->GetGraphic\(`: 28 line(s), in Ctrl_inventory.cpp, Ctrl_paperdoll.cpp,
     Gfx_game.cpp, Gfx_interface.cpp, TMainForm.cpp.
   - Reachable with the shipped code: reachable. The item with the highest id in the server's item file is the last
@@ -385,17 +377,18 @@ int ItemValues::GetGraphic(int item_id)
                     char line_cut = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->draw_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            text_lines->Add(fitting_part);
-                            text.Delete(1, fitting_part.Length());
-                            line_cut = true;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->draw_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                text_lines->Add(fitting_part);
+                                text.Delete(1, fitting_part.Length());
+                                line_cut = true;
+                                break;
+                            }
+                            fitting_part = prefix;
                         }
-                        fitting_part = prefix;
                     }
 ```
 
@@ -421,14 +414,14 @@ int ItemValues::GetGraphic(int item_id)
     (`MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_LotOfPlayersWho), true);`);
     `Client::ShowPendingScreen`
     (`MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_YourInformationWillOnly), false);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::HandleMouseDown`
     (`MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_ItIsVeryImportant), true);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::HandleMouseDown`
     (`MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_LotOfPlayersWho), true);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::HandleMouseDown`
     (`MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_YourInformationWillOnly), false);`).
   - Reachable with the shipped code: unknown. It turns on the words of strings 358 to 360 in the string file, which the
-    exe does not hold; one word of 280 pixels or more in MS Sans Serif 7 would reach it.
+    exe does not hold; one word of 280 pixels or more in the window's font (face 1, size 8) would reach it.
 - **What you see:** The new account screen never opens: the client stays in the loop, adding an empty line to the text
   window on every pass, until it runs out of memory.
 
@@ -464,9 +457,9 @@ int ItemValues::GetGraphic(int item_id)
   - draw: `Gfx_game.cpp` `for (int i = friend_top_line; i < friend_line_count && friend_top_line + 12 > i; i++)` 12
     names are drawn
 - **When it happens:** A click on the bottom 4 pixel lines of the list box while the open list has a name below the
-  shown ones. `Sys_mouse_HandleClick` calls `OnMouseClick` for clicks while the window is open.
-  - `SocialController::OnMouseClick` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->social->OnMouseClick(x, y, button);`).
+  shown ones. `Mouser::HandleMouseDown` calls `OnMouseClick` for clicks while the window is open.
+  - `SocialController::OnMouseClick` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->social->OnMouseClick(click_x, click_y, button);`).
   - Search of the tree for `row > 11`: 6 line(s), in Ctrl_guild.cpp, Ctrl_inn.cpp, Ctrl_law.cpp, Ctrl_learn.cpp,
     Ctrl_msgboard.cpp, Ctrl_social.cpp.
   - Reachable with the shipped code: reachable. Any list of 13 names or more, not scrolled to its end, and a click on
@@ -532,14 +525,13 @@ void SocialController::AddOnlineName(String name)
 `Midiplayer.cpp`, `Dx_MidiPlayer::LoadSegment`
 
 ```cpp
-    memset(&object_desc, 0, sizeof(object_desc));
-    object_desc.dwSize = 848;
-    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, file_name, -1, Source, MAX_PATH);
-    object_desc.guidClass = CLSID_DirectMusicSegment;
-    wcscpy(object_desc.wszFileName, Source);
-    object_desc.dwValidData = 18;
-    if (music_loader->GetObject(&object_desc, IID_IDirectMusicSegment, (void **)&music_segment) < 0)
-        return false;
+            memset(&object_desc, 0, sizeof(object_desc));
+            object_desc.dwSize = 848;
+            MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, file_name, -1, source, MAX_PATH);
+            object_desc.guidClass = CLSID_DirectMusicSegment;
+            wcscpy(object_desc.wszFileName, source);
+            object_desc.dwValidData = 18;
+            if (music_loader->GetObject(&object_desc, IID_IDirectMusicSegment,
 ```
 
 - **What the function is for:** `Dx_MidiPlayer::LoadSegment` loads the MIDI file of a tune as a DirectMusic segment and
@@ -550,15 +542,16 @@ void SocialController::AddOnlineName(String name)
 - **What it does:** Step by step:
   - `GetObject` writes the new segment into `music_segment` over the one already there.
   - The old segment gets no unload and no `Release`, so its instruments stay downloaded and its reference stays held.
-  - The only unload and `Release` of `music_segment` are in `ReleaseDirectMusic`, which only the destructor calls, and no
-    code deletes the player, so not even the last segment is freed.
+  - The only unload and `Release` of `music_segment` are in `ReleaseDirectMusic`, which only the destructor calls, and
+    no code deletes the player, so not even the last segment is freed.
 - **Evidence, from the code and not from the names:**
   - free: `Midiplayer.cpp` `music_segment->SetParam(GUID_Unload, -1, 0, 0, music_performance);` the one place the
-    segment is unloaded
-  - stop: `Midiplayer.cpp` `if (music_performance->Stop(music_segment, 0, 0, 0) < 0)` Play stops the playing segment
-    here before it loads the next
+    segment is unloaded, with its Release on the next line
+  - stop: `Midiplayer.cpp` `if (!music_performance->Stop((IDirectMusicSegment *)music_segment, 0, 0, 0))` Play stops
+    the playing segment here before it loads the next
 - **When it happens:** Each tune change: `SfxController::PlayMusic` calls `Play` for a map tune or a jukebox song, from
-  `TMainForm::OnIdle` when a tune is queued and from `TMainForm::FormCreate` for the title tune.
+  `TMainForm::Timer1Timer` when a tune is queued and from `TMainForm::FormCreate` for the title tune when the intro is
+  skipped.
   - `Dx_MidiPlayer::LoadSegment` is called from `Dx_MidiPlayer::Play` (`LoadSegment(file_path.c_str());`).
   - Search of the tree for `music_segment->Release\(\)`: 1 line(s), in Midiplayer.cpp.
   - Search of the tree for `LoadSegment\(`: 3 line(s), in Midiplayer.cpp, Midiplayer.h.
@@ -569,7 +562,7 @@ void SocialController::AddOnlineName(String name)
 
 ## Turning music on from the message box marks it working without checking that DirectMusic started
 
-`Sfxprotection.cpp`, `SfxController::CreateMidiPlayer`
+`Sys_mouse.cpp`, `Mouser::HandleMouseDown`
 
 ```cpp
 void SfxController::CreateMidiPlayer()
@@ -578,33 +571,33 @@ void SfxController::CreateMidiPlayer()
 }
 ```
 
-- **What the function is for:** `SfxController::CreateMidiPlayer` makes the music player when the player answers yes to
-  the message box that the music switch of the settings panel shows while music is marked unavailable.
-- **What the line was written to do:** Keep music off when the new player could not start DirectMusic. The evidence: the
-  constructor makes the player the same way and then tests `is_initialized`, turning music off and unavailable when it
-  is 0.
+- **What the function is for:** `Mouser::HandleMouseDown` handles the yes button of the message box that the music
+  switch of the settings panel shows while music is marked unavailable (box kind 6, `ConfirmAction_EnableMusic`).
+- **What the line was written to do:** Keep music off when the player could not start DirectMusic. The evidence: the
+  `SfxController` constructor starts the player the same way and then tests `is_initialized`, turning music off and
+  unavailable when it is 0.
 - **What it does:** Step by step:
-  - A new `Dx_MidiPlayer` is made; its constructor sets `is_initialized` from `InitDirectMusic`.
-  - `CreateMidiPlayer` does not test `is_initialized`, and its caller then turns music on and marks it available.
+  - `InitMidiPlayer` calls `Initialize`, which sets `is_initialized` from `InitDirectMusic`.
+  - The yes button does not test `is_initialized`; it sets the music volume to 100 and marks music available.
   - When the first `CoCreateInstance` of `InitDirectMusic` fails, the performance pointer `music_performance` is NULL.
-  - The next tune reaches `PlayMusic`, which asks `IsSegmentPlaying`, and that calls `IsPlaying` through `music_performance`.
+  - `PlayMusic` tests `is_initialized` and plays nothing, but the next click on the music switch finds music available
+    and calls `SfxController::SetMusicVolume`, which calls `Dx_MidiPlayer::SetVolume`, and that calls `SetGlobalParam`
+    through `music_performance`.
 - **Evidence, from the code and not from the names:**
   - ctor: `Sfxprotection.cpp` `MainForm->config->SetMusicAvailable(0);` the constructor marks music unavailable when
     the player did not start
-  - box: `Sys_mouse.cpp` `if (MainForm->animation->game->message_kind == ConfirmAction_EnableMusic)` the yes button
-    of the music box
-  - switch: `Ctrl_settings.cpp`
-    `MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_EnableMusic, MainForm->strings->GetDialogText(DialogText_MusicDisabled, false),`
-    the music switch shows box 6 while music is unavailable
-- **When it happens:** Music is marked unavailable at start when setup.ini turns it off or when DirectMusic failed in
-  the constructor. A click on the music switch then shows message box kind 6, and its yes button in
-  `Sys_mouse_HandleClick` calls `CreateMidiPlayer` and `SetMusicEnabled(1)`.
-  - `SfxController::CreateMidiPlayer` is called from `Sys_mouse_HandleClick` (`MainForm->sfx->CreateMidiPlayer();`).
-  - Search of the tree for `is_initialized\)`: 4 line(s), in Packetcontrols.cpp, Sfxprotection.cpp, Sys_mouse.cpp.
-  - Reachable with the shipped code: reachable. A computer on which DirectMusic cannot be created, and a yes to the box
-    that offers music again.
-- **What you see:** The next tune change calls through a NULL interface pointer, which raises an access violation in
-  `TMainForm::OnIdle`. On a computer where DirectMusic works, the box only makes the player and music plays.
+  - box: `Sys_mouse.cpp` `MainForm->config->SetMusicAvailable(100);` the yes button marks music available whatever
+    Initialize gave
+  - switch: `Ctrl_settings.cpp` `MainForm->sfx->SetMusicVolume(0);` the music switch at volume 100 sets the player's
+    volume to 0
+- **When it happens:** Music is marked unavailable at start when setup.ini sets Music to 0 or when DirectMusic failed in
+  the constructor. A click on the music switch then shows the box, and its yes button calls `InitMidiPlayer`.
+  - Search of the tree for `is_initialized\)`: 9 line(s), in Midiplayer.cpp, Packetcontrols.cpp, Sfxprotection.cpp,
+    Sys_mouse.cpp.
+  - Reachable with the shipped code: reachable. A computer on which DirectMusic cannot be created, a yes to the box that
+    offers music again, and one more click on the music switch.
+- **What you see:** That click calls through a NULL interface pointer, which raises an access violation. On a computer
+  where DirectMusic works, the box only starts the player and music plays.
 
 ## An npc's second animation (sheet frame 8) is never shown: no line sets the flag that starts it
 
@@ -616,61 +609,47 @@ void SfxController::CreateMidiPlayer()
                 no_state_drawn = false;
                 if (npc.alt_attack_frame <= 2)
                 {
-                    if (!npc.direction || npc.direction == 3)
-                        BlitFrame(dest_rect, npc.resources->front_sheet, npc.resources->GetFrameRect(8), true);
-...
+                        if (npc.direction == FacingDirection_Down || npc.direction == FacingDirection_Right)
+                        BlitFrame(dest_rect, (int)npc.resources->front_sheet, npc.resources->GetFrameRect(8), true);
+    ...
         if (it->alt_attack_start)
-            {
+        {
             it->alt_attack_start = false;
             it->alt_attack_direction = it->direction;
             it->alt_attack_frame = -1;
             it->alt_attacking = true;
-                }
+        }
         if (it->alt_attacking)
-                {
+        {
             if (it->alt_attack_frame <= 2)
-                {
+            {
                 it->alt_attack_frame++;
                 if (it->alt_attack_frame == 1)
                     MainForm->sfx->PlaySfx(SfxSound_NpcAltAttack);
 ```
 
-- **What the function is for:** `DrawNpc` draws one npc with the frame of its current action; `Npcs::Animate` steps
-  every npc's action counters once per tick.
+- **What the function is for:** `NpcGraphics::DrawNpc` draws one npc with the frame of its current action;
+  `Npcs::Animate` steps every npc's action counters once per tick.
 - **What the line was written to do:** The second animation is written the same way as the attack. `Npcs::StartAttack`
-  sets `attack_start` (`it->attack_start = true`), `Animate` turns it into `attacking`, counts `attack_frame`
-  (`it->attack_frame = -1`, then `it->attack_frame++`) and plays sound 10 on its first step, and `DrawNpc` draws the
-  attack frames while `attacking` is set. For the second animation `Animate` turns `alt_attack_start` into
-  `alt_attacking`, sets `alt_attack_frame` to -1, counts it and plays sound 11 on its first step, and `DrawNpc` draws
-  frame 8 while `alt_attacking` is set. It has no starter like `StartAttack`.
-- **What it does:** 
-  - Both `Npc` constructors set `alt_attack_start` (the member at `alt_attack_start`) to 0.
-  - The only other line that writes `alt_attack_start` is `Animate` clearing it; `Npcs::SortByPosition` and the list
-    code move it only inside whole npc record copies.
-  - No line of the tree sets it to 1 (search below), so `Animate` never reaches `it->alt_attacking = 1;` and
-    `alt_attacking` stays 0 from the constructors on.
-  - So the block `if (npc.alt_attacking && no_state_drawn)` in `DrawNpc` is never entered, and
+  sets `attack_start`, `Animate` turns it into `attacking`, counts its frame and plays a sound on its first step, and
+  `DrawNpc` draws the attack frames while `attacking` is set. For the second animation `Animate` turns
+  `alt_attack_start` into `alt_attacking`, sets `alt_attack_frame` to -1, counts it and plays sound 11 on its first
+  step, and `DrawNpc` draws frame 8 while `alt_attacking` is set. It has no starter like `StartAttack`.
+- **What it does:** Step by step:
+  - The `Npc` constructor sets `alt_attack_start` to 0.
+  - The only other line that writes it is `Animate` clearing it.
+  - No line of the tree sets it to 1 (search below), so `Animate` never sets `alt_attacking`, which stays 0 from the
+    constructor on.
+  - So the frame-8 branch `if (npc.alt_attacking && no_state_drawn)` in `DrawNpc` is never entered, and
     `MainForm->sfx->PlaySfx(SfxSound_NpcAltAttack);` in `Animate` never runs.
-- **Evidence, from the code and not from the names:**
-  - attack start: `Sys_npcs.cpp` `it->attack_start = true;` The attack has its starter: `StartAttack` sets the flag
-    `Animate` turns into the attack.
-- **When it happens:** `TMainForm::OnIdle` calls `DrawNpc` for every npc in view on each frame (three calls below), and
-  `Animate` runs on each tick; the frame-8 branch of either needs `alt_attack_start` set first.
-  - `NpcGraphics::DrawNpc` is called from `TMainForm::OnIdle`
-    (`gfx->npcs->DrawNpc(npc, 30 * npc.death_countdown - 60,`); `TMainForm::OnIdle`
-    (`gfx->npcs->DrawNpc(npc, npc_alpha, shake_offset);`); `TMainForm::OnIdle`
-    (`gfx->npcs->DrawNpc(npc, 255, shake_offset);`).
-  - Search of the tree for `(alt_attack_start|alt_attack_start) = (1|true)\b`: 0 line(s).
-  - Search of the tree for `(alt_attack_start|(it|it)->alt_attack_start) =[^=]`: 3 line(s), in Sys_npc.cpp,
-    Sys_npcs.cpp.
+- **When it happens:** `TMainForm::OnIdle` calls `DrawNpc` for every npc in view on each frame, and
+  `TMainForm::HandleMMTimerEvent` calls `Animate` on each tick; the frame-8 branch of either needs `alt_attack_start`
+  set first.
+  - Search of the tree for `alt_attack_start = (1|true)\b`: 0 line(s).
+  - Search of the tree for `alt_attack_start =[^=]`: 3 line(s), in Sys_npc.cpp, Sys_npcs.cpp.
   - Search of the tree for `PlaySfx\(11\)`: 0 line(s).
-  - Reachable with the shipped code: never reached. The search for a store of 1 or true into `alt_attack_start` or
-    `alt_attack_start` finds 0 lines. The search for any store into the npc's member finds 3: the two constructors' 0
-    and `Animate`'s 0 (Sys_npcs.cpp). A scan of the program's machine code for every store to byte 76 of an npc
-    record, with any value, finds the same set: the two constructors and `Animate` store 0; the sort, the list insert,
-    the record getters and the vector copies copy the byte from another npc record; the npc add copies it from a record
-    its constructor has just set to 0. No bit-OR, block copy from a packet or file, or store through another pointer
-    reaches that byte.
+  - Reachable with the shipped code: never reached. The search for a store of 1 or true into `alt_attack_start` finds 0
+    lines. The search for any store into it finds 2: the constructor's 0 and `Animate`'s 0.
 - **What you see:** No npc is ever drawn with frame 8 of its sheet, and sound 11 is never played:
   `PlaySfx(SfxSound_NpcAltAttack)` is on one line of the tree, the one in `Animate`.
 
@@ -714,12 +693,12 @@ void SfxController::CreateMidiPlayer()
     `PacketProcessor::DispatchPacket`
     (`MainForm->gfx->sprites->ShowSpeechBalloon(broadcast_text, MainForm->net_client->GetPlayerId(), 0);`);
     `PacketProcessor::DispatchPacket` (`MainForm->gfx->sprites->ShowSpeechBalloon(talk_text, talker_id, 0);`);
-    `KeyBoard::PollKeyboard` (`MainForm->gfx->sprites->ShowSpeechBalloon(public_censored,`); `KeyBoard::PollKeyboard`
+    `KeyBoard::PollKeyboard` (`MainForm->gfx->sprites->ShowSpeechBalloon(say_shown,`); `KeyBoard::PollKeyboard`
     (`MainForm->gfx->sprites->ShowSpeechBalloon(non_admin_censored,`); `KeyBoard::PollKeyboard`
-    (`MainForm->gfx->sprites->ShowSpeechBalloon(announce_censored,`); `KeyBoard::PollKeyboard`
+    (`MainForm->gfx->sprites->ShowSpeechBalloon(announce_shown,`); `KeyBoard::PollKeyboard`
     (`MainForm->gfx->sprites->ShowSpeechBalloon(non_announcer_censored,`); `KeyBoard::PollKeyboard`
-    (`MainForm->gfx->sprites->ShowSpeechBalloon(guildless_censored,`); `KeyBoard::PollKeyboard`
-    (`MainForm->gfx->sprites->ShowSpeechBalloon(party_censored,`).
+    (`MainForm->gfx->sprites->ShowSpeechBalloon(amp_say_shown,`); `KeyBoard::PollKeyboard`
+    (`MainForm->gfx->sprites->ShowSpeechBalloon(party_shown,`).
   - Search of the tree for `\btrimmed_text\b`: 2 line(s), in Gfx_npcs.cpp, Gfx_sprites.cpp.
   - Reachable with the shipped code: reachable. Every caller passes a chat or text string, and nothing on these paths
     trims it first.
@@ -793,61 +772,43 @@ void SfxController::CreateMidiPlayer()
 
 ```cpp
         int frame_count = 8;
-...
-        frame_width = MainForm->resource_bitmap->Width;
-        frame_height = MainForm->resource_bitmap->Height;
-        sheets_created = true;
-        surface_desc->Width = frame_width * frame_count;
-...
-                MainForm->draw_canvas->Draw(frame * frame_width, 0, MainForm->resource_bitmap);
-...
-                if (i->load_stage == 2)
-{
-                    int attack_library = (int)graphics_library;
-                    if (graphics_library)
-    {
-                        i->resources->LoadFrontFrame(6, attack_library, base_resource + 12);
-                        i->resources->LoadBackFrame(6, attack_library, base_resource + 14);
-                        i->resources->LoadFrontFrame(7, attack_library, base_resource + 13);
-                        i->resources->LoadBackFrame(7, attack_library, base_resource + 15);
-                        i->resources->LoadFrontFrame(8, attack_library, base_resource + 16);
-                        i->resources->LoadBackFrame(8, attack_library, base_resource + 17);
+    ...
+                MainForm->draw_canvas->Draw(frame_width * frame, 0, (TGraphic *)MainForm->resource_bitmap);
+    ...
+    frame_rect.left = frame * frame_width;
+    frame_rect.top = 0;
+    frame_rect.right = frame_width + frame * frame_width;
+    ...
+                        if (!i->resources->LoadFrontFrame(8, (void *)library_handle[0], resource_base + 16))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadBackFrame(8, (void *)library_handle[0], resource_base + 17))
 ```
 
-- **What the function is for:** `CreateSheets` makes an npc's front and back sheets, one row of frames side by side;
-  `LoadFrontFrame` and `LoadBackFrame` draw one image of the graphics library into a frame slot of a sheet;
-  `Npcs::LoadPendingGraphics` loads each npc's images in steps, one step per call.
-- **What the line was written to do:** `LoadPendingGraphics` fills nine slots: frames 0 and 1 in its first step, 2 to 5
-  in its second, and 6, 7 and 8 in its third, from resources `base_resource + 16` and `+ 17` for frame 8. `DrawNpc` asks
-  `NpcResources::GetFrameRect` for frame 8 in its second-animation block. So the sheets were meant to be wide enough for frame
-  8.
-- **What it does:** 
-  - `CreateSheets` sets `frame_width` to the width of the first image and makes both sheets `frame_width * frame_count`
-    wide with `frame_count` 8, so the slots are frames 0 to 7; `sheet_width` gets the same value. These are the only
-    stores to either member of the sheet record (searches below; the first finds them by what they store, since other
-    records' members are also named `sheet_width`); `DrawNpc` only reads `frame_width` (as
-    `npc.resources->frame_width`).
-  - `LoadFrontFrame` and `LoadBackFrame` draw at x `frame * frame_width`, by `draw_canvas->Draw` or by `BitBlt`. For
-    frame 8 that is `8 * frame_width`, the sheet's right edge, so the whole image falls outside the surface and the
-    surface's drawing context keeps none of it. Frames 0 to 7 are unchanged.
+- **What the function is for:** `NpcResources::CreateSheets` makes an npc's front and back sheets, one row of frames
+  side by side; `LoadFrontFrame` and `LoadBackFrame` draw one image of the graphics library into a frame slot of a
+  sheet; `Npcs::LoadPendingGraphics` loads each npc's images in steps, one step per call.
+- **What the line was written to do:** `LoadPendingGraphics` fills nine slots after the step that makes the sheets:
+  frames 0 and 1, then 2 to 5, then 6, 7 and 8, from resources `resource_base + 16` and `+ 17` for frame 8.
+  `NpcGraphics::DrawNpc` asks `GetFrameRect` for frame 8 in its second-animation block. So the sheets were meant to be
+  wide enough for frame 8.
+- **What it does:** Step by step:
+  - `CreateSheets` sets `frame_width` to the width of the first image and makes the two sheets
+    `frame_width * frame_count` wide with `frame_count` 8, so the slots are frames 0 to 7; `sheet_width` gets the same
+    width.
+  - `LoadFrontFrame` and `LoadBackFrame` draw at x `frame_width * frame`. For frame 8 that is `8 * frame_width`, the
+    sheet's right edge, so the whole image falls outside the sheet.
   - The image is still loaded from the library each time: `LoadFromResourceID` runs before the draw.
-  - The only reads of frame 8 are the two `npc.resources->GetFrameRect(8)` blits in `DrawNpc`: left
-    `8 * frame_width`, right `9 * frame_width`, wholly past the sheet; `GetClippedSourceRect` trims them only against
-    the view. That block needs `alt_attacking`, which quirk 201 shows is never set, so they never run. The other frame
-    reads stay below 8: the attack frame is capped at 7, the walk frame is `walk_frame + 2` with `walk_frame` at most 3,
-    the stand frame is 0 or 1.
-  - The program's own code agrees: `CreateSheets` stores eight times the frame width as the surface width and the sheet
-    width, and `LoadPendingGraphics` passes 8 to both frame loaders in its third step.
-- **When it happens:** `TMainForm::Timer1Timer` calls `LoadPendingGraphics` on each tick. Every npc record starts with
-  its graphics pending, and each call moves up to three pending npcs one step (`load_stage`); the step with
-  `load_stage == 2`, the third call for that npc, runs the two frame-8 loads, while the library is open.
-  - `NpcResources::CreateSheets` is called from `Npcs::LoadPendingGraphics`
-    (`i->resources->CreateSheets((int)library_handle, base_resource, has_idle_animation[i->graphic - 1]);`).
-  - `Npcs::LoadPendingGraphics` is called from `TMainForm::Timer1Timer` (`npcs->LoadPendingGraphics();`).
-  - Search of the tree for `^\s*(sheet_width = frame_width|frame_width =[^=])`: 5 line(s), in Gfx_npc.cpp, Sys_npc.cpp.
-  - Search of the tree for `resources->(field_0x14|frame_width) =[^=]`: 0 line(s).
+  - The only reads of an npc sheet's frame 8 are the two `GetFrameRect(8)` blits in `DrawNpc`: left `8 * frame_width`,
+    right `9 * frame_width`, wholly past the sheet. The search below finds two more, of the player's own sheets
+    (`GfxPlayerGetFrameRect(8)`).
+- **When it happens:** `TMainForm::Timer1Timer` calls `Npcs::LoadPendingGraphics` on its loading ticks. Every npc starts
+  with `graphics_pending` set, and each call takes up to three pending npcs one step further (`load_stage`); the step
+  with `load_stage == 3` runs the two frame-8 loads, while the library is open.
   - Search of the tree for `Load(Front|Back)Frame\(8,`: 2 line(s), in Sys_npcs.cpp.
-  - Search of the tree for `npc\.resources->GetFrameRect\(8\)`: 2 line(s), in Gfx_npcs.cpp.
+  - Search of the tree for `Gfx_npc_GetFrameRect\(npc\.resources, 8\)`: 0 line(s).
   - Reachable with the shipped code: reachable. The third step runs once for every npc whose graphics load, with
     `base_resource` `40 * graphic + 61`.
 - **What you see:** Each npc graphics load reads two images from the library and throws them away, and no npc sheet ever
@@ -884,7 +845,6 @@ void SfxController::CreateMidiPlayer()
   - The program's own code agrees: the only calls on the size list are its adds in `BuildFileList`, the reads in
     `VerifyFiles` and the clear in the destructor, and the controller is used only from `FormCreate`.
 - **When it happens:** Once, in `TMainForm::FormCreate`, before the game starts.
-  - `FileController::VerifyFiles` is called from `TMainForm::FormCreate` (`if (files->VerifyFiles())`).
   - Search of the tree for `\bfile_sizes->Add\(""\)`: 16 line(s), in Fileprotection.cpp.
   - Search of the tree for `\bfile_sizes\b(?!->Add\(""\)|->Strings\[i\]|->Clear\(\)| = new TStringList\(\);|;)`: 0
     line(s).
@@ -1040,7 +1000,7 @@ void GameController::StartSpotCountdown(int x, int y)
     (`MouseDown(last_mouse_x, last_mouse_y, 0);`); `Sys_mouse_HandleClick`
     (`MainForm->animation->interface_controller->inventory->MouseDown(x, y, button);`).
   - Search of the tree for `drag_item_id = [a-z]`: 3 line(s), in Ctrl_inventory.cpp, Ctrl_paperdoll.cpp.
-  - Search of the tree for `is_dragging && x >= 492`: 1 line(s), in Ctrl_inventory.cpp.
+  - Search of the tree for `is_dragging && x >= 492`: 0 line(s).
   - Reachable with the shipped code: reachable. Nothing before the junk test checks for a drag, and the stores show
     `drag_item_id` keeps its last value.
 - **What you see:** A player who moved an item in the grid and later clicks the junk button without dragging anything
@@ -1130,7 +1090,7 @@ void GameController::StartSpotCountdown(int x, int y)
     `SpellController::MouseDown` (`UpdateHover(x, y);`).
   - `SkillController::UpdateHover` is called from `SkillController::MouseMove` (`UpdateHover(x, y);`);
     `SkillController::MouseDown` (`UpdateHover(x, y);`).
-  - Search of the tree for `hover_row != it->grid_y`: 2 line(s), in Ctrl_skills.cpp, Ctrl_spells.cpp.
+  - Search of the tree for `hover_row != it->grid_y`: 1 line(s), in Ctrl_spells.cpp.
   - Search of the tree for `[^_]hover_row = it->grid_y - top_row`: 2 line(s), in Ctrl_skills.cpp, Ctrl_spells.cpp.
   - Reachable with the shipped code: reachable. `ScrollDown` raises `top_row` while it is below its limit, and
     `UpdateHover` runs on every mouse move.
@@ -1148,7 +1108,7 @@ void GameController::StartSpotCountdown(int x, int y)
             {
     ...
             int slot = j + 8 * i;
-            MainForm->registry->WriteSlotValue(LayoutKey_Skills, slot, slot_skill_id);
+            MainForm->registry->WriteSlotValue(3, slot, slot_skill_id);
 ```
 
 - **What the function is for:** `SkillController` runs a second icon grid beside the spell grid: hover names, dragging
@@ -1164,15 +1124,14 @@ void GameController::StartSpotCountdown(int x, int y)
   - So `skills` stays empty: `HasSkill` is always false, and the drag and training paths, which start from a click on an
     icon, never run.
 - **Evidence, from the code and not from the names:**
-  - spells: `Ctrl_spells.cpp` `spells.insert(spells.end(), handle);` The spell grid is filled here and from
-    `RestoreLayout`.
-  - spells: `Ctrl_spells.cpp` `int slot_spell_id = MainForm->registry->ReadSlotValue(LayoutKey_Spells, i);` The saved
-    spell layout is read back.
-  - skills: `Ctrl_skills.cpp` `MainForm->registry->WriteSlotValue(LayoutKey_Skills, slot, slot_skill_id);` The skill
-    layout is written, and nothing reads it back or adds to `skills`.
-- **When it happens:** Always. Scan of every write: the tree has no insert into `skills`, and in the exe the pointer to
-  this panel is used only for calls to its own methods, for `skills.size()` and for its scalar members; its methods
-  contain no insert either.
+  - spells: `Ctrl_spells.cpp` `MainForm->registry->WriteSlotValue(2, slot_index, spell_id);` The spell grid is
+    filled here, and the new spell written to store 2.
+  - spells: `Ctrl_spells.cpp` `slot_spell_id = MainForm->registry->ReadSlotValue(LayoutKey_Spells, i);` The saved spell
+    layout is read back from store 2.
+  - skills: `Ctrl_skills.cpp` `MainForm->registry->WriteSlotValue(LayoutKey_Skills, slot, skill_id);` The skill layout
+    is written, and nothing reads it back or adds to `skills`.
+- **When it happens:** Always. Scan of every write: the tree has no insert into `skills`, and every other use of the
+  panel's pointer is a call to its own methods or a read of its members.
   - Search of the tree for `[^_a-z]skills\.(insert|push_back)`: 0 line(s).
   - Search of the tree for `interface_controller->skills->TestAndClear`: 3 line(s), in TMainForm.cpp.
   - Search of the tree for `ReadSlotValue\(3`: 0 line(s).
@@ -1181,42 +1140,6 @@ void GameController::StartSpotCountdown(int x, int y)
     filled.
 - **What you see:** The skill panel always shows an empty grid. The learn window and the forget box still work, because
   each also asks `HasSpell` or counts the spell grid.
-
-## The skill info link is clicked at a fixed screen spot, so it stops lining up once the window is moved
-
-`Ctrl_learn.cpp`, `LearnController::MouseDown`
-
-```cpp
-        if (window_x + 17 < x && window_x + 252 > x)
-        {
-    ...
-                    int row_pixel = (y - this->window_y - 50) % 37;
-                    if (x > 125 && x < 190 && row_pixel > 18)
-```
-
-- **What the function is for:** On the list page of the skill master's window each row shows a skill's name and, under
-  it, an info link. `LearnController::MouseDown` shows the skill's details for a click on the link and asks to learn the
-  skill for a click elsewhere on the row.
-- **What the line was written to do:** Test the click against the link where it is drawn. The evidence:
-  `GameGraphics::DrawLearnText` draws the link at `window_x + 78`, and every other test in `LearnController::MouseDown`
-  adds `window_x` to its x bounds.
-- **What it does:** Step by step:
-  - The link test compares `x` with fixed screen columns and leaves out `window_x`.
-  - At the window's start place (`window_x` 49) those columns sit over the drawn link.
-  - `MouseMove` lets the window be dragged to any `window_x` between 10 and 346; the test area stays where it was.
-- **Evidence, from the code and not from the names:**
-  - drawn: `Gfx_game.cpp` `int name_x = MainForm->animation->learn->window_x + 78;` The name and the link under it
-    are drawn from the window's position.
-  - clicked: `Ctrl_learn.cpp` `if (window_x + 17 < x && window_x + 252 > x)` The row test follows the window; the
-    link test inside it does not.
-- **When it happens:** The window has been dragged sideways, and a row on the list page is clicked on its lower half.
-  - `LearnController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->learn->MouseDown(x, y, button);`).
-  - Search of the tree for `x > 125`: 1 line(s), in Ctrl_learn.cpp.
-  - Reachable with the shipped code: reachable. The window can be dragged by any spot outside the rows, and the link
-    test runs on every lower-half click.
-- **What you see:** After the window is moved, a click on the drawn info link asks to learn the skill instead of showing
-  its details, while a click on the fixed spot, now elsewhere on the row, shows the details.
 
 ## On a scrolled shop or skill list, the status bar names the entry from the unscrolled list, not the hovered one
 
@@ -1230,8 +1153,8 @@ void GameController::StartSpotCountdown(int x, int y)
                 row = -1;
         }
     ...
-                    String tooltip_text = MainForm->net_client->Capitalize(
-                        MainForm->item_values->GetName(shown_items[row].item_id));
+                    String tooltip_text =
+                        MainForm->net_client->Capitalize(MainForm->item_values->GetName(shown_items[row].item_id));
 ```
 
 - **What the function is for:** `ShopController::MouseMove` and `LearnController::MouseMove` track the hovered row of a
@@ -1253,8 +1176,8 @@ void GameController::StartSpotCountdown(int x, int y)
   is scrolled down, and the mouse moves onto a row.
   - `ShopController::MouseMove` is called from `Mouser::HandleMove` (`MainForm->animation->shop->MouseMove(x, y);`).
   - `LearnController::MouseMove` is called from `Mouser::HandleMove` (`MainForm->animation->learn->MouseMove(x, y);`).
-  - Search of the tree for `int row = top_row \+ \(y - window_y - 50\) / NPC_LIST_ROW_HEIGHT;`: 3 line(s), in
-    Ctrl_locker.cpp, Ctrl_shop.cpp.
+  - Search of the tree for `int row = top_row \+ \(y - window_y - 50\) / NPC_LIST_ROW_HEIGHT;`: 1 line(s), in
+    Ctrl_shop.cpp.
   - Search of the tree for `row = top_line \+ \(y - window_y - 50\) / NPC_LIST_ROW_HEIGHT;`: 4 line(s), in
     Ctrl_guild.cpp, Ctrl_inn.cpp, Ctrl_law.cpp, Ctrl_learn.cpp.
   - Reachable with the shipped code: reachable. Both lists scroll once they hold more than five entries, and the status
@@ -1302,59 +1225,30 @@ void GameController::StartSpotCountdown(int x, int y)
 - **What you see:** The stats window's total, best and last gain, and the hourly rates worked out from the total, leave
   out every group share.
 
-## On a scrolled locker list the hover bar is drawn below the hovered item, or not at all
-
-`Ctrl_locker.cpp`, `LockerController::MouseMove`
-
-```cpp
-        int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
-        if (row >= (int)items.size() || row > 4)
-            row = -1;
-        if (row != hovered_row)
-        {
-            hovered_row = row;
-```
-
-- **What the function is for:** `LockerController::MouseMove` keeps `hovered_row`, the row the window draws its hover
-  bar on.
-- **What the line was written to do:** Keep the shown row of the hovered item. The evidence:
-  `GameGraphics::DrawLockerWindow` draws the bar at `37 * hovered_row` below the list top while it draws the items from
-  `top_row`; the `row > 4` limit fits a shown row of a five-row list; the shop and trade windows keep the shown row in
-  `hovered_row`.
-- **What it does:** Step by step:
-  - `row` adds `top_row`, so it is the item's place in the whole list.
-  - The bar is drawn `top_row` rows below the hovered item.
-  - Once `top_row` plus the shown row passes 4, `row` becomes -1 and no bar is drawn.
-- **Evidence, from the code and not from the names:**
-  - draw: `Gfx_game.cpp` `if (MainForm->animation->locker->hovered_row >= 0)` The bar is placed by the shown row.
-  - hover: `Ctrl_locker.cpp` `int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;` The row kept is the
-    place in the whole list.
-- **When it happens:** The locker holds more than five items, the list is scrolled down, and the mouse is over the list.
-  - `LockerController::MouseMove` is called from `Mouser::HandleMove` (`MainForm->animation->locker->MouseMove(x, y);`).
-  - Reachable with the shipped code: reachable. A locker list scrolls once it holds more than five items.
-- **What you see:** On a scrolled list the hover bar marks the wrong item, and over the lower rows it disappears. A
-  right-click still takes the hovered item, because `MouseDown` picks it the same way.
-
-## In five npc windows a click on a row also grabs the window, so dragging from a row moves it
+## In four npc windows a click on a row also grabs the window, so dragging from a row moves it
 
 `Ctrl_guild.cpp`, `GuildController::MouseDown`; `Ctrl_inn.cpp`, `InnController::MouseDown`; `Ctrl_law.cpp`, `LawController::MouseDown`; `Ctrl_locker.cpp`,
 `LockerController::MouseDown`; `Ctrl_barber.cpp`, `BarberController::MouseDown`
 
 ```cpp
     char row_handled = false;
-    ...
+    if (button == 0 || button == 1)
+    {
+        if (window_y + 43 < y && window_y + 243 > y && window_x + 17 < x && window_x + 252 > x)
+        {
             is_dragging = false;
     ...
     if (!row_handled)
     {
     ...
-        if (this->window_x <= x && this->window_x + 284 >= x && y >= this->window_y && this->window_y + 290 >= y &&
-            !this->thumb_grabbed)
-        {
-            this->is_dragging = true;
-    ...
     if (!handled)
-{
+    ...
+        if (window_x <= x && window_x + 284 >= x && y >= window_y && window_y + 290 >= y && !thumb_grabbed)
+        {
+            is_dragging = true;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
+        }
 ```
 
 - **What the function is for:** Each of these `MouseDown` functions first handles a click on a row of the window, then,
@@ -1367,28 +1261,29 @@ void GameController::StartSpotCountdown(int x, int y)
   - `row_handled` in `GuildController::MouseDown` and `handled` in the inn, law, locker and barber versions start at 0 and
     are never set.
   - So after a row click the last test of the block still runs, and inside the window it sets `is_dragging`.
-  - The row branches of the guild, inn, law and locker windows even clear `is_dragging` first; the block sets it again.
+  - The row branches of all four windows clear `is_dragging` first; the block sets it again.
 - **Evidence, from the code and not from the names:**
-  - set: `Ctrl_chest.cpp` `handled = true;` The chest window marks a row click handled and skips the move block.
-  - unset: `Ctrl_guild.cpp` `char row_handled = false;` The guild window's flag keeps this value.
-- **When it happens:** A row of one of these windows is clicked and the mouse moves before the button is let go.
-  - `GuildController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->guild->MouseDown(x, y, button);`).
-  - `InnController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->inn->MouseDown(x, y, button);`).
-  - `LawController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->law->MouseDown(x, y, button);`).
-  - `LockerController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->locker->MouseDown(x, y, button);`).
-  - `BarberController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->barber->MouseDown(x, y, button);`).
-  - Search of the tree for `if \(!handled\)`: 29 line(s), in Ctrl_bank.cpp, Ctrl_barber.cpp, Ctrl_chest.cpp,
-    Ctrl_game.cpp, Ctrl_inn.cpp, Ctrl_jukebox.cpp, Ctrl_law.cpp, Ctrl_learn.cpp, Ctrl_locker.cpp, Ctrl_msgboard.cpp,
-    Ctrl_musician.cpp, Ctrl_shop.cpp, Ctrl_social.cpp, Ctrl_trade.cpp, Sys_mouse.cpp.
-  - Search of the tree for `if \(!row_handled\)`: 1 line(s), in Ctrl_guild.cpp.
-  - Search of the tree for `[^_]handled = (1|true)|row_handled = 1`: 93 line(s), in Ctrl_bank.cpp, Ctrl_chest.cpp,
-    Ctrl_game.cpp, Ctrl_jukebox.cpp, Ctrl_learn.cpp, Ctrl_msgboard.cpp, Ctrl_musician.cpp, Ctrl_shop.cpp,
-    Ctrl_social.cpp, Ctrl_trade.cpp, Packetcontrols.cpp, Sys_mouse.cpp.
+  - set: `Ctrl_chest.cpp` `handled = true;` The chest window sets its flag when a row takes the click.
+- **When it happens:** A row of one of these windows is clicked and the mouse moves before the button is let go. The
+  flags are locals of each function.
+  - `GuildController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->guild->MouseDown(click_x, click_y, button);`).
+  - `InnController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->inn->MouseDown(click_x, click_y, button);`).
+  - `LawController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->law->MouseDown(click_x, click_y, button);`).
+  - `LockerController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->locker->MouseDown(click_x, click_y, button);`).
+  - Search of `InnController::MouseDown`, `LawController::MouseDown` and `LockerController::MouseDown` for
+    `if \(!handled\)`: 3 line(s), Ctrl_inn.cpp, Ctrl_law.cpp, Ctrl_locker.cpp.
+  - Search of `GuildController::MouseDown` for `if \(!handled\)`: 1 line(s), Ctrl_guild.cpp.
+  - Search of `GuildController::MouseDown` for `\bhandled = (1|true)`: 0 line(s).
+  - Search of `InnController::MouseDown` for `\bhandled = (1|true)`: 0 line(s).
+  - Search of `LawController::MouseDown` for `\bhandled = (1|true)`: 0 line(s).
+  - Search of `LockerController::MouseDown` for `\bhandled = (1|true)`: 0 line(s).
+  - So `handled` is never set inside those four bodies, unlike in `ChestController::MouseDown`, which sets it when a row
+    takes the click.
+  - Search of `ChestController::MouseDown` for `\bhandled = (1|true)`: 1 line(s), Ctrl_chest.cpp.
   - Reachable with the shipped code: reachable. Every row click in these windows runs the block, and `MouseMove` moves
     the window while `is_dragging` is set.
 - **What you see:** Pressing on a row and moving the mouse before letting go drags the whole window, and while it is
@@ -1425,10 +1320,6 @@ void GameController::StartSpotCountdown(int x, int y)
   or inn window is open.
   - `LockerController::Open` is called from `PacketProcessor::DispatchPacket`
     (`MainForm->animation->locker->Open(locker_title, 0, locker_x, locker_y);`).
-  - `MemoController::Open` is called from `PacketProcessor::DispatchPacket`
-    (`MainForm->animation->memo->Open(info_name + " - " + info_time_text);`); `PacketProcessor::DispatchPacket`
-    (`MainForm->animation->memo->Open(inventory_owner_name + " - " + inventory_time_text);`);
-    `PacketProcessor::DispatchPacket` (`MainForm->animation->memo->Open(notice_title);`).
   - `LawController::Open` is called from `PacketProcessor::DispatchPacket`
     (`MainForm->animation->law->Open(law_request_id);`).
   - Reachable with the shipped code: unknown. While any of these windows is open, map clicks go to the window code in
@@ -1501,12 +1392,49 @@ void GameController::StartSpotCountdown(int x, int y)
   - click: `Ctrl_msgboard.cpp` `int row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;` The clicked row
     has no such limit.
 - **When it happens:** The post list is shown and a click lands on the right part of a row, above the list, or below it.
-  - `MsgBoardController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->message_board->MouseDown(x, y, button);`).
+  - `MsgBoardController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->message_board->MouseDown(click_x, click_y, button);`).
   - Reachable with the shipped code: reachable. Every click on the post list goes through this test.
 - **What you see:** A click on a highlighted row right of `window_x + 282` opens nothing and starts moving the window. A
   click near the window's top opens the first shown post, or on a scrolled list one of the two posts above it, and a
   click below the list opens a post that is not shown, when the board has one there.
+
+## A click below the last line of a short help page reads past the end of the page's line list
+
+`Ctrl_help.cpp`, `HelpController::MouseDown`
+
+```cpp
+            int line = (y - 350) / 14;
+            if (line < 7)
+            {
+                line += top_line;
+                if (link_targets->Strings[line] != "")
+```
+
+- **What the function is for:** `HelpController::MouseDown` opens the linked page when the clicked line has a link.
+- **What the line was written to do:** Look up only lines the page has. The evidence: the group panel's click tests its
+  row against the list size before it reads the entry, and the help panel's own scroll code works from `lines->Count`.
+- **What it does:** Step by step:
+  - The click gives one of the seven shown rows, and `line` adds `top_line`.
+  - The code reads `link_targets->Strings[line]` with no test against `link_targets->Count`.
+  - On a page with fewer than seven lines, a click under the text asks for a line that does not exist, and the string
+    list raises its index error.
+- **Evidence, from the code and not from the names:**
+  - guarded: `Ctrl_group.cpp` `if (row >= 0 && (int)members.size() > row && members[row].removable)` The group panel
+    tests the size first.
+  - unguarded: `Ctrl_help.cpp` `if (line < 7)` The help panel tests only the shown row.
+- **When it happens:** A help page shorter than the panel is shown and the empty part below its text is clicked.
+  - `HelpController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->interface_controller->help->MouseDown(click_x, click_y);`).
+  - `Mouser::HandleMouseDown` is called from `TMainForm::FormMouseDown`
+    (`mouse->HandleMouseDown(X, Y, MouseButton_Left);`); `TMainForm::FormMouseDown`
+    (`mouse->HandleMouseDown(X, Y, MouseButton_Right);`).
+  - Reachable with the shipped code: unknown. It needs a help page with fewer lines than the panel shows; the pages come
+    from the help files, which are data outside the exe.
+- **What you see:** The index error leaves `HelpController::MouseDown`, `Mouser::HandleMouseDown` and
+  `TMainForm::FormMouseDown`, none of which catches it there, and reaches `ApplicationEvents1Exception`, which only
+  copies the message. The click does nothing, no message is shown, and the rest of that click's handling in
+  `Mouser::HandleMouseDown` is skipped.
 
 ## A help line that wraps into more than ten pieces is written past the end of its ten-piece array
 
@@ -1531,7 +1459,7 @@ void GameController::StartSpotCountdown(int x, int y)
     array.
   - The add loop then reads those pieces back from the same places.
 - **Evidence, from the code and not from the names:**
-  - array: `Ctrl_help.cpp` `String wrapped_pieces[MAX_WRAP_PIECES];` Ten pieces fit.
+  - array: `Ctrl_help.cpp` `String wrapped_pieces[10];` Ten pieces fit.
   - loop: `Ctrl_help.cpp` `for (int i = 0; i <= 12; i++)` Up to thirteen are made.
 - **When it happens:** A help file holds a line so long that it wraps into more than ten pieces of the panel's width. In
   the exe the array is the last local of the frame (at ebp-0x2C, ten slots), so the eleventh piece lands on the next
@@ -1566,14 +1494,13 @@ void GameController::StartSpotCountdown(int x, int y)
   - `BookController` has no `Tick`, and no code reads `scroll_up_held`, `scroll_down_held` or `scroll_repeat_delay`.
   - So the click scrolls one line, and holding the button does nothing more.
 - **Evidence, from the code and not from the names:**
-  - repeat: `Ctrl_shop.cpp` `if (scroll_repeat_delay > 0)` The shop window counts the delay down and repeats a held
+  - repeat: `Ctrl_inn.cpp` `if (scroll_repeat_delay > 0)` The inn window counts the delay down and repeats a held
     arrow.
-  - book: `Ctrl_book.cpp` `scroll_up_held = true;` The book marks the arrow held, and nothing reads it.
+  - book: `Ctrl_book.cpp` `scroll_repeat_delay = 4;` The book marks the arrow held, and nothing reads it.
 - **When it happens:** The book window is open and a scroll arrow is held down. Scan of every read: the tree has none;
-  in the exe the three fields (+72, +73, +76) are written only by `MouseDown` and cleared by `MouseUp`, and the other
-  uses of the book pointer are draw reads of other members and calls.
-  - `BookController::MouseDown` is called from `Sys_mouse_HandleClick`
-    (`MainForm->animation->book->MouseDown(x, y, button);`).
+  the three fields are written only by `MouseDown` and cleared by the constructor and `MouseUp`.
+  - `BookController::MouseDown` is called from `Mouser::HandleMouseDown`
+    (`MainForm->animation->book->MouseDown(click_x, click_y, button);`).
   - Search of the tree for `book->scroll_(up|down)_held|book->scroll_repeat_delay`: 0 line(s).
   - Reachable with the shipped code: reachable. Any book with more entries than fit has working arrows, and holding one
     is ordinary use.
@@ -1603,7 +1530,7 @@ void GameController::StartSpotCountdown(int x, int y)
     array.
   - The add loop then reads those pieces back from the same places.
 - **Evidence, from the code and not from the names:**
-  - array: `Ctrl_news.cpp` `String wrapped_pieces[MAX_WRAP_PIECES];` Ten pieces fit.
+  - array: `Ctrl_news.cpp` `String wrapped_pieces[10];` Ten pieces fit.
   - loop: `Ctrl_news.cpp` `for (int i = 0; i <= 12; i++)` Up to thirteen are made.
 - **When it happens:** The server's welcome reply carries a news item so long that it wraps into more than ten pieces of
   the panel's width. In the exe the array is the last local of the frame (at ebp-0x2C, ten slots), so the eleventh piece
@@ -1653,17 +1580,16 @@ void GameController::StartSpotCountdown(int x, int y)
     the next word, which is empty when the first word is already too wide.
 - **When it happens:** A text given to `ReportController::AddText` has a word, or a run without spaces, at least as wide
   as the window's line width at the start of a line. Every call passes a text that `StringContainer::GetText` reads from
-  a data file with `LoadFromFile`. In the exe the fitted part is set to empty at the top of each turn, and the delete
-  takes its length.
-  - `ReportController::AddText` is called from `Sys_mouse_HandleClick`
+  a data file with `LoadFromFile`.
+  - `ReportController::AddText` is called from `Mouser::OpenHelpPanel`
     (`MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_ListWithHelpfullTopics), "", true);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::OpenHelpPanel`
     (`MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_YouCanAlwaysAsk), "", true);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::OpenHelpPanel`
     (`MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IForgotMyPassword), "", false);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::OpenHelpPanel`
     (`MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToReport), "", false);`);
-    `Sys_mouse_HandleClick`
+    `Mouser::OpenHelpPanel`
     (`MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToSpeak), "", false);`).
   - Search of the tree for `report->AddText\(`: 5 line(s), in Sys_mouse.cpp.
   - Reachable with the shipped code: unknown. It depends on the texts in the client's data file, which is outside the
@@ -1756,13 +1682,14 @@ void GameController::StartSpotCountdown(int x, int y)
 
 ## With the soft keypad, the login OK and Cancel buttons take clicks 22 pixels left of where they are drawn
 
-`Sys_mouse.cpp`, `Sys_mouse_HandleClick`
+`Sys_mouse.cpp`, `Mouser::HandleMouseDown`
 
 ```cpp
-                if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && *mouse >= 360 && *mouse <= 450 && mouse[1] >= 388 &&
-                    mouse[1] <= 417 && MainForm->animation->menu->login_enabled)
+                if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && x >= 360 && x <= 450 && y >= 388 &&
+                    y <= 417 &&
+                    MainForm->animation->menu->login_enabled)
     ...
-                if (*mouse >= 452 && *mouse <= 542 && mouse[1] >= 388 && mouse[1] <= 417)
+                if (x >= 452 && x <= 542 && y >= 388 && y <= 417)
                 {
                     MainForm->edits->Clear();
                     MainForm->gfx->LoadMainMenuScreen(true);
@@ -1780,17 +1707,19 @@ void GameController::StartSpotCountdown(int x, int y)
 - **What it does:** Step by step:
   - Without the keypad the buttons are drawn at x 360 and 452; with it, at x 382 and 474, each 90 pixels wide.
   - `Mouser::HandleMove` uses the same two sets of areas to light them, so the light follows the drawn button.
-  - `Sys_mouse_HandleClick` tests OK on the password grid (sub-state 8) at x 360 to 450, and Cancel at x 452 to 542 in
+  - `Mouser::HandleMouseDown` tests OK on the password grid (sub-state 8) at x 360 to 450, and Cancel at x 452 to 542 in
     sub-states 4, 7 and 8 alike: the areas of the layout without the keypad.
-  - Sub-states 7 and 8 come only with the keypad: two of the three `SetSubState(7)` calls open the login screen in the
+  - Sub-states 7 and 8 come only with the keypad: two of the three `SetSubState(MenuScreen_GridAccountName)` calls open
+    the login screen in the
     branch taken when `GetSkipSoftpad` gives 0, the third goes back from the grid, and the grid opens only from 7.
 - **When it happens:** Each click on the login screen with the keypad layout (the skip-keypad setting not set), which
-  `TMainForm::FormMouseDown` hands to `Sys_mouse_HandleClick`. The searches below find the one Cancel test, the two OK
-  tests at x 360, and the two draws of each keypad-layout button.
+  `TMainForm::FormMouseDown` hands to `Mouser::HandleMouseDown`. The searches below find the Cancel area twice (its
+  light without the keypad and the click test), the OK area at x 360 three times (its light and the two click tests),
+  and the two draws of each keypad-layout button.
   - `MenuGraphics::DrawConfirmButtons` is called from `TMainForm::OnIdle` (`gfx->menu->DrawConfirmButtons();`).
   - `Mouser::HandleMove` is called from `TMainForm::HandleMMTimerEvent` (`mouse->HandleMove();`).
-  - Search of the tree for `\*mouse >= 452 && \*mouse <= 542`: 1 line(s), in Sys_mouse.cpp.
-  - Search of the tree for `\*mouse >= 360 && \*mouse <= 450`: 2 line(s), in Sys_mouse.cpp.
+  - Search of the tree for `\*mouse >= 452 && \*mouse <= 542`: 0 line(s).
+  - Search of the tree for `\*mouse >= 360 && \*mouse <= 450`: 0 line(s).
   - Search of the tree for `BltFast\(382, 391`: 2 line(s), in Gfx_menu.cpp.
   - Search of the tree for `BltFast\(474, 391`: 2 line(s), in Gfx_menu.cpp.
   - Search of the tree for `SetSubState\(MenuScreen_GridAccountName\)`: 3 line(s), in Packetcontrols.cpp,
@@ -1855,84 +1784,65 @@ void GameController::StartSpotCountdown(int x, int y)
 - **What you see:** The lock icon goes away, but the chat box stays hidden and takes no typing. It comes back only when
   the game is entered again and the chat box is made anew.
 
-## A map graphic exactly 1 pixel high is not marked loaded, because its height is compared with 1, not -1
+## In the shipped exe, edited by hand after linking, a party invite waits 80 ticks; the source passes 200
 
-`Gfx_mapblends.cpp`, `BlendGraphics::LoadPendingGraphic`; `Gfx_mapeffects.cpp`,
-`EffectGraphics::LoadPendingGraphic`; `Gfx_mapitems.cpp`, `ItemGraphics::LoadPendingGraphics`; `Gfx_mapmasks.cpp`, `MaskGraphics::LoadPendingGraphic`; `Gfx_mapobjects.cpp`,
-`ObjectGraphics::LoadPendingGraphic`; `Gfx_maptops.cpp`, `TopGraphics::LoadPendingGraphic`; `Gfx_mapwalls.cpp`, `WallGraphics::LoadPendingGraphic`; `Gfx_mapwalls.cpp`,
-`WallGraphics::LoadGraphicNow`
+`Sys_mouse.cpp`, `Mouser::HandleMouseDown`
 
 ```cpp
-        for (vector<BlendWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
-        {
-            if (!it->is_loaded)
-            {
-                HMODULE open_library = library;
-                it->CreateResource();
-                GraphicSize size = it->resource->LoadSurface((int)open_library, it->graphic_id + 100);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
-                {
-                    it->is_loaded = true;
-                    it->idle_ticks = 0;
-                    pending_count--;
-                }
-                if (!pending_count)
-                    queue_drained = true;
-                break;
-            }
-        }
-...
-                if (sub_item_size.width != -1 && sub_item_size.height != 1)
+                                        if (!MainForm->animation->interface_controller->group->IsInviteCoolingDown())
+                                        {
+                                            if (!MainForm->animation->interface_controller->group->HasMember(MainForm->animation->game->player_menu_target_id))
+                                            {
+                                                MainForm->animation->interface_controller->group->SetInviteCooldown(200);
 ```
 
-- **What the function is for:** Each map graphic list loads one queued graphic per call from its gfx file, stores its
-  width and height, and marks the entry loaded so the next call moves on to the next queued graphic.
-- **What the line was written to do:** Mark the entry loaded unless the load failed. The evidence:
-  `BlendResource::LoadSurface` reports a failed draw by setting both `size.width` and `size.height` to -1, and the same
-  line tests the width against -1. The exe holds the 1 at all nine sites: in `BlendGraphics::LoadPendingGraphic` the two
-  compares are `cmp dword ptr [ebp - 0x30], -1` and `cmp dword ptr [ebp - 0x2c], 1`. The same pattern is in the loaders
-  of the effects, items and sub-items (two sites), masks, objects, tops and walls (two sites). The tile list,
-  `TileGraphics::LoadPendingGraphic`, makes no test and marks every entry loaded.
-- **What it does:** Step by step, for `BlendGraphics::LoadPendingGraphic` (the other eight sites are the same):
-  - The first entry with `is_loaded` 0 (not loaded) is loaded with `BlendResource::LoadSurface`, which returns the
-    bitmap's width in `size.width` and its height in `size.height`, or -1 and -1 when the draw throws.
-  - The entry is marked loaded (`is_loaded = true`) and `pending_count` drops by one only when the width is not -1 and
-    the height is not 1.
-  - A failed load is still caught by the width test, so it stays queued as intended.
-  - A bitmap exactly 1 pixel high stays unloaded, and `pending_count` keeps counting it.
-  - The loop stops at the first unloaded entry (`break`), so the next call loads the same 1-pixel bitmap again.
-- **Evidence, from the code and not from the names:**
-  - fail: `Gfx_blend.cpp` `size.height = -1;` A failed draw sets the height to -1 (and the width to -1 on the line
-    above), so -1 is the failure value the test was written against. The BitBlt path does the same.
-  - size: `Gfx_blend.cpp` `BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);` The two halves of
-    the result are the width and height of the copied bitmap in pixels.
-  - test: `Gfx_mapblends.cpp` `if (size.width != -1 && size.height != 1)` The exe compares with 1 here:
-    `cmp dword ptr [ebp - 0x2c], 1`.
-- **When it happens:** `TMainForm::Timer1Timer` calls the seven `LoadPendingGraphic` and `LoadPendingGraphics` functions
-  while graphics are queued; `MapController::OpenDoor` calls `WallGraphics::LoadGraphicNow` for a door's wall graphic.
-  - `BlendGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->blends->LoadPendingGraphic();`, 2
-    calls).
-  - `EffectGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->effects->LoadPendingGraphic();`,
-    2 calls).
-  - `ItemGraphics::LoadPendingGraphics` is called from `TMainForm::Timer1Timer` (`gfx->items->LoadPendingGraphics();`, 2
-    calls).
-  - `MaskGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->masks->LoadPendingGraphic();`).
-  - `ObjectGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->objects->LoadPendingGraphic();`,
-    2 calls).
-  - `TopGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->tops->LoadPendingGraphic();`, 2
-    calls).
-  - `WallGraphics::LoadPendingGraphic` is called from `TMainForm::Timer1Timer` (`gfx->walls->LoadPendingGraphic();`, 2
-    calls).
-  - `WallGraphics::LoadGraphicNow` is called from `MapController::OpenDoor`
-    (`MainForm->gfx->walls->LoadGraphicNow(walls[x][y]);`); `MapController::OpenDoor`
-    (`MainForm->gfx->walls->LoadGraphicNow(walls_next_row[x][y]);`).
-  - Search of the tree for `\.height != 1\)`: 9 line(s), in Gfx_mapblends.cpp, Gfx_mapeffects.cpp, Gfx_mapitems.cpp,
-    Gfx_mapmasks.cpp, Gfx_mapobjects.cpp, Gfx_maptops.cpp, Gfx_mapwalls.cpp.
-  - Reachable with the shipped code: only through a graphic 1 pixel high.
-- **What you see:** With a graphic 1 pixel high, that list would load the
-  same graphic on every call and the graphics queued after it in the list would stay unloaded.
+- **What the function is for:** `Mouser::HandleMouseDown` handles the player menu's party options. Before it sends a
+  party request it calls `SetInviteCooldown`, which sets the group's `invite_cooldown`; the group counts it down once a
+  tick and refuses another request while it is above 0 (`IsInviteCoolingDown`).
+- **What the line was written to do:** Start the wait at 200 at each of the three party request sites, as the source
+  here writes it and as the compiled client has it.
+- **What it does:** Step by step:
+  - The source passes 200 at the three sites, and the compiler writes each as a five-byte push of 200.
+  - In the shipped Endless.exe the low byte of each of those three pushes was overwritten after the link, so they push
+    80.
+  - A compiler never writes a constant as small as 80 in that five-byte form, so the 80 can only come from that edit.
+  - This source builds the client as it was compiled, with 200; it does not repeat the edit.
+- **When it happens:** Each time the player picks a party option in the player menu while no invite is waiting.
+  - Search of the tree for `SetInviteCooldown\(200\)`: 3 line(s), in Sys_mouse.cpp.
+  - Search of the tree for `SetInviteCooldown\(80\)`: 0 line(s).
+  - Reachable with the shipped code: reachable. Any player who sends a party request from the player menu.
+- **What you see:** In the client as shipped, the next party request is allowed after 80 ticks instead of 200, so
+  requests can be sent two and a half times as often as the code says.
+
+## In the shipped exe, edited by hand after linking, a rejected credits file is shown instead of the built-in credits
+
+`Ctrl_credits.cpp`, `CreditsController::CreditsController`
+
+```cpp
+    LoadCredits();
+    if (!VerifyCredits())
+    {
+        credit_texts->Clear();
+        credit_styles->Clear();
+```
+
+- **What the function is for:** `CreditsController::CreditsController` loads the credits file with `LoadCredits` and
+  checks it with `VerifyCredits`. When the check fails, it clears the loaded lines and writes the built-in credits list
+  in their place.
+- **What the line was written to do:** Replace a credits file that fails `VerifyCredits` with the built-in list, as the
+  source here writes it and as the compiled client has it.
+- **What it does:** Step by step:
+  - The source tests `!VerifyCredits()` and, when it holds, runs the block that clears `credit_texts` and
+    `credit_styles`
+  and adds the built-in lines.
+  - In the shipped Endless.exe the conditional jump over that block was overwritten after the link with a jump that is
+  always taken, so the block never runs.
+  - This source builds the client as it was compiled, with the check in force; it does not repeat the edit.
+- **When it happens:** Each time the credits controller is created, at start-up.
+  - Search of the tree for `if \(!VerifyCredits\(\)\)`: 1 line(s), in Ctrl_credits.cpp.
+  - Reachable with the shipped code: reachable. Any start of the client whose credits file fails the check.
+- **What you see:** In the client as shipped, the credits screen shows whatever the credits file holds, checked or not;
+  the built-in credits list is never used.
 
 ## Small ones with no effect
 
@@ -1959,9 +1869,10 @@ void GameController::StartSpotCountdown(int x, int y)
 - **Walking through a player who blocks the way passes that player's id to the request, which leaves it out.**
   `Packetoperations.cpp`, `PacketOperator::SendWalkGhost`.
   - Code:
-    `void PacketOperator::SendWalkGhost(unsigned int direction, unsigned int x, unsigned int y, int blocking_player_id) { MainForm->net_client->CommitActionTime(); String packet = packet + MainForm->net_client->EncodeNumber(direction, 1); packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3); packet = packet + MainForm->net_client->EncodeNumber(x, 1); packet = packet + MainForm->net_client->EncodeNumber(y, 1); if (packet.Length() >= 1) MainForm->net_client->SendPacket(AC_HIT, OP_MOVE, packet);`
-  - What it does: `GameController::Tick` calls `SendWalkGhost` with `last_blocking_player_id` as the fourth argument.
-    The function packs only the direction, `last_action_tick` and the tile, so the id goes nowhere.
+    `void PacketOperator::SendWalkGhost(int direction, int x, int y, int blocking_player_id) { MainForm->net_client->CommitActionTime(); String packet = packet + MainForm->net_client->EncodeNumber(direction, 1); packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3); packet = packet + MainForm->net_client->EncodeNumber(x, 1); packet = packet + MainForm->net_client->EncodeNumber(y, 1); if (packet.Length() >= 1) MainForm->net_client->SendPacket(AC_HIT, OP_MOVE, packet);`
+  - What it does: `GameController::Tick` calls `SendWalkGhost` with `last_blocking_player_id` as the fourth argument,
+    `blocking_player_id`. The function packs only the direction, `last_action_tick` and the tile, so the id goes
+    nowhere.
   - When it happens: When a player stands in the way for more than 42 ticks and the player is not casting, attacking or
     sitting. Reachable with the shipped code: reachable. `GameController::Tick` makes the call each time that wait runs
     out.
@@ -1980,19 +1891,19 @@ void GameController::StartSpotCountdown(int x, int y)
 - **The amount box has a title strip and a prompt for kind 3, but no caller opens the box with kind 3.** `Gfx_game.cpp`,
   `GameGraphics::DrawItemAmountText`; `TMainForm.cpp`, `TMainForm::OnIdle`.
   - Code:
-    `int prompt_text_id = 57; if (MainForm->animation->game->amount_box_kind == AmountBoxKind_JunkItem || MainForm->animation->game->amount_box_kind == AmountBoxKind_Amount) prompt_text_id = prompt_text_id + MainForm->animation->game->amount_box_kind - 1; if (animation->game->amount_box_kind == AmountBoxKind_Amount) OffscreenSurface->BltFast(animation->game->amount_box_x + 11, animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet, &gfx->game->amount_title_rect, DDBLTFAST_WAIT);`
-  - What it does: - `OpenAmountBox` and `OpenAmountBoxAtTile` store their first argument in `amount_box_kind`; the
-    search below finds no other store. - The seventeen call sites pass 1, 2, 4, 5, 6, 7, 8, 9, 10 or 11 (calls below). -
-    So `amount_box_kind == AmountBoxKind_Amount` never holds: the strip `amount_title_rect` and the third prompt text
-    are not drawn, and the mouse handler `Sys_mouse_HandleClick` has no kind-3 branch of its own.
+    `int title_id = 57; if (MainForm->animation->game->amount_box_kind == AmountBoxKind_JunkItem || MainForm->animation->game->amount_box_kind == 3) title_id = title_id + MainForm->animation->game->amount_box_kind - 1; if (animation->game->amount_box_kind == AmountBoxKind_Amount) OffscreenSurface->BltFast(animation->game->amount_box_x + 11, animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet, &gfx->game->amount_title_rect, DDBLTFAST_WAIT);`
+  - What it does: Step by step: - `OpenAmountBox` and `OpenAmountBoxAtTile` store their first argument in
+    `amount_box_kind`; the search below finds no other store. - The seventeen call sites pass 1, 2, 4, 5, 6, 7, 8, 9, 10
+    or 11 (calls below). - So `amount_box_kind == AmountBoxKind_Amount` never holds: the strip `junk_title_rect` and the
+    third prompt text are not drawn, and the mouse handler `Mouser::HandleMouseDown` has no kind-3 branch of its own.
   - When it happens: The amount box opens from the inventory, bank, guild, shop and trade clicks listed below, and from
     dropping an item on a map tile (`OpenAmountBoxAtTile`). Called from `BankController::MouseDown`,
     `BankController::MouseDown`, `GuildController::MouseDown`, `InventoryController::MouseDown`,
-    `InventoryController::MouseDown`, `ShopController::MouseDown`, `ShopController::MouseDown`, `Sys_mouse_HandleClick`,
-    `Sys_mouse_HandleClick`, `Sys_mouse_HandleClick`, `Sys_mouse_HandleClick`, `Mouser::HandleMouseUp`,
-    `Mouser::HandleMouseUp`, `Mouser::HandleMouseUp`, `Mouser::HandleMouseUp`, `Sys_mouse_HandleClick`,
-    `Mouser::HandleMouseUp`. The search for `\bamount_box_kind =[^=]` finds 2 line(s). The search for
-    `amount_box_kind == 3\b` finds 0 line(s). Reachable with the shipped code: never reached. Every call of
+    `InventoryController::MouseDown`, `ShopController::MouseDown`, `ShopController::MouseDown`,
+    `Mouser::HandleMouseDown`, `Mouser::HandleMouseDown`, `Mouser::HandleMouseDown`, `Mouser::HandleMouseDown`,
+    `Mouser::HandleMouseUp`, `Mouser::HandleMouseUp`, `Mouser::HandleMouseUp`, `Mouser::HandleMouseUp`,
+    `Mouser::HandleMouseDown`, `Mouser::HandleMouseUp`. The search for `\bamount_box_kind =[^=]` finds 2 line(s). The
+    search for `amount_box_kind == 3\b` finds 0 line(s). Reachable with the shipped code: never reached. Every call of
     `OpenAmountBox` and `OpenAmountBoxAtTile` passes a literal kind other than 3 (calls below), and `amount_box_kind` is
     stored on two lines only, both from that argument.
   - What you see: None visible. The kind-3 title strip of the control sheet and its prompt text never appear on screen.
@@ -2009,29 +1920,21 @@ void GameController::StartSpotCountdown(int x, int y)
     reachable. `DrawPlayer` runs for every player in view, and the overwrite has no condition.
   - What you see: None visible: `player_load_stage` is 99 on every draw. Had the first value been kept, a player whose
     graphics are still pending (`load_progress` 0) would skip the frame-buffer blit in `BlitFrame`.
-- **Each bitmap loader calls Restore on its surface only when the surface pointer is null.** `Gfx_wall.cpp`,
-  `WallResource::LoadSurface`; `Gfx_bank.cpp`, `BankGraphics::LoadSurface`;
-  `Gfx_barber.cpp`, `BarberGraphics::LoadSurface`; `Gfx_blend.cpp`, `BlendResource::LoadSurface`; `Gfx_dialog.cpp`, `DialogGraphics::LoadSurface`; `Gfx_icon.cpp`,
-  `IconResource::LoadSurface`; `Gfx_item.cpp`, `ItemResource::LoadSurface`;
-  `Gfx_jukebox.cpp`, `JukeboxGraphics::LoadSurface`; `Gfx_mask.cpp`, `MaskResource::LoadSurface`; `Gfx_msgboard.cpp`, `MsgBoardGraphics::LoadSurface`; `Gfx_object.cpp`,
-  `ObjectResource::LoadSurface`; `Gfx_social.cpp`, `SocialGraphics::LoadSurface`;
-  `Gfx_stats.cpp`, `StatGraphics::LoadSurface`; `Gfx_subitem.cpp`, `SubItemResource::LoadSurface`; `Gfx_tile.cpp`, `TileResource::LoadSurface`; `Gfx_top.cpp`, `TopResource::LoadSurface`; `Gfx_effect.cpp`, `EffectResource::LoadSurfaces`; `Gfx_chest.cpp`,
-  `ChestGraphics::LoadBackground`; `Gfx_chest.cpp`, `ChestGraphics::LoadItemSlot`;
-  `Gfx_shop.cpp`, `ShopGraphics::LoadBackground`; `Gfx_shop.cpp`, `ShopGraphics::LoadItemSlot`; `Gfx_trade.cpp`, `TradeGraphics::LoadBackground`; `Gfx_trade.cpp`,
-  `TradeGraphics::LoadItemSlot`; `Gfx_musician.cpp`, `MusicianGraphics::LoadBackground`;
-  `Gfx_musician.cpp`, `MusicianGraphics::LoadCellSheet`.
+- **The bitmap loaders' surface setup calls Restore on the surface only when the surface pointer is null.**
+  `Gfx_tile.cpp`, `TileResource::LoadSurface`.
   - Code:
-    `if (!surface) surface->Restore(); if (surface->Created) surface->Destroy(); if (!layer0_surface) if (!layer1_surface) if (!layer2_surface) if (!background_surface) if (!item_slot_surface) if (!cell_sheet_surface)`
-  - What it does: - `if (!self->surface)` calls `self->surface->Restore();` only when `surface` is null, so the call
-    would go through a null pointer. - Every store to these surface members is `new TDx_DrawSurface(NULL)` in a
-    constructor (searches below), so the test is always false and `Restore` is never called.
-  - When it happens: Every bitmap load of the map lists, the spell icons, the effects and the window graphics runs the
-    test. The search for `((\b|->)surface|layer[012]_surface|background_surface|item_slot_surface|cell_sheet_surface) =`
+    `if (!surface) surface->Restore(); if (surface->Created) surface->Destroy(); surface->GetSurfaceDesc(surface_desc); surface->Create(surface_desc, MainForm->Dx_Draw1);`
+  - What it does: Step by step: - `if (!surface)` calls `surface->Restore();` only when `surface` is null, so the call
+    would go through a null pointer. - Every surface the loaders test is a member made by `new TDx_DrawSurface(NULL)` in
+    a constructor (searches below), so the test is always false and `Restore` is never called.
+  - When it happens: Every bitmap load of the map lists, the effects and the window graphics runs the test. The search
+    for `if \(!(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface)\)` finds 13 line(s).
+    The search for `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) =[^=]`
     finds 30 line(s). The search for
-    `((\b|->)surface|layer[012]_surface|background_surface|item_slot_surface|cell_sheet_surface) = (?!new TDx_DrawSurface\(NULL\);)`
-    finds 0 line(s). Reachable with the shipped code: never reached. The search for any store to `surface`, a
-    `layer0_surface`..`layer2_surface`, `background_surface`, `item_slot_surface` or `cell_sheet_surface` member finds
-    30 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 0.
+    `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) = (?!new TDx_DrawSurface\(NULL\);)`
+    finds 0 line(s). Reachable with the shipped code: never reached. The search for any store to the surface members the
+    loaders test (`surface`, `background_surface`, `item_slot_surface`, `cell_sheet_surface` and the three effect
+    layers) finds 30 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 0.
   - What you see: None visible: no surface is restored here, lost or not.
 - **A failed canvas draw onto a loaded bitmap surface gives the surface DC back twice.** `Gfx_wall.cpp`,
   `WallResource::LoadSurface`; `Gfx_bank.cpp`, `BankGraphics::LoadSurface`;
@@ -2081,8 +1984,8 @@ void GameController::StartSpotCountdown(int x, int y)
 - **The game interface loads only if the first graphics file opened, whether or not the interface file did.**
   `Gfxprotection.cpp`, `GfxController::LoadGameGraphics`.
   - Code:
-    `HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str()); if (interface_library) { int interface_library_copy = (int)interface_library;`
-  - What it does: - The second half opens `interface_library` but tests `interface_library`, the first file's handle, which it
+    `HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str()); if (LibraryA) { int h2 = (int)interface_library;`
+  - What it does: - The second half opens `interface_library` but tests `LibraryA`, the first file's handle, which it
     has already passed to `FreeLibrary`; the program's own code tests the first handle too. - If the interface file
     fails to open while the first one opened, every interface loader gets a null library handle, so its bitmap is looked
     for in the program's own file instead. - If the first file failed and the interface file opened, the interface
@@ -2098,7 +2001,7 @@ void GameController::StartSpotCountdown(int x, int y)
   `GfxController::LoadStatGraphics`; `Gfxprotection.cpp`, `GfxController::LoadMsgBoardGraphics`; `Gfxprotection.cpp`, `GfxController::LoadSocialGraphics`; `Gfxprotection.cpp`,
   `GfxController::LoadBankGraphics`; `Gfxprotection.cpp`, `GfxController::LoadJukeboxGraphics`; `Gfxprotection.cpp`, `GfxController::LoadMusicianGraphics`; `Gfxprotection.cpp`,
   `GfxController::LoadBarberGraphics`; `Gfxprotection.cpp`, `GfxController::LoadChestGraphics`.
-  - Code: `HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());`
+  - Code: `HMODULE LibraryA = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());`
   - What it does: - These twelve loaders call `LoadLibraryA` sixteen times in all (trade, shop, report and chest open
     two files) and have no `FreeLibrary`; the program's own code of the twelve has none either. - Each open of a file
     that is already open adds one to its use count, so the count rises on every window opening.
@@ -2136,34 +2039,34 @@ void GameController::StartSpotCountdown(int x, int y)
 - **A jumping player's health bar and damage number rise twice as far as the body.** `Gfx_sprites.cpp`,
   `SpriteGraphics::DrawPlayer`.
   - Code:
-    `if (!player.jump_frame || player.jump_frame == 2) { frame_rect.top = frame_rect.top - 14; frame_rect.bottom = frame_rect.bottom - 14; } if (!player.jump_frame || player.jump_frame == 2) { move_bar_y -= 14; } if (!player.jump_frame || player.jump_frame == 2) { move_damage_y -= 14; }`
-  - What it does: - The jump branch of `DrawPlayer` (jump flag `jumping`, step `jump_frame`) lifts the body frame by 14
-    pixels on steps 0 and 2 and by 22 on step 1, one subtraction each from `frame_rect.top` and `frame_rect.bottom`. -
-    The health bar and damage number positions repeat that lift as two subtractions from the same variable
+    `if (player.jump_frame == 0 || player.jump_frame == 2) { frame_rect.top = frame_rect.top - 14; frame_rect.bottom = frame_rect.bottom - 14; } if (player.jump_frame == 0 || player.jump_frame == 2) { move_bar_y -= 14; move_bar_y -= 14; } if (player.jump_frame == 1) { move_bar_y -= 22; move_bar_y -= 22; }`
+  - What it does: Step by step: - The jump branch of `DrawPlayer` (`jumping`, step `jump_frame`) lifts the body frame by
+    14 pixels on steps 0 and 2 and by 22 on step 1, one subtraction each from `frame_rect.top` and `frame_rect.bottom`.
+    - The health bar and damage number positions repeat that lift as two subtractions from the same variable
     (`move_bar_y -= 14;` twice, `move_damage_y -= 22;` twice, and so on), so they rise 28 and 44 pixels. - Apart from
     the lift, the jump places the bar and number exactly as the walk branch does.
   - When it happens: A player jumps (`Players::StartJump`, called when a step lands on or leaves a jump tile) while that
     player's overhead health bar (`health_bar_shown`) or damage number (`damage_shown`) is showing. The search for
     `(move_bar_y|move_damage_y) -=` finds 8 line(s). Reachable with the shipped code: reachable. `Players::StartJump` is
-    called from the arrow-key walk in `Ctrl_game.cpp`, from `Pathfinder.cpp` and from the walk packet in
-    `Packetproces.cpp`; the health bar and damage number show after any hit (`Players::ShowHealthBar`,
-    `Players::ShowDamage`).
+    called from the arrow-key walk in `GameController::Walk`, from `PathFinder::FollowPath` and from the walk packet in
+    `PacketProcessor::DispatchPacket`; the health bar and damage number show after any hit.
   - What you see: During the jump the bar and the number float 14 or 22 pixels higher above the body than usual, then
     drop back when the jump ends.
 - **The help report window brightens its link lines by the guild window's hovered row, not its own.** `Gfx_game.cpp`,
   `GameGraphics::DrawReportText`.
   - Code:
-    `if (line[1] == 42) { line.Delete(1, 1); if (MainForm->animation->guild->hovered_row == row) MainForm->text_canvas->Font->Color = (TColor)0xDCDCDC; else MainForm->text_canvas->Font->Color = (TColor)0xB4B4B4;`
-  - What it does: - `DrawReportText` draws a line that starts with an asterisk as a link, underlined, and picks the
-    bright link colour when `MainForm->animation->guild->hovered_row == row`, else the dim link colour. - The report
-    window keeps its own hovered line in `report->hovered_line`, which `ReportController::MouseMove` sets and
-    `DrawReportWindow` uses for the row highlight bar; `DrawReportText` does not read it. - The same test with
-    `guild->hovered_row` is the guild window's own link test in `DrawGuildText`, the function before it in the file.
-  - When it happens: The help report window is open (`ReportController::Open`, from the click handled at
-    Sys_mouse.cpp) and one of its lines is a link. The search for `guild->hovered_row == row` finds 2 line(s). The
-    search for `report->hovered_line` finds 2 line(s). Reachable with the shipped code: unknown. The draw runs on every
-    frame while the report window is open. Its lines are language texts added by `ReportController::AddText`; whether
-    any starts with an asterisk depends on the text file the client reads, which is data outside the program.
+    `if (line[1] == '*') { line.Delete(1, 1); if (MainForm->animation->guild->hovered_row == row) MainForm->text_canvas->Font->Color = (TColor)0xDCDCDC; else MainForm->text_canvas->Font->Color = (TColor)0xB4B4B4;`
+  - What it does: Step by step: - `DrawReportText` draws a line that starts with an asterisk as a link, underlined, and
+    sets the light grey `(TColor)0xDCDCDC` when `MainForm->animation->guild->hovered_row == row`, else
+    `(TColor)0xB4B4B4`. - The report window has a hovered line of its own, `report->hovered_line`, which
+    `DrawReportWindow` reads for the row highlight bar; only the `ReportController` constructor stores it, as -1. - The
+    same test with `guild->hovered_row` is the guild window's own link test in `DrawGuildText`, the function before it
+    in the file.
+  - When it happens: The help report window is open (`ReportController::Open`, from `Mouser::OpenHelpPanel`) and one of
+    its lines is a link. The search for `guild->hovered_row == row` finds 2 line(s). The search for
+    `report->hovered_line` finds 2 line(s). Reachable with the shipped code: unknown. The draw runs on every frame while
+    the report window is open. Its lines are language texts added by `ReportController::AddText`; whether any starts
+    with an asterisk depends on the text file the client reads, which is data outside the program.
     `ReportController::MouseDown` acts on up to three such link lines.
   - What you see: A hovered link in the help report window keeps the dim link colour. The link drawn bright, if any, is
     the one whose row equals the guild window's last hovered row (0 after `GuildController::ClearText`, -1 once the
@@ -2171,17 +2074,17 @@ void GameController::StartSpotCountdown(int x, int y)
 - **The experience window's per-hour rates divide whole minutes and whole hours, so they move in steps.**
   `Gfx_game.cpp`, `GameGraphics::DrawStatText`.
   - Code:
-    `if (session_rate < 60) { if (session_rate > 0) { double session_rate_scaled = (double)(60 / session_rate) * (double)MainForm->animation->interface_controller->status->total_exp_gained; session_rate = session_rate_scaled; } } else { double session_rate_hourly = (double)MainForm->animation->interface_controller->status->total_exp_gained / (double)(session_rate / 60); session_rate = session_rate_hourly; }`
-  - What it does: - Under an hour the rate is the gain times 60 / minutes, a whole-number division taken before the
-    conversion to double: 7 minutes gives 8, 25 minutes gives 2, and every length from 31 to 59 minutes gives 1. - From
-    an hour on the rate is the gain divided by minutes / 60, in whole hours: 60 to 119 minutes divide by 1, 120 to 179
-    by 2. - Both rates work this way: the session rate over the minutes since login (`usage_start_time`), and the
-    all-play rate over `usage_minutes` plus the session. - Under an hour of all play the all-play rate scales the
-    session gain `total_exp_gained`; from an hour on it divides the character's whole `experience`.
-  - When it happens: Each draw of the experience window, opened from the game bar (`GameBars::MouseDown`). The search
-    for `60 / (session_rate|total_rate)\)` finds 2 line(s). The search for `(session_rate|total_rate) / 60\)` finds 2
-    line(s). Reachable with the shipped code: reachable. `DrawStatText` runs on every frame while the experience window
-    is open, and the session length grows through every band above as the player stays logged in.
+    `if (session_rate < 60) { if (session_rate > 0) { session_rate_scaled = (double)(60 / session_rate) * MainForm->animation->interface_controller->status->total_exp_gained; session_rate = session_rate_scaled; } } else { session_rate_hourly = (double)MainForm->animation->interface_controller->status->total_exp_gained / (session_rate / 60); session_rate = session_rate_hourly; }`
+  - What it does: Step by step: - Under an hour the rate is the gain times 60 / minutes, a whole-number division taken
+    before the conversion to double: 7 minutes gives 8, 25 minutes gives 2, and every length from 31 to 59 minutes gives
+    1. - From an hour on the rate is the gain divided by minutes / 60, in whole hours: 60 to 119 minutes divide by 1,
+    120 to 179 by 2. - Both rates work this way: the session rate over the minutes since login, and the all-play rate
+    over `usage_minutes` plus the session. - Under an hour of all play the all-play rate scales the session gain
+    `total_exp_gained`; from an hour on it divides the character's whole `experience`.
+  - When it happens: Each draw of the experience window. The search for `60 / (session_rate|total_rate)\)` finds 2
+    line(s). The search for `(session_rate|total_rate) / 60\)` finds 2 line(s). Reachable with the shipped code:
+    reachable. `DrawStatText` runs on every frame while the experience window is open, and the session length grows
+    through every band above as the player stays logged in.
   - What you see: The rates are off by up to the size of the dropped fraction and jump at band edges. After 45 minutes
     the session rate shows the session gain unscaled; after 90 minutes it shows the whole session gain as one hour's
     worth, and at 120 minutes it halves at once.
@@ -2231,28 +2134,27 @@ void GameController::StartSpotCountdown(int x, int y)
     weapon 67.
   - What you see: A player swinging weapon 67 shows the swing effect of group 3, the group of weapons 1, 9 and 65; the
     group 2 line for it does nothing.
-- **Freeing the sound device frees sound buffer 4 in place of buffers 5, 6 and 7, which stay as they are.**
-  `TMainForm.cpp`, `TMainForm::Dx_Sound1Destroy`.
+- **Freeing the sound buffers frees buffer 4 for buffers 5 to 7.** `TMainForm.cpp`, `TMainForm::Dx_Sound1Destroy`.
   - Code:
     `if (Dx_SoundBuffer7->Created) Dx_SoundBuffer4->Destroy(); if (Dx_SoundBuffer6->Created) Dx_SoundBuffer4->Destroy(); if (Dx_SoundBuffer5->Created) Dx_SoundBuffer4->Destroy(); if (Dx_SoundBuffer4->Created) Dx_SoundBuffer4->Destroy(); if (Dx_SoundBuffer3->Created) Dx_SoundBuffer3->Destroy();`
-  - What it does: Step by step: - `Dx_SoundBuffer7->Created` is tested, and when it holds, `Dx_SoundBuffer4->Destroy()`
-    runs. - The same goes for buffers 6 and 5: each test frees buffer 4. - Then buffer 4 is tested and freed, and
-    buffers 3, 2 and 1 are each tested and freed. - So buffers 5, 6 and 7 are left as they are, and when they exist,
-    buffer 4's `Destroy` runs up to four times, the later times on a buffer that is already freed. What a second
-    `Destroy` does is up to the TDx library.
-  - When it happens: The handler has no caller in the tree; the form file, which the tree does not hold, binds it to the
-    sound device. The device is freed on every way out (`FormClose`, `FormDestroy`, Alt+F4 on the menu screens, the exit
-    button in `Sys_mouse_HandleClick`) and in game when a message box of kind 5 turns sound back on, which frees and
+  - What it does: Step by step: - In `Dx_Sound1Destroy`, `Dx_SoundBuffer7->Created` is tested, and when it holds,
+    `Dx_SoundBuffer4->Destroy()` runs; the same goes for buffers 6 and 5. Then buffers 4, 3, 2 and 1 are each tested and
+    freed. - So buffers 5, 6 and 7 are left as they are when the device goes; buffer 4's `Destroy` runs up to four
+    times, the later times on a buffer that is already freed. What a second `Destroy` does is up to the TDx library.
+  - When it happens: `Dx_Sound1Destroy` has no caller in the tree; the form file, which the tree does not hold, binds it
+    to the sound device, which is freed in `FormDestroy` and `FormClose`, on the ways out in `FormCreate` and
+    `FormKeyDown`, and in `Mouser::HandleMouseDown` on the way out and when sound is switched back on, which frees and
     makes the device again. The searches below count the frees of the device and of buffers 5 to 7. The search for
-    `Dx_Sound1->Destroy\(\)` finds 8 line(s). The search for `Dx_SoundBuffer[567]->Destroy\(\)` finds 3 line(s).
-    Reachable with the shipped code: unknown. It depends on the form file binding this handler to the sound device's
-    destroy event; the tree holds no call to it.
-  - What you see: Buffers 5 to 7 still playing when the device goes stay marked as made until `UpdateSounds` sees them
-    stop and frees them. Nothing a player hears changes on the way out.
+    `Dx_Sound1->Destroy\(\)` finds 9 line(s). The search for `Dx_SoundBuffer[567]->Destroy\(\)` finds 3 line(s).
+    Reachable with the shipped code: unknown. It depends on the form file binding `Dx_Sound1Destroy` to the sound
+    device's destroy event, and the tree holds no call to it.
+  - What you see: Buffers that are still made when the device goes stay marked as made: while the game runs, until
+    `UpdateSounds` sees them stop and frees them; on close, until the program ends. Nothing a player hears changes on
+    the way out.
 - **The surface restores before each frame is shown run only when the surface pointer is null, so they restore
   nothing.** `TMainForm.cpp`, `TMainForm::OnIdle`.
   - Code:
-    `if (!BackBuffer) BackBuffer->Restore(); BackBuffer->BltFast(0, 0, OffscreenSurface, &screen_rect, DDBLTFAST_WAIT); if (!PrimarySurface) PrimarySurface->Restore(); PrimarySurface->Flip(OffscreenSurface, DDFLIP_WAIT); Dx_Draw1->WaitForVerticalBlank(DDWAITVB_BLOCKBEGIN); if (!OffscreenSurface) OffscreenSurface->Restore(); PrimarySurface->Blt(&window_rect, OffscreenSurface, 0, DDBLT_WAIT, 0); if (PrimarySurface->ErrorValue == DDERR_SURFACELOST || OffscreenSurface->ErrorValue == DDERR_SURFACELOST) Dx_Draw1->RestoreAllSurfaces();`
+    `if (!BackBuffer) BackBuffer->Restore(); BackBuffer->BltFast(0, 0, OffscreenSurface, &screen_rect, DDBLTFAST_WAIT); if (!PrimarySurface) PrimarySurface->Restore(); PrimarySurface->Flip(BackBuffer, DDFLIP_WAIT); if (PrimarySurface->ErrorValue == DDERR_SURFACELOST || OffscreenSurface->ErrorValue == DDERR_SURFACELOST || BackBuffer->ErrorValue == DDERR_SURFACELOST) Dx_Draw1->RestoreAllSurfaces(); if (!PrimarySurface) PrimarySurface->Restore(); PrimarySurface->Flip(OffscreenSurface, DDFLIP_WAIT); if (!OffscreenSurface) OffscreenSurface->Restore(); PrimarySurface->Blt(&window_rect, OffscreenSurface, 0, DDBLT_WAIT, 0);`
   - What it does: Step by step: - Before each blit or flip, `if (!PrimarySurface)`, `if (!BackBuffer)` and
     `if (!OffscreenSurface)` test the pointer to the surface object, not whether the surface is lost. - The pointers are
     form components and are not null, so the restore calls under them are skipped; a null pointer would call `Restore`
@@ -2266,27 +2168,26 @@ void GameController::StartSpotCountdown(int x, int y)
   - What you see: A lost surface makes one frame's blit or flip fail, and the test after it restores the surfaces for
     the next frame; the lines before the draw add nothing.
 - **On the password grid, 2, 4, 6 and 8 do nothing, while letters and other digits open the grid's message box.**
-  `Sys_keyboard.cpp`, `KeyBoard::PollKeyboard`.
+  `Sys_keyboard.cpp`, `KeyBoard::HandleMenuKeys`.
   - Code:
-    `if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)`
-  - What it does: Step by step: - The test reads the key state of the digit keys 0, 1, 3, 5, 7 and 9, then of the 26
-    letter keys. - When any of them is down, the box opens with `GetText(GameText_Information)` and
-    `GetText(GameText_UseYourArrowkeysAnd)`, with its picture, and the caret is turned off. - The keys for 2, 4, 6 and 8
-    are not in the test, and the grid takes no typed text, so pressing one of them does nothing at all.
+    `if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 || (MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0 ||`
+  - What it does: Step by step: - The test reads the key state of the digit keys 0, 1, 3, 5, 7 and 9 (key codes 11, 2,
+    4, 6, 8 and 10), then of the 26 letter keys. - When any of them is down, the box opens with
+    `GetText(GameText_Information)` and `GetText(GameText_UseYourArrowkeysAnd)`, with its picture, and the caret is
+    turned off. - The keys for 2, 4, 6 and 8 (key codes 3, 5, 7 and 9) are not in the test, and the grid takes no typed
+    text, so pressing one of them does nothing at all.
   - When it happens: Each keyboard read while the password grid is up and no message box is open:
-    `TMainForm::HandleMMTimerEvent` calls `KeyBoard::PollKeyboard`, and the grid is entered by Enter or a click on the
-    account name screen. The searches below find the one line that starts the test, no test line for the keys of 2, 4, 6
-    and 8, and the two places that open this box. The same exe's own listing of the function tests the same six digit
-    keys before the letters. Called from `TMainForm::HandleMMTimerEvent`. The search for
-    `Keys\[DIK_0\] & 0x80\) != 0 \|\|` finds 1 line(s). The search for `Keys\[[3579]\] & 0x80\) != 0 \|\|` finds 0
-    line(s). The search for `GetText\(384\)` finds 0 line(s). Reachable with the shipped code: reachable. Any player who
-    types on the password grid.
+    `TMainForm::HandleMMTimerEvent` calls `KeyBoard::PollKeyboard`, which calls `HandleMenuKeys`, and the grid is
+    entered by Enter or a click on the account name screen. The searches below find the one line that starts the test
+    and the two places that open this box. Called from `KeyBoard::PollKeyboard`, `TMainForm::HandleMMTimerEvent`. The
+    search for `Keys\[DIK_0\] & 0x80\) != 0 \|\|` finds 1 line(s). The search for `GetText\(384\)` finds 0 line(s).
+    Reachable with the shipped code: reachable. Any player who types on the password grid.
   - What you see: A player who tries to type a password sees the box for most keys, but 2, 4, 6 and 8 give no answer, so
     the box does not come up for them.
 - **While a spell waits for its target, a click puts up status text 122 whenever an untargetable npc is in the list.**
   `Sys_mouse.cpp`, `Sys_mouse_HandleClick`.
   - Code:
-    `if (target_type.npc_type == NpcType_Passive || target_type.npc_type == NpcType_Aggressive) { if (target_npc.frame_width > 0 && target_npc.frame_height > 0) } else MainForm->animation->interface_controller->ShowStatusMessage(3, MainForm->strings->GetText(122));`
+    `if (target_type.npc_type == NpcType_Unknown1 || target_type.npc_type == NpcType_Unknown2) { if (target_npc.frame_width > 0 && target_npc.frame_height > 0) } else MainForm->animation->interface_controller->ShowStatusMessage(3, MainForm->strings->GetText(122));`
   - What it does: Step by step: - The npcs are tried from the last in the list to the first, and the loop stops at the
     first one hit. - For an npc of one of the two targetable types, its box on screen is tested against the click. - For
     an npc of any other type nothing is tested: the status line is set to `GetText(GameText_YouCannotAttackThis)` at
@@ -2302,44 +2203,62 @@ void GameController::StartSpotCountdown(int x, int y)
   - What you see: The status line shows text 122 on clicks that hit a monster, hit a player or hit nothing, as long as
     an untargetable npc sits later in the list than the npc hit, or anywhere in it when none is hit. The cast goes on.
 - **On the account name screen, once a name is typed, a click anywhere moves on to the password grid.** `Sys_mouse.cpp`,
-  `Sys_mouse_HandleClick`.
+  `Mouser::HandleMouseDown`.
   - Code:
     `if (MainForm->animation->GetSubState() == MenuScreen_GridAccountName) { if (MainForm->edits->GetText(EditId_AccountName) != "") { MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));`
   - What it does: Step by step: - For sub-states 4 and 8 the press is first tested against the OK button's area; for
     sub-state 7 only the name box is tested, for not being empty. - So any press on the screen opens the grid once a
     name is in the box, wherever it lands. - `TMainForm::FormMouseDown` focuses the edit box under the press before it
-    calls `Sys_mouse_HandleClick`, so a press on the name box itself also moves on, with the name as it stands. - A
+    calls `Mouser::HandleMouseDown`, so a press on the name box itself also moves on, with the name as it stands. - A
     press on Cancel first opens the grid and then, in the same call, goes back to the main menu.
   - When it happens: Each press on the account name screen with a name typed; `TMainForm::FormMouseDown` hands every
-    press to `Sys_mouse_HandleClick`. The search below finds this test and the Enter key's test in
-    `KeyBoard::PollKeyboard`, the only other way to the grid. The search for
-    `GetSubState\(\) == MenuScreen_GridAccountName\)$` finds 2 line(s). Reachable with the shipped code: reachable. Any
+    press to `Mouser::HandleMouseDown`. The searches below find this test, and the Enter key's test in
+    `KeyBoard::HandleEditKeys`, the only other way to the grid from the name screen. The search for
+    `if \(MainForm->animation->GetSubState\(\) == 7\)` finds 0 line(s). The search for
+    `MainForm->animation->GetSubState\(\) == 7\)` finds 0 line(s). Reachable with the shipped code: reachable. Any
     player who types a name and then clicks, for example on the name box to correct it.
   - What you see: A click meant to place the caret in the name box, or on empty space, opens the password grid with the
     name as typed so far.
 - **On the password grid only the right third of the delete key lights up and takes clicks.** `Sys_mouse.cpp`,
-  `Sys_mouse_HandleClick`; `Sys_mouse.cpp`, `Mouser::HandleMove`.
+  `Mouser::HandleMouseDown`; `Sys_mouse.cpp`, `Mouser::HandleMove`.
   - Code:
-    `if (*mouse >= 558 && *mouse <= 562 && mouse[1] >= 284 && mouse[1] <= 298) { MainForm->sfx->PlaySfx(SfxSound_Send); MainForm->animation->menu->DeleteLastLetter(); } if (x >= 558 && x <= 562 && y >= 284 && y <= 298) MainForm->animation->menu->delete_key_lit = true;`
+    `if (x >= 558 && x <= 562 && y >= 284 && y <= 298) { MainForm->sfx->PlaySfx(SfxSound_Send); MainForm->animation->menu->DeleteLastLetter(); } if (x >= 558 && x <= 562 && y >= 284 && y <= 298) MainForm->animation->menu->delete_key_lit = true;`
   - What it does: Step by step: - `MenuGraphics` draws the lit delete key at x 548, y 283 from `small_key_rect`, which
-    is 15 pixels square, so the key covers x 548 to 562. - `Mouser::HandleMove` lights it, and `Sys_mouse_HandleClick`
+    is 15 pixels square, so the key covers x 548 to 562. - `Mouser::HandleMove` lights it, and `Mouser::HandleMouseDown`
     acts on it, only for x 558 to 562. - The other keys light and take clicks over the whole of their drawn area, for
-    example the space and select keys at x 514 to 562.
+    example the select key at x 514 to 562.
   - When it happens: Each move and click over the delete key on the password grid. The searches below find the two tests
-    of the narrow area and the one draw of the key. The search for `558 &&` finds 2 line(s). The search for
-    `BltFast\(548, 283` finds 1 line(s). Reachable with the shipped code: reachable. Any player who uses the mouse to
-    remove a letter on the password grid.
+    of the narrow area and the one draw of the key. The search for `x >= 558 && x <= 562` finds 2 line(s). The search
+    for `BltFast\(548, 283` finds 1 line(s). Reachable with the shipped code: reachable. Any player who uses the mouse
+    to remove a letter on the password grid.
   - What you see: Clicking the left two thirds of the delete key does nothing, and the key does not light there.
 - **Leaving a guild sends the leave request with an empty guild tag, as the tag is cleared one line earlier.**
-  `Sys_mouse.cpp`, `Sys_mouse_HandleClick`.
+  `Sys_mouse.cpp`, `Mouser::HandleMouseDown`.
   - Code:
     `MainForm->animation->interface_controller->status->guild_tag = ""; MainForm->animation->interface_controller->status->guild_rank = GUILD_RANK_LOWEST; MainForm->animation->interface_controller->status->guild_name = ""; MainForm->animation->interface_controller->status->guild_rank_name = ""; MainForm->animation->interface_controller->status->MarkDirty(); MainForm->net_client->sender->LeaveGuild(MainForm->animation->guild->npc_session_id, MainForm->animation->interface_controller->status->guild_tag);`
   - What it does: Step by step: - `guild_tag`, the rank, `guild_name` and the rank name are cleared first. -
     `LeaveGuild` is then called with `status->guild_tag`, which is now empty. - `LeaveGuild` appends the tag after the
     four-character session value, so the request ends after the session.
   - When it happens: Each time a player confirms leaving a guild in the guild window, the only call of `LeaveGuild` in
-    the tree (searches below). Called from `Sys_mouse_HandleClick`. The search for `LeaveGuild\(` finds 3 line(s). The
+    the tree (searches below). Called from `Mouser::HandleMouseDown`. The search for `LeaveGuild\(` finds 3 line(s). The
     search for `guild_tag = "";` finds 2 line(s). Reachable with the shipped code: reachable. Any guild member who
     leaves through the guild window.
   - What you see: The leave request reaches the server without the guild tag. What the server makes of that the client
     does not show; the client has already cleared its own guild details.
+- **The world load's give-up step waits for a count of 150 that never comes: the count goes back to 0 at 12.**
+  `Animationprotector.cpp`, `AnimationController::UpdateIntroAndDelays`.
+  - Code:
+    `if (reply_timeout >= 1 && menu->is_loading_world) { reply_timeout++; if (reply_timeout == 12) { menu->SetEnteringGame(true); menu->StartRequestDelay(); reply_timeout = 0; } if (reply_timeout == 150) { MainForm->gfx->FreeGameGraphics();`
+  - What it does: Step by step: - `StartReplyTimeout` sets `reply_timeout` to 1 when the welcome reply starts the world
+    load. - Each pass while `is_loading_world` holds adds 1 to it. - At 12 it starts entering the game
+    (`SetEnteringGame(true)`, `StartRequestDelay`) and sets the count back to 0. - The test for 150 comes after that, in
+    the same pass, and the count has gone no higher than 12 before it.
+  - When it happens: `PacketProcessor::DispatchPacket` calls `StartReplyTimeout` on the welcome reply that starts the
+    world load; `TMainForm::HandleMMTimerEvent` calls `UpdateIntroAndDelays` every 40th tick while the client animates.
+    Called from `PacketProcessor::DispatchPacket`, `TMainForm::HandleMMTimerEvent`. The search for
+    `\baccount_progress =[^=]` finds 5 line(s). The search for `\baccount_progress\+\+` finds 1 line(s). The search for
+    `reply_timeout == 150` finds 1 line(s). Reachable with the shipped code: never reached. The search for any store to
+    `reply_timeout` finds 5 lines: 1 in `StartReplyTimeout`, and 0 in the constructor, in `StopReplyTimeout` and in the
+    two branches; the one other change is the step of 1, so the count never passes 12.
+  - What you see: None visible from this line: the message box of dialog message 1 is never shown from here, and a world
+    load is never stopped by this count.

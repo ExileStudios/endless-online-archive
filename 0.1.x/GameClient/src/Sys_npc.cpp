@@ -6,8 +6,10 @@
 #include "Gfx_npc.h"
 #include "Gfx_game.h"
 #include "Ctrl_interface.h"
+
 #pragma package(smart_init)
 
+// An empty npc at the map index, with every animation stopped.
 Npc::Npc()
 {
     index = 0;
@@ -32,6 +34,7 @@ Npc::Npc()
     graphics_pending = true;
     reload_requested = false;
     load_stage = 0;
+    load_failures = 0;
     label_shown = false;
     idle_frame = 0;
     balloon_timer = 0;
@@ -73,8 +76,8 @@ Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int 
     dying = false;
     graphics_pending = true;
     reload_requested = false;
-    label_shown = false;
     load_stage = 0;
+    load_failures = 0;
     label_shown = false;
     idle_frame = 0;
     balloon_timer = 0;
@@ -91,7 +94,7 @@ void Npc::CreateResources()
 }
 
 // The screen position adjusted for the current step or attack lunge.
-Windows::TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
+TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
 {
     TPoint position;
     position.x = screen_x;
@@ -121,8 +124,7 @@ Windows::TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
     }
     if (attacking)
     {
-        int current_attack_frame = attack_frame;
-        if (current_attack_frame >= 1 && current_attack_frame <= 3)
+        if (attack_frame >= 1 && attack_frame <= 3)
         {
             if (attack_direction == FacingDirection_Down)
             {
@@ -160,7 +162,7 @@ void Npc::ShowBalloon(String *lines, int width, int height, int tinted)
         balloon_width = width;
         balloon_height = height;
         balloon_shown = true;
-        balloon_timer = text_length / 3 + 24;
+        balloon_timer = (short)(text_length / 3) + 24;
         redraw = true;
     }
     else if (queued_balloon_count < 5)

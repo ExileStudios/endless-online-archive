@@ -11,24 +11,35 @@ enum KeyboardLayout
 // Keyboard input: the menu and game keys, walking with the arrows, and typing into the edit boxes.
 struct KeyBoard
 {
-    String last_key;
-    String repeat_key;
-    int repeat_delay;
-    int repeat_interval;
-    int backspace_delay;
-    int tab_delay;
-    int key_delay;
-    bool arrow_held;
-    bool ctrl_attacked;
-    bool two_arrows_held;
-    String walk_direction;
-    String first_direction;
+    unsigned char key_waits[61];
+    char key_flags[4];
+    unsigned char key_delay;
+    unsigned char backspace_wait;
+    unsigned char tab_wait;
+    unsigned char enter_wait;
+    unsigned char menu_enter_wait;
+    unsigned char grid_enter_wait;
+    char walk_key_held;
+    bool wasd_key_used;
+    bool attack_key_used;
+    bool delete_pressed;
+    unsigned char walk_direction;
+    unsigned char last_walk_direction;
 
     KeyBoard();
     ~KeyBoard();
-    bool IsArrowKeyDown();
-    String GetWalkDirection();
+    char WasDeletePressed();
     void PollKeyboard();
+    bool UpdateWalkDirection();
+    bool HandleMenuKeys();
+    bool HandleGameKeys();
+    bool HandleEditKeys();
+    bool HandleTypedKeys();
+    bool TakeKeyDelay();
+    bool TakeKeyRepeat(unsigned char key);
+    void ResetKeyRepeat(unsigned char key);
+    bool IsAnyWindowOpen();
+    void ReleaseModifierKeys();
 };
 
 #endif

@@ -1,17 +1,17 @@
 #ifndef Gfx_emotebufferH
 #define Gfx_emotebufferH
 
-class TDDBltFX;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
 
 // A small surface, cleared to black with black see-through, that the sprite code draws bitmap layers into.
 struct EmoteBuffer
 {
     TDx_DrawSurface *surface;
-    Windows::TRect surface_rect;
+    TRect surface_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;

@@ -27,9 +27,29 @@
 #include "Ctrl_news.h"
 #include "Ctrl_playerlist.h"
 #include "Ctrl_status.h"
+#include <stdlib.h>
+#include <vector.h>
+#include "Ctrl_chest.h"
+#include "Ctrl_group.h"
+#include "Ctrl_inventory.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_skills.h"
+#include "Ctrl_spells.h"
+#include "Ctrl_trade.h"
+#include "Gfx_mapblends.h"
+#include "Gfx_mapitems.h"
+#include "Gfx_mapmasks.h"
+#include "Gfx_mapobjects.h"
+#include "Gfx_maptiles.h"
+#include "Gfx_maptops.h"
+#include "Gfx_mapwalls.h"
+#include "Pathfinder.h"
+
 #pragma package(smart_init)
 
-#define ENTRY_ID_LENGTH 2
 #define PROTECTED_OWNER_NONE 11110000
 
 PacketProcessor::PacketProcessor()
@@ -44,10 +64,8 @@ PacketProcessor::~PacketProcessor()
 // Numbers come encoded (DecodeNumber), and a byte of 255 ends each token of a list.
 void PacketProcessor::DispatchPacket(int action, int family, String packet)
 {
-    int i;
-    int npc_graphic = 0;
-    int missing_count = 0;
-    int ii = 0;
+    int i = 0;
+    int npc_graphic;
     // Entering the game: the map and the four data files come in parts, then the welcome replies.
     if (family == OP_PLAY)
     {
@@ -58,10 +76,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->menu->SetMapNeeded(false);
             MainForm->animation->menu->StartRequestDelay();
         }
+        // First how long to wait for a reply, and whether a new account is confirmed first.
         if (action == AC_SYN2)
         {
             MainForm->item_values->received_part_count++;
-            MainForm->item_values->SaveFilePart(DecodeNumber(String(packet[1])), packet.SubString(2, packet.Length()));
+            MainForm->item_values->SaveFilePart(DecodeNumber(packet[1]), packet.SubString(2, packet.Length()));
             if (MainForm->item_values->received_part_count > MainForm->item_values->expected_part_count ||
                 !MainForm->item_values->is_downloading)
             {
@@ -73,7 +92,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_SYN3)
         {
             MainForm->npc_values->received_part_count++;
-            MainForm->npc_values->SaveFilePart(DecodeNumber(String(packet[1])), packet.SubString(2, packet.Length()));
+            MainForm->npc_values->SaveFilePart(DecodeNumber(packet[1]), packet.SubString(2, packet.Length()));
             if (MainForm->npc_values->received_part_count > MainForm->npc_values->expected_part_count ||
                 !MainForm->npc_values->is_downloading)
             {
@@ -85,7 +104,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_SYN4)
         {
             MainForm->skill_values->received_part_count++;
-            MainForm->skill_values->SaveFilePart(DecodeNumber(String(packet[1])), packet.SubString(2, packet.Length()));
+            MainForm->skill_values->SaveFilePart(DecodeNumber(packet[1]), packet.SubString(2, packet.Length()));
             if (MainForm->skill_values->received_part_count > MainForm->skill_values->expected_part_count ||
                 !MainForm->skill_values->is_downloading)
             {
@@ -97,7 +116,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_SYN5)
         {
             MainForm->class_values->received_part_count++;
-            MainForm->class_values->SaveFilePart(DecodeNumber(String(packet[1])), packet.SubString(2, packet.Length()));
+            MainForm->class_values->SaveFilePart(DecodeNumber(packet[1]), packet.SubString(2, packet.Length()));
             if (MainForm->class_values->received_part_count > MainForm->class_values->expected_part_count ||
                 !MainForm->class_values->is_downloading)
             {
@@ -231,7 +250,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->net_client->NextToken();
                 String welcome_message = MainForm->net_client->NextToken();
                 MainForm->animation->interface_controller->news->Clear();
-                for (i = 0; i < 8; i++)
+                for (int news_line = 0; news_line < 8; news_line++)
                     MainForm->animation->interface_controller->news->AddNewsItem(MainForm->net_client->NextToken());
                 if (MainForm->animation->interface_controller->news->GetLineCount() > 0)
                 {
@@ -249,8 +268,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->animation->interface_controller->inventory->PlaceLoadedItems();
                 MainForm->animation->interface_controller->spells->RestoreLayout();
                 MainForm->animation->SetScreenMode(ScreenMode_Game);
-                MainForm->animation->interface_controller->RequestFullRedraw();
+                MainForm->animation->interface_controller->RequestFullRedraw(3);
                 MainForm->edits->AddEdit(EditId_Chat, EditGroup_Game, 120, 309, 470, EDIT_LINE_HEIGHT);
+                if (MainForm->config->GetTextTheme() == 1)
+                    MainForm->edits->SetTextColor(EditId_Chat, 0xB4B3B4);
                 MainForm->edits->SetMaxLength(EditId_Chat, 128);
                 MainForm->edits->SetBackgroundVisible(EditId_Chat, false);
                 MainForm->edits->SetBorderVisible(EditId_Chat, false);
@@ -334,7 +355,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->edits->SetText(EditId_Password, "");
             MainForm->edits->FocusEdit(EditId_Password);
             MainForm->animation->menu->login_enabled = true;
-            if (MainForm->net_client->login_failure_count > 2)
+            if (MainForm->net_client->login_failure_count > 3)
             {
                 MainForm->edits->Clear();
                 MainForm->gfx->LoadMainMenuScreen(false);
@@ -480,7 +501,6 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->edits->Clear();
             MainForm->edits->caret_enabled = false;
         }
-        // 10 and up = accepted: the reply is the session id.
         if (account_reply >= AccountReply_SessionBase)
         {
             int account_expected_response = MainForm->net_client->server_challenge_hash;
@@ -807,8 +827,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int pickup_weight = DecodeNumber(packet.SubString(8, 1));
             int pickup_max_weight = DecodeNumber(packet.SubString(9, 1));
             if (picked_item_id == ItemId_Gold)
-                MainForm->animation->interface_controller->status->gold = picked_amount +
-                    MainForm->animation->interface_controller->inventory->GetItemAmount(picked_item_id);
+                MainForm->animation->interface_controller->status->gold =
+                    MainForm->animation->interface_controller->inventory->GetItemAmount(picked_item_id) + picked_amount;
             String picked_item_name = MainForm->item_values->GetName(picked_item_id);
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                 MainForm->strings->GetText(GameText_YouPickedUp) + " " + IntToStr(picked_amount) + " " +
@@ -835,7 +855,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int drop_max_weight = DecodeNumber(packet.SubString(15, 1));
             if (dropped_item_id == ItemId_Gold)
                 MainForm->animation->interface_controller->status->gold = drop_remaining_amount;
-            int amount_before_drop = MainForm->animation->interface_controller->inventory->GetItemAmount(dropped_item_id);
+            int amount_before_drop;
+            amount_before_drop = MainForm->animation->interface_controller->inventory->GetItemAmount(dropped_item_id);
             if (amount_before_drop > drop_remaining_amount)
             {
                 String dropped_item_name = MainForm->item_values->GetName(dropped_item_id);
@@ -864,7 +885,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int junk_max_weight = DecodeNumber(packet.SubString(11, 1));
             if (junked_item_id == ItemId_Gold)
                 MainForm->animation->interface_controller->status->gold = junk_remaining_amount;
-            int amount_before_junk = MainForm->animation->interface_controller->inventory->GetItemAmount(junked_item_id);
+            int amount_before_junk;
+            amount_before_junk = MainForm->animation->interface_controller->inventory->GetItemAmount(junked_item_id);
             if (amount_before_junk > junk_remaining_amount)
             {
                 String junked_item_name = MainForm->item_values->GetName(junked_item_id);
@@ -888,8 +910,9 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_RESULT)
         {
             // What the used item does:
-            // 3 = heals, 25 = new stats and the worn items of special 5 come off, 24 = hair color,
-            // 23 = an effect, 22 = drunk for the item's spec value, 6 = experience, 4 = a warp
+            // 28 = a new title, 3 = heals, 5 = a new skin, 7 = a spell learned,
+            // 25 = new stats and cursed worn items come off, 24 = hair color, 23 = an effect,
+            // 22 = drunk for the item's spec value, 6 = experience, 4 = a warp
             int use_effect = DecodeNumber(packet.SubString(1, 1));
             if (use_effect == EifItemType_Heal)
             {
@@ -958,11 +981,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 int dye_item_amount = DecodeNumber(packet.SubString(4, 4));
                 int dye_weight = DecodeNumber(packet.SubString(8, 1));
                 int dye_max_weight = DecodeNumber(packet.SubString(9, 1));
-                int hair_color = DecodeNumber(packet.SubString(10, 1));
+                int new_hair_color = DecodeNumber(packet.SubString(10, 1));
                 MainForm->animation->interface_controller->inventory->SetItemAmount(dye_item_id, dye_item_amount);
                 MainForm->animation->interface_controller->status->weight = dye_weight;
                 MainForm->animation->interface_controller->status->max_weight = dye_max_weight;
-                MainForm->players->SetHairColor(MainForm->net_client->GetPlayerId(), hair_color);
+                MainForm->players->SetHairColor(MainForm->net_client->GetPlayerId(), new_hair_color);
                 MainForm->players->ReloadGraphics(MainForm->net_client->GetPlayerId());
             }
             if (use_effect == EifItemType_EffectPotion)
@@ -983,7 +1006,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 int drink_item_amount = DecodeNumber(packet.SubString(4, 4));
                 int drink_weight = DecodeNumber(packet.SubString(8, 1));
                 int drink_max_weight = DecodeNumber(packet.SubString(9, 1));
-                int drunk_time = MainForm->item_values->GetSpecValue(drink_item_id);
+                int drunk_time;
+                drunk_time = MainForm->item_values->GetSpecValue(drink_item_id);
                 MainForm->animation->interface_controller->chat->SetDrunkTime(drunk_time);
                 MainForm->animation->interface_controller->inventory->SetItemAmount(drink_item_id, drink_item_amount);
                 MainForm->animation->interface_controller->status->weight = drink_weight;
@@ -1057,21 +1081,19 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
     }
     if (family == OP_CHARACTER)
     {
-        if (action == AC_SET)
+        // A delete is confirmed first: the reply carries the session id and the character.
+        if (action == AC_SET && packet.Length() >= 4)
         {
-            if (packet.Length() >= 4)
-            {
-                int delete_session_id = DecodeNumber(packet.SubString(1, 2));
-                int delete_character_id = DecodeNumber(packet.SubString(3, 4));
-                MainForm->net_client->SetSessionId(delete_session_id);
-                MainForm->animation->menu->is_form_open = false;
-                MainForm->animation->menu->delete_character_id = delete_character_id;
-                MainForm->edits->caret_enabled = false;
-                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Confirm,
-                    MainForm->strings->GetDialogText(DialogText_DeleteCharacterSure, false),
-                    "Character '" + MainForm->players->GetNameByCharacterId(delete_character_id) + "' " +
+            int delete_session_id = DecodeNumber(packet.SubString(1, 2));
+            int delete_character_id = DecodeNumber(packet.SubString(3, 4));
+            MainForm->net_client->SetSessionId(delete_session_id);
+            MainForm->animation->menu->is_form_open = false;
+            MainForm->animation->menu->delete_character_id = delete_character_id;
+            MainForm->edits->caret_enabled = false;
+            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Confirm,
+                MainForm->strings->GetDialogText(DialogText_DeleteCharacterSure, false),
+                "Character '" + MainForm->players->GetNameByCharacterId(delete_character_id) + "' " +
                     MainForm->strings->GetDialogText(DialogText_DeleteCharacterSure, true));
-            }
         }
         if (action == AC_RESULT)
         {
@@ -1189,6 +1211,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
     {
         if (action == AC_GROUP)
         {
+            // The points left to spend, then the new maximums; a 0 leaves one as it was.
             int updated_stat_points = DecodeNumber(packet.SubString(1, 2));
             int updated_skill_points = DecodeNumber(packet.SubString(3, 2));
             int updated_max_health = DecodeNumber(packet.SubString(5, 2));
@@ -1286,6 +1309,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_DO)
         {
+            // Only kind 1, a quake, is handled: a sound and a screen shake of the given strength.
             int is_quake = DecodeNumber(packet.SubString(1, 1));
             if (is_quake == 1)
             {
@@ -1328,8 +1352,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_PUBLIC)
         {
-            if (MainForm->map->IsNearTrap())
-                MainForm->sfx->PlaySfx(SfxSound_Spikes);
+            if (MainForm->map->IsNearTrap() > -3000)
+                MainForm->sfx->PlayEffectSoundAt(SfxSound_Spikes, MainForm->map->IsNearTrap());
             MainForm->map->trap_reveal_timer = 2;
             MainForm->redraw_needed = true;
         }
@@ -1343,8 +1367,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->players->ShowHealthBar(hurt_player_id, hurt_health_percent, 8);
             if (hurt_player_died == 1)
             {
+                int hurt_volume;
+                hurt_volume = MainForm->players->GetDistanceVolume(hurt_player_id);
                 MainForm->players->KillPlayer(hurt_player_id);
-                MainForm->sfx->PlaySfx(SfxSound_Death);
+                MainForm->sfx->PlayEffectSoundAt(SfxSound_Death, hurt_volume);
             }
         }
         if (action == AC_TARGET)
@@ -1377,10 +1403,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
     }
     if (family == OP_MUSIC)
     {
+        // Set plays the music of the map; do plays a jukebox song.
         if (action == AC_SET)
         {
             MainForm->sfx->StopMusic();
-            MainForm->sfx->QueueMusic(DecodeNumber(String(packet[1])));
+            MainForm->sfx->QueueMusic(DecodeNumber(packet[1]));
         }
         if (action == AC_DO)
         {
@@ -1407,23 +1434,20 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->sfx->PlaySfx(SfxSound_BuySell);
             MainForm->animation->jukebox->Close();
         }
-        if (action == AC_OPEN)
+        if (action == AC_OPEN && packet.Length() > 1)
         {
-            if (packet.Length() > 1)
+            char jukebox_playing = false;
+            String jukebox_text = "";
+            int jukebox_id = DecodeNumber(packet.SubString(1, 2));
+            packet.Delete(1, 2);
+            if (packet.Length() > 3)
             {
-                char jukebox_playing = false;
-                String jukebox_text = "";
-                int jukebox_id = DecodeNumber(packet.SubString(1, 2));
-                packet.Delete(1, 2);
-                if (packet.Length() > 3)
-                {
-                    jukebox_playing = true;
-                    jukebox_text = packet;
-                }
-                MainForm->animation->jukebox->Open(jukebox_id, jukebox_playing, 0, jukebox_text);
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                    MainForm->strings->GetText(GameText_JukeboxIsNowViewed));
+                jukebox_playing = true;
+                jukebox_text = packet;
             }
+            MainForm->animation->jukebox->Open(jukebox_id, jukebox_playing, 0, jukebox_text);
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                MainForm->strings->GetText(GameText_JukeboxIsNowViewed));
         }
         if (action == AC_PLAY)
         {
@@ -1436,7 +1460,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
     }
     if (family == OP_SOUND && action == AC_SET)
-        MainForm->sfx->PlaySfx(DecodeNumber(String(packet[1])));
+        MainForm->sfx->PlaySfx(DecodeNumber(packet[1]));
     if (family == OP_MAGIC)
     {
         if (action == AC_ERROR)
@@ -1451,23 +1475,25 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_GROUP)
         {
-            int group_spell_id = DecodeNumber(packet.SubString(1, 2));
+            int cast_spell_id = DecodeNumber(packet.SubString(1, 2));
             int group_caster_id = DecodeNumber(packet.SubString(3, 2));
-            int group_spell_type = MainForm->skill_values->GetType(group_spell_id);
+            int group_spell_type;
+            group_spell_type = MainForm->skill_values->GetType(cast_spell_id);
             if (!group_spell_type)
             {
-                int group_spell_graphic = MainForm->skill_values->GetGraphic(group_spell_id);
+                int group_spell_graphic = MainForm->skill_values->GetGraphic(cast_spell_id);
                 int group_heal_amount = DecodeNumber(packet.SubString(7, 2));
                 int group_caster_mana = DecodeNumber(packet.SubString(5, 2));
                 if (MainForm->net_client->GetPlayerId() == group_caster_id)
                 {
-                    int group_stamina_left = MainForm->skill_values->GetSpCost(group_spell_id);
-                    group_stamina_left = MainForm->animation->interface_controller->status->stamina -
-                        group_stamina_left;
+                    int group_stamina_left;
+                    group_stamina_left = MainForm->skill_values->GetSpCost(cast_spell_id);
+                    group_stamina_left =
+                        MainForm->animation->interface_controller->status->stamina - group_stamina_left;
                     MainForm->animation->interface_controller->status->SetMana(group_caster_mana);
                     MainForm->animation->interface_controller->status->SetStamina(group_stamina_left);
                 }
-                String group_spell_shout = MainForm->skill_values->GetShout(group_spell_id);
+                String group_spell_shout = MainForm->skill_values->GetShout(cast_spell_id);
                 MainForm->players->ShowTextLabel(group_caster_id, group_spell_shout, LabelColor_LightBlue, false, 10);
                 MainForm->players->StartSpellCast(group_caster_id, FacingDirection_Current);
                 packet.Delete(1, 8);
@@ -1489,9 +1515,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int target_player_id = DecodeNumber(packet.SubString(1, 2));
             int target_caster_id = DecodeNumber(packet.SubString(3, 2));
-            int target_heal_unused_byte = DecodeNumber(String(packet[5]));
+            int target_heal_unused_byte = DecodeNumber(packet[5]);
             int target_spell_id = DecodeNumber(packet.SubString(6, 2));
-            int target_spell_type = MainForm->skill_values->GetType(target_spell_id);
+            int target_spell_type;
+            target_spell_type = MainForm->skill_values->GetType(target_spell_id);
             if (!target_spell_type)
             {
                 int target_spell_graphic = MainForm->skill_values->GetGraphic(target_spell_id);
@@ -1518,7 +1545,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int self_caster_id = DecodeNumber(packet.SubString(1, 2));
             int self_spell_id = DecodeNumber(packet.SubString(3, 2));
-            int self_spell_type = MainForm->skill_values->GetType(self_spell_id);
+            int self_spell_type;
+            self_spell_type = MainForm->skill_values->GetType(self_spell_id);
             if (!self_spell_type)
             {
                 int self_spell_graphic = MainForm->skill_values->GetGraphic(self_spell_id);
@@ -1536,7 +1564,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 {
                     int self_new_health = DecodeNumber(packet.SubString(10, 2));
                     int self_new_mana = DecodeNumber(packet.SubString(12, 2));
-                    int self_stamina_left = MainForm->skill_values->GetSpCost(self_spell_id);
+                    int self_stamina_left;
+                    self_stamina_left = MainForm->skill_values->GetSpCost(self_spell_id);
                     self_stamina_left = MainForm->animation->interface_controller->status->stamina - self_stamina_left;
                     if (self_stamina_left < 0)
                         self_stamina_left = 0;
@@ -1548,10 +1577,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_RESULT)
         {
-            int cast_spell_id = DecodeNumber(packet.SubString(1, 2));
+            int group_spell_id = DecodeNumber(packet.SubString(1, 2));
             int cast_new_health = DecodeNumber(packet.SubString(3, 2));
             int cast_new_mana = DecodeNumber(packet.SubString(5, 2));
-            int cast_stamina_left = MainForm->skill_values->GetSpCost(cast_spell_id);
+            int cast_stamina_left;
+            cast_stamina_left = MainForm->skill_values->GetSpCost(group_spell_id);
             cast_stamina_left = MainForm->animation->interface_controller->status->stamina - cast_stamina_left;
             if (cast_stamina_left < 0)
                 cast_stamina_left = 0;
@@ -1619,7 +1649,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             if (MainForm->map->GetTileSpec(sitting_player_x, sitting_player_y) == TileSpec_Splash)
             {
                 MainForm->players->StartEffect(sitting_player_id, SpellEffect_WaterSplash);
-                MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                int sit_volume = MainForm->players->GetDistanceVolume(sitting_player_id);
+                MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, sit_volume);
             }
             MainForm->players->StartSitOnFloor(sitting_player_id, sit_x, sit_y, sit_direction);
         }
@@ -1679,30 +1710,33 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->players->ShowHealthBar(struck_player_id, struck_health_percent, 8);
             if (struck_player_died > 0)
             {
+                int struck_volume;
+                struck_volume = MainForm->players->GetDistanceVolume(struck_player_id);
                 MainForm->players->KillPlayer(struck_player_id);
-                MainForm->sfx->PlaySfx(SfxSound_Death);
+                MainForm->sfx->PlayEffectSoundAt(SfxSound_Death, struck_volume);
             }
         }
         if (action == AC_CAST)
         {
-            int attack_caster_id = DecodeNumber(packet.SubString(1, 2));
-            int spell_victim_id = DecodeNumber(packet.SubString(3, 2));
-            int spell_damage = DecodeNumber(packet.SubString(5, 3));
-            int spell_attack_unused_byte = DecodeNumber(packet.SubString(8, 1));
-            int spell_victim_health_percent = DecodeNumber(packet.SubString(9, 1));
-            int spell_victim_died = DecodeNumber(packet.SubString(10, 1));
-            int attack_spell_id = DecodeNumber(packet.SubString(11, 2));
-            int attack_spell_graphic = MainForm->skill_values->GetGraphic(attack_spell_id);
-            String attack_spell_shout = MainForm->skill_values->GetShout(attack_spell_id);
-            MainForm->players->ShowTextLabel(attack_caster_id, attack_spell_shout, LabelColor_LightBlue, false, 10);
-            MainForm->players->StartSpellCast(attack_caster_id, FacingDirection_Current);
-            MainForm->players->StartEffect(spell_victim_id, attack_spell_graphic - 1);
-            MainForm->players->ShowDamage(spell_victim_id, spell_damage, 0);
-            MainForm->players->ShowHealthBar(spell_victim_id, spell_victim_health_percent, 8);
-            if (spell_victim_died > 0)
+            int pk_caster_id = DecodeNumber(packet.SubString(1, 2));
+            int pk_target_id = DecodeNumber(packet.SubString(3, 2));
+            int pk_damage = DecodeNumber(packet.SubString(5, 3));
+            int pk_direction = DecodeNumber(packet.SubString(8, 1));
+            int pk_health_percent = DecodeNumber(packet.SubString(9, 1));
+            int pk_killed = DecodeNumber(packet.SubString(10, 1));
+            int pk_spell_id = DecodeNumber(packet.SubString(11, 2));
+            int attack_spell_graphic = MainForm->skill_values->GetGraphic(pk_spell_id);
+            String attack_spell_shout = MainForm->skill_values->GetShout(pk_spell_id);
+            MainForm->players->ShowTextLabel(pk_caster_id, attack_spell_shout, LabelColor_LightBlue, false, 10);
+            MainForm->players->StartSpellCast(pk_caster_id, FacingDirection_Current);
+            MainForm->players->StartEffect(pk_target_id, attack_spell_graphic - 1);
+            MainForm->players->ShowDamage(pk_target_id, pk_damage, false);
+            MainForm->players->ShowHealthBar(pk_target_id, pk_health_percent, 8);
+            if (pk_killed > 0)
             {
-                MainForm->players->KillPlayer(spell_victim_id);
-                MainForm->sfx->PlaySfx(SfxSound_Death);
+                MainForm->players->KillPlayer(pk_target_id);
+                int pk_volume = MainForm->players->GetDistanceVolume(pk_target_id);
+                MainForm->sfx->PlayEffectSoundAt(SfxSound_Death, pk_volume);
             }
         }
         if (action == AC_SET)
@@ -1717,12 +1751,13 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int leaving_player_id = DecodeNumber(packet.SubString(1, 2));
             int leaving_x = MainForm->players->GetX(leaving_player_id);
             int leaving_y = MainForm->players->GetY(leaving_player_id);
+            int leaving_volume = MainForm->players->GetDistanceVolume(leaving_player_id);
             MainForm->players->RemovePlayer(leaving_player_id);
             if (packet.Length() == 3)
             {
                 int leave_kind = DecodeNumber(packet.SubString(3, 1));
                 if (leave_kind == 1)
-                    MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_GhostWalk, leaving_volume);
                 if (leave_kind == 2)
                     MainForm->effects->AddEffect(leaving_x, leaving_y, SpellEffect_WarpDepart);
             }
@@ -1755,19 +1790,19 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_SYN2)
         {
-            String online_notice_text = MainForm->net_client->Capitalize(packet) +
-                MainForm->strings->GetText(GameText_IsOnlineAndOn);
+            String online_notice =
+                MainForm->net_client->Capitalize(packet) + MainForm->strings->GetText(GameText_IsOnlineAndOn);
             MainForm->sfx->PlaySfx(SfxSound_Notice);
             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup, CHAT_COLOR_DEFAULT,
-                MainForm->net_client->DeobfuscateString("`:Y,TL"), online_notice_text, true);
+                MainForm->net_client->DeobfuscateString("`:Y,TL"), online_notice, true);
         }
         if (action == AC_SYN3)
         {
-            String online_notice_text = MainForm->net_client->Capitalize(packet) +
-                MainForm->strings->GetText(GameText_IsOnlineSomewhereIn);
+            String offline_notice =
+                MainForm->net_client->Capitalize(packet) + MainForm->strings->GetText(GameText_IsOnlineSomewhereIn);
             MainForm->sfx->PlaySfx(SfxSound_Notice);
             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup, CHAT_COLOR_DEFAULT,
-                MainForm->net_client->DeobfuscateString("`:Y,TL"), online_notice_text, true);
+                MainForm->net_client->DeobfuscateString("`:Y,TL"), offline_notice, true);
         }
     }
     if (family == OP_RANGE && action == AC_RESULT)
@@ -1791,16 +1826,18 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     if (MainForm->map->GetTileSpec(npc_spell_caster_x, npc_spell_caster_y) == TileSpec_Splash)
                     {
                         MainForm->players->StartEffect(npc_spell_caster_id, SpellEffect_WaterSplash);
-                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                        int npc_spell_volume = MainForm->players->GetDistanceVolume(npc_spell_caster_id);
+                        MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, npc_spell_volume);
                     }
                     if (MainForm->net_client->GetPlayerId() != npc_spell_caster_id)
                         MainForm->players->StartSpellCast(npc_spell_caster_id, npc_spell_direction);
                     else
                     {
                         int npc_spell_caster_mana = DecodeNumber(packet.SubString(13, 2));
-                        int npc_spell_stamina_left = MainForm->skill_values->GetSpCost(npc_spell_id);
-                        npc_spell_stamina_left = MainForm->animation->interface_controller->status->stamina -
-                            npc_spell_stamina_left;
+                        int npc_spell_stamina_left;
+                        npc_spell_stamina_left = MainForm->skill_values->GetSpCost(npc_spell_id);
+                        npc_spell_stamina_left =
+                            MainForm->animation->interface_controller->status->stamina - npc_spell_stamina_left;
                         MainForm->animation->interface_controller->status->SetStamina(npc_spell_stamina_left);
                         MainForm->animation->interface_controller->status->SetMana(npc_spell_caster_mana);
                     }
@@ -1841,9 +1878,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             if (packet.Length() > 23)
             {
                 int spell_killer_mana = DecodeNumber(packet.SubString(21, 2));
-                int spell_kill_stamina_left = MainForm->skill_values->GetSpCost(killing_spell_id);
-                spell_kill_stamina_left = MainForm->animation->interface_controller->status->stamina -
-                    spell_kill_stamina_left;
+                int spell_kill_stamina_left;
+                spell_kill_stamina_left = MainForm->skill_values->GetSpCost(killing_spell_id);
+                spell_kill_stamina_left =
+                    MainForm->animation->interface_controller->status->stamina - spell_kill_stamina_left;
                 MainForm->animation->interface_controller->status->SetStamina(spell_kill_stamina_left);
                 MainForm->animation->interface_controller->status->SetMana(spell_killer_mana);
                 int spell_kill_experience = DecodeNumber(packet.SubString(23, 4));
@@ -1883,12 +1921,15 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->npcs->KillNpc(spell_killed_npc);
             if (spell_killer_id > 0 && MainForm->net_client->GetPlayerId() != spell_killer_id)
             {
-                int spell_killer_x = MainForm->players->GetX(spell_killer_id);
-                int spell_killer_y = MainForm->players->GetY(spell_killer_id);
+                int spell_killer_x;
+                spell_killer_x = MainForm->players->GetX(spell_killer_id);
+                int spell_killer_y;
+                spell_killer_y = MainForm->players->GetY(spell_killer_id);
                 if (MainForm->map->GetTileSpec(spell_killer_x, spell_killer_y) == TileSpec_Splash)
                 {
                     MainForm->players->StartEffect(spell_killer_id, SpellEffect_WaterSplash);
-                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                    int kill_volume = MainForm->players->GetDistanceVolume(spell_killer_id);
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, kill_volume);
                 }
                 if (MainForm->net_client->GetPlayerId() != spell_killer_id)
                     MainForm->players->StartSpellCast(spell_killer_id, spell_killer_direction);
@@ -1927,7 +1968,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     if (MainForm->map->GetTileSpec(npc_attacker_x, npc_attacker_y) == TileSpec_Splash)
                     {
                         MainForm->players->StartEffect(npc_attacker_id, SpellEffect_WaterSplash);
-                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                        int attacker_volume = MainForm->players->GetDistanceVolume(npc_attacker_id);
+                        MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, attacker_volume);
                     }
                     MainForm->players->StartAttack(npc_attacker_id, npc_attacker_direction, false);
                 }
@@ -2000,7 +2042,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 if (MainForm->map->GetTileSpec(npc_killer_x, npc_killer_y) == TileSpec_Splash)
                 {
                     MainForm->players->StartEffect(npc_killer_id, SpellEffect_WaterSplash);
-                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                    int killer_volume = MainForm->players->GetDistanceVolume(npc_killer_id);
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, killer_volume);
                 }
                 MainForm->players->StartAttack(npc_killer_id, npc_killer_direction, false);
             }
@@ -2019,7 +2062,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_UPDATE)
         {
-            int appearing_npc_count = DecodeNumber(String(packet[1]));
+            int appearing_npc_count = DecodeNumber(packet[1]);
             for (int appearing_npc_index = 0; appearing_npc_index < appearing_npc_count; appearing_npc_index++)
             {
                 int appearing_npc_id = DecodeNumber(packet.SubString(6 * appearing_npc_index + 3, 2));
@@ -2075,7 +2118,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     if (npc_attack_kind == 2)
                     {
                         MainForm->players->KillPlayer(npc_target_player_id);
-                        MainForm->sfx->PlaySfx(SfxSound_Death);
+                        int npc_hit_volume = MainForm->players->GetDistanceVolume(npc_target_player_id);
+                        MainForm->sfx->PlayEffectSoundAt(SfxSound_Death, npc_hit_volume);
                         if (npc_target_player_id == MainForm->net_client->GetPlayerId())
                             MainForm->map->DelayWarp();
                     }
@@ -2116,7 +2160,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                         {
                             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Speech,
                                 CHAT_COLOR_DEFAULT, talking_npc_name, npc_message, false);
-                            MainForm->gfx->npcs->ShowSpeechBalloon(npc_message, talking_npc_index, 0);
+                            MainForm->gfx->npc_cache->ShowSpeechBalloon(npc_message, talking_npc_index,
+                                MainForm->config->GetNpcColor());
                         }
                     }
                     else
@@ -2143,7 +2188,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             {
                 MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Speech, CHAT_COLOR_DEFAULT,
                     speaking_npc_name, npc_speech, false);
-                MainForm->gfx->npcs->ShowSpeechBalloon(npc_speech, speaking_npc_index, 0);
+                MainForm->gfx->npc_cache->ShowSpeechBalloon(npc_speech, speaking_npc_index,
+                    MainForm->config->GetNpcColor());
             }
         }
         if (action == AC_JUNK)
@@ -2159,7 +2205,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             String nearby_item_data = MainForm->net_client->NextToken();
             // The players and npcs in view not known yet are asked for in one request.
             String missing_entities = "";
-            missing_count = 0;
+            int missing_count = 0;
             for (int k = 0; 2 * k + 2 <= nearby_player_ids.Length(); k++)
             {
                 if (!MainForm->players->HasPlayer(DecodeNumber(nearby_player_ids.SubString(2 * k + 1, 2))))
@@ -2216,7 +2262,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 if (MainForm->map->GetTileSpec(walk_x, walk_y) == TileSpec_Splash)
                 {
                     MainForm->players->StartEffect(walking_player_id, SpellEffect_WaterSplash);
-                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                    int walking_volume = MainForm->players->GetDistanceVolume(walking_player_id);
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_WaterSplash, walking_volume);
                 }
                 if (is_plain_walk)
                     MainForm->players->StartWalk(walking_player_id, walk_x, walk_y, walk_direction);
@@ -2274,7 +2321,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_DO)
         {
             MainForm->sfx->PlaySfx(SfxSound_Notice);
-            int arena_notice_number = DecodeNumber(String(packet[1]));
+            int arena_notice_number = DecodeNumber(packet[1]);
             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Warning, CHAT_COLOR_SYSTEM,
                 MainForm->strings->GetText(GameText_Server),
                 IntToStr(arena_notice_number) + MainForm->strings->GetText(GameText_PlayerSWereLaunched), false);
@@ -2289,6 +2336,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_CONFIRM)
         {
+            // An arena kill: a line in the chat, with the killer's count of kills when above 1.
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String arena_winner_name = MainForm->net_client->NextToken();
             int final_kill_count = DecodeNumber(MainForm->net_client->NextToken());
@@ -2342,46 +2390,34 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String private_sender = MainForm->net_client->NextToken();
             String private_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-            if (!MainForm->animation->social->IsIgnored(private_sender))
+            if (!MainForm->animation->social->IsIgnored(private_sender) && private_text.Length() >= 1)
             {
-                if (private_text.Length() >= 1)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_TalkTell);
-                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Server,
-                        CHAT_COLOR_PRIVATE, MainForm->net_client->Capitalize(private_sender), private_text,
-                        false);
-                    int private_tab = MainForm->animation->interface_controller->chat->FindPrivateTab(private_sender);
-                    if (private_tab != -1)
-                        MainForm->animation->interface_controller->chat->AddPrivateMessage(private_tab,
-                            CHAT_COLOR_DEFAULT, MainForm->net_client->Capitalize(private_sender), private_text,
-                            false);
-                }
+                MainForm->sfx->PlaySfx(SfxSound_TalkTell);
+                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Server, CHAT_COLOR_PRIVATE,
+                    MainForm->net_client->Capitalize(private_sender), private_text, false);
+                int private_tab = MainForm->animation->interface_controller->chat->FindPrivateTab(private_sender);
+                if (private_tab != -1)
+                    MainForm->animation->interface_controller->chat->AddPrivateMessage(private_tab, CHAT_COLOR_DEFAULT,
+                        MainForm->net_client->Capitalize(private_sender), private_text, false);
             }
         }
-        if (action == AC_OPEN)
+        if (action == AC_OPEN && packet.Length() > 1)
         {
-            if (packet.Length() > 1)
+            int group_speaker_id = DecodeNumber(packet.SubString(1, 2));
+            if (MainForm->animation->interface_controller->group->members.size() > 0)
             {
-                int group_speaker_id = DecodeNumber(packet.SubString(1, 2));
-                if (MainForm->animation->interface_controller->group->members.size() > 0)
+                String group_speaker_name =
+                    MainForm->animation->interface_controller->group->GetMemberName(group_speaker_id);
+                String group_text = MainForm->net_client->CensorText(packet.SubString(3, packet.Length() - 2));
+                if (!MainForm->animation->social->IsIgnored(group_speaker_name) && group_text.Length() >= 1)
                 {
-                    String group_speaker_name = MainForm->animation->interface_controller->group->GetMemberName(group_speaker_id);
-                    String group_text = MainForm->net_client->CensorText(
-                        packet.SubString(3, packet.Length() - 2));
-                    if (!MainForm->animation->social->IsIgnored(group_speaker_name))
-                    {
-                        if (group_text.Length() >= 1)
-                        {
-                            MainForm->gfx->sprites->ShowSpeechBalloon(group_text, group_speaker_id, 1);
-                            MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party,
-                                CHAT_COLOR_DEFAULT, MainForm->net_client->Capitalize(group_speaker_name),
-                                group_text, false);
-                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Party,
-                                CHAT_COLOR_PRIVATE, MainForm->net_client->Capitalize(group_speaker_name),
-                                group_text, false);
-                            MainForm->sfx->PlaySfx(SfxSound_GroupMessage);
-                        }
-                    }
+                    MainForm->gfx->sprites->ShowSpeechBalloon(group_text, group_speaker_id,
+                        MainForm->config->GetGroupColor());
+                    MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party, CHAT_COLOR_DEFAULT,
+                        MainForm->net_client->Capitalize(group_speaker_name), group_text, false);
+                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Party, CHAT_COLOR_PRIVATE,
+                        MainForm->net_client->Capitalize(group_speaker_name), group_text, false);
+                    MainForm->sfx->PlaySfx(SfxSound_GroupMessage);
                 }
             }
         }
@@ -2390,14 +2426,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String admin_chat_sender = MainForm->net_client->NextToken();
             String admin_chat_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-            if (!MainForm->animation->social->IsIgnored(admin_chat_sender))
+            if (!MainForm->animation->social->IsIgnored(admin_chat_sender) && admin_chat_text.Length() >= 1)
             {
-                if (admin_chat_text.Length() >= 1)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
-                    MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Admin, CHAT_COLOR_ADMIN,
-                        MainForm->net_client->Capitalize(admin_chat_sender), admin_chat_text, false);
-                }
+                MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
+                MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Admin, CHAT_COLOR_ADMIN,
+                    MainForm->net_client->Capitalize(admin_chat_sender), admin_chat_text, false);
             }
         }
         if (action == AC_SYSTEM)
@@ -2415,38 +2448,29 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String guild_chat_sender = MainForm->net_client->NextToken();
             String guild_chat_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-            if (!MainForm->animation->social->IsIgnored(guild_chat_sender))
+            if (!MainForm->animation->social->IsIgnored(guild_chat_sender) && guild_chat_text.Length() >= 1)
             {
-                if (guild_chat_text.Length() >= 1)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
-                    MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Guild, CHAT_COLOR_PRIVATE,
-                        MainForm->net_client->Capitalize(guild_chat_sender), guild_chat_text, false);
-                }
+                MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
+                MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Guild, CHAT_COLOR_PRIVATE,
+                    MainForm->net_client->Capitalize(guild_chat_sender), guild_chat_text, false);
             }
         }
-        if (action == AC_LIST)
+        if (action == AC_LIST && packet.Length() > 0)
         {
-            if (packet.Length() > 0)
+            MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
+            for (int history_line = 1; history_line <= 7; history_line++)
             {
-                MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
-                for (int history_line = 1; history_line <= 7; history_line++)
+                String history_sender = MainForm->net_client->NextToken();
+                String history_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
+                if (history_sender != "" && history_text != "")
                 {
-                    String history_sender = MainForm->net_client->NextToken();
-                    String history_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-                    if (history_sender != "" && history_text != "")
-                    {
-                        if (!MainForm->animation->social->IsIgnored(history_sender))
-                        {
-                            if (history_text.Length() >= 1)
-                                MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
-                                    CHAT_COLOR_DEFAULT, MainForm->net_client->Capitalize(history_sender),
-                                    history_text, false, true);
-                        }
-                    }
-                    else
-                        break;
+                    if (!MainForm->animation->social->IsIgnored(history_sender) && history_text.Length() >= 1)
+                        MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
+                            CHAT_COLOR_DEFAULT, MainForm->net_client->Capitalize(history_sender), history_text, false,
+                            true);
                 }
+                else
+                    break;
             }
         }
         if (action == AC_GLOBAL)
@@ -2454,22 +2478,16 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String broadcast_sender = MainForm->net_client->NextToken();
             String broadcast_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-            if (!MainForm->animation->social->IsIgnored(broadcast_sender))
+            if (!MainForm->animation->social->IsIgnored(broadcast_sender) && broadcast_text.Length() >= 1)
             {
-                if (broadcast_text.Length() >= 1)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_AnnounceReceived);
-                    MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
-                        CHAT_COLOR_NOTICE, MainForm->net_client->Capitalize(broadcast_sender), broadcast_text,
-                        false, false);
-                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Announce,
-                        CHAT_COLOR_NOTICE, MainForm->net_client->Capitalize(broadcast_sender), broadcast_text,
-                        false);
-                    MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Announce,
-                        CHAT_COLOR_NOTICE, MainForm->net_client->Capitalize(broadcast_sender), broadcast_text,
-                        false);
-                    MainForm->gfx->sprites->ShowSpeechBalloon(broadcast_text, MainForm->net_client->GetPlayerId(), 0);
-                }
+                MainForm->sfx->PlaySfx(SfxSound_AnnounceReceived);
+                MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce, CHAT_COLOR_NOTICE,
+                    MainForm->net_client->Capitalize(broadcast_sender), broadcast_text, false, false);
+                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Announce, CHAT_COLOR_NOTICE,
+                    MainForm->net_client->Capitalize(broadcast_sender), broadcast_text, false);
+                MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Announce, CHAT_COLOR_NOTICE,
+                    MainForm->net_client->Capitalize(broadcast_sender), broadcast_text, false);
+                MainForm->gfx->sprites->ShowSpeechBalloon(broadcast_text, MainForm->net_client->GetPlayerId(), 0);
             }
         }
         if (action == AC_PLAY)
@@ -2477,13 +2495,9 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String global_sender = MainForm->net_client->NextToken();
             String global_text = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
-            if (!MainForm->animation->social->IsIgnored(global_sender))
-            {
-                if (global_text.Length() >= 1)
-                    MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
-                        CHAT_COLOR_DEFAULT, MainForm->net_client->Capitalize(global_sender), global_text, false,
-                        false);
-            }
+            if (!MainForm->animation->social->IsIgnored(global_sender) && global_text.Length() >= 1)
+                MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce, CHAT_COLOR_DEFAULT,
+                    MainForm->net_client->Capitalize(global_sender), global_text, false, false);
         }
         if (action == AC_SET)
         {
@@ -2513,9 +2527,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
     {
         int emoting_player_id = DecodeNumber(packet.SubString(1, 2));
         int emote_id = DecodeNumber(packet.SubString(3, 1));
+        // Only emotes 1 to 14 are shown.
         if (emote_id > 0 && emote_id < 15)
             MainForm->players->StartEmote(emoting_player_id, emote_id);
     }
+    // The new sequence start comes as a base and an offset; the client answers with a pong.
     if (family == OP_SECURITY && action == AC_SET)
     {
         int sequence_base = DecodeNumber(packet.SubString(1, 2));
@@ -2524,6 +2540,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         MainForm->net_client->SetSequenceStart(sequence_start);
         MainForm->net_client->sender->SendConnectionPong();
     }
+    // A refresh: everything in view is cleared and read again, and the view centred on the player.
     if (family == OP_REFRESH && action == AC_RESULT)
     {
         MainForm->players->Clear();
@@ -2776,16 +2793,15 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_OPEN)
         {
             int priest_request_id = DecodeNumber(packet.SubString(1, 4));
-            Ctrl_priest_SetRequestId((int *)MainForm->animation->priest, priest_request_id);
+            MainForm->animation->priest->SetRequestId(priest_request_id);
             MainForm->animation->game->ShowLargeMessageBox(DialogButtons_OkCancel, LargeBoxKind_WeddingRequest,
                 MainForm->strings->GetDialogText(DialogText_WeddingCeremony, false),
                 MainForm->strings->GetDialogText(DialogText_WeddingCeremony, true));
         }
         if (action == AC_REQUEST)
         {
-            Ctrl_priest_SetRequestId((int *)MainForm->animation->priest, DecodeNumber(packet.SubString(1, 2)));
-            String priest_partner_name = MainForm->net_client->Capitalize(
-                packet.SubString(3, packet.Length() - 2));
+            MainForm->animation->priest->SetRequestId(DecodeNumber(packet.SubString(1, 2)));
+            String priest_partner_name = MainForm->net_client->Capitalize(packet.SubString(3, packet.Length() - 2));
             MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_AcceptWeddingRequest,
                 MainForm->strings->GetDialogText(DialogText_CeremonyNoticeNeeds, false),
                 priest_partner_name + MainForm->strings->GetText(GameText_IsAskingYouTo));
@@ -3264,7 +3280,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             String shop_name = shop_header.SubString(3, shop_header.Length() - 2);
             MainForm->animation->shop->Open(shop_name, shop_request_id);
             // 9 bytes per item: id, buy price, sell price, amount; a price of 0 is not offered.
-            for (ii = 0; 9 * ii + 9 <= shop_trade_data.Length(); ii++)
+            for (int ii = 0; 9 * ii + 9 <= shop_trade_data.Length(); ii++)
             {
                 int trade_item_id = DecodeNumber(shop_trade_data.SubString(9 * ii + 1, 2));
                 int buy_price = DecodeNumber(shop_trade_data.SubString(9 * ii + 3, 3));
@@ -3305,76 +3321,70 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
             String final_first_offer = MainForm->net_client->NextToken();
             String final_second_offer = MainForm->net_client->NextToken();
-            if (final_first_offer.Length() > 1)
+            if (final_first_offer.Length() > 1 && final_second_offer.Length() > 1)
             {
-                if (final_second_offer.Length() > 1)
+                MainForm->animation->trade->partner_items.clear();
+                MainForm->animation->trade->own_items.clear();
+                MainForm->animation->trade->ResetScroll();
+                int final_first_owner = DecodeNumber(final_first_offer.SubString(1, 2));
+                int final_second_owner = DecodeNumber(final_second_offer.SubString(1, 2));
+                final_first_offer.Delete(1, 2);
+                final_second_offer.Delete(1, 2);
+                MainForm->animation->interface_controller->inventory->RestoreLayoutBackup();
+                if (MainForm->net_client->GetPlayerId() != final_first_owner)
                 {
+                    for (int nn = 0; final_second_offer.Length() / 6 > nn; nn++)
                     {
-                        TradeController *done_trade_window = MainForm->animation->trade;
-                        done_trade_window->partner_items.clear();
-                        MainForm->animation->trade->own_items.clear();
-                        MainForm->animation->trade->ResetScroll();
+                        int own_traded_item_id = DecodeNumber(final_second_offer.SubString(6 * nn + 1, 2));
+                        int own_traded_amount = DecodeNumber(final_second_offer.SubString(6 * nn + 3, 4));
+                        if (own_traded_item_id == ItemId_Gold)
+                            MainForm->animation->interface_controller->status->gold -= own_traded_amount;
+                        MainForm->animation->interface_controller->inventory->RemoveItem(own_traded_item_id,
+                            own_traded_amount);
                     }
-                    int final_first_owner = DecodeNumber(final_first_offer.SubString(1, 2));
-                    int final_second_owner = DecodeNumber(final_second_offer.SubString(1, 2));
-                    final_first_offer.Delete(1, 2);
-                    final_second_offer.Delete(1, 2);
-                    MainForm->animation->interface_controller->inventory->RestoreLayoutBackup();
-                    if (MainForm->net_client->GetPlayerId() != final_first_owner)
+                    for (int final_offer_index = 0; final_first_offer.Length() / 6 > final_offer_index;
+                        final_offer_index++)
                     {
-                        for (int nn = 0; nn < final_second_offer.Length() / 6; nn++)
-                        {
-                            int own_traded_item_id = DecodeNumber(final_second_offer.SubString(6 * nn + 1, 2));
-                            int own_traded_amount = DecodeNumber(final_second_offer.SubString(6 * nn + 3, 4));
-                            if (own_traded_item_id == ItemId_Gold)
-                                MainForm->animation->interface_controller->status->gold -= own_traded_amount;
-                            MainForm->animation->interface_controller->inventory->RemoveItem(own_traded_item_id,
-                                own_traded_amount);
-                        }
-                        for (int final_offer_index = 0; final_offer_index < final_first_offer.Length() / 6;
-                            final_offer_index++)
-                        {
-                            int partner_traded_item_id =
-                                DecodeNumber(final_first_offer.SubString(6 * final_offer_index + 1, 2));
-                            int partner_traded_amount =
-                                DecodeNumber(final_first_offer.SubString(6 * final_offer_index + 3, 4));
-                            if (partner_traded_item_id == ItemId_Gold)
-                                MainForm->animation->interface_controller->status->gold += partner_traded_amount;
-                            MainForm->animation->interface_controller->inventory->AddItem(partner_traded_item_id,
-                                partner_traded_amount);
-                        }
+                        int partner_traded_item_id = DecodeNumber(final_first_offer.SubString(6 * final_offer_index + 1,
+                            2));
+                        int partner_traded_amount = DecodeNumber(final_first_offer.SubString(6 * final_offer_index + 3,
+                            4));
+                        if (partner_traded_item_id == ItemId_Gold)
+                            MainForm->animation->interface_controller->status->gold += partner_traded_amount;
+                        MainForm->animation->interface_controller->inventory->AddItem(partner_traded_item_id,
+                            partner_traded_amount);
                     }
-                    else
-                    {
-                        MainForm->animation->interface_controller->inventory->input_enabled = false;
-                        for (int kk = 0; kk < final_first_offer.Length() / 6; kk++)
-                        {
-                            int own_offer_item_id = DecodeNumber(final_first_offer.SubString(6 * kk + 1, 2));
-                            int own_offer_amount = DecodeNumber(final_first_offer.SubString(6 * kk + 3, 4));
-                            if (own_offer_item_id == ItemId_Gold)
-                                MainForm->animation->interface_controller->status->gold -= own_offer_amount;
-                            MainForm->animation->interface_controller->inventory->RemoveItem(own_offer_item_id,
-                                own_offer_amount);
-                        }
-                        for (int mm = 0; mm < final_second_offer.Length() / 6; mm++)
-                        {
-                            int partner_offer_item_id = DecodeNumber(final_second_offer.SubString(6 * mm + 1, 2));
-                            int partner_offer_amount = DecodeNumber(final_second_offer.SubString(6 * mm + 3, 4));
-                            if (partner_offer_item_id == ItemId_Gold)
-                                MainForm->animation->interface_controller->status->gold += partner_offer_amount;
-                            MainForm->animation->interface_controller->inventory->AddItem(partner_offer_item_id,
-                                partner_offer_amount);
-                        }
-                        MainForm->animation->interface_controller->inventory->input_enabled = true;
-                    }
-                    MainForm->animation->trade->Close();
-                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                        MainForm->strings->GetDialogText(DialogText_TradeComplete, false),
-                        MainForm->strings->GetDialogText(DialogText_TradeComplete, true));
-                    MainForm->edits->caret_enabled = false;
-                    MainForm->animation->interface_controller->inventory->MarkItemsDirty();
-                    MainForm->redraw_needed = true;
                 }
+                else
+                {
+                    MainForm->animation->interface_controller->inventory->input_enabled = false;
+                    for (int kk = 0; final_first_offer.Length() / 6 > kk; kk++)
+                    {
+                        int own_offer_item_id = DecodeNumber(final_first_offer.SubString(6 * kk + 1, 2));
+                        int own_offer_amount = DecodeNumber(final_first_offer.SubString(6 * kk + 3, 4));
+                        if (own_offer_item_id == ItemId_Gold)
+                            MainForm->animation->interface_controller->status->gold -= own_offer_amount;
+                        MainForm->animation->interface_controller->inventory->RemoveItem(own_offer_item_id,
+                            own_offer_amount);
+                    }
+                    for (int mm = 0; final_second_offer.Length() / 6 > mm; mm++)
+                    {
+                        int partner_offer_item_id = DecodeNumber(final_second_offer.SubString(6 * mm + 1, 2));
+                        int partner_offer_amount = DecodeNumber(final_second_offer.SubString(6 * mm + 3, 4));
+                        if (partner_offer_item_id == ItemId_Gold)
+                            MainForm->animation->interface_controller->status->gold += partner_offer_amount;
+                        MainForm->animation->interface_controller->inventory->AddItem(partner_offer_item_id,
+                            partner_offer_amount);
+                    }
+                    MainForm->animation->interface_controller->inventory->input_enabled = true;
+                }
+                MainForm->animation->trade->Close();
+                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                    MainForm->strings->GetDialogText(DialogText_TradeComplete, false),
+                    MainForm->strings->GetDialogText(DialogText_TradeComplete, true));
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->interface_controller->inventory->MarkItemsDirty();
+                MainForm->redraw_needed = true;
             }
             MainForm->animation->interface_controller->status->weight =
                 MainForm->animation->interface_controller->inventory->GetTotalWeight();
@@ -3382,7 +3392,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_RESULT || action == AC_CAST)
         {
-            MainForm->animation->trade->SetAcceptDelay(TRADE_ACCEPT_DELAY_TICKS);
+            MainForm->animation->trade->SetAcceptDelay(10);
             if (MainForm->animation->trade->trade_locked || action == AC_CAST)
             {
                 MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
@@ -3398,48 +3408,43 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             // Both offers start with their owner's id; 6 bytes per item: id and amount.
             String first_offer_list = MainForm->net_client->NextToken();
             String second_offer_list = MainForm->net_client->NextToken();
-            int old_offer_count = MainForm->animation->trade->partner_items.size();
-            if (first_offer_list.Length() > 1)
+            int old_offer_count;
+            old_offer_count = MainForm->animation->trade->partner_items.size();
+            if (first_offer_list.Length() > 1 && second_offer_list.Length() > 1)
             {
-                if (second_offer_list.Length() > 1)
+                MainForm->animation->trade->partner_items.clear();
+                MainForm->animation->trade->own_items.clear();
+                MainForm->animation->trade->ResetScroll();
+                int first_offer_owner = DecodeNumber(first_offer_list.SubString(1, 2));
+                int second_offer_owner = DecodeNumber(second_offer_list.SubString(1, 2));
+                first_offer_list.Delete(1, 2);
+                second_offer_list.Delete(1, 2);
+                if (MainForm->net_client->GetPlayerId() != first_offer_owner)
                 {
-                    {
-                        TradeController *updated_trade_window = MainForm->animation->trade;
-                        updated_trade_window->partner_items.clear();
-                        MainForm->animation->trade->own_items.clear();
-                        MainForm->animation->trade->ResetScroll();
-                    }
-                    int first_offer_owner = DecodeNumber(first_offer_list.SubString(1, 2));
-                    int second_offer_owner = DecodeNumber(second_offer_list.SubString(1, 2));
-                    first_offer_list.Delete(1, 2);
-                    second_offer_list.Delete(1, 2);
-                    if (MainForm->net_client->GetPlayerId() != first_offer_owner)
-                    {
-                        for (int partner_item_index = 0; partner_item_index < first_offer_list.Length() / 6;
-                            partner_item_index++)
-                            MainForm->animation->trade->AddItem(1,
-                                DecodeNumber(first_offer_list.SubString(6 * partner_item_index + 1, 2)),
-                                DecodeNumber(first_offer_list.SubString(6 * partner_item_index + 3, 4)));
-                        for (int own_item_index = 0; own_item_index < second_offer_list.Length() / 6; own_item_index++)
-                            MainForm->animation->trade->AddItem(2,
-                                DecodeNumber(second_offer_list.SubString(6 * own_item_index + 1, 2)),
-                                DecodeNumber(second_offer_list.SubString(6 * own_item_index + 3, 4)));
-                    }
-                    else
-                    {
-                        for (int own_item_index = 0; own_item_index < first_offer_list.Length() / 6; own_item_index++)
-                            MainForm->animation->trade->AddItem(2,
-                                DecodeNumber(first_offer_list.SubString(6 * own_item_index + 1, 2)),
-                                DecodeNumber(first_offer_list.SubString(6 * own_item_index + 3, 4)));
-                        for (int partner_item_index = 0; partner_item_index < second_offer_list.Length() / 6;
-                            partner_item_index++)
-                            MainForm->animation->trade->AddItem(1,
-                                DecodeNumber(second_offer_list.SubString(6 * partner_item_index + 1, 2)),
-                                DecodeNumber(second_offer_list.SubString(6 * partner_item_index + 3, 4)));
-                    }
-                    MainForm->redraw_needed = true;
-                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                    for (int partner_item_index = 0; first_offer_list.Length() / 6 > partner_item_index;
+                        partner_item_index++)
+                        MainForm->animation->trade->AddItem(1,
+                            DecodeNumber(first_offer_list.SubString(6 * partner_item_index + 1, 2)),
+                            DecodeNumber(first_offer_list.SubString(6 * partner_item_index + 3, 4)));
+                    for (int own_item_index = 0; second_offer_list.Length() / 6 > own_item_index; own_item_index++)
+                        MainForm->animation->trade->AddItem(2,
+                            DecodeNumber(second_offer_list.SubString(6 * own_item_index + 1, 2)),
+                            DecodeNumber(second_offer_list.SubString(6 * own_item_index + 3, 4)));
                 }
+                else
+                {
+                    for (int own_item_index = 0; first_offer_list.Length() / 6 > own_item_index; own_item_index++)
+                        MainForm->animation->trade->AddItem(2,
+                            DecodeNumber(first_offer_list.SubString(6 * own_item_index + 1, 2)),
+                            DecodeNumber(first_offer_list.SubString(6 * own_item_index + 3, 4)));
+                    for (int partner_item_index = 0; second_offer_list.Length() / 6 > partner_item_index;
+                        partner_item_index++)
+                        MainForm->animation->trade->AddItem(1,
+                            DecodeNumber(second_offer_list.SubString(6 * partner_item_index + 1, 2)),
+                            DecodeNumber(second_offer_list.SubString(6 * partner_item_index + 3, 4)));
+                }
+                MainForm->redraw_needed = true;
+                MainForm->sfx->PlaySfx(SfxSound_Select);
             }
             int new_offer_count = MainForm->animation->trade->partner_items.size();
             if (old_offer_count > new_offer_count)
@@ -3459,27 +3464,25 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int agreeing_player_id = DecodeNumber(packet.SubString(1, 2));
             int agrees = DecodeNumber(packet.SubString(3, 1));
-            if (MainForm->animation->trade->is_visible)
+            if (MainForm->animation->trade->is_visible &&
+                (MainForm->animation->trade->own_player_id == agreeing_player_id ||
+                    MainForm->animation->trade->partner_player_id == agreeing_player_id))
             {
-                if (MainForm->animation->trade->own_player_id == agreeing_player_id ||
-                    MainForm->animation->trade->partner_player_id == agreeing_player_id)
+                if (agrees == 1)
                 {
-                    if (agrees == 1)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_Accept);
-                        MainForm->animation->trade->partner_status_text = MainForm->strings->GetText(GameText_Agree);
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                            MainForm->strings->GetText(GameText_OtherPlayerAcceptDeal));
-                    }
-                    if (!agrees)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_Leave);
-                        MainForm->animation->trade->partner_status_text = MainForm->strings->GetText(GameText_Trading);
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                            MainForm->strings->GetText(GameText_OtherPlayerCanceledDeal));
-                    }
-                    MainForm->redraw_needed = true;
+                    MainForm->sfx->PlaySfx(SfxSound_Accept);
+                    MainForm->animation->trade->partner_status_text = MainForm->strings->GetText(GameText_Agree);
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+                        MainForm->strings->GetText(GameText_OtherPlayerAcceptDeal));
                 }
+                if (!agrees)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_Leave);
+                    MainForm->animation->trade->partner_status_text = MainForm->strings->GetText(GameText_Trading);
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+                        MainForm->strings->GetText(GameText_OtherPlayerCanceledDeal));
+                }
+                MainForm->redraw_needed = true;
             }
         }
         if (action == AC_HIT)
@@ -3584,8 +3587,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_DELETE)
         {
             int leaving_member_id = DecodeNumber(packet.SubString(1, 2));
-            String leaving_member_name = MainForm->animation->interface_controller->group->GetMemberName(leaving_member_id);
-            int leaving_member_leader = MainForm->animation->interface_controller->group->GetMemberLeaderFlag(leaving_member_id);
+            String leaving_member_name =
+                MainForm->animation->interface_controller->group->GetMemberName(leaving_member_id);
+            int leaving_member_leader;
+            leaving_member_leader =
+                MainForm->animation->interface_controller->group->GetMemberLeaderFlag(leaving_member_id);
             MainForm->animation->interface_controller->group->RemoveMember(leaving_member_id);
             MainForm->sfx->PlaySfx(SfxSound_Leave);
             if (leaving_member_name.Length() > 0)
@@ -3605,7 +3611,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             String joined_member_name = packet.SubString(6, packet.Length() - 5);
             char joined_is_self = false;
-            if (DecodeNumber(packet.SubString(1, 2)) == (unsigned int)MainForm->net_client->GetPlayerId())
+            if (DecodeNumber(packet.SubString(1, 2)) == MainForm->net_client->GetPlayerId())
             {
                 if (DecodeNumber(packet.SubString(3, 1)) >= 1)
                     MainForm->animation->interface_controller->group->is_leader = 1;
@@ -3713,7 +3719,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int door_x = DecodeNumber(packet.SubString(1, 1));
             int door_y = DecodeNumber(packet.SubString(2, 1));
-            MainForm->sfx->PlaySfx(SfxSound_DoorOpen);
+            int door_volume = MainForm->sfx->GetDistanceVolume(door_x, door_y);
+            MainForm->sfx->PlayEffectSoundAt(SfxSound_DoorOpen, door_volume);
             MainForm->map->OpenDoor(door_x, door_y);
         }
         if (action == AC_CLOSE)
@@ -3759,90 +3766,84 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->strings->GetText(GameText_YourLockerCapacityIs));
             MainForm->redraw_needed = true;
         }
-        if (action == AC_OPEN)
+        if (action == AC_OPEN && packet.Length() > 1)
         {
-            if (packet.Length() > 1)
-            {
-                int locker_x = DecodeNumber(packet.SubString(1, 1));
-                int locker_y = DecodeNumber(packet.SubString(2, 1));
-                String locker_title = MainForm->players->GetName(MainForm->net_client->GetPlayerId());
-                locker_title = MainForm->net_client->Capitalize(locker_title);
-                locker_title = locker_title + "'s " + MainForm->strings->GetText(GameText_PrivateLocker);
-                MainForm->animation->locker->Open(locker_title, 0, locker_x, locker_y);
-                MainForm->sfx->PlaySfx(SfxSound_Select);
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                    MainForm->strings->GetText(GameText_YouOpenedYourLocker) + " " +
+            int locker_x = DecodeNumber(packet.SubString(1, 1));
+            int locker_y = DecodeNumber(packet.SubString(2, 1));
+            String locker_title = MainForm->players->GetName(MainForm->net_client->GetPlayerId());
+            locker_title = MainForm->net_client->Capitalize(locker_title);
+            locker_title = locker_title + "'s " + MainForm->strings->GetText(GameText_PrivateLocker);
+            MainForm->animation->locker->Open(locker_title, 0, locker_x, locker_y);
+            MainForm->sfx->PlaySfx(SfxSound_Select);
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+                MainForm->strings->GetText(GameText_YouOpenedYourLocker) + " " +
                     MainForm->strings->GetText(GameText_DragAndDropItems));
-                if (packet.Length() > 2)
+            if (packet.Length() > 2)
+            {
+                MainForm->animation->locker->ClearItems();
+                packet.Delete(1, 2);
+                for (int locker_item_index = 0; packet.Length() / 5 > locker_item_index; locker_item_index++)
                 {
-                    MainForm->animation->locker->ClearItems();
-                    packet.Delete(1, 2);
-                    for (int locker_item_index = 0; locker_item_index < packet.Length() / 5; locker_item_index++)
-                    {
-                        int locker_item_id = DecodeNumber(packet.SubString(5 * locker_item_index + 1, 2));
-                        int locker_item_amount = DecodeNumber(packet.SubString(5 * locker_item_index + 3, 3));
-                        MainForm->animation->locker->AddItem(locker_item_id, locker_item_amount);
-                    }
+                    int locker_item_id = DecodeNumber(packet.SubString(5 * locker_item_index + 1, 2));
+                    int locker_item_amount = DecodeNumber(packet.SubString(5 * locker_item_index + 3, 3));
+                    MainForm->animation->locker->AddItem(locker_item_id, locker_item_amount);
                 }
             }
         }
-        if (action == AC_RESULT)
+        if (action == AC_RESULT && packet.Length() > 7)
         {
-            if (packet.Length() > 7)
+            int deposited_item_id = DecodeNumber(packet.SubString(1, 2));
+            int deposit_item_left = DecodeNumber(packet.SubString(3, 4));
+            int deposit_weight = DecodeNumber(packet.SubString(7, 1));
+            int deposit_max_weight = DecodeNumber(packet.SubString(8, 1));
+            if (deposited_item_id == ItemId_Gold)
+                MainForm->animation->interface_controller->status->gold = deposit_item_left;
+            MainForm->animation->interface_controller->inventory->SetItemAmount(deposited_item_id, deposit_item_left);
+            MainForm->animation->interface_controller->status->weight = deposit_weight;
+            MainForm->animation->interface_controller->status->max_weight = deposit_max_weight;
+            MainForm->animation->interface_controller->status->MarkDirty();
+            if (packet.Length() > 2)
             {
-                int deposited_item_id = DecodeNumber(packet.SubString(1, 2));
-                int deposit_item_left = DecodeNumber(packet.SubString(3, 4));
-                int deposit_weight = DecodeNumber(packet.SubString(7, 1));
-                int deposit_max_weight = DecodeNumber(packet.SubString(8, 1));
-                if (deposited_item_id == ItemId_Gold)
-                    MainForm->animation->interface_controller->status->gold = deposit_item_left;
-                MainForm->animation->interface_controller->inventory->SetItemAmount(deposited_item_id,
-                    deposit_item_left);
-                MainForm->animation->interface_controller->status->weight = deposit_weight;
-                MainForm->animation->interface_controller->status->max_weight = deposit_max_weight;
-                MainForm->animation->interface_controller->status->MarkDirty();
-                if (packet.Length() > 2)
+                MainForm->animation->locker->ClearItems();
+                packet.Delete(1, 8);
+                for (int deposit_item_index = 0; packet.Length() / 5 > deposit_item_index; deposit_item_index++)
                 {
-                    MainForm->animation->locker->ClearItems();
-                    packet.Delete(1, 8);
-                    for (int deposit_item_index = 0; deposit_item_index < packet.Length() / 5; deposit_item_index++)
-                    {
-                        int deposit_list_item_id = DecodeNumber(packet.SubString(5 * deposit_item_index + 1, 2));
-                        int deposit_list_amount = DecodeNumber(packet.SubString(5 * deposit_item_index + 3, 3));
-                        MainForm->animation->locker->AddItem(deposit_list_item_id, deposit_list_amount);
-                    }
+                    int deposit_list_item_id = DecodeNumber(packet.SubString(5 * deposit_item_index + 1, 2));
+                    int deposit_list_amount = DecodeNumber(packet.SubString(5 * deposit_item_index + 3, 3));
+                    MainForm->animation->locker->AddItem(deposit_list_item_id, deposit_list_amount);
                 }
-                MainForm->redraw_needed = true;
             }
+            if (MainForm->animation->GetSubState() == GamePanel_Inventory)
+                MainForm->animation->interface_controller->inventory->RefreshHover();
+            MainForm->redraw_needed = true;
         }
-        if (action == AC_PICKUP)
+        if (action == AC_PICKUP && packet.Length() > 6)
         {
-            if (packet.Length() > 6)
+            int withdrawn_item_id = DecodeNumber(packet.SubString(1, 2));
+            int withdrawn_amount = DecodeNumber(packet.SubString(3, 3));
+            int withdraw_weight = DecodeNumber(packet.SubString(6, 1));
+            int withdraw_max_weight = DecodeNumber(packet.SubString(7, 1));
+            if (withdrawn_item_id == ItemId_Gold)
+                MainForm->animation->interface_controller->status->gold =
+                    MainForm->animation->interface_controller->inventory->GetItemAmount(withdrawn_item_id) +
+                        withdrawn_amount;
+            MainForm->animation->interface_controller->inventory->AddItem(withdrawn_item_id, withdrawn_amount);
+            MainForm->animation->interface_controller->status->weight = withdraw_weight;
+            MainForm->animation->interface_controller->status->max_weight = withdraw_max_weight;
+            MainForm->animation->interface_controller->status->MarkDirty();
+            if (packet.Length() > 2)
             {
-                int withdrawn_item_id = DecodeNumber(packet.SubString(1, 2));
-                int withdrawn_amount = DecodeNumber(packet.SubString(3, 3));
-                int withdraw_weight = DecodeNumber(packet.SubString(6, 1));
-                int withdraw_max_weight = DecodeNumber(packet.SubString(7, 1));
-                if (withdrawn_item_id == ItemId_Gold)
-                    MainForm->animation->interface_controller->status->gold = withdrawn_amount +
-                        MainForm->animation->interface_controller->inventory->GetItemAmount(withdrawn_item_id);
-                MainForm->animation->interface_controller->inventory->AddItem(withdrawn_item_id, withdrawn_amount);
-                MainForm->animation->interface_controller->status->weight = withdraw_weight;
-                MainForm->animation->interface_controller->status->max_weight = withdraw_max_weight;
-                MainForm->animation->interface_controller->status->MarkDirty();
-                if (packet.Length() > 2)
+                MainForm->animation->locker->ClearList();
+                packet.Delete(1, 7);
+                for (int withdraw_item_index = 0; packet.Length() / 5 > withdraw_item_index; withdraw_item_index++)
                 {
-                    MainForm->animation->locker->ClearItems();
-                    packet.Delete(1, 7);
-                    for (int withdraw_item_index = 0; withdraw_item_index < packet.Length() / 5; withdraw_item_index++)
-                    {
-                        int withdraw_list_item_id = DecodeNumber(packet.SubString(5 * withdraw_item_index + 1, 2));
-                        int withdraw_list_amount = DecodeNumber(packet.SubString(5 * withdraw_item_index + 3, 3));
-                        MainForm->animation->locker->AddItem(withdraw_list_item_id, withdraw_list_amount);
-                    }
+                    int withdraw_list_item_id = DecodeNumber(packet.SubString(5 * withdraw_item_index + 1, 2));
+                    int withdraw_list_amount = DecodeNumber(packet.SubString(5 * withdraw_item_index + 3, 3));
+                    MainForm->animation->locker->AddItem(withdraw_list_item_id, withdraw_list_amount);
                 }
-                MainForm->redraw_needed = true;
+                MainForm->animation->locker->AdjustScroll();
             }
+            MainForm->redraw_needed = true;
         }
     }
     if (family == OP_CHEST)
@@ -3850,27 +3851,24 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_HIT)
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                 MainForm->strings->GetText(GameText_ChestIsFullItem));
-        if (action == AC_OPEN)
+        if (action == AC_OPEN && packet.Length() > 1)
         {
-            if (packet.Length() > 1)
-            {
-                int chest_x = DecodeNumber(packet.SubString(1, 1));
-                int chest_y = DecodeNumber(packet.SubString(2, 1));
-                MainForm->sfx->PlaySfx(SfxSound_Select);
-                MainForm->animation->chest->Open(0, chest_x, chest_y);
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                    MainForm->strings->GetText(GameText_YouOpenedChest2) + " " +
+            int chest_x = DecodeNumber(packet.SubString(1, 1));
+            int chest_y = DecodeNumber(packet.SubString(2, 1));
+            MainForm->sfx->PlaySfx(SfxSound_Select);
+            MainForm->animation->chest->Open(0, chest_x, chest_y);
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+                MainForm->strings->GetText(GameText_YouOpenedChest2) + " " +
                     MainForm->strings->GetText(GameText_DragAndDropItems));
-                if (packet.Length() > 2)
+            if (packet.Length() > 2)
+            {
+                MainForm->animation->chest->ClearItems();
+                packet.Delete(1, 2);
+                for (int chest_item_index = 0; packet.Length() / 5 > chest_item_index; chest_item_index++)
                 {
-                    MainForm->animation->chest->ClearItems();
-                    packet.Delete(1, 2);
-                    for (int chest_item_index = 0; chest_item_index < packet.Length() / 5; chest_item_index++)
-                    {
-                        int chest_item_id = DecodeNumber(packet.SubString(5 * chest_item_index + 1, 2));
-                        int chest_item_amount = DecodeNumber(packet.SubString(5 * chest_item_index + 3, 3));
-                        MainForm->animation->chest->AddItem(chest_item_id, chest_item_amount);
-                    }
+                    int chest_item_id = DecodeNumber(packet.SubString(5 * chest_item_index + 1, 2));
+                    int chest_item_amount = DecodeNumber(packet.SubString(5 * chest_item_index + 3, 3));
+                    MainForm->animation->chest->AddItem(chest_item_id, chest_item_amount);
                 }
             }
         }
@@ -3881,7 +3879,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 if (MainForm->animation->chest->is_visible)
                 {
                     MainForm->animation->chest->ClearItems();
-                    for (int refresh_item_index = 0; refresh_item_index < packet.Length() / 5; refresh_item_index++)
+                    for (int refresh_item_index = 0; packet.Length() / 5 > refresh_item_index; refresh_item_index++)
                     {
                         int chest_refresh_item_id = DecodeNumber(packet.SubString(5 * refresh_item_index + 1, 2));
                         int chest_refresh_amount = DecodeNumber(packet.SubString(5 * refresh_item_index + 3, 3));
@@ -3893,63 +3891,57 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             else
                 MainForm->animation->chest->ClearItems();
         }
-        if (action == AC_RESULT)
+        if (action == AC_RESULT && packet.Length() > 7)
         {
-            if (packet.Length() > 7)
+            int chest_put_item_id = DecodeNumber(packet.SubString(1, 2));
+            int chest_put_item_left = DecodeNumber(packet.SubString(3, 4));
+            int chest_put_weight = DecodeNumber(packet.SubString(7, 1));
+            int chest_put_max_weight = DecodeNumber(packet.SubString(8, 1));
+            if (chest_put_item_id == ItemId_Gold)
+                MainForm->animation->interface_controller->status->gold = chest_put_item_left;
+            MainForm->animation->interface_controller->inventory->SetItemAmount(chest_put_item_id, chest_put_item_left);
+            MainForm->animation->interface_controller->status->weight = chest_put_weight;
+            MainForm->animation->interface_controller->status->max_weight = chest_put_max_weight;
+            MainForm->animation->interface_controller->status->MarkDirty();
+            if (packet.Length() > 2)
             {
-                int chest_put_item_id = DecodeNumber(packet.SubString(1, 2));
-                int chest_put_item_left = DecodeNumber(packet.SubString(3, 4));
-                int chest_put_weight = DecodeNumber(packet.SubString(7, 1));
-                int chest_put_max_weight = DecodeNumber(packet.SubString(8, 1));
-                if (chest_put_item_id == ItemId_Gold)
-                    MainForm->animation->interface_controller->status->gold = chest_put_item_left;
-                MainForm->animation->interface_controller->inventory->SetItemAmount(chest_put_item_id,
-                    chest_put_item_left);
-                MainForm->animation->interface_controller->status->weight = chest_put_weight;
-                MainForm->animation->interface_controller->status->max_weight = chest_put_max_weight;
-                MainForm->animation->interface_controller->status->MarkDirty();
-                if (packet.Length() > 2)
+                MainForm->animation->chest->ClearItems();
+                packet.Delete(1, 8);
+                for (int put_item_index = 0; packet.Length() / 5 > put_item_index; put_item_index++)
                 {
-                    MainForm->animation->chest->ClearItems();
-                    packet.Delete(1, 8);
-                    for (int put_item_index = 0; put_item_index < packet.Length() / 5; put_item_index++)
-                    {
-                        int chest_put_list_item_id = DecodeNumber(packet.SubString(5 * put_item_index + 1, 2));
-                        int chest_put_list_amount = DecodeNumber(packet.SubString(5 * put_item_index + 3, 3));
-                        MainForm->animation->chest->AddItem(chest_put_list_item_id, chest_put_list_amount);
-                    }
+                    int chest_put_list_item_id = DecodeNumber(packet.SubString(5 * put_item_index + 1, 2));
+                    int chest_put_list_amount = DecodeNumber(packet.SubString(5 * put_item_index + 3, 3));
+                    MainForm->animation->chest->AddItem(chest_put_list_item_id, chest_put_list_amount);
                 }
-                MainForm->redraw_needed = true;
             }
+            MainForm->redraw_needed = true;
         }
-        if (action == AC_PICKUP)
+        if (action == AC_PICKUP && packet.Length() > 6)
         {
-            if (packet.Length() > 6)
+            int chest_taken_item_id = DecodeNumber(packet.SubString(1, 2));
+            int chest_taken_amount = DecodeNumber(packet.SubString(3, 3));
+            int chest_take_weight = DecodeNumber(packet.SubString(6, 1));
+            int chest_take_max_weight = DecodeNumber(packet.SubString(7, 1));
+            if (chest_taken_item_id == ItemId_Gold)
+                MainForm->animation->interface_controller->status->gold =
+                    MainForm->animation->interface_controller->inventory->GetItemAmount(chest_taken_item_id) +
+                        chest_taken_amount;
+            MainForm->animation->interface_controller->inventory->AddItem(chest_taken_item_id, chest_taken_amount);
+            MainForm->animation->interface_controller->status->weight = chest_take_weight;
+            MainForm->animation->interface_controller->status->max_weight = chest_take_max_weight;
+            MainForm->animation->interface_controller->status->MarkDirty();
+            if (packet.Length() > 2)
             {
-                int chest_taken_item_id = DecodeNumber(packet.SubString(1, 2));
-                int chest_taken_amount = DecodeNumber(packet.SubString(3, 3));
-                int chest_take_weight = DecodeNumber(packet.SubString(6, 1));
-                int chest_take_max_weight = DecodeNumber(packet.SubString(7, 1));
-                if (chest_taken_item_id == ItemId_Gold)
-                    MainForm->animation->interface_controller->status->gold = chest_taken_amount +
-                        MainForm->animation->interface_controller->inventory->GetItemAmount(chest_taken_item_id);
-                MainForm->animation->interface_controller->inventory->AddItem(chest_taken_item_id, chest_taken_amount);
-                MainForm->animation->interface_controller->status->weight = chest_take_weight;
-                MainForm->animation->interface_controller->status->max_weight = chest_take_max_weight;
-                MainForm->animation->interface_controller->status->MarkDirty();
-                if (packet.Length() > 2)
+                MainForm->animation->chest->ClearItems();
+                packet.Delete(1, 7);
+                for (int take_item_index = 0; packet.Length() / 5 > take_item_index; take_item_index++)
                 {
-                    MainForm->animation->chest->ClearItems();
-                    packet.Delete(1, 7);
-                    for (int take_item_index = 0; take_item_index < packet.Length() / 5; take_item_index++)
-                    {
-                        int chest_take_list_item_id = DecodeNumber(packet.SubString(5 * take_item_index + 1, 2));
-                        int chest_take_list_amount = DecodeNumber(packet.SubString(5 * take_item_index + 3, 3));
-                        MainForm->animation->chest->AddItem(chest_take_list_item_id, chest_take_list_amount);
-                    }
+                    int chest_take_list_item_id = DecodeNumber(packet.SubString(5 * take_item_index + 1, 2));
+                    int chest_take_list_amount = DecodeNumber(packet.SubString(5 * take_item_index + 3, 3));
+                    MainForm->animation->chest->AddItem(chest_take_list_item_id, chest_take_list_amount);
                 }
-                MainForm->redraw_needed = true;
             }
+            MainForm->redraw_needed = true;
         }
         if (action == AC_CLOSE)
         {
@@ -4038,7 +4030,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->interface_controller->status->MarkDirty();
             MainForm->animation->learn->RemoveSkill(learned_skill_id);
             MainForm->sfx->PlaySfx(SfxSound_Learn);
-            MainForm->edits->caret_enabled = false;
+            MainForm->edits->caret_enabled = true;
         }
         if (action == AC_DELETE)
         {
@@ -4154,7 +4146,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int info_minutes_left = info_minutes % MINUTES_PER_HOUR;
             String info_time_text = IntToStr(info_hours) + "h." + IntToStr(info_minutes_left) + "m.";
             info_name = MainForm->net_client->Capitalize(info_name);
-            MainForm->animation->memo->Open(info_name + " - " + info_time_text);
+            MainForm->animation->memo->Show(info_name + " - " + info_time_text);
             MainForm->animation->memo->AddCharacterStats(info_stats);
         }
         if (action == AC_LIST)
@@ -4170,7 +4162,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int inventory_minutes_left = inventory_minutes % MINUTES_PER_HOUR;
             String inventory_time_text = IntToStr(inventory_hours) + "h." + IntToStr(inventory_minutes_left) + "m.";
             inventory_owner_name = MainForm->net_client->Capitalize(inventory_owner_name);
-            MainForm->animation->memo->Open(inventory_owner_name + " - " + inventory_time_text);
+            MainForm->animation->memo->Show(inventory_owner_name + " - " + inventory_time_text);
             MainForm->animation->memo->AddItemList(inventory_item_list, 6, 4);
             MainForm->animation->memo->AddText(" ", "", false);
             MainForm->animation->memo->AddItemList(locker_item_list, 5, 3);
@@ -4179,6 +4171,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->memo->AddText("Bank account", IntToStr(DecodeNumber(bank_gold_token)), false);
             MainForm->animation->memo->AddText(" ", "", false);
         }
+        // Delete hides a player and update shows them again, each with effect 24.
         if (action == AC_DELETE)
         {
             int hidden_player_id = DecodeNumber(packet);
@@ -4201,7 +4194,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             String notice_body = MainForm->net_client->NextToken();
             String notice_extra_line = MainForm->net_client->NextToken();
             String notice_last_line = MainForm->net_client->NextToken();
-            MainForm->animation->memo->Open(notice_title);
+            MainForm->animation->memo->Show(notice_title);
             MainForm->animation->memo->AddText(notice_body, "", false);
             if (notice_extra_line.Length() > 0)
             {
@@ -4278,7 +4271,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     {
                         MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Speech,
                             CHAT_COLOR_DEFAULT, dialog_npc_name, dialog_line, false);
-                        MainForm->gfx->npcs->ShowSpeechBalloon(dialog_line, dialog_npc_index, 0);
+                        MainForm->gfx->npc_cache->ShowSpeechBalloon(dialog_line, dialog_npc_index,
+                            MainForm->config->GetNpcColor());
                     }
                 } while (dialog_line.Length() > 0);
             }
@@ -4326,14 +4320,11 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     dialog_part.Delete(1, 2);
                     if (dialog_part_kind == 1)
                         MainForm->animation->dialog->AddPage(dialog_part);
-                    if (dialog_part_kind == 2)
+                    if (dialog_part_kind == 2 && dialog_part.Length() > ENTRY_ID_LENGTH)
                     {
-                        if (dialog_part.Length() > ENTRY_ID_LENGTH)
-                        {
-                            int link_id = DecodeNumber(dialog_part.SubString(1, 2));
-                            dialog_part.Delete(1, 2);
-                            MainForm->animation->dialog->AddLink(link_id, dialog_part);
-                        }
+                        int link_id = DecodeNumber(dialog_part.SubString(1, 2));
+                        dialog_part.Delete(1, 2);
+                        MainForm->animation->dialog->AddLink(link_id, dialog_part);
                     }
                 }
             } while (dialog_part.Length() > ENTRY_ID_LENGTH);
@@ -4344,22 +4335,19 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         }
         if (action == AC_LIST)
         {
-            int quest_list_kind = DecodeNumber(String(packet[1]));
+            int quest_list_kind = DecodeNumber(packet[1]);
             if (quest_list_kind == 1)
             {
                 MainForm->animation->quests->Open();
                 packet.Delete(1, 3);
                 if (packet.Length() > 0)
-                    MainForm->animation->quests->LoadQuestList(packet, String(ByteToChar(TOKEN_BREAK_BYTE)));
+                    MainForm->animation->quests->LoadQuestList(packet, ByteToChar(TOKEN_BREAK_BYTE));
             }
             if (quest_list_kind == 2)
             {
                 packet.Delete(1, 3);
-                if (MainForm->animation->quests->is_visible)
-                {
-                    if (packet.Length() > 0)
-                        MainForm->animation->quests->LoadQuestHistory(packet, String(ByteToChar(TOKEN_BREAK_BYTE)));
-                }
+                if (MainForm->animation->quests->is_visible && packet.Length() > 0)
+                    MainForm->animation->quests->LoadQuestHistory(packet, ByteToChar(TOKEN_BREAK_BYTE));
             }
         }
     }
@@ -4449,6 +4437,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->map->warp_pending = false;
             MainForm->map->UnfreezePlayer();
         }
+        // A warp: open windows close, a cast stops, and the warp is taken once the view stops scrolling.
         if (action == AC_REQUEST)
         {
             MainForm->animation->trade->is_visible = false;
@@ -4478,7 +4467,7 @@ void PacketProcessor::ParseBook(String packet)
     String guild_name = MainForm->net_client->Capitalize(MainForm->net_client->NextToken());
     String guild_rank_name = MainForm->net_client->Capitalize(MainForm->net_client->NextToken());
     String details = MainForm->net_client->NextToken();
-    int player_id = DecodeNumber(details.SubString(1, 2));
+    unsigned int book_player_id = DecodeNumber(details.SubString(1, 2));
     int class_id = DecodeNumber(details.SubString(3, 1));
     int frame_row = DecodeNumber(details.SubString(4, 1));
     int admin_level = DecodeNumber(details.SubString(5, 1));
@@ -4562,7 +4551,7 @@ void PacketProcessor::ApplyAppearanceChange(String packet)
     int player_id = DecodeNumber(packet.SubString(1, 2));
     if (MainForm->players->HasPlayer(player_id))
     {
-        int appearance_change = this->DecodeNumber(packet.SubString(3, 1));
+        unsigned int appearance_change = DecodeNumber(packet.SubString(3, 1));
         int play_sound = DecodeNumber(packet.SubString(4, 1));
         if (appearance_change == AppearanceChange_Equipment)
         {
@@ -4655,15 +4644,15 @@ void PacketProcessor::ParseWelcomeCharacter(String packet)
     int top_rank_delay = DecodeNumber(character_data.SubString(96, 2));
     // The delay between commands goes by admin level; levels 1 and 2 share the first.
     int admin_level = DecodeNumber(character_data.SubString(5, 1));
-    if (admin_level == 1)
+    if (admin_level == AdminLevel_Spy)
         MainForm->animation->SetCommandDelay(low_rank_delay);
-    if (admin_level == 2)
+    if (admin_level == AdminLevel_LightGuide)
         MainForm->animation->SetCommandDelay(low_rank_delay);
-    if (admin_level == 3)
+    if (admin_level == AdminLevel_Guardian)
         MainForm->animation->SetCommandDelay(middle_rank_delay);
-    if (admin_level == 4)
+    if (admin_level == AdminLevel_GameMaster)
         MainForm->animation->SetCommandDelay(high_rank_delay);
-    if (admin_level == 5)
+    if (admin_level == AdminLevel_HighGameMaster)
         MainForm->animation->SetCommandDelay(top_rank_delay);
     if (DecodeNumber(character_data.SubString(98, 1)) > 1)
         MainForm->animation->interface_controller->welcome_notice_pending = true;
@@ -4717,7 +4706,7 @@ void Packetproces_UnusedLiterals1()
 // What is in view: a player count and two tokens per player, then 6 bytes per npc and 9 per item.
 void PacketProcessor::ParseNearbyEntities(String packet)
 {
-    int player_count = this->DecodeNumber(String(packet[1]));
+    int player_count = DecodeNumber(packet[1]);
     MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
     MainForm->net_client->NextToken();
     for (int i = 0; i < player_count; i++)
@@ -4854,7 +4843,7 @@ void PacketProcessor::ParseCharacterList(String packet)
     MainForm->players->SetDrawGroup(PlayerId_SlotFirst, CharacterSlotState_Taken);
     MainForm->players->SetDrawGroup(PlayerId_SlotSecond, CharacterSlotState_Taken);
     MainForm->players->SetDrawGroup(PlayerId_SlotThird, CharacterSlotState_Taken);
-    int character_count = DecodeNumber(String(packet[1]));
+    int character_count = DecodeNumber(packet[1]);
     MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
     MainForm->net_client->NextToken();
     for (int i = 0; i < character_count; i++)
@@ -4866,12 +4855,12 @@ void PacketProcessor::ParseCharacterList(String packet)
             MainForm->players->SetDrawGroup(i + 999991, CharacterSlotState_Empty);
             MainForm->players->SetName(i + 999991, MainForm->net_client->Capitalize(character_name));
             MainForm->players->SetCharacterId(i + 999991, DecodeNumber(slot_data.SubString(1, 4)));
-            MainForm->players->SetDisplayNumber(i + 999991, DecodeNumber(String(slot_data[5])));
-            MainForm->players->SetGender(i + 999991, DecodeNumber(String(slot_data[6])));
-            MainForm->players->SetHairStyle(i + 999991, DecodeNumber(String(slot_data[7])));
-            MainForm->players->SetHairColor(i + 999991, DecodeNumber(String(slot_data[8])));
-            MainForm->players->SetSkin(i + 999991, DecodeNumber(String(slot_data[9])));
-            MainForm->players->SetBadgeLevel(i + 999991, DecodeNumber(String(slot_data[10])));
+            MainForm->players->SetDisplayNumber(i + 999991, DecodeNumber(slot_data[5]));
+            MainForm->players->SetGender(i + 999991, DecodeNumber(slot_data[6]));
+            MainForm->players->SetHairStyle(i + 999991, DecodeNumber(slot_data[7]));
+            MainForm->players->SetHairColor(i + 999991, DecodeNumber(slot_data[8]));
+            MainForm->players->SetSkin(i + 999991, DecodeNumber(slot_data[9]));
+            MainForm->players->SetBadgeLevel(i + 999991, DecodeNumber(slot_data[10]));
             MainForm->players->SetBoots(i + 999991, DecodeNumber(slot_data.SubString(11, 2)));
             MainForm->players->SetArmor(i + 999991, DecodeNumber(slot_data.SubString(13, 2)));
             MainForm->players->SetHat(i + 999991, DecodeNumber(slot_data.SubString(15, 2)));
@@ -4883,42 +4872,38 @@ void PacketProcessor::ParseCharacterList(String packet)
 }
 
 // A number in base 253, low digit first, each digit plus 1; padded to min_length with 254.
-String PacketProcessor::EncodeNumber(unsigned int value, int min_length)
+DEFINE_ENCODE_NUMBER(PacketProcessor)
+
+// Reads up to four base-253 digits, low digit first; a 254 ends the number.
+unsigned int PacketProcessor::DecodeNumber(String encoded)
 {
-    unsigned int remaining = value;
-    unsigned int quotient;
-    char digit;
-    int i;
-    String result = "";
+    int digit;
+    int result = 0;
     try
     {
-        do
+        for (int i = 1; i <= encoded.Length(); i++)
         {
-            double quotient_real = remaining / 253.0;
-            quotient = quotient_real;
-            int remainder = remaining % NUMBER_ENCODING_BASE;
-            digit = remainder + 1;
-            result.Insert(digit, result.Length() + 1);
-            if (quotient >= 1)
-                remaining = quotient;
-        } while (quotient >= 1);
+            unsigned char quotient_real = encoded[i];
+            if (quotient_real == 254)
+                break;
+            digit = quotient_real;
+            digit--;
+            if (i == 1)
+                result += digit;
+            if (i == 2)
+                result += NUMBER_ENCODING_BASE * digit;
+            if (i == 3)
+                result += NUMBER_ENCODING_BASE_SQUARED * digit;
+            if (i == 4)
+                result += digit * NUMBER_ENCODING_BASE_CUBED;
+        }
     }
     catch (...)
     {
-        result = "";
-    }
-    if (result.Length() < min_length)
-    {
-        char digit = -2;
-        int pad_count = min_length - result.Length();
-        for (i = 0; i < pad_count; i++)
-            result.Insert(digit, result.Length() + 1);
+        result = 0;
     }
     return result;
 }
-
-// Reads up to four base-253 digits, low digit first; a 254 ends the number.
-DEFINE_CLIENT_DECODE_NUMBER(PacketProcessor)
 
 char PacketProcessor::ByteToChar(unsigned char value)
 {

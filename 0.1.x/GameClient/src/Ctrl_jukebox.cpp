@@ -7,6 +7,7 @@
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Ctrl_status.h"
+
 #pragma package(smart_init)
 
 JukeboxController::JukeboxController()
@@ -65,55 +66,52 @@ void JukeboxController::MouseDown(int x, int y, int button)
     char handled = false;
     if (button == 0 || button == 1)
     {
-        if (y > window_y + 50 && y < window_y + 170 && window_x + 17 < x)
+        if (y > window_y + 50 && y < window_y + 170 && window_x + 17 < x && window_x + 252 > x)
         {
-            if (window_x + 252 > x)
+            int row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
+            if (!row)
             {
-                int row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
-                if (!row)
+                selected_song++;
+                // After the last song the choice goes back to the first
+                if (selected_song > 19)
+                    selected_song = 0;
+                handled = true;
+            }
+            if (row == 1)
+            {
+                handled = true;
+                if (MainForm->animation->interface_controller->status->gold >= 25)
                 {
-                    selected_song++;
-                    // After the last song the choice goes back to the first
-                    if (selected_song > 19)
-                        selected_song = 0;
-                    handled = true;
-                }
-                if (!--row)
-                {
-                    handled = true;
-                    if (MainForm->animation->interface_controller->status->gold >= 25)
+                    if (!is_playing)
                     {
-                        if (!is_playing)
-                        {
-                            String confirm_text = MainForm->strings->GetText(GameText_RequestThisSongFor);
-                            confirm_text = confirm_text + " ";
-                            confirm_text = confirm_text + IntToStr(25);
-                            confirm_text = confirm_text + " ";
-                            confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
-                            confirm_text = confirm_text + "?";
-                            // A yes in this box sends the request for the picked song
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel,
-                                ConfirmAction_JukeboxRequest, MainForm->strings->GetText(GameText_RequestSong),
-                                confirm_text);
-                            MainForm->edits->caret_enabled = false;
-                        }
-                        else
-                        {
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                // A song is already playing
-                                MainForm->strings->GetDialogText(DialogText_JukeboxBusy, false),
-                                MainForm->strings->GetDialogText(DialogText_JukeboxBusy, true));
-                            MainForm->edits->caret_enabled = false;
-                        }
+                        String confirm_text = MainForm->strings->GetText(GameText_RequestThisSongFor);
+                        confirm_text = confirm_text + " ";
+                        confirm_text = confirm_text + IntToStr(25);
+                        confirm_text = confirm_text + " ";
+                        confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
+                        confirm_text = confirm_text + "?";
+                        // A yes in this box sends the request for the picked song
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_JukeboxRequest,
+                            MainForm->strings->GetText(GameText_RequestSong), confirm_text);
+                        MainForm->edits->caret_enabled = false;
                     }
                     else
                     {
-                        String no_gold_text = MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
-                            LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                         MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                            MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
+                            // A song is already playing
+                            MainForm->strings->GetDialogText(DialogText_JukeboxBusy, false),
+                            MainForm->strings->GetDialogText(DialogText_JukeboxBusy, true));
                         MainForm->edits->caret_enabled = false;
                     }
+                }
+                else
+                {
+                    String no_gold_text =
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
+                            LowerCase(MainForm->item_values->GetName(ItemId_Gold));
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
+                    MainForm->edits->caret_enabled = false;
                 }
             }
         }
@@ -146,8 +144,7 @@ void JukeboxController::MouseMove(int x, int y)
             window_y = 107;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= this->window_y + 50 || y >= this->window_y + 170 || x <= this->window_x + 17 ||
-        x >= this->window_x + 252 || this->is_dragging))
+    if (y > window_y + 50 && y < window_y + 170 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         int row = (y - window_y - 52) / NPC_LIST_ROW_HEIGHT;
         if (row > 1)
@@ -163,7 +160,7 @@ void JukeboxController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < this->window_x + 91 || x > this->window_x + 181 || y < this->window_y + 159 || y > this->window_y + 185))
+    if (x >= window_x + 91 && x <= window_x + 181 && y >= window_y + 159 && y <= window_y + 185)
     {
         if (!close_hovered)
         {

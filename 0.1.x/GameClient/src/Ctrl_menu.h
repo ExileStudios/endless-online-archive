@@ -2,10 +2,13 @@
 #define Ctrl_menuH
 
 #include <Classes.hpp>
+
 #define DEFAULT_FORM_X 140
 #define DEFAULT_FORM_Y 120
 #define DEFAULT_MESSAGE_BOX_X 175
 #define DEFAULT_MESSAGE_BOX_Y 166
+#define GRID_PASSWORD_LIMIT 15
+#define MENU_THUMB_TRAVEL 72.0
 #define MESSAGE_BOX_LINE_COUNT 2
 
 enum DraggedWindow
@@ -62,7 +65,7 @@ struct MenuController
     bool corner_close_hover;
     bool login_ok_button_hover;
     bool login_cancel_button_hover;
-    bool unused_flag;
+    bool intro_finished;
     int unused_value;
     bool create_account_enabled;
     bool login_enabled;

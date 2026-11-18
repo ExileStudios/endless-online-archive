@@ -3,7 +3,7 @@
 
 #include "Gfx_npc.h"
 #include "Tmainform.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 NpcResources::NpcResources()
@@ -41,15 +41,21 @@ NpcResources::~NpcResources()
     delete fill_fx;
 }
 
-// Creates both sheets once, sized from the first frame bitmap: its width becomes every frame's width.
-void NpcResources::CreateSheets(int library, int resource_id, char has_idle_animation)
+bool NpcResources::CreateSheets(void *library, int resource_id, char has_idle_animation)
 {
     if (!sheets_created)
     {
         int frame_count = 8;
         MainForm->resource_bitmap->Width = 0;
         MainForm->resource_bitmap->Height = 0;
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+        try
+        {
+            MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
+        }
+        catch (...)
+        {
+            return false;
+        }
         frame_width = MainForm->resource_bitmap->Width;
         frame_height = MainForm->resource_bitmap->Height;
         sheets_created = true;
@@ -66,6 +72,7 @@ void NpcResources::CreateSheets(int library, int resource_id, char has_idle_anim
         front_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
         back_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
     }
+    return true;
 }
 
 int NpcResources::GetFrameWidth()
@@ -78,18 +85,23 @@ int NpcResources::GetFrameHeight()
     return frame_height;
 }
 
-// Draws bitmap resource_id of the library into frame slot frame of the front sheet.
-void NpcResources::LoadFrontFrame(int frame, int library, int resource_id)
+bool NpcResources::LoadFrontFrame(int frame, void *library, int resource_id)
 {
     HDC dc;
     HDC blit_dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
     MainForm->resource_bitmap->TransparentColor = clBlack;
     MainForm->resource_bitmap->Transparent = true;
-    // A canvas Draw keeps black see-through; BitBlt, if configured, copies the npc front frame whole.
     if (!MainForm->config->GetUseBitBltDraw())
     {
         if (front_sheet->GetDC(&dc))
@@ -109,35 +121,41 @@ void NpcResources::LoadFrontFrame(int frame, int library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (front_sheet->GetDC(&blit_dc))
         {
             try
             {
                 BitBlt(blit_dc, frame * frame_width, 0, MainForm->resource_bitmap->Width,
-                    MainForm->resource_bitmap->Height, CompatibleDC, 0, 0, SRCCOPY);
+                    MainForm->resource_bitmap->Height, compatible_dc, 0, 0, SRCCOPY);
             }
             catch (Exception &)
             {
             }
             front_sheet->ReleaseDC(blit_dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
+    return true;
 }
 
-// Draws bitmap resource_id of the library into frame slot frame of the back sheet.
-void NpcResources::LoadBackFrame(int frame, int library, int resource_id)
+bool NpcResources::LoadBackFrame(int frame, void *library, int resource_id)
 {
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
+    }
+    catch (...)
+    {
+        return false;
+    }
     MainForm->resource_bitmap->TransparentColor = clBlack;
     MainForm->resource_bitmap->Transparent = true;
-    // A canvas Draw keeps black see-through; BitBlt, if configured, copies the npc back frame whole.
     if (!MainForm->config->GetUseBitBltDraw())
     {
         if (back_sheet->GetDC(&dc))
@@ -157,26 +175,27 @@ void NpcResources::LoadBackFrame(int frame, int library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (back_sheet->GetDC(&dc))
         {
             try
             {
                 BitBlt(dc, frame * frame_width, 0, MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
-                    CompatibleDC, 0, 0, SRCCOPY);
+                    compatible_dc, 0, 0, SRCCOPY);
             }
             catch (Exception &)
             {
             }
             back_sheet->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
+    return true;
 }
 
 // The rect of one frame on an npc sheet.
-Windows::TRect NpcResources::GetFrameRect(int frame)
+TRect NpcResources::GetFrameRect(int frame)
 {
     TRect frame_rect;
     frame_rect.left = frame * frame_width;

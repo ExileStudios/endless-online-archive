@@ -2,6 +2,10 @@
 #define StringunitH
 
 #include <Classes.hpp>
+#include <deque.h>
+#include <queue.h>
+#include <stack.h>
+#include <string>
 
 enum DialogText
 {
@@ -606,8 +610,7 @@ struct StringContainer
     String GetJukeboxMusicPath(int file_number);
     String GetDataFilePath(int file_number);
     String RestorePathSeparators(String path);
-    String UnscrambleString(int divisor, unsigned char *data_begin,
-        unsigned char *data_end);
+    String UnscrambleString(int divisor, char *data_begin, char *data_end);
 };
 
 #endif

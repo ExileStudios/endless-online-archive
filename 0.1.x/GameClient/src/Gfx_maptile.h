@@ -10,7 +10,9 @@ struct TileWrapper
     unsigned short graphic_id;
     char is_loaded;
     char was_used;
-    unsigned short idle_ticks;
+    unsigned char idle_ticks;
+    char fetched;
+    unsigned short unfetched_frames;
 
     TileWrapper(int requested_id);
     ~TileWrapper();

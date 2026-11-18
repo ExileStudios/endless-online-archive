@@ -8,11 +8,13 @@ struct SubItemWrapper
 {
     SubItemResource *resource;
     unsigned short graphic_id;
-    short width;
-    short height;
+    unsigned short width;
+    unsigned short height;
     char is_loaded;
     char was_used;
-    unsigned short idle_ticks;
+    unsigned char idle_ticks;
+    bool fetched;
+    unsigned short unfetched_frames;
 
     SubItemWrapper(int requested_id);
     ~SubItemWrapper();

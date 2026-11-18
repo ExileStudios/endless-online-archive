@@ -25,9 +25,27 @@
 #include "Ctrl_paperdoll.h"
 #include "Ctrl_report.h"
 #include "Ctrl_social.h"
-#pragma package(smart_init)
+#include <stdlib.h>
+#include "Ctrl_chest.h"
+#include "Ctrl_group.h"
+#include "Ctrl_inventory.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_skills.h"
+#include "Ctrl_spells.h"
+#include "Ctrl_trade.h"
+#include "Gfx_mapblends.h"
+#include "Gfx_mapicons.h"
+#include "Gfx_mapitems.h"
+#include "Gfx_mapmasks.h"
+#include "Gfx_mapobjects.h"
+#include "Gfx_maptiles.h"
+#include "Gfx_maptops.h"
+#include "Gfx_mapwalls.h"
+#include "Pathfinder.h"
 
-#define STATUS_MESSAGE_EXPIRED 2
+#pragma package(smart_init)
 
 // Creates the controller of each panel; the warning for a big gold drop starts armed.
 InterfaceController::InterfaceController()
@@ -95,8 +113,9 @@ void InterfaceController::Logout()
     MainForm->gfx->FreeSocialGraphics();
     MainForm->gfx->LoadMenuGraphics(MainForm->config->GetSkipSoftpad());
     MainForm->gfx->LoadMainMenuScreen(true);
+    // The connection closes, and everything of the game is cleared and freed.
     if (MainForm->client->Active)
-        MainForm->client->Close();
+        ((TAbstractSocket *)MainForm->client)->Close();
     MainForm->animation->menu->is_loading_world = false;
     MainForm->edits->Clear();
     MainForm->players->Clear();
@@ -209,10 +228,35 @@ InterfaceController::~InterfaceController()
 {
 }
 
-void InterfaceController::RequestFullRedraw()
+// Marks the open panel for a redraw.
+void InterfaceController::InvalidateActivePanel()
+{
+    if (MainForm->animation->GetSubState() == GamePanel_Status)
+        MainForm->animation->interface_controller->status->MarkDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Chat)
+        MainForm->animation->interface_controller->chat->Invalidate();
+    if (MainForm->animation->GetSubState() == GamePanel_Playerlist)
+        MainForm->animation->interface_controller->player_list->MarkListDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Spells)
+        MainForm->animation->interface_controller->spells->MarkDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Skills)
+        MainForm->animation->interface_controller->skills->MarkDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Inventory)
+        MainForm->animation->interface_controller->inventory->MarkItemsDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Group)
+        MainForm->animation->interface_controller->group->MarkListDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Settings)
+        MainForm->animation->interface_controller->settings->MarkDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_News)
+        MainForm->animation->interface_controller->news->MarkTextDirty();
+    if (MainForm->animation->GetSubState() == GamePanel_Help)
+        MainForm->animation->interface_controller->help->MarkTextDirty();
+}
+
+void InterfaceController::RequestFullRedraw(unsigned char countdown)
 {
     full_redraw_pending = true;
-    full_redraw_countdown = 3;
+    full_redraw_countdown = countdown;
 }
 
 void InterfaceController::Invalidate()
@@ -227,7 +271,7 @@ void InterfaceController::OnMouseMove(int mouse_x, int mouse_y)
 }
 
 // Lights the slanted corner button at the top right and puts its tip on the status line.
-bool InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
+void InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
 {
     bool result = false;
     if (mouse_x >= 594 && mouse_x <= 624)
@@ -258,9 +302,10 @@ bool InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
 }
 
 // Lights the panel button under the mouse and puts its tip on the status line.
-bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
+void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
 {
     bool result = false;
+    // The left column of panel buttons, then the right one; each shows its name in the status line.
     if (mouse_x >= 62 && mouse_x <= 98)
     {
         if (mouse_y >= 330 && mouse_y <= 348)
@@ -359,7 +404,7 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         chat_button_hover = false;
         status_button_hover = false;
     }
-    if (mouse_x >= 590 && mouse_x <= 626)
+    if (mouse_x >= 590 && mouse_x <= 633)
     {
         if (mouse_y >= 350 && mouse_y <= 368)
         {
@@ -431,7 +476,7 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             help_button_hover = false;
             result = true;
         }
-        if (mouse_y >= 310 && mouse_y <= 327 && mouse_x <= 607)
+        if (mouse_y >= 310 && mouse_y <= 330 && mouse_x >= 598 && mouse_x <= 615)
         {
             if (!friends_button_hover)
             {
@@ -445,7 +490,7 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             friends_button_hover = false;
             result = true;
         }
-        if (mouse_y >= 310 && mouse_y <= 327 && mouse_x > 607)
+        if (mouse_y >= 310 && mouse_y <= 330 && mouse_x >= 616 && mouse_x <= 633)
         {
             if (!ignore_button_hover)
             {
@@ -474,7 +519,6 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
     }
     if (result)
         button_hover_dirty = true;
-    return result;
 }
 
 bool InterfaceController::TakeInvalidated()

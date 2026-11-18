@@ -5,15 +5,9 @@
 #include "Classvalues.h"
 #include "Packetcontrols.h"
 #include "Packetproces.h"
-#include <fstream.h>
 #include <io.h>
 #include <stdio.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 ItemValues::ItemValues()
@@ -35,13 +29,13 @@ ItemValues::~ItemValues()
 // With more than 900 items the last part file is read too; the values are kept only when its header matches.
 void ItemValues::ReadHeader()
 {
-    String file_text;
+    int file_handle;
+    int file_size;
+    char *buffer;
     int first_checksum_high;
     int first_checksum_low;
-    int file_handle;
-    DWORD file_size;
-    char *buffer;
     int total_records;
+    String file_text;
     String file_name = file_prefix + "001.eif";
     try
     {
@@ -125,13 +119,13 @@ void ItemValues::ReadHeader()
 // Writes one part of the item file as the server sent it.
 void ItemValues::SaveFilePart(int part_number, String data)
 {
-    String lpFileName = file_prefix;
+    String lp_file_name = file_prefix;
     if (part_number < 10)
-        lpFileName = lpFileName + "00" + IntToStr(part_number) + ".eif";
+        lp_file_name = lp_file_name + "00" + IntToStr(part_number) + ".eif";
     else
-        lpFileName = lpFileName + "0" + IntToStr(part_number) + ".eif";
-    std::ofstream handle;
-    handle.open(lpFileName.c_str(), std::ios::binary);
+        lp_file_name = lp_file_name + "0" + IntToStr(part_number) + ".eif";
+    basic_ofstream<char, char_traits<char> > handle;
+    handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << data.c_str();
     handle.close();
 }
@@ -139,13 +133,14 @@ void ItemValues::SaveFilePart(int part_number, String data)
 // Reads every item part file into the list, once until the files change.
 void ItemValues::Load()
 {
+    int file_size;
+    char *buffer;
     if (!is_loaded)
     {
         Clear();
         int file_number = 1;
         int loaded_count = 0;
         int record_total = 1;
-        int hFile;
         do
         {
             String file_name;
@@ -155,16 +150,15 @@ void ItemValues::Load()
                 file_name = file_name + "00" + IntToStr(file_number) + ".eif";
             else
                 file_name = file_name + "0" + IntToStr(file_number) + ".eif";
+            int h_file;
             try
             {
-                DWORD file_size;
-                char *buffer;
-                hFile = FileOpen(file_name.c_str(), fmOpenRead);
-                file_size = FileSeek(hFile, 0, 2);
-                FileSeek(hFile, 0, 0);
+                h_file = FileOpen(file_name.c_str(), fmOpenRead);
+                file_size = FileSeek(h_file, 0, 2);
+                FileSeek(h_file, 0, 0);
                 buffer = new char[file_size + 1];
-                FileRead(hFile, buffer, file_size);
-                FileClose(hFile);
+                FileRead(h_file, buffer, file_size);
+                FileClose(h_file);
                 file_text = buffer;
                 file_text.SetLength(file_size);
                 delete[] buffer;
@@ -230,7 +224,7 @@ void ItemValues::Load()
             }
             catch (...)
             {
-                FileClose(hFile);
+                FileClose(h_file);
                 is_loaded = false;
             }
             file_number++;
@@ -243,18 +237,18 @@ void ItemValues::Load()
 void ItemValues::DeleteFiles()
 {
     char file_found = true;
-    String lpFileName;
+    String lp_file_name;
     try
     {
         for (int i = 1; i <= 100 && file_found; i++)
         {
-            lpFileName = file_prefix;
+            lp_file_name = file_prefix;
             if (i < 10)
-                lpFileName = lpFileName + "00" + IntToStr(i) + ".eif";
+                lp_file_name = lp_file_name + "00" + IntToStr(i) + ".eif";
             else
-                lpFileName = lpFileName + "0" + IntToStr(i) + ".eif";
-            if (!access(lpFileName.c_str(), 0))
-                remove(lpFileName.c_str());
+                lp_file_name = lp_file_name + "0" + IntToStr(i) + ".eif";
+            if (!access(lp_file_name.c_str(), 0))
+                remove(lp_file_name.c_str());
             else
                 file_found = false;
         }
@@ -264,11 +258,16 @@ void ItemValues::DeleteFiles()
     }
 }
 
-void ItemValues::AddItem(int item_id, String name, short graphic, short type, short subtype, short special, short hp, short tp, short min_damage,
-    short max_damage, short accuracy, short evade, short armor, short return_damage, short bonus_str, short bonus_int, short bonus_wis, short bonus_agi, short bonus_con,
-    short bonus_cha, short light_resist, short dark_resist, short earth_resist, short air_resist, short water_resist, short fire_resist, int spec_value, short gender, short spec3,
-    short required_level, short required_class, short required_str, short required_int, short required_wis, short required_agi, short required_con, short required_cha, short element, short element_power,
-    short weight, short spare_byte, short size)
+void ItemValues::AddItem(int item_id, String name, short graphic, short type, short subtype, short special,
+    short hp, short tp, int min_damage, int max_damage,
+    int accuracy, int evade, int armor, int return_damage,
+    short bonus_str, short bonus_int, short bonus_wis,
+    short bonus_agi, short bonus_con, short bonus_cha,
+    short light_resist, short dark_resist, short earth_resist,
+    short air_resist, short water_resist, short fire_resist, int spec_value,
+    short gender, short spec3, short required_level, short required_class, short required_str,
+    short required_int, short required_wis, short required_agi, short required_con, short required_cha,
+    short element, short element_power, short weight, short spare_byte, short size)
 {
     ItemValue handle(item_id);
     handle.name = name;
@@ -320,14 +319,16 @@ DEFINE_CLEAR(ItemValues)
 // The record of an item id; ids start at 1.
 ItemValue ItemValues::GetItem(int item_id)
 {
+    if (item_id < 1)
+        item_id = 1;
     return records[item_id - 1];
 }
 
-// The weight of an item, 0 when the id is not in the list.
+// The item's weight, at least 0; 0 when the id is not in the list.
 int ItemValues::GetWeight(int item_id)
 {
     int weight = 0;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
     {
         weight = records[item_id - 1].weight;
         if (weight < 0)
@@ -340,7 +341,7 @@ int ItemValues::GetWeight(int item_id)
 int ItemValues::GetGender(int item_id)
 {
     int gender = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
     {
         gender = records[item_id - 1].gender;
         if (gender < 0)
@@ -352,7 +353,7 @@ int ItemValues::GetGender(int item_id)
 int ItemValues::GetGraphic(int item_id)
 {
     int graphic = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         graphic = records[item_id - 1].graphic;
     return graphic;
 }
@@ -360,7 +361,7 @@ int ItemValues::GetGraphic(int item_id)
 int ItemValues::GetSize(int item_id)
 {
     int size = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         size = records[item_id - 1].size;
     return size;
 }
@@ -368,7 +369,7 @@ int ItemValues::GetSize(int item_id)
 int ItemValues::GetSpecial(int item_id)
 {
     int special = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         special = records[item_id - 1].special;
     return special;
 }
@@ -376,7 +377,7 @@ int ItemValues::GetSpecial(int item_id)
 int ItemValues::GetType(int item_id)
 {
     int type = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         type = records[item_id - 1].type;
     return type;
 }
@@ -384,7 +385,7 @@ int ItemValues::GetType(int item_id)
 int ItemValues::GetSubType(int item_id)
 {
     int subtype = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         subtype = records[item_id - 1].subtype;
     return subtype;
 }
@@ -392,7 +393,7 @@ int ItemValues::GetSubType(int item_id)
 int ItemValues::GetClassRequirement(int item_id)
 {
     int required_class = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         required_class = records[item_id - 1].required_class;
     return required_class;
 }
@@ -400,7 +401,7 @@ int ItemValues::GetClassRequirement(int item_id)
 int ItemValues::GetSpecValue(int item_id)
 {
     int spec_value = -1;
-    if (item_id > 0 && Count() > (unsigned int)item_id)
+    if (item_id > 0 && Count() > item_id)
         spec_value = records[item_id - 1].spec_value;
     return spec_value;
 }

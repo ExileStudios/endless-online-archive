@@ -24,10 +24,14 @@
 #include "Ctrl_social.h"
 #include "Ctrl_stats.h"
 #include "Packetoperations.h"
-#pragma package(smart_init)
+#include "Ctrl_chest.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_trade.h"
 
-#define MAX_RECENT_CHAT_MESSAGES 3
-#define MAX_RECENT_GLOBAL_MESSAGES 2
+#pragma package(smart_init)
 
 // Starts on the intro, or straight on the menu screen with show_intro, and makes every window controller.
 AnimationController::AnimationController(char show_intro)
@@ -213,7 +217,7 @@ bool AnimationController::IsWalkingBlocked()
     return blocked;
 }
 
-// Counts the action and chat delays down, lets the chat counts decay, and scrolls the credits.
+// Counts the action and chat delays down, lets the local and global chat counts decay, and scrolls the credits.
 void AnimationController::UpdateTimers()
 {
     CreditsController *credits_controller;
@@ -268,11 +272,11 @@ void AnimationController::UpdateTimers()
                 credits_controller = credits;
                 if (credits_controller->credit_styles->Count > credits_controller->next_line_index)
                 {
-                    int line_delay = 35;
-                    if (credits->credit_styles->Strings[credits->next_line_index] == "head")
-                        line_delay = 4;
-                    if (credits->credit_styles->Strings[credits->next_line_index] == "title")
-                        line_delay = 65;
+                    line_delay = 10;
+                    if (credits->credit_styles->Strings[credits->next_line_index] == "h")
+                        line_delay = 1;
+                    if (credits->credit_styles->Strings[credits->next_line_index] == "t")
+                        line_delay = 22;
                     if (line_delay <= credits->tick_counter)
                     {
                         credits->tick_counter = 0;
@@ -282,14 +286,14 @@ void AnimationController::UpdateTimers()
                         credits->next_line_index++;
                     }
                 }
-                else if (credits->start_y - credits->top_y + 10 <= credits->tick_counter)
+                else if (credits->start_y - credits->top_y + 10 <= 3 * credits->tick_counter)
                 {
                     MainForm->gfx->LoadMainMenuScreen(true);
                     credits->is_running = false;
                 }
             }
             for (int i = 0; i < credits->shown_lines->Count; i++)
-                credits->shown_y->Strings[i] = StrToInt(credits->shown_y->Strings[i]) - 1;
+                credits->shown_y->Strings[i] = StrToInt(credits->shown_y->Strings[i]) - 3;
             if (credits->shown_lines->Count >= 1)
             {
                 if (StrToInt(credits->shown_y->Strings[0]) <= credits->top_y)
@@ -312,8 +316,8 @@ void AnimationController::StartChatDelay()
 void AnimationController::RecordChatMessage()
 {
     chat_message_count++;
-    if (chat_message_count >= MAX_RECENT_CHAT_MESSAGES)
-        chat_message_count = 6;
+    if (chat_message_count >= 4)
+        chat_message_count = MAX_RECENT_CHAT_MESSAGES;
     chat_count_check = IntToHex(chat_message_count, 2);
 }
 
@@ -321,7 +325,7 @@ void AnimationController::RecordChatMessage()
 void AnimationController::RecordGlobalMessage()
 {
     global_message_count++;
-    if (global_message_count >= MAX_RECENT_GLOBAL_MESSAGES)
+    if (global_message_count >= 3)
         global_message_count = 4;
 }
 
@@ -355,6 +359,148 @@ bool AnimationController::IsGlobalMessageAllowed()
         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
             MainForm->strings->GetText(GameText_WaitMinuteBeforeUsing));
     return allowed;
+}
+
+// Closes the topmost open box or window, one per call: the message, input and amount boxes before the panels,
+// and the player menu last.
+void AnimationController::CloseTopWindow()
+{
+    // Only the top one closes: the boxes first, then the windows, then the player menu.
+    if (game->message_visible)
+    {
+        game->message_visible = false;
+        MainForm->edits->caret_enabled = true;
+        MainForm->redraw_needed = true;
+        return;
+    }
+    if (game->large_box_visible)
+    {
+        game->large_box_visible = false;
+        MainForm->edits->caret_enabled = true;
+        MainForm->redraw_needed = true;
+        return;
+    }
+    if (game->input_box_visible)
+    {
+        game->CloseInputBox();
+        return;
+    }
+    if (game->form_visible)
+    {
+        game->CloseInputForm();
+        return;
+    }
+    if (social->is_open)
+    {
+        social->CloseWindow();
+        return;
+    }
+    if (message_board->is_visible)
+    {
+        message_board->Close();
+        return;
+    }
+    if (game->amount_box_visible)
+    {
+        game->amount_box_visible = false;
+        MainForm->edits->RemoveEdit(EditId_Amount);
+        MainForm->edits->FocusEdit(EditId_Chat);
+        MainForm->edits->caret_enabled = true;
+        MainForm->redraw_needed = true;
+        return;
+    }
+    if (paperdoll->is_visible)
+    {
+        paperdoll->Close();
+        return;
+    }
+    if (book->is_visible)
+    {
+        book->Close();
+        return;
+    }
+    if (bank->is_visible)
+    {
+        bank->Close();
+        return;
+    }
+    if (musician->is_visible)
+    {
+        musician->Close();
+        return;
+    }
+    if (jukebox->is_visible)
+    {
+        jukebox->Close();
+        return;
+    }
+    if (learn->is_visible)
+    {
+        learn->Close();
+        return;
+    }
+    if (shop->is_visible)
+    {
+        shop->Close();
+        return;
+    }
+    if (locker->is_visible)
+    {
+        locker->Close();
+        return;
+    }
+    if (law->is_visible)
+    {
+        law->Close();
+        return;
+    }
+    if (inn->is_visible)
+    {
+        inn->Close();
+        return;
+    }
+    if (guild->is_visible)
+    {
+        guild->Close();
+        return;
+    }
+    if (report->is_visible)
+    {
+        report->Close();
+        return;
+    }
+    if (dialog->is_visible)
+    {
+        dialog->Close();
+        return;
+    }
+    if (memo->is_visible)
+    {
+        memo->Close();
+        return;
+    }
+    if (chest->is_visible)
+    {
+        chest->Close();
+        return;
+    }
+    if (barber->is_visible)
+    {
+        barber->Close();
+        return;
+    }
+    if (stat->is_visible)
+    {
+        stat->Close();
+        return;
+    }
+    if (quests->is_visible)
+    {
+        quests->Close();
+        return;
+    }
+    if (game->player_menu_visible)
+        game->ClosePlayerMenu();
 }
 
 void AnimationController::StartAccountProgress()
@@ -466,13 +612,13 @@ void AnimationController::UpdateIntroAndDelays()
     if (reply_timeout >= 1 && menu->is_loading_world)
     {
         reply_timeout++;
-        if (reply_timeout == 50)
+        if (reply_timeout == 12)
         {
             menu->SetEnteringGame(true);
             menu->StartRequestDelay();
             reply_timeout = 0;
         }
-        if (reply_timeout == 175)
+        if (reply_timeout == 150)
         {
             MainForm->gfx->FreeGameGraphics();
             MainForm->edits->caret_enabled = false;
@@ -546,7 +692,7 @@ void AnimationController::UpdateIntroAndDelays()
                 SetCursorPos(20, 20);
             screen_mode = ScreenMode_Menu;
             sub_state = MenuScreen_Main;
-            menu->unused_flag = true;
+            menu->intro_finished = true;
             MainForm->gfx->FreeIntroGraphics();
         }
     }

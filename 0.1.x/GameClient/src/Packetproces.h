@@ -1,57 +1,9 @@
 #ifndef PacketprocesH
 #define PacketprocesH
 
-enum GuildReply
-{
-    GuildReply_Busy = 1,
-    GuildReply_NotApproved = 2,
-    GuildReply_AlreadyMember = 3,
-    GuildReply_NoCandidates = 4,
-    GuildReply_Exists = 5,
-    GuildReply_CreateBegin = 6,
-    GuildReply_CreateAddConfirm = 7,
-    GuildReply_CreateAdd = 8,
-    GuildReply_RecruiterOffline = 9,
-    GuildReply_RecruiterNotHere = 10,
-    GuildReply_RecruiterWrongGuild = 11,
-    GuildReply_NotRecruiter = 12,
-    GuildReply_JoinRequest = 13,
-    GuildReply_Unknown14 = 14,
-    GuildReply_Unknown15 = 15,
-    GuildReply_Accepted = 16,
-    GuildReply_NotFound = 17,
-    GuildReply_Updated = 18,
-    GuildReply_RanksUpdated = 19,
-    GuildReply_RemoveNotMember = 20,
-    GuildReply_RemoveLeader = 21,
-    GuildReply_Removed = 22,
-    GuildReply_RankingLeader = 23,
-    GuildReply_RankingNotMember = 24
-};
-
-enum MarriageReply
-{
-    MarriageReply_AlreadyMarried = 1,
-    MarriageReply_NotMarried = 2,
-    MarriageReply_Success = 3,
-    MarriageReply_NotEnoughGold = 4,
-    MarriageReply_WrongName = 5,
-    MarriageReply_ServiceBusy = 6,
-    MarriageReply_DivorceNotification = 7
-};
-
-enum PriestReply
-{
-    PriestReply_NotDressed = 1,
-    PriestReply_LowLevel = 2,
-    PriestReply_PartnerNotPresent = 3,
-    PriestReply_PartnerNotDressed = 4,
-    PriestReply_Busy = 5,
-    PriestReply_DoYou = 6,
-    PriestReply_PartnerAlreadyMarried = 7,
-    PriestReply_NoPermission = 8
-};
-#define GUILD_RANK_LOWEST 9
+#define CHAT_COLOR_NOTICE 4
+#define ENTRY_ID_LENGTH 2
+#define MINUTES_PER_HOUR 60
 
 enum AccountReply
 {
@@ -85,6 +37,34 @@ enum CharacterReply
     CharacterReply_SessionBase = 10
 };
 
+enum GuildReply
+{
+    GuildReply_Busy = 1,
+    GuildReply_NotApproved = 2,
+    GuildReply_AlreadyMember = 3,
+    GuildReply_NoCandidates = 4,
+    GuildReply_Exists = 5,
+    GuildReply_CreateBegin = 6,
+    GuildReply_CreateAddConfirm = 7,
+    GuildReply_CreateAdd = 8,
+    GuildReply_RecruiterOffline = 9,
+    GuildReply_RecruiterNotHere = 10,
+    GuildReply_RecruiterWrongGuild = 11,
+    GuildReply_NotRecruiter = 12,
+    GuildReply_JoinRequest = 13,
+    GuildReply_Unknown14 = 14,
+    GuildReply_Unknown15 = 15,
+    GuildReply_Accepted = 16,
+    GuildReply_NotFound = 17,
+    GuildReply_Updated = 18,
+    GuildReply_RanksUpdated = 19,
+    GuildReply_RemoveNotMember = 20,
+    GuildReply_RemoveLeader = 21,
+    GuildReply_Removed = 22,
+    GuildReply_RankingLeader = 23,
+    GuildReply_RankingNotMember = 24
+};
+
 enum LoginReply
 {
     LoginReply_FailedDialog21 = 1,
@@ -97,6 +77,29 @@ enum LoginReply
     LoginReply_ServerBusy = 8
 };
 
+enum MarriageReply
+{
+    MarriageReply_AlreadyMarried = 1,
+    MarriageReply_NotMarried = 2,
+    MarriageReply_Success = 3,
+    MarriageReply_NotEnoughGold = 4,
+    MarriageReply_WrongName = 5,
+    MarriageReply_ServiceBusy = 6,
+    MarriageReply_DivorceNotification = 7
+};
+
+enum PriestReply
+{
+    PriestReply_NotDressed = 1,
+    PriestReply_LowLevel = 2,
+    PriestReply_PartnerNotPresent = 3,
+    PriestReply_PartnerNotDressed = 4,
+    PriestReply_Busy = 5,
+    PriestReply_DoYou = 6,
+    PriestReply_PartnerAlreadyMarried = 7,
+    PriestReply_NoPermission = 8
+};
+
 enum WelcomeReply
 {
     WelcomeReply_FileCheck = 1,
@@ -104,15 +107,6 @@ enum WelcomeReply
     WelcomeReply_RejectedDialog19 = 3,
     WelcomeReply_RejectedDialog20 = 4
 };
-#define CHAT_COLOR_DEFAULT 0
-#define CHAT_COLOR_PRIVATE 1
-#define CHAT_COLOR_SYSTEM 2
-#define CHAT_COLOR_WARNING 3
-#define CHAT_COLOR_ADMIN 5
-#define CHAT_COLOR_NOTICE 4
-#define MINUTES_PER_HOUR 60
-#define PVP_MAP_TYPE 3
-#define TRADE_ACCEPT_DELAY_TICKS 20
 
 // Reads every packet from the server and hands its contents to the controllers.
 struct PacketProcessor
@@ -133,7 +127,7 @@ struct PacketProcessor
     void ParseOnlinePlayers(String packet);
     void ParsePartyMembers(String packet);
     void ParseCharacterList(String packet);
-    String EncodeNumber(unsigned int value, int min_length);
+    String EncodeNumber(unsigned int value, int width);
     unsigned int DecodeNumber(String encoded);
     char ByteToChar(unsigned char value);
 };

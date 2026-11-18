@@ -7,9 +7,8 @@
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
 #include "Ctrl_gamebars.h"
-#pragma package(smart_init)
 
-#define MAX_LEVEL 240
+#pragma package(smart_init)
 
 StatusController::StatusController()
 {
@@ -59,7 +58,7 @@ void StatusController::Tick()
         return;
     }
     // The setters keep the text copies in step, so a mismatch means stamina changed some other way
-    else if (StrToInt(stamina_check_text) != stamina || StrToInt(max_stamina_check_text) != max_stamina)
+    if (StrToInt(stamina_check_text) != stamina || StrToInt(max_stamina_check_text) != max_stamina)
     {
         Sleep(500);
         max_stamina = 0;
@@ -69,47 +68,44 @@ void StatusController::Tick()
         MainForm->edits->caret_enabled = false;
         return;
     }
-    else
+    if (stamina < max_stamina)
     {
-        if (stamina < max_stamina)
+        stamina_regen_ticks++;
+        // Faster while sitting on the floor
+        if (stamina_regen_ticks > 14 ||
+            (stamina_regen_ticks == 7 && MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId())))
         {
-            stamina_regen_ticks++;
-            // Faster while sitting on the floor
-            if (stamina_regen_ticks > 14 ||
-                (stamina_regen_ticks == 7 && MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId())))
+            stamina_regen_ticks = 0;
+            int regen_amount = 1;
+            int tenth_max_stamina = max_stamina / 10;
+            if (tenth_max_stamina > 0)
+                regen_amount = tenth_max_stamina;
+            stamina += regen_amount;
+            if (max_stamina < stamina)
+                stamina = max_stamina;
+            // An overloaded character gets no stamina back
+            if (weight > max_weight)
             {
-                stamina_regen_ticks = 0;
-                int regen_amount = 1;
-                int tenth_max_stamina = max_stamina / 10;
-                if (tenth_max_stamina > 0)
-                    regen_amount = tenth_max_stamina;
-                stamina += regen_amount;
-                if (max_stamina < stamina)
-                    stamina = max_stamina;
-                // An overloaded character gets no stamina back
-                if (weight > max_weight)
-                {
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                        MainForm->strings->GetText(GameText_YouCannotAttackBecause));
-                    stamina = 0;
-                }
-                MainForm->animation->interface_controller->game_bars->SetStaminaBar(stamina, max_stamina);
-                is_dirty = true;
+                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                    MainForm->strings->GetText(GameText_YouCannotAttackBecause));
+                stamina = 0;
             }
-        }
-        stamina_check_text = IntToStr(stamina);
-        max_stamina_check_text = IntToStr(max_stamina);
-        if (blink_phase < 10)
-        {
-            blink_phase++;
-            if (blink_phase == 6)
-                is_dirty = true;
-        }
-        else
-        {
-            blink_phase = 0;
+            MainForm->animation->interface_controller->game_bars->SetStaminaBar(stamina, max_stamina);
             is_dirty = true;
         }
+    }
+    stamina_check_text = IntToStr(stamina);
+    max_stamina_check_text = IntToStr(max_stamina);
+    if (blink_phase < 10)
+    {
+        blink_phase++;
+        if (blink_phase == 6)
+            is_dirty = true;
+    }
+    else
+    {
+        blink_phase = 0;
+        is_dirty = true;
     }
 }
 
@@ -215,10 +211,9 @@ void StatusController::SetMaxStamina(int new_max_stamina)
 // Adds a group share of experience and updates the experience bar and the amounts to the next level.
 void StatusController::AddExperience(int gained_experience)
 {
-    int level_start_experience;
-    int level_end_experience = 0;
-    int level_range = 0;
-    int bar_progress = 0;
+    int bar_progress;
+    int level_range;
+    int level_end_experience;
     if (!skip_next_exp_gain)
     {
         if (gained_experience > experience)
@@ -231,7 +226,7 @@ void StatusController::AddExperience(int gained_experience)
     }
     skip_next_exp_gain = false;
     experience += gained_experience;
-    level_start_experience = MainForm->animation->game->GetExperienceForLevel(level);
+    int level_start_experience = MainForm->animation->game->GetExperienceForLevel(level);
     level_end_experience = MainForm->animation->game->GetExperienceForLevel(level + 1);
     level_range = level_end_experience - level_start_experience;
     bar_progress = level_end_experience;
@@ -264,10 +259,9 @@ void StatusController::AddExperience(int gained_experience)
 // and the amounts to the next level.
 void StatusController::SetExperience(int new_experience)
 {
-    int level_start_experience;
-    int level_end_experience = 0;
-    int level_range = 0;
-    int bar_progress = 0;
+    int bar_progress;
+    int level_range;
+    int level_end_experience;
     // The first total after logging in is not counted as a gain
     if (!skip_next_exp_gain)
     {
@@ -281,7 +275,7 @@ void StatusController::SetExperience(int new_experience)
     }
     skip_next_exp_gain = false;
     experience = new_experience;
-    level_start_experience = MainForm->animation->game->GetExperienceForLevel(level);
+    int level_start_experience = MainForm->animation->game->GetExperienceForLevel(level);
     level_end_experience = MainForm->animation->game->GetExperienceForLevel(level + 1);
     level_range = level_end_experience - level_start_experience;
     bar_progress = level_end_experience;
@@ -313,16 +307,19 @@ void StatusController::SetExperience(int new_experience)
 // Sets the level and updates the experience bar and the amounts to the next level.
 void StatusController::SetLevel(int new_level)
 {
+    int bar_progress;
+    int level_range;
+    int level_end_experience;
     level = new_level;
-    int level_start_experience = MainForm->animation->game->GetExperienceForLevel(this->level);
-    int level_end_experience = MainForm->animation->game->GetExperienceForLevel(level + 1);
-    int level_range = level_end_experience - level_start_experience;
-    int bar_progress = level_end_experience;
+    int level_start_experience = MainForm->animation->game->GetExperienceForLevel(level);
+    level_end_experience = MainForm->animation->game->GetExperienceForLevel(level + 1);
+    level_range = level_end_experience - level_start_experience;
+    bar_progress = level_end_experience;
     if (level < MAX_LEVEL)
     {
-        if (this->experience < level_end_experience)
+        if (level_end_experience > experience)
         {
-            bar_progress = this->experience - level_start_experience;
+            bar_progress = experience - level_start_experience;
             next_level_experience = level_end_experience;
         }
         else
@@ -333,13 +330,13 @@ void StatusController::SetLevel(int new_level)
     }
     else
         next_level_experience = MainForm->animation->game->GetExperienceForLevel(level);
-    if (this->experience < level_start_experience)
+    if (experience < level_start_experience)
     {
         bar_progress = 0;
         experience_to_next_level = 0;
     }
     else
-        this->experience_to_next_level = level_range - bar_progress;
+        experience_to_next_level = level_range - bar_progress;
     MainForm->animation->interface_controller->game_bars->SetExperienceBar(bar_progress, level_range);
 }
 

@@ -5,8 +5,8 @@
 #include "Tmainform.h"
 #include "Ctrl_game.h"
 #include "Packetoperations.h"
+
 #pragma package(smart_init)
-#define MUSICIAN_CELL_SIZE 20
 
 MusicianController::MusicianController()
 {
@@ -57,27 +57,25 @@ void MusicianController::MouseDown(int x, int y, int button)
     int row_base;
     int note_col;
     char handled = false;
-    if (x >= window_x + 16 && x <= window_x + 253 && y >= window_y + 15 && y <= window_y + 73 && note_cooldown <= 0)
+    if (x >= window_x + 16 && x <= window_x + 253 && y >= window_y + 15 && y <= window_y + 73 && note_cooldown <= 0 &&
+        MainForm->net_client->CanAct())
     {
-        if (MainForm->net_client->CanAct())
+        int instrument_id = MainForm->players->GetWeapon(MainForm->net_client->GetPlayerId());
+        // Only these two weapons are instruments
+        if (instrument_id == 49 || instrument_id == 50)
         {
-            int instrument_id = MainForm->players->GetWeapon(MainForm->net_client->GetPlayerId());
-            // Only these two weapons are instruments
-            if (instrument_id == 49 || instrument_id == 50)
-            {
-                int note_col = (x - window_x - 14) / 20;
-                int row_base = 12 * ((y - window_y - 15) / MUSICIAN_CELL_SIZE);
-                note_col++;
-                // Notes count from one, twelve to a row
-                int note = note_col + row_base;
-                if (note > 36)
-                    note = 36;
-                MainForm->sfx->PlayInstrumentNote(instrument_id, note);
-                MainForm->net_client->sender->SendPlayInstrument(instrument_id, note);
-                MainForm->animation->game->Attack(true);
-                note_cooldown = 2;
-                handled = true;
-            }
+            note_col = (x - window_x - 14) / 20;
+            row_base = 12 * ((y - window_y - 15) / MUSICIAN_CELL_SIZE);
+            note_col++;
+            // Notes count from one, twelve to a row
+            int note = note_col + row_base;
+            if (note > 36)
+                note = 36;
+            MainForm->sfx->PlayInstrumentNote(instrument_id, note);
+            MainForm->net_client->sender->SendPlayInstrument(instrument_id, note);
+            MainForm->animation->game->AttackForward(true);
+            note_cooldown = 2;
+            handled = true;
         }
     }
     if (!handled)
@@ -112,7 +110,7 @@ void MusicianController::MouseMove(int x, int y)
     if (x >= window_x + 16 && x <= window_x + 253 && y >= window_y + 15 && y <= window_y + 73)
     {
         int note_col = (x - window_x - 14) / 20;
-        int note_row = (y - window_y - 15) / MUSICIAN_CELL_SIZE;
+        note_row = (y - window_y - 15) / MUSICIAN_CELL_SIZE;
         if (note_col != hovered_note_col || note_row != hovered_note_row)
         {
             hovered_note_col = note_col;

@@ -1,32 +1,7 @@
 #ifndef AnimationprotectorH
 #define AnimationprotectorH
 
-enum GamePanel
-{
-    GamePanel_Inventory = 6,
-    GamePanel_Spells = 8,
-    GamePanel_Skills = 9,
-    GamePanel_Status = 10,
-    GamePanel_Chat = 11,
-    GamePanel_Playerlist = 12,
-    GamePanel_Group = 13,
-    GamePanel_Settings = 15,
-    GamePanel_Help = 16,
-    GamePanel_News = 18
-};
-
-enum MenuScreen
-{
-    MenuScreen_Main = 1,
-    MenuScreen_Credits = 2,
-    MenuScreen_CreateAccount = 3,
-    MenuScreen_Login = 4,
-    MenuScreen_CharacterSelect = 5,
-    MenuScreen_GridAccountName = 7,
-    MenuScreen_PasswordGrid = 8,
-    MenuScreen_PasswordReset = 9,
-    MenuScreen_SignupCode = 10
-};
+#include <vector.h>
 
 struct BankController;
 struct BarberController;
@@ -55,6 +30,40 @@ struct ShopController;
 struct SocialController;
 struct StatController;
 struct TradeController;
+
+#include "Itemcraft.h"
+#include "Sys_msg.h"
+
+#define MAX_RECENT_CHAT_MESSAGES 3
+#define MAX_RECENT_GLOBAL_MESSAGES 2
+#define SIT_DELAY_TICKS 4
+
+enum GamePanel
+{
+    GamePanel_Inventory = 6,
+    GamePanel_Spells = 8,
+    GamePanel_Skills = 9,
+    GamePanel_Status = 10,
+    GamePanel_Chat = 11,
+    GamePanel_Playerlist = 12,
+    GamePanel_Group = 13,
+    GamePanel_Settings = 15,
+    GamePanel_Help = 16,
+    GamePanel_News = 18
+};
+
+enum MenuScreen
+{
+    MenuScreen_Main = 1,
+    MenuScreen_Credits = 2,
+    MenuScreen_CreateAccount = 3,
+    MenuScreen_Login = 4,
+    MenuScreen_CharacterSelect = 5,
+    MenuScreen_GridAccountName = 7,
+    MenuScreen_PasswordGrid = 8,
+    MenuScreen_PasswordReset = 9,
+    MenuScreen_SignupCode = 10
+};
 
 // The screen mode and sub-state, the action and chat delays, and every window controller.
 struct AnimationController
@@ -142,6 +151,7 @@ struct AnimationController
     bool CanSendChat();
     bool IsChatAllowed();
     bool IsGlobalMessageAllowed();
+    void CloseTopWindow();
     void StartAccountProgress();
     void StopAccountProgress();
     int GetAccountProgress();

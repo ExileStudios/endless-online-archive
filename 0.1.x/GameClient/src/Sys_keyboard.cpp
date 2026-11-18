@@ -27,1741 +27,2370 @@
 #include "Gfx_sprites.h"
 #include "Ctrl_stats.h"
 #include "Ctrl_status.h"
+#include <stdlib.h>
+#include <vector.h>
+#include "Ctrl_chest.h"
+#include "Ctrl_gamebars.h"
+#include "Ctrl_group.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_spells.h"
+#include "Ctrl_trade.h"
+#include <dinput.h>
+#include "Pathfinder.h"
+
 #pragma package(smart_init)
 
 KeyBoard::KeyBoard()
 {
-    tab_delay = 0;
-    backspace_delay = 0;
-    repeat_interval = 0;
-    repeat_delay = 0;
+    tab_wait = 0;
+    backspace_wait = 0;
     key_delay = 0;
+    menu_enter_wait = 0;
+    enter_wait = 0;
+    grid_enter_wait = 0;
+    walk_key_held = false;
+    wasd_key_used = false;
+    attack_key_used = false;
+    delete_pressed = false;
+    for (int i = 0; i < 61; i++)
+        key_waits[i] = 0;
+    for (int j = 0; j < 4; j++)
+        key_flags[j] = false;
 }
 
 KeyBoard::~KeyBoard()
 {
 }
 
-bool KeyBoard::IsArrowKeyDown()
+char KeyBoard::WasDeletePressed()
 {
-    return arrow_held;
+    bool down = delete_pressed;
+    delete_pressed = false;
+    return down;
 }
 
-String KeyBoard::GetWalkDirection()
-{
-    return walk_direction;
-}
-
-// Reads the keyboard once and acts on it: menu keys, game keys, then typing into the focused edit box.
-// When the window is inactive or the read fails, the key repeat and the arrow state start over.
+// Reads the keyboard while the window is active and hands the keys to the menu, edit, game and typing handlers in
+// turn; any failure lets go of the modifier keys.
 void KeyBoard::PollKeyboard()
 {
-    void *AsHandle;
-    LPVOID clipboard_data;
-    int arrows_held = 0;
-    int played_minutes;
+    if (grid_enter_wait > 0)
+        grid_enter_wait--;
+    if (!MainForm->isActive())
+        return;
     try
     {
-        if (key_delay > 0)
-            key_delay--;
-        if (MainForm->active)
+        if (!MainForm->Dx_InputDevice1->Created)
         {
-            MainForm->Dx_InputDevice1->Poll();
-            if (MainForm->Dx_InputDevice1->GetDeviceState(MainForm->DIKeyboardState1))
+            MainForm->Dx_InputDevice1->Create(GUID_SysKeyboard, MainForm->Dx_Input1);
+            return;
+        }
+        if (!MainForm->Dx_InputDevice1->Poll())
+            return;
+        if (!MainForm->Dx_InputDevice1->GetDeviceState((TDIData *)MainForm->DIKeyboardState1))
+            return;
+        // Each handler in turn can end the poll: the menu keys, the edit keys, the game keys, then typing.
+        if (!HandleMenuKeys())
+            return;
+        if (!HandleEditKeys())
+            return;
+        if (!HandleGameKeys())
+            return;
+        if (!HandleTypedKeys())
+            return;
+    }
+    catch (...)
+    {
+        ReleaseModifierKeys();
+    }
+}
+
+// Walks in the direction of the held arrow keys, the last pressed one winning when several are held, and cancels a
+// clicked path.
+bool KeyBoard::UpdateWalkDirection()
+{
+    unsigned char held_count = 0;
+    if (key_flags[1])
+    {
+        walk_direction = 1;
+        held_count++;
+    }
+    if (key_flags[2])
+    {
+        walk_direction = 2;
+        held_count++;
+    }
+    if (key_flags[3])
+    {
+        walk_direction = 3;
+        held_count++;
+    }
+    if (key_flags[0])
+    {
+        walk_direction = 0;
+        held_count++;
+    }
+    if (held_count > 0)
+    {
+        // With two keys held, the one pressed later wins over the one held first.
+        if (held_count == 2)
+        {
+            if (last_walk_direction == 1 && key_flags[1])
             {
-                if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
+                if (key_flags[2])
+                    walk_direction = 2;
+                if (key_flags[3])
+                    walk_direction = 3;
+                if (key_flags[0])
+                    walk_direction = 0;
+            }
+            if (last_walk_direction == 2 && key_flags[2])
+            {
+                if (key_flags[1])
+                    walk_direction = 1;
+                if (key_flags[3])
+                    walk_direction = 3;
+                if (key_flags[0])
+                    walk_direction = 0;
+            }
+            if (last_walk_direction == 3 && key_flags[3])
+            {
+                if (key_flags[1])
+                    walk_direction = 1;
+                if (key_flags[2])
+                    walk_direction = 2;
+                if (key_flags[0])
+                    walk_direction = 0;
+            }
+            if (!last_walk_direction && key_flags[0])
+            {
+                if (key_flags[1])
+                    walk_direction = 1;
+                if (key_flags[2])
+                    walk_direction = 2;
+                if (key_flags[3])
+                    walk_direction = 3;
+            }
+        }
+        else
+            last_walk_direction = walk_direction;
+        if (MainForm->net_client->CanAct())
+        {
+            MainForm->map->path_finder->CancelPath();
+            MainForm->animation->game->Walk(walk_direction);
+        }
+        return true;
+    }
+    return false;
+}
+
+// Handles the keys of the menu screens: Enter, Escape, pasting with Ctrl+V into the focused box, the number keys that
+// pick a character, and the letters of the screen that asks for them.
+bool KeyBoard::HandleMenuKeys()
+{
+    if (MainForm->animation->GetScreenMode() != ScreenMode_Menu)
+        return true;
+    try
+    {
+        if (menu_enter_wait > 0)
+            menu_enter_wait--;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
+        {
+            if (!menu_enter_wait)
+            {
+                menu_enter_wait = 100;
+                if (!key_waits[60])
                 {
-                    if (MainForm->animation->menu->is_message_open && (MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
+                    if (MainForm->animation->menu->is_message_open)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->menu->is_message_open = false;
                         MainForm->edits->caret_enabled = true;
+                        return true;
                     }
-                    // On the character list, keys 1 to 3 log in with the character in that slot.
-                    if (MainForm->animation->GetSubState() == MenuScreen_CharacterSelect)
-                    {
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 &&
-                            !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetDrawGroup(PlayerId_SlotFirst) &&
-                            !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
-                            !MainForm->animation->menu->is_loading_world)
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                            MainForm->animation->menu->is_form_open = false;
-                            MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
-                            MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotFirst));
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0 &&
-                            !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetDrawGroup(PlayerId_SlotSecond) &&
-                            !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
-                            !MainForm->animation->menu->is_loading_world)
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                            MainForm->animation->menu->is_form_open = false;
-                            MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
-                            MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotSecond));
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 &&
-                            !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetDrawGroup(PlayerId_SlotThird) &&
-                            !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
-                            !MainForm->animation->menu->is_loading_world)
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                            MainForm->animation->menu->is_form_open = false;
-                            MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
-                            MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotThird));
-                        }
-                    }
-                    // The password grid.
-                    // Enter takes the letter under the cursor and Backspace removes the last one.
-                    // The arrows move the cursor.
-                    // Typing a letter or digit brings up the message box that clicking the grid shows.
-                    if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && !MainForm->animation->menu->is_message_open)
-                    {
-                        bool key_flag = true;
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 12;
-                                MainForm->animation->menu->AddSelectedLetter();
-                            }
-                            else
-                                key_delay = 12;
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 12;
-                                MainForm->sfx->PlaySfx(SfxSound_Send);
-                                MainForm->animation->menu->DeleteLastLetter();
-                            }
-                            else
-                                key_delay = 12;
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 8;
-                                if (MainForm->animation->menu->grid_column > 0)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    MainForm->animation->menu->grid_column--;
-                                    MainForm->animation->menu->cursor_blink = 5;
-                                }
-                            }
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 8;
-                                if (MainForm->animation->menu->grid_column < 5)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    MainForm->animation->menu->grid_column++;
-                                    MainForm->animation->menu->cursor_blink = 5;
-                                }
-                            }
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 8;
-                                if (MainForm->animation->menu->grid_row > 0)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    MainForm->animation->menu->grid_row--;
-                                    MainForm->animation->menu->cursor_blink = 5;
-                                }
-                            }
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0)
-                        {
-                            key_flag = false;
-                            if (key_delay <= 0)
-                            {
-                                key_delay = 8;
-                                if (MainForm->animation->menu->grid_row < 5)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
-                                    MainForm->animation->menu->grid_row++;
-                                    MainForm->animation->menu->cursor_blink = 5;
-                                }
-                            }
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
-                        {
-                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                MainForm->strings->GetText(GameText_Information),
-                                MainForm->strings->GetText(GameText_UseYourArrowkeysAnd));
-                            MainForm->animation->menu->message_shows_image = true;
-                            MainForm->edits->caret_enabled = false;
-                        }
-                        if (key_flag)
-                            key_delay = 0;
-                    }
+                    if (MainForm->animation->GetSubState() == MenuScreen_Main)
+                        MainForm->login_screen_delay = 1;
                 }
-                if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
-                {
-                    if ((MainForm->DIKeyboardState1->Keys[DIK_SCROLL] & 0x80) != 0)  // Scroll Lock
-                        MainForm->gfx->interface_graphics->SaveScreenshot();
-                    if (!MainForm->animation->game->message_visible && !MainForm->animation->game->large_box_visible &&
-                        !MainForm->animation->game->input_box_visible && !MainForm->animation->game->form_visible &&
-                        !MainForm->animation->paperdoll->is_visible && !MainForm->animation->book->is_visible &&
-                        !MainForm->animation->trade->is_visible && !MainForm->animation->locker->is_visible &&
-                        !MainForm->animation->learn->is_visible && !MainForm->animation->shop->is_visible &&
-                        !MainForm->animation->stat->is_visible && !MainForm->animation->guild->is_visible &&
-                        !MainForm->animation->memo->is_visible && !MainForm->animation->dialog->is_visible &&
-                        !MainForm->animation->report->is_visible && !MainForm->animation->law->is_visible &&
-                        !MainForm->animation->inn->is_visible && !MainForm->animation->bank->is_visible &&
-                        !MainForm->animation->jukebox->is_visible && !MainForm->animation->musician->is_visible &&
-                        !MainForm->animation->barber->is_visible && !MainForm->animation->chest->is_visible &&
-                        !MainForm->animation->social->is_open && !MainForm->animation->message_board->is_visible &&
-                        !MainForm->animation->quests->is_visible && !MainForm->animation->game->amount_box_visible)
-                    {
-                        arrow_held = false;
-                        ctrl_attacked = false;
-                        // Ctrl attacks; Ctrl and V paste the clipboard into an empty chat line.
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_LCONTROL] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_RCONTROL] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
-                            {
-                                if (MainForm->animation->GetScreenMode() == ScreenMode_Game &&
-                                    MainForm->edits->IsFocused(EditId_Chat) &&
-                                    MainForm->edits->GetTextLength(EditId_Chat) < 1 &&
-                                    MainForm->animation->IsChatAllowed())
-                                {
-                                    MainForm->animation->RecordChatMessage();
-                                    String clipboard_text;
-                                    Clipboard()->Open();
-                                    try
-                                    {
-                                        AsHandle = (void *)Clipboard()->GetAsHandle(1);
-                                        clipboard_data = GlobalLock(AsHandle);
-                                        clipboard_text = (char *)clipboard_data;
-                                        GlobalUnlock(AsHandle);
-                                    }
-                                    catch (...)
-                                    {
-                                        Clipboard()->Close();
-                                    }
-                                    Clipboard()->Close();
-                                    if (clipboard_text.Length() > 128)
-                                        clipboard_text = clipboard_text.SubString(1, 128);
-                                    if (clipboard_text.Length() > 0)
-                                    {
-                                        MainForm->edits->TypeText(clipboard_text);
-                                        return;
-                                    }
-                                }
-                            }
-                            else if (MainForm->net_client->CanAct())
-                            {
-                                MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Attack(false);
-                                ctrl_attacked = true;
-                            }
-                        }
-                        if (((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0) && !ctrl_attacked)
-                        {
-                            arrow_held = true;
-                            bool key_flag = false;
-                            char up_held = false;
-                            char right_held = false;
-                            char down_held = false;
-                            arrows_held = 0;
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
-                            {
-                                key_flag = true;
-                                arrows_held++;
-                            }
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0)
-                            {
-                                up_held = true;
-                                arrows_held++;
-                            }
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0)
-                            {
-                                right_held = true;
-                                arrows_held++;
-                            }
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0)
-                            {
-                                down_held = true;
-                                arrows_held++;
-                            }
-                            // With two arrows down, the walk follows the one pressed second.
-                            // Three or more change nothing.
-                            if (arrows_held < 3)
-                            {
-                                char kept_first_direction = false;
-                                if (arrows_held == 2)
-                                {
-                                    two_arrows_held = true;
-                                    if (first_direction == "L" && key_flag)
-                                    {
-                                        kept_first_direction = true;
-                                        first_direction = "L";
-                                        if (up_held)
-                                            walk_direction = "U";
-                                        if (right_held)
-                                            walk_direction = "R";
-                                        if (down_held)
-                                            walk_direction = "D";
-                                    }
-                                    if (first_direction == "U" && up_held)
-                                    {
-                                        kept_first_direction = true;
-                                        first_direction = "U";
-                                        if (key_flag)
-                                            walk_direction = "L";
-                                        if (right_held)
-                                            walk_direction = "R";
-                                        if (down_held)
-                                            walk_direction = "D";
-                                    }
-                                    if (first_direction == "R" && right_held)
-                                    {
-                                        kept_first_direction = true;
-                                        first_direction = "R";
-                                        if (key_flag)
-                                            walk_direction = "L";
-                                        if (up_held)
-                                            walk_direction = "U";
-                                        if (down_held)
-                                            walk_direction = "D";
-                                    }
-                                    if (first_direction == "D" && down_held)
-                                    {
-                                        kept_first_direction = true;
-                                        first_direction = "D";
-                                        if (key_flag)
-                                            walk_direction = "L";
-                                        if (up_held)
-                                            walk_direction = "U";
-                                        if (right_held)
-                                            walk_direction = "R";
-                                    }
-                                }
-                                if (arrows_held == 1 || !kept_first_direction)
-                                {
-                                    if (key_flag)
-                                        walk_direction = "L";
-                                    if (up_held)
-                                        walk_direction = "U";
-                                    if (right_held)
-                                        walk_direction = "R";
-                                    if (down_held)
-                                        walk_direction = "D";
-                                    first_direction = walk_direction;
-                                }
-                            }
-                        }
-                        else
-                            two_arrows_held = false;
-                        if (IsArrowKeyDown())
-                        {
-                            if (GetWalkDirection() == "L" && MainForm->net_client->CanAct())
-                            {
-                                MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Walk(FacingDirection_Left);
-                            }
-                            if (GetWalkDirection() == "U" && MainForm->net_client->CanAct())
-                            {
-                                MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Walk(FacingDirection_Up);
-                            }
-                            if (GetWalkDirection() == "R" && MainForm->net_client->CanAct())
-                            {
-                                MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Walk(FacingDirection_Right);
-                            }
-                            if (GetWalkDirection() == "D" && MainForm->net_client->CanAct())
-                            {
-                                MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Walk(FacingDirection_Down);
-                            }
-                        }
-                        // F1 to F8 use the spell in that column, from the second row with Shift.
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F1] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(1, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(1, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F2] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(2, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(2, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F3] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(3, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(3, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F4] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(4, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(4, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F5] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(5, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(5, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F6] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(6, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(6, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F7] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(7, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(7, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F8] & 0x80) != 0)
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                                MainForm->animation->interface_controller->spells->UseSlot(8, 2);
-                            else
-                                MainForm->animation->interface_controller->spells->UseSlot(8, 1);
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F11] & 0x80) != 0)  // F11
-                        {
-                            MainForm->map->path_finder->CancelPath();
-                            MainForm->animation->game->ToggleSit(MainForm->map->GetCursorX(),
-                                MainForm->map->GetCursorY());
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_F12] & 0x80) != 0 &&  // F12
-                            !MainForm->animation->IsRefreshDelayed())
-                        {
-                            MainForm->map->path_finder->CancelPath();
-                            MainForm->net_client->sender->RequestRefresh();
-                            MainForm->animation->StartRefreshDelay(14);
-                        }
-                        // The number pad keys play the emotes.
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Happy);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Depressed);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Sad);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD4] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Angry);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD5] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Confused);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD6] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Surprised);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD7] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Hearts);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD8] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Moon);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD9] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Suicidal);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_DECIMAL] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Embarrassed);
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(Emote_Playful);
-                    }
-                }
-                if (MainForm->edits->GetCount() >= 1)
-                {
-                    if (MainForm->edits->caret_enabled)
-                    {
-                        String typed_text = "";
-                        if (tab_delay >= 1)
-                            tab_delay--;
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_TAB] & 0x80) != 0 && !tab_delay &&
-                            MainForm->edits->GetCount() >= 2)
-                        {
-                            MainForm->edits->FocusNext();
-                            MainForm->sfx->PlaySfx(SfxSound_Select);
-                            tab_delay = 32;
-                        }
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
-                        {
-                            MainForm->animation->game->ResetIdleTimer();
-                            if (MainForm->animation->CanSendChat())
-                            {
-                                MainForm->animation->StartChatDelay();
-                                MainForm->edits->TypeLineBreak();
-                                if (MainForm->edits->IsFocused(EditId_Chat))
-                                {
-                                    if (MainForm->edits->GetText(EditId_Chat).Length() > 0)
-                                    {
-                                        if (MainForm->animation->IsChatAllowed())
-                                        {
-                                            MainForm->animation->RecordChatMessage();
-                                            // A chat line starts with the mark of its channel.
-                                            // With no mark it is local chat or one of the commands.
-                                            // Marks: + admin, ~ global, @ announcement, & guild, ' party, ! private.
-                                            if (MainForm->edits->GetText(EditId_Chat)[1] != 33 &&
-                                                MainForm->edits->GetText(EditId_Chat)[1] != 126 &&
-                                                MainForm->edits->GetText(EditId_Chat)[1] != 64 &&
-                                                MainForm->edits->GetText(EditId_Chat)[1] != 43 &&
-                                                MainForm->edits->GetText(EditId_Chat)[1] != 38 &&
-                                                String(MainForm->edits->GetText(EditId_Chat)[1]) != "'")
-                                            {
-                                                bool key_flag = false;
-                                                if (MainForm->edits->GetText(EditId_Chat).Length() > 1)
-                                                {
-                                                    if (MainForm->edits->GetText(EditId_Chat)[1] == 36 &&
-                                                        MainForm->edits->GetText(EditId_Chat)[2] != 118)
-                                                    {
-                                                        if (MainForm->animation->IsCommandDelayed())
-                                                            MainForm->edits->SetText(EditId_Chat, "");
-                                                        else
-                                                            MainForm->animation->RestartCommandDelay();
-                                                    }
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("h8l,X|"))
-                                                {
-                                                    key_flag = true;
-                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
-                                                    TDateTime now = Now();
-                                                    TTimeStamp login_stamp = DateTimeToTimeStamp(MainForm->animation->interface_controller->status->usage_start_time);
-                                                    TTimeStamp now_stamp = DateTimeToTimeStamp(now);
-                                                    int days = now_stamp.Date - login_stamp.Date;
-                                                    int milliseconds = now_stamp.Time - login_stamp.Time;
-                                                    played_minutes = milliseconds / 60000 + 1440 * days;
-                                                    played_minutes += MainForm->animation->interface_controller->status->usage_minutes;
-                                                    int hours = played_minutes / 60;
-                                                    int minutes = played_minutes % MINUTES_PER_HOUR;
-                                                    String played_text = IntToStr(hours) +
-                                                        MainForm->net_client->DeobfuscateString(" qZ-e") +
-                                                        IntToStr(minutes) +
-                                                        MainForm->net_client->DeobfuscateString("C1d2");
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
-                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
-                                                        MainForm->net_client->DeobfuscateString(
-                                                        " e :f>Z* BUD") + played_text, true);
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat).Length() > 6)
-                                                {
-                                                    if (MainForm->edits->GetText(EditId_Chat).SubString(1, 5) ==
-                                                        MainForm->net_client->DeobfuscateString("i1d9N"))
-                                                    {
-                                                        key_flag = true;
-                                                        String find_name = MainForm->edits->GetText(EditId_Chat);
-                                                        find_name.Delete(1, 6);
-                                                        if (find_name.Length() > 3)
-                                                        {
-                                                            if (find_name.Length() < 17)
-                                                                MainForm->net_client->sender->SendFindPlayer(find_name);
-                                                        }
-                                                    }
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("j0a|") ||
-                                                    MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("_0d+l<^3N"))
-                                                {
-                                                    key_flag = true;
-                                                    String location_text = MainForm->strings->GetText(GameText_YourCurrentLocationIs) +
-                                                        IntToStr(MainForm->map->GetMapId()) + "  x:";
-                                                    location_text = location_text +
-                                                        IntToStr(MainForm->map->GetCenterX()) + "  y:";
-                                                    location_text = location_text +
-                                                        IntToStr(MainForm->map->GetCenterY());
-                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
-                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
-                                                        location_text, true);
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("f1d/N"))
-                                                {
-                                                    key_flag = true;
-                                                    MainForm->sfx->PlaySfx(SfxSound_Select);
-                                                    MainForm->animation->interface_controller->status->ping_sent_time = Now();
-                                                    MainForm->net_client->sender->SendPingRequest();
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("a3l(^1N"))
-                                                {
-                                                    key_flag = true;
-                                                    MainForm->sfx->PlaySfx(SfxSound_Select);
-                                                    MainForm->animation->game->ToggleGhostWalk();
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    MainForm->net_client->DeobfuscateString("h1d8_:N"))
-                                                {
-                                                    key_flag = true;
-                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
-                                                    String draw_mode_name = "VDACL";
-                                                    draw_mode_name.Delete(2, 2);
-                                                    if (MainForm->config->GetUseBitBltDraw())
-                                                        draw_mode_name = MainForm->net_client->DeobfuscateString(
-                                                            "([*");
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
-                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
-                                                        MainForm->net_client->DeobfuscateString(
-                                                        " e 1^6Z-h) +_:d3j p'r") +
-                                                        MainForm->VersionString(MainForm->version_major,
-                                                        MainForm->version_minor, MainForm->version_build), true);
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
-                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
-                                                        MainForm->net_client->DeobfuscateString(
-                                                        " e :_6f1h [:i1h- BUD") + draw_mode_name, true);
-                                                }
-                                                if (!key_flag)
-                                                {
-                                                    String public_text = MainForm->edits->GetText(EditId_Chat);
-                                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                        public_text = MainForm->net_client->MakeDrunkText(
-                                                            public_text);
-                                                    String public_censored = MainForm->net_client->CensorText(
-                                                        public_text);
-                                                    if (public_censored.Length() >= 1)
-                                                    {
-                                                        MainForm->net_client->sender->SendPublicChat(public_text);
-                                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
-                                                            CHAT_COLOR_DEFAULT,
-                                                            MainForm->net_client->Capitalize(
-                                                            MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                            public_censored, true);
-                                                        MainForm->gfx->sprites->ShowSpeechBalloon(public_censored,
-                                                            MainForm->net_client->GetPlayerId(), 0);
-                                                    }
-                                                    else
-                                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                }
-                                            }
-                                            if (MainForm->edits->GetText(EditId_Chat).Length() > 1)
-                                            {
-                                                if (MainForm->edits->GetText(EditId_Chat)[1] == 43)
-                                                {
-                                                    if (MainForm->net_client->GetAdminLevel() > 0)
-                                                    {
-                                                        String admin_text = MainForm->edits->GetText(EditId_Chat);
-                                                        String admin_censored = MainForm->net_client->CensorText(
-                                                            admin_text.SubString(2, admin_text.Length() - 1));
-                                                        if (admin_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendAdminChat(admin_text.SubString(2,
-                                                                admin_text.Length() - 1));
-                                                            MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
-                                                            MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Admin,
-                                                                CHAT_COLOR_ADMIN,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                admin_censored, true);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                    else
-                                                    {
-                                                        String non_admin_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            non_admin_text = MainForm->net_client->MakeDrunkText(
-                                                                non_admin_text);
-                                                        String non_admin_censored = MainForm->net_client->CensorText(
-                                                            non_admin_text);
-                                                        if (non_admin_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendPublicChat(non_admin_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                non_admin_censored, true);
-                                                            MainForm->gfx->sprites->ShowSpeechBalloon(non_admin_censored,
-                                                                MainForm->net_client->GetPlayerId(), 0);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat)[1] == 126)
-                                                {
-                                                    if (MainForm->animation->IsGlobalMessageAllowed())
-                                                    {
-                                                        if (MainForm->net_client->GetAdminLevel() <= 0)
-                                                            MainForm->animation->RecordGlobalMessage();
-                                                        String global_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            global_text = MainForm->net_client->MakeDrunkText(
-                                                                global_text);
-                                                        String global_censored = MainForm->net_client->CensorText(
-                                                            global_text.SubString(2, global_text.Length() - 1));
-                                                        if (global_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendGlobalChat(global_text.SubString(2,
-                                                                global_text.Length() - 1));
-                                                            MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_None,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                global_censored, true, false);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat)[1] == 64)
-                                                {
-                                                    if (MainForm->net_client->GetAdminLevel() > 1)
-                                                    {
-                                                        String announce_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            announce_text = MainForm->net_client->MakeDrunkText(
-                                                                announce_text);
-                                                        String announce_censored = MainForm->net_client->CensorText(
-                                                            announce_text.SubString(2, announce_text.Length() - 1));
-                                                        if (announce_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->sfx->PlaySfx(SfxSound_AnnounceReceived);
-                                                            MainForm->net_client->sender->SendAnnouncement(announce_text.SubString(2,
-                                                                announce_text.Length() - 1));
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Announce,
-                                                                CHAT_COLOR_NOTICE,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                announce_censored, true);
-                                                            MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Announce,
-                                                                CHAT_COLOR_NOTICE,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                announce_censored, true);
-                                                            MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
-                                                                CHAT_COLOR_NOTICE,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                announce_censored, true, false);
-                                                            MainForm->gfx->sprites->ShowSpeechBalloon(announce_censored,
-                                                                MainForm->net_client->GetPlayerId(), 0);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                    else
-                                                    {
-                                                        String non_announcer_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            non_announcer_text = MainForm->net_client->MakeDrunkText(
-                                                                non_announcer_text);
-                                                        String non_announcer_censored = MainForm->net_client->CensorText(
-                                                            non_announcer_text);
-                                                        if (non_announcer_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendPublicChat(non_announcer_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                non_announcer_censored, true);
-                                                            MainForm->gfx->sprites->ShowSpeechBalloon(non_announcer_censored,
-                                                                MainForm->net_client->GetPlayerId(), 0);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                }
-                                                if (MainForm->edits->GetText(EditId_Chat)[1] == 38)
-                                                {
-                                                    if (MainForm->animation->interface_controller->status->IsInGuild())
-                                                    {
-                                                        String guild_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            guild_text = MainForm->net_client->MakeDrunkText(
-                                                                guild_text);
-                                                        String guild_censored = MainForm->net_client->CensorText(
-                                                            guild_text.SubString(2, guild_text.Length() - 1));
-                                                        if (guild_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
-                                                            MainForm->net_client->sender->SendGuildChat(guild_text.SubString(2,
-                                                                guild_text.Length() - 1));
-                                                            MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Guild,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                guild_censored, true);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                    else
-                                                    {
-                                                        String guildless_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            guildless_text = MainForm->net_client->MakeDrunkText(
-                                                                guildless_text);
-                                                        String guildless_censored = MainForm->net_client->CensorText(
-                                                            guildless_text);
-                                                        if (guildless_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendPublicChat(guildless_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                guildless_censored, true);
-                                                            MainForm->gfx->sprites->ShowSpeechBalloon(guildless_censored,
-                                                                MainForm->net_client->GetPlayerId(), 0);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                }
-                                                if (String(MainForm->edits->GetText(EditId_Chat)[1]) == "'")
-                                                {
-                                                    if (MainForm->animation->interface_controller->group->members.size() >
-                                                        0)
-                                                    {
-                                                        String party_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            party_text = MainForm->net_client->MakeDrunkText(
-                                                                party_text);
-                                                        String party_censored = MainForm->net_client->CensorText(
-                                                            party_text.SubString(2, party_text.Length() - 1));
-                                                        if (party_censored.Length() >= 1)
-                                                        {
-                                                            MainForm->net_client->sender->SendPartyChat(party_text.SubString(2,
-                                                                party_text.Length() - 1));
-                                                            MainForm->gfx->sprites->ShowSpeechBalloon(party_censored,
-                                                                MainForm->net_client->GetPlayerId(), 1);
-                                                            MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party,
-                                                                CHAT_COLOR_DEFAULT,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                party_censored, true);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Party,
-                                                                CHAT_COLOR_PRIVATE,
-                                                                MainForm->net_client->Capitalize(
-                                                                MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                party_censored, true);
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                }
-                                                // In a private tab the text goes to that tab's partner.
-                                                // Elsewhere the name comes first, then a space.
-                                                if (MainForm->edits->GetText(EditId_Chat)[1] == 33)
-                                                {
-                                                    if (MainForm->animation->interface_controller->chat->active_tab <=
-                                                        2)
-                                                    {
-                                                        String tab_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            tab_text = MainForm->net_client->MakeDrunkText(
-                                                                tab_text);
-                                                        String tab_partner = "";
-                                                        String tab_message = tab_text.SubString(2,
-                                                            tab_text.Length() - 1);
-                                                        String tab_censored = MainForm->net_client->CensorText(
-                                                            tab_message);
-                                                        if (tab_censored.Length() >= 1)
-                                                        {
-                                                            if (MainForm->animation->interface_controller->chat->active_tab ==
-                                                                1)
-                                                                tab_partner = MainForm->animation->interface_controller->chat->first_private_name;
-                                                            else
-                                                                tab_partner = MainForm->animation->interface_controller->chat->second_private_name;
-                                                            if (tab_message.Length() >= 2)
-                                                            {
-                                                                if (tab_partner != "")
-                                                                {
-                                                                    MainForm->sfx->PlaySfx(SfxSound_Send);
-                                                                    MainForm->net_client->sender->SendPrivateMessage(LowerCase(tab_partner),
-                                                                        tab_message);
-                                                                    MainForm->animation->interface_controller->chat->OpenPrivateTab(tab_partner);
-                                                                    int tab_index = MainForm->animation->interface_controller->chat->FindPrivateTab(tab_partner);
-                                                                    if (tab_index != -1)
-                                                                        MainForm->animation->interface_controller->chat->AddPrivateMessage(tab_index,
-                                                                            CHAT_COLOR_PRIVATE,
-                                                                            MainForm->net_client->Capitalize(
-                                                                            MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                            tab_censored, true);
-                                                                }
-                                                            }
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                    }
-                                                    else
-                                                    {
-                                                        String private_text = MainForm->edits->GetText(EditId_Chat);
-                                                        if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            private_text = MainForm->net_client->MakeDrunkText(
-                                                                private_text);
-                                                        int space_pos = private_text.Pos(" ");
-                                                        if (space_pos >= 3)
-                                                        {
-                                                            String recipient = private_text.SubString(2, space_pos - 2);
-                                                            String private_message = private_text.SubString(space_pos +
-                                                                1, private_text.Length() - space_pos);
-                                                            String private_censored = MainForm->net_client->CensorText(
-                                                                private_message);
-                                                            if (private_censored.Length() >= 1)
-                                                            {
-                                                                if (recipient.Length() >= 4)
-                                                                {
-                                                                    if (recipient.Length() <= 13)
-                                                                    {
-                                                                        if (private_message.Length() >= 1)
-                                                                        {
-                                                                            if (LowerCase(recipient) !=
-                                                                                LowerCase(MainForm->players->GetName(MainForm->net_client->GetPlayerId())))
-                                                                            {
-                                                                                MainForm->sfx->PlaySfx(SfxSound_Send);
-                                                                                MainForm->net_client->sender->SendPrivateMessage(LowerCase(recipient),
-                                                                                    private_message);
-                                                                                MainForm->animation->interface_controller->chat->OpenPrivateTab(recipient);
-                                                                                int private_tab = MainForm->animation->interface_controller->chat->FindPrivateTab(recipient);
-                                                                                if (private_tab != -1)
-                                                                                    MainForm->animation->interface_controller->chat->AddPrivateMessage(private_tab,
-                                                                                        CHAT_COLOR_PRIVATE,
-                                                                                        MainForm->net_client->Capitalize(
-                                                                                        MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
-                                                                                        private_censored, true);
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            }
-                                                            else
-                                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                    MainForm->strings->GetText(GameText_YourMindPreventsYou));
-                                                        }
-                                                        else
-                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                                MainForm->strings->GetText(GameText_InvalidInputTryUse));
-                                                    }
-                                                }
-                                            }
-                                            MainForm->edits->ClearFocusedText();
-                                        }
-                                    }
-                                }
-                            }
-                            if (MainForm->edits->IsFocused(EditId_Password) &&
-                                MainForm->animation->GetScreenMode() == ScreenMode_Menu &&
-                                MainForm->animation->GetSubState() == MenuScreen_Login && MainForm->animation->menu->login_enabled)
-                            {
-                                if (MainForm->edits->GetText(EditId_AccountName) != "" &&
-                                    MainForm->edits->GetText(EditId_Password) != "")
-                                {
-                                    MainForm->animation->menu->login_enabled = false;
-                                    MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
-                                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                                    MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
-                                        MainForm->edits->GetText(EditId_Password));
-                                }
-                            }
-                            // Enter on the account name opens the password grid with the cursor on a random cell.
-                            if (MainForm->edits->IsFocused(EditId_AccountName))
-                            {
-                                if (MainForm->animation->GetScreenMode() == ScreenMode_Menu &&
-                                    MainForm->animation->GetSubState() == MenuScreen_GridAccountName)
-                                {
-                                    if (MainForm->edits->GetText(EditId_AccountName) != "")
-                                    {
-                                        MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
-                                        MainForm->animation->menu->account_name = MainForm->edits->GetText(EditId_AccountName);
-                                        MainForm->animation->menu->account_name = MainForm->net_client->Capitalize(
-                                            MainForm->animation->menu->account_name);
-                                        MainForm->animation->menu->grid_column = random(4) + 1;
-                                        MainForm->animation->menu->grid_row = random(4) + 1;
-                                        MainForm->animation->menu->password = "";
-                                        MainForm->edits->Clear();
-                                        MainForm->net_client->login_failure_count = 0;
-                                        MainForm->gfx->LoadPasswordScreen();
-                                        MainForm->keyboard->key_delay = 12;
-                                        MainForm->animation->SetSubState(MenuScreen_PasswordGrid);
-                                        if (MainForm->animation->menu->retry_ticks > 0)
-                                        {
-                                            if (LowerCase(MainForm->animation->menu->retry_account_name) ==
-                                                LowerCase(MainForm->animation->menu->account_name))
-                                            {
-                                                MainForm->animation->menu->retry_ticks = 0;
-                                                MainForm->animation->menu->password = MainForm->animation->menu->retry_password;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        // The typed character, from the key state and the keyboard layout setting.
-                        // Layouts 1 to 3 move symbols to other keys.
-                        // Layout 3 also swaps A with Q and Z with W, as AZERTY does.
-                        char shift_held = false;
-                        if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                            (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                            shift_held = true;
-                        if (MainForm->animation->CanSendChat())
-                        {
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_SPACE] & 0x80) != 0)
-                                typed_text = typed_text + " ";
-                            if (shift_held)
-                            {
-                                if (!MainForm->config->GetKeyboardLayout())
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "!";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "@";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "#";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "$";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "%";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "^";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "&";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "*";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + "(";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + ")";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "_";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "+";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "[";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "]";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + ":";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "|";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + "<";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ">";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "?";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "!";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "#";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "$";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "%";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "&";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "_";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "(";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + ")";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "?";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "^";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "|";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "+";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + ">";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ";";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ":";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "=";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "!";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "@";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "#";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "$";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "%";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "&";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "/";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "(";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + ")";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + "=";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "?";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "\xc5";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "^";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "\xd6";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "\xc4";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "*";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ";";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ":";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "_";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "1";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "2";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "3";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "4";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "5";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "6";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "7";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "8";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + "9";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + "0";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + ")";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "-";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "^";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "*";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "M";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "%";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "\xa3";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ".";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ":";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "+";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
-                                        typed_text = typed_text + "Q";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
-                                        typed_text = typed_text + "B";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
-                                        typed_text = typed_text + "C";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
-                                        typed_text = typed_text + "D";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
-                                        typed_text = typed_text + "E";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
-                                        typed_text = typed_text + "F";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
-                                        typed_text = typed_text + "G";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
-                                        typed_text = typed_text + "H";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
-                                        typed_text = typed_text + "I";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0)
-                                        typed_text = typed_text + "J";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0)
-                                        typed_text = typed_text + "K";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0)
-                                        typed_text = typed_text + "L";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0)
-                                        typed_text = typed_text + "?";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
-                                        typed_text = typed_text + "N";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
-                                        typed_text = typed_text + "O";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
-                                        typed_text = typed_text + "P";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
-                                        typed_text = typed_text + "A";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0)
-                                        typed_text = typed_text + "R";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
-                                        typed_text = typed_text + "S";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0)
-                                        typed_text = typed_text + "T";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0)
-                                        typed_text = typed_text + "U";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
-                                        typed_text = typed_text + "V";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
-                                        typed_text = typed_text + "Z";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0)
-                                        typed_text = typed_text + "X";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0)
-                                        typed_text = typed_text + "Y";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
-                                        typed_text = typed_text + "W";
-                                }
-                                else
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
-                                        typed_text = typed_text + "A";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
-                                        typed_text = typed_text + "B";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
-                                        typed_text = typed_text + "C";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
-                                        typed_text = typed_text + "D";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
-                                        typed_text = typed_text + "E";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
-                                        typed_text = typed_text + "F";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
-                                        typed_text = typed_text + "G";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
-                                        typed_text = typed_text + "H";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
-                                        typed_text = typed_text + "I";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0)
-                                        typed_text = typed_text + "J";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0)
-                                        typed_text = typed_text + "K";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0)
-                                        typed_text = typed_text + "L";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0)
-                                        typed_text = typed_text + "M";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
-                                        typed_text = typed_text + "N";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
-                                        typed_text = typed_text + "O";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
-                                        typed_text = typed_text + "P";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
-                                        typed_text = typed_text + "Q";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0)
-                                        typed_text = typed_text + "R";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
-                                        typed_text = typed_text + "S";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0)
-                                        typed_text = typed_text + "T";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0)
-                                        typed_text = typed_text + "U";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
-                                        typed_text = typed_text + "V";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
-                                        typed_text = typed_text + "W";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0)
-                                        typed_text = typed_text + "X";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0)
-                                        typed_text = typed_text + "Y";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
-                                        typed_text = typed_text + "Z";
-                                }
-                            }
-                            else
-                            {
-                                if (!MainForm->config->GetKeyboardLayout())
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "-";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "=";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "[";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "]";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + ";";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "\\";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ",";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ".";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "/";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "@";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "/";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "*";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "+";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "<";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ",";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ".";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "-";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "~";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + "+";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe5";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "\\";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "\xf6";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe4";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ",";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + ".";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "-";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
-                                        typed_text = typed_text + ")";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
-                                        typed_text = typed_text + "-";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "[";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
-                                        typed_text = typed_text + "]";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
-                                        typed_text = typed_text + "m";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "?";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
-                                        typed_text = typed_text + ";";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
-                                        typed_text = typed_text + "/";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
-                                        typed_text = typed_text + "=";
-                                }
-                                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "&";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe9";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "'";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "(";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "\xa7";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe8";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "!";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe7";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + "\xe0";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
-                                        typed_text = typed_text + "q";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
-                                        typed_text = typed_text + "b";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
-                                        typed_text = typed_text + "c";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
-                                        typed_text = typed_text + "d";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
-                                        typed_text = typed_text + "e";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
-                                        typed_text = typed_text + "f";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
-                                        typed_text = typed_text + "g";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
-                                        typed_text = typed_text + "h";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
-                                        typed_text = typed_text + "i";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0)
-                                        typed_text = typed_text + "j";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0)
-                                        typed_text = typed_text + "k";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0)
-                                        typed_text = typed_text + "l";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0)
-                                        typed_text = typed_text + ",";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
-                                        typed_text = typed_text + "n";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
-                                        typed_text = typed_text + "o";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
-                                        typed_text = typed_text + "p";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
-                                        typed_text = typed_text + "a";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0)
-                                        typed_text = typed_text + "r";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
-                                        typed_text = typed_text + "s";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0)
-                                        typed_text = typed_text + "t";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0)
-                                        typed_text = typed_text + "u";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
-                                        typed_text = typed_text + "v";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
-                                        typed_text = typed_text + "z";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0)
-                                        typed_text = typed_text + "x";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0)
-                                        typed_text = typed_text + "y";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
-                                        typed_text = typed_text + "w";
-                                }
-                                else
-                                {
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
-                                        typed_text = typed_text + "1";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
-                                        typed_text = typed_text + "2";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
-                                        typed_text = typed_text + "3";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
-                                        typed_text = typed_text + "4";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
-                                        typed_text = typed_text + "5";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
-                                        typed_text = typed_text + "6";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
-                                        typed_text = typed_text + "7";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
-                                        typed_text = typed_text + "8";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
-                                        typed_text = typed_text + "9";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
-                                        typed_text = typed_text + "0";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
-                                        typed_text = typed_text + "a";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
-                                        typed_text = typed_text + "b";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
-                                        typed_text = typed_text + "c";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
-                                        typed_text = typed_text + "d";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
-                                        typed_text = typed_text + "e";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
-                                        typed_text = typed_text + "f";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
-                                        typed_text = typed_text + "g";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
-                                        typed_text = typed_text + "h";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
-                                        typed_text = typed_text + "i";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0)
-                                        typed_text = typed_text + "j";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0)
-                                        typed_text = typed_text + "k";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0)
-                                        typed_text = typed_text + "l";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0)
-                                        typed_text = typed_text + "m";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
-                                        typed_text = typed_text + "n";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
-                                        typed_text = typed_text + "o";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
-                                        typed_text = typed_text + "p";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
-                                        typed_text = typed_text + "q";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0)
-                                        typed_text = typed_text + "r";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
-                                        typed_text = typed_text + "s";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0)
-                                        typed_text = typed_text + "t";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0)
-                                        typed_text = typed_text + "u";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
-                                        typed_text = typed_text + "v";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
-                                        typed_text = typed_text + "w";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0)
-                                        typed_text = typed_text + "x";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0)
-                                        typed_text = typed_text + "y";
-                                    if ((MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
-                                        typed_text = typed_text + "z";
-                                }
-                            }
-                            if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
-                            {
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_DECIMAL] & 0x80) != 0)
-                                    typed_text = typed_text + ".";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD9] & 0x80) != 0)
-                                    typed_text = typed_text + "9";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD8] & 0x80) != 0)
-                                    typed_text = typed_text + "8";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD7] & 0x80) != 0)
-                                    typed_text = typed_text + "7";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD6] & 0x80) != 0)
-                                    typed_text = typed_text + "6";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD5] & 0x80) != 0)
-                                    typed_text = typed_text + "5";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD4] & 0x80) != 0)
-                                    typed_text = typed_text + "4";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
-                                    typed_text = typed_text + "3";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
-                                    typed_text = typed_text + "2";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
-                                    typed_text = typed_text + "1";
-                                if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0)
-                                    typed_text = typed_text + "0";
-                            }
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
-                                MainForm->edits->TypeLineBreak();
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
-                                MainForm->edits->ClearFocusedText();
-                            if (backspace_delay >= 1)
-                                backspace_delay--;
-                            if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0)
-                            {
-                                if (!typed_text.Length() && backspace_delay <= 2)
-                                {
-                                    if (backspace_delay >= 1)
-                                        backspace_delay = 6;
-                                    else
-                                        backspace_delay = 24;
-                                    MainForm->edits->Backspace();
-                                }
-                            }
-                            if (repeat_delay >= 1)
-                                repeat_delay--;
-                            if (repeat_interval >= 1)
-                                repeat_interval--;
-                            // A held key types once, and again when the repeat delay runs out.
-                            // It then types once per repeat interval. Two keys at once type nothing.
-                            String char_to_type = "";
-                            if (typed_text.Length() == 1)
-                            {
-                                String key_upper = UpperCase(String(typed_text[1]));
-                                String key_char = String(typed_text[1]);
-                                if (repeat_delay >= 1 && key_upper == last_key)
-                                {
-                                    if (repeat_interval <= 0)
-                                    {
-                                        if (repeat_key == key_upper)
-                                        {
-                                            repeat_interval = 5;
-                                            last_key = key_upper;
-                                            char_to_type = key_char;
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    // Letting go of Shift while a key is held does not type its unshifted character.
-                                    if ((last_key == (char)63 && key_upper == (char)47) ||
-                                        (last_key == (char)59 && key_upper == (char)58) ||
-                                        (last_key == (char)58 && key_upper == (char)59) ||
-                                        (last_key == (char)33 && key_upper == (char)49) ||
-                                        (last_key == (char)64 && key_upper == (char)50) ||
-                                        (last_key == (char)35 && key_upper == (char)51) ||
-                                        (last_key == (char)36 && key_upper == (char)52) ||
-                                        (last_key == (char)37 && key_upper == (char)53) ||
-                                        (last_key == (char)94 && key_upper == (char)54) ||
-                                        (last_key == (char)38 && key_upper == (char)55) ||
-                                        (last_key == (char)42 && key_upper == (char)56) ||
-                                        (last_key == (char)40 && key_upper == (char)57) ||
-                                        (last_key == (char)41 && key_upper == (char)48) ||
-                                        (last_key == (char)60 && key_upper == (char)44) ||
-                                        (last_key == (char)62 && key_upper == (char)46) ||
-                                        (last_key == (char)43 && key_upper == (char)61))
-                                    {
-                                        repeat_interval = 5;
-                                        last_key = key_upper;
-                                        char_to_type = "";
-                                    }
-                                    else
-                                    {
-                                        if (last_key == key_upper)
-                                            repeat_key = key_upper;
-                                        else
-                                            repeat_key = "";
-                                        repeat_delay = 40;
-                                        last_key = key_upper;
-                                        char_to_type = key_char;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                repeat_delay = 0;
-                                last_key = "";
-                                repeat_key = "";
-                            }
-                            MainForm->edits->TypeText(char_to_type);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                repeat_delay = 0;
-                last_key = "";
-                repeat_key = "";
-                repeat_key = "";
-                last_key = "";
-                ctrl_attacked = false;
-                arrow_held = false;
-                two_arrows_held = false;
             }
         }
         else
+            menu_enter_wait = 0;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
         {
-            repeat_delay = 0;
-            last_key = "";
-            repeat_key = "";
-            repeat_key = "";
-            last_key = "";
-            ctrl_attacked = false;
-            arrow_held = false;
-            two_arrows_held = false;
+            if (MainForm->animation->menu->is_message_open)
+            {
+                MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                MainForm->animation->menu->is_message_open = false;
+                MainForm->edits->caret_enabled = true;
+            }
+            else
+                MainForm->edits->ClearFocusedText();
+        }
+        // On the character list, keys 1 to 3 log in with the character in that slot.
+        if (MainForm->animation->GetSubState() == MenuScreen_CharacterSelect)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
+            {
+                if (!MainForm->animation->menu->character_select_cooldown &&
+                    !MainForm->players->GetDrawGroup(PlayerId_SlotFirst) &&
+                    !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
+                    !MainForm->animation->menu->is_loading_world)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->animation->menu->is_form_open = false;
+                    MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
+                    MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotFirst));
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
+            {
+                if (!MainForm->animation->menu->character_select_cooldown &&
+                    !MainForm->players->GetDrawGroup(PlayerId_SlotSecond) &&
+                    !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
+                    !MainForm->animation->menu->is_loading_world)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->animation->menu->is_form_open = false;
+                    MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
+                    MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotSecond));
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
+            {
+                if (!MainForm->animation->menu->character_select_cooldown &&
+                    !MainForm->players->GetDrawGroup(PlayerId_SlotThird) &&
+                    !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
+                    !MainForm->animation->menu->is_loading_world)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->animation->menu->is_form_open = false;
+                    MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
+                    MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotThird));
+                }
+            }
+        }
+        if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid &&
+            !MainForm->animation->menu->is_message_open)
+        {
+            char unhandled = true;
+            if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 12;
+                    MainForm->animation->menu->AddSelectedLetter();
+                }
+                else
+                    grid_enter_wait = 12;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 12;
+                    MainForm->sfx->PlaySfx(SfxSound_Send);
+                    MainForm->animation->menu->DeleteLastLetter();
+                }
+                else
+                    grid_enter_wait = 12;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 8;
+                    if (MainForm->animation->menu->grid_column > 0)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                        MainForm->animation->menu->grid_column--;
+                        MainForm->animation->menu->cursor_blink = 5;
+                    }
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 8;
+                    if (MainForm->animation->menu->grid_column < 5)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                        MainForm->animation->menu->grid_column++;
+                        MainForm->animation->menu->cursor_blink = 5;
+                    }
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 8;
+                    if (MainForm->animation->menu->grid_row > 0)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                        MainForm->animation->menu->grid_row--;
+                        MainForm->animation->menu->cursor_blink = 5;
+                    }
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0)
+            {
+                unhandled = false;
+                if (grid_enter_wait <= 0)
+                {
+                    grid_enter_wait = 8;
+                    if (MainForm->animation->menu->grid_row < 5)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                        MainForm->animation->menu->grid_row++;
+                        MainForm->animation->menu->cursor_blink = 5;
+                    }
+                }
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
+            {
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetText(GameText_Information),
+                    MainForm->strings->GetText(GameText_UseYourArrowkeysAnd));
+                MainForm->animation->menu->message_shows_image = true;
+                MainForm->edits->caret_enabled = false;
+            }
+            if (unhandled)
+                grid_enter_wait = 0;
         }
     }
     catch (...)
     {
-        repeat_delay = 0;
-        last_key = "";
-        repeat_key = "";
-        repeat_key = "";
-        last_key = "";
-        ctrl_attacked = false;
-        arrow_held = false;
-        two_arrows_held = false;
+        ReleaseModifierKeys();
+        return false;
     }
+    return true;
+}
+
+// The game's shortcut keys: Escape clears the typed text or closes the top window, a key takes a screenshot, and Alt
+// with a letter opens a panel, the paperdoll, the hotkeys or a chat tab.
+bool KeyBoard::HandleGameKeys()
+{
+    unsigned int clip_handle;
+    int clip_text;
+    unsigned int clip_memory;
+    if (MainForm->animation->GetScreenMode() != ScreenMode_Game)
+        return true;
+    try
+    {
+        if ((MainForm->DIKeyboardState1->Keys[DIK_DELETE] & 0x80) != 0)
+            delete_pressed = true;
+        // Scroll Lock saves a screenshot.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_SCROLL] & 0x80) != 0)
+            MainForm->gfx->interface_graphics->SaveScreenshot();
+        if ((MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(34) && !MainForm->edits->ClearFocusedText())
+                MainForm->animation->CloseTopWindow();
+        }
+        else
+            ResetKeyRepeat(34);
+        if (IsAnyWindowOpen())
+            return true;
+        if (key_delay > 0)
+            key_delay--;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->interface_controller->game_bars->ShowAllTexts();
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->net_client->sender->RequestPaperdoll(MainForm->animation->game->player_menu_target_id);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->interface_controller->game_bars->RequestQuestProgress(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenInventoryPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenPlayerlistPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenSpellPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenSkillPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->mouse->OpenChatPanel(false);
+                    MainForm->animation->interface_controller->chat->ShowLocalTab();
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->mouse->OpenChatPanel(false);
+                    MainForm->animation->interface_controller->chat->ShowGlobalTab();
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->mouse->OpenChatPanel(false);
+                    MainForm->animation->interface_controller->chat->ShowGroupTab();
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->mouse->OpenChatPanel(false);
+                    MainForm->animation->interface_controller->chat->ShowSystemTab();
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->config->SetWasdKeys(!MainForm->config->GetWasdKeys());
+                    MainForm->animation->interface_controller->game_bars->ToggleHealthText(true, true);
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenStatusPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenGroupPanel(false);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->mouse->OpenSettingsPanel(false);
+                return false;
+            }
+        }
+        walk_key_held = false;
+        wasd_key_used = false;
+        attack_key_used = false;
+        // Ctrl attacks; Ctrl and V paste the clipboard into an empty chat line.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_LCONTROL] & 0x80) != 0 ||
+            (MainForm->DIKeyboardState1->Keys[DIK_RCONTROL] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
+            {
+                if (MainForm->animation->GetScreenMode() == ScreenMode_Game &&
+                    MainForm->edits->IsFocused(EditId_Chat) && MainForm->edits->GetTextLength(EditId_Chat) < 1 &&
+                    MainForm->animation->IsChatAllowed())
+                {
+                    MainForm->animation->RecordChatMessage();
+                    String pasted;
+                    Clipboard()->Open();
+                    try
+                    {
+                        clip_handle = Clipboard()->GetAsHandle(CF_TEXT);
+                        clip_memory = clip_handle;
+                        clip_text = (int)GlobalLock((void *)clip_memory);
+                        pasted = (char *)clip_text;
+                        GlobalUnlock((void *)clip_memory);
+                    }
+                    catch (...)
+                    {
+                        Clipboard()->Close();
+                    }
+                    Clipboard()->Close();
+                    if (pasted.Length() > 128)
+                        pasted = pasted.SubString(1, 128);
+                    if (pasted.Length() > 0)
+                    {
+                        MainForm->edits->TypeText(pasted);
+                        TakeKeyRepeat(43);
+                        return true;
+                    }
+                }
+            }
+            else if (MainForm->net_client->CanAct())
+            {
+                MainForm->map->path_finder->CancelPath();
+                MainForm->animation->game->AttackForward(false);
+                attack_key_used = true;
+            }
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_SPACE] & 0x80) != 0)
+        {
+            if (MainForm->edits->GetText(EditId_Chat).Length() <= 0)
+            {
+                attack_key_used = true;
+                if (MainForm->net_client->CanAct())
+                {
+                    MainForm->map->path_finder->CancelPath();
+                    MainForm->animation->game->AttackForward(false);
+                }
+            }
+        }
+        if (!attack_key_used)
+        {
+            for (int i = 0; i < 4; i++)
+                key_flags[i] = false;
+            key_flags[0] = (MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0;
+            key_flags[1] = (MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0;
+            key_flags[2] = (MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0;
+            key_flags[3] = (MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0;
+            if (MainForm->config->GetWasdKeys())
+            {
+                if (!MainForm->edits->GetText(EditId_Chat).Length() && !enter_wait)
+                {
+                    if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) == 0 &&
+                        (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) == 0)
+                    {
+                        if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
+                        {
+                            key_flags[2] = true;
+                            wasd_key_used = true;
+                        }
+                        if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
+                        {
+                            key_flags[1] = true;
+                            wasd_key_used = true;
+                        }
+                        if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
+                        {
+                            key_flags[3] = true;
+                            wasd_key_used = true;
+                        }
+                        if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
+                        {
+                            key_flags[0] = true;
+                            wasd_key_used = true;
+                        }
+                    }
+                }
+            }
+            walk_key_held = UpdateWalkDirection();
+        }
+        // F1 to F8 use the hotkey in that column: the first row, or the second with Shift or Alt.
+        // F1 to F8 use the spell in that column, from the second row with Shift.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F1] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(1, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(1, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F2] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(2, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(2, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F3] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(3, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(3, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F4] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(4, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(4, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F5] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(5, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(5, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F6] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(6, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(6, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F7] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(7, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(7, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F8] & 0x80) != 0)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                MainForm->animation->interface_controller->spells->UseSlot(8, 2);
+            else
+                MainForm->animation->interface_controller->spells->UseSlot(8, 1);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F11] & 0x80) != 0)
+        {
+            MainForm->map->path_finder->CancelPath();
+            MainForm->animation->game->ToggleSit(MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
+        }
+        // F12 asks for everything in view again, once per refresh delay.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F12] & 0x80) != 0 && !MainForm->animation->IsRefreshDelayed())
+        {
+            MainForm->map->path_finder->CancelPath();
+            MainForm->net_client->sender->RequestRefresh();
+            MainForm->animation->StartRefreshDelay(14);
+        }
+        // The number pad keys play the emotes.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Happy);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Depressed);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Sad);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD4] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Angry);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD5] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Confused);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD6] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Surprised);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD7] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Hearts);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD8] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Moon);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD9] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Suicidal);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_DECIMAL] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Embarrassed);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0)
+            MainForm->animation->game->PlayEmote(Emote_Playful);
+    }
+    catch (...)
+    {
+        ReleaseModifierKeys();
+        return false;
+    }
+    return true;
+}
+
+// The keys of the edit boxes: Tab moves to the next box, and Enter submits the focused one; a chat line is sent, or
+// run when it is one of the # commands, such as finding a player or looking up an item or npc.
+bool KeyBoard::HandleEditKeys()
+{
+    int days;
+    int minutes;
+    if (!MainForm->edits->GetCount())
+        return true;
+    if (!MainForm->edits->caret_enabled)
+        return true;
+    try
+    {
+        if (tab_wait > 0)
+            tab_wait--;
+        // Tab moves to the next box; with a single box it toggles the minimap, unless Alt is held.
+        if ((MainForm->DIKeyboardState1->Keys[DIK_TAB] & 0x80) != 0 && !tab_wait)
+        {
+            if (MainForm->edits->GetCount() >= 2)
+            {
+                MainForm->edits->FocusNext();
+                MainForm->sfx->PlaySfx(SfxSound_Select);
+                tab_wait = 30;
+            }
+            else
+            {
+                MainForm->mouse->ToggleMinimap(true);
+                tab_wait = 30;
+            }
+        }
+        if (enter_wait > 0)
+            enter_wait--;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
+        {
+            enter_wait = 30;
+            MainForm->animation->game->ResetIdleTimer();
+            if (MainForm->animation->CanSendChat())
+            {
+                MainForm->edits->TypeLineBreak();
+                if (!MainForm->edits->IsFocused(EditId_Chat))
+                    MainForm->animation->StartChatDelay();
+                else if (MainForm->edits->GetText(EditId_Chat).Length() > 0)
+                {
+                    if (MainForm->animation->IsChatAllowed())
+                    {
+                        MainForm->animation->StartChatDelay();
+                        MainForm->animation->RecordChatMessage();
+                        if (MainForm->edits->GetText(EditId_Chat)[1] != '!' &&
+                            MainForm->edits->GetText(EditId_Chat)[1] != '~' &&
+                            MainForm->edits->GetText(EditId_Chat)[1] != '@' &&
+                            MainForm->edits->GetText(EditId_Chat)[1] != '+' &&
+                            MainForm->edits->GetText(EditId_Chat)[1] != '&' &&
+                            String(MainForm->edits->GetText(EditId_Chat)[1]) != "'")
+                        {
+                            char handled = false;
+                            if (MainForm->edits->GetText(EditId_Chat).Length() > 1)
+                            {
+                                if (MainForm->edits->GetText(EditId_Chat)[1] == '$' &&
+                                    MainForm->edits->GetText(EditId_Chat)[2] != 'v')
+                                {
+                                    if (MainForm->animation->IsCommandDelayed())
+                                        MainForm->edits->SetText(EditId_Chat, "");
+                                    else
+                                        MainForm->animation->RestartCommandDelay();
+                                }
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("h8l,X|"))
+                            {
+                                handled = true;
+                                MainForm->sfx->PlaySfx(SfxSound_Notice);
+                                TDateTime now = Now();
+                                TTimeStamp start_stamp;
+                                start_stamp =
+                                    DateTimeToTimeStamp(MainForm->animation->interface_controller->status->usage_start_time);
+                                TTimeStamp now_stamp;
+                                now_stamp = DateTimeToTimeStamp(now);
+                                int elapsed_ms = now_stamp.Time - start_stamp.Time;
+                                days = now_stamp.Date - start_stamp.Date;
+                                minutes = elapsed_ms / 60000 + 1440 * days;
+                                minutes += MainForm->animation->interface_controller->status->usage_minutes;
+                                int usage_hours = minutes / 60;
+                                int usage_mins = minutes % 60;
+                                String usage_text =
+                                    IntToStr(usage_hours) + MainForm->net_client->DeobfuscateString(" qZ-e") +
+                                        IntToStr(usage_mins) + MainForm->net_client->DeobfuscateString("C1d2");
+                                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                    CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                    MainForm->net_client->DeobfuscateString(" e :f>Z* BUD") + usage_text, true);
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat).Length() > 6)
+                            {
+                                if (MainForm->edits->GetText(EditId_Chat).SubString(1, 5) ==
+                                    MainForm->net_client->DeobfuscateString("i1d9N"))
+                                {
+                                    handled = true;
+                                    String find_name = MainForm->edits->GetText(EditId_Chat);
+                                    find_name.Delete(1, 6);
+                                    if (find_name.Length() > 3 && find_name.Length() < 17)
+                                        MainForm->net_client->sender->SendFindPlayer(find_name);
+                                }
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("j0a|") ||
+                                MainForm->edits->GetText(EditId_Chat) ==
+                                    MainForm->net_client->DeobfuscateString("_0d+l<^3N"))
+                            {
+                                handled = true;
+                                String location_text =
+                                    MainForm->strings->GetText(GameText_YourCurrentLocationIs) +
+                                        IntToStr(MainForm->map->GetMapId()) + "  x:";
+                                location_text = location_text + IntToStr(MainForm->map->GetCenterX()) + "  y:";
+                                location_text = location_text + IntToStr(MainForm->map->GetCenterY());
+                                MainForm->sfx->PlaySfx(SfxSound_Notice);
+                                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                    CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                    location_text, true);
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("f1d/N"))
+                            {
+                                handled = true;
+                                MainForm->sfx->PlaySfx(SfxSound_Select);
+                                MainForm->animation->interface_controller->status->ping_sent_time = Now();
+                                MainForm->net_client->sender->SendPingRequest();
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("a3l(^1N"))
+                            {
+                                handled = true;
+                                MainForm->sfx->PlaySfx(SfxSound_Select);
+                                MainForm->animation->game->ToggleGhostWalk();
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("h1d8_:N"))
+                            {
+                                handled = true;
+                                MainForm->sfx->PlaySfx(SfxSound_Notice);
+                                String info_text = "VDACL";
+                                info_text.Delete(2, 2);
+                                if (MainForm->config->GetUseBitBltDraw())
+                                    info_text = MainForm->net_client->DeobfuscateString("([*");
+                                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                    CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                    MainForm->net_client->DeobfuscateString(" e 1^6Z-h) +_:d3j p'r") +
+                                    MainForm->VersionString(MainForm->version_major, MainForm->version_minor,
+                                    MainForm->version_build), true);
+                                MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                    CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                    MainForm->net_client->DeobfuscateString(" e :_6f1h [:i1h- BUD") + info_text, true);
+                            }
+                            if (!handled)
+                            {
+                                String say_text = MainForm->edits->GetText(EditId_Chat);
+                                if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                    say_text = MainForm->net_client->MakeDrunkText(say_text);
+                                String say_shown = MainForm->net_client->CensorText(say_text);
+                                if (say_shown.Length() >= 1)
+                                {
+                                    MainForm->net_client->sender->SendPublicChat(say_text);
+                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                        CHAT_COLOR_DEFAULT,
+                                        MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                        say_shown, true);
+                                    MainForm->gfx->sprites->ShowSpeechBalloon(say_shown,
+                                        MainForm->net_client->GetPlayerId(), 0);
+                                }
+                                else
+                                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                        MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                            }
+                        }
+                        if (MainForm->edits->GetText(EditId_Chat).Length() > 1)
+                        {
+                            if (MainForm->edits->GetText(EditId_Chat)[1] == '+')
+                            {
+                                if (MainForm->net_client->GetAdminLevel() > 0)
+                                {
+                                    String admin_text = MainForm->edits->GetText(EditId_Chat);
+                                    String admin_shown =
+                                        MainForm->net_client->CensorText(admin_text.SubString(2,
+                                            admin_text.Length() - 1));
+                                    if (admin_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendAdminChat(admin_text.SubString(2,
+                                            admin_text.Length() - 1));
+                                        MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
+                                        MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Admin,
+                                            CHAT_COLOR_ADMIN,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            admin_shown, true);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                                else
+                                {
+                                    String plus_say_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        plus_say_text = MainForm->net_client->MakeDrunkText(plus_say_text);
+                                    String plus_say_shown = MainForm->net_client->CensorText(plus_say_text);
+                                    if (plus_say_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendPublicChat(plus_say_text);
+                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            plus_say_shown, true);
+                                        MainForm->gfx->sprites->ShowSpeechBalloon(plus_say_shown,
+                                            MainForm->net_client->GetPlayerId(), 0);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat)[1] == '~')
+                            {
+                                if (MainForm->animation->IsGlobalMessageAllowed())
+                                {
+                                    if (MainForm->net_client->GetAdminLevel() <= 0)
+                                        MainForm->animation->RecordGlobalMessage();
+                                    String global_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        global_text = MainForm->net_client->MakeDrunkText(global_text);
+                                    String global_shown =
+                                        MainForm->net_client->CensorText(global_text.SubString(2,
+                                            global_text.Length() - 1));
+                                    if (global_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendGlobalChat(global_text.SubString(2,
+                                            global_text.Length() - 1));
+                                        MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_None,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            global_shown, true, false);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat)[1] == '@')
+                            {
+                                if (MainForm->net_client->GetAdminLevel() > 1)
+                                {
+                                    String announce_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        announce_text = MainForm->net_client->MakeDrunkText(announce_text);
+                                    String announce_shown =
+                                        MainForm->net_client->CensorText(announce_text.SubString(2,
+                                            announce_text.Length() - 1));
+                                    if (announce_shown.Length() >= 1)
+                                    {
+                                        MainForm->sfx->PlaySfx(SfxSound_AnnounceReceived);
+                                        MainForm->net_client->sender->SendAnnouncement(announce_text.SubString(2,
+                                            announce_text.Length() - 1));
+                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Announce,
+                                            CHAT_COLOR_NOTICE,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            announce_shown, true);
+                                        MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Announce,
+                                            CHAT_COLOR_NOTICE,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            announce_shown, true);
+                                        MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
+                                            CHAT_COLOR_NOTICE,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            announce_shown, true, false);
+                                        MainForm->gfx->sprites->ShowSpeechBalloon(announce_shown,
+                                            MainForm->net_client->GetPlayerId(), 0);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                                else
+                                {
+                                    String at_say_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        at_say_text = MainForm->net_client->MakeDrunkText(at_say_text);
+                                    String at_say_shown = MainForm->net_client->CensorText(at_say_text);
+                                    if (at_say_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendPublicChat(at_say_text);
+                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            at_say_shown, true);
+                                        MainForm->gfx->sprites->ShowSpeechBalloon(at_say_shown,
+                                            MainForm->net_client->GetPlayerId(), 0);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                            }
+                            if (MainForm->edits->GetText(EditId_Chat)[1] == '&')
+                            {
+                                if (MainForm->animation->interface_controller->status->IsInGuild())
+                                {
+                                    String guild_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        guild_text = MainForm->net_client->MakeDrunkText(guild_text);
+                                    String guild_shown =
+                                        MainForm->net_client->CensorText(guild_text.SubString(2,
+                                            guild_text.Length() - 1));
+                                    if (guild_shown.Length() >= 1)
+                                    {
+                                        MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
+                                        MainForm->net_client->sender->SendGuildChat(guild_text.SubString(2,
+                                            guild_text.Length() - 1));
+                                        MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Guild,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            guild_shown, true);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                                else
+                                {
+                                    String amp_say_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        amp_say_text = MainForm->net_client->MakeDrunkText(amp_say_text);
+                                    String amp_say_shown = MainForm->net_client->CensorText(amp_say_text);
+                                    if (amp_say_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendPublicChat(amp_say_text);
+                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            amp_say_shown, true);
+                                        MainForm->gfx->sprites->ShowSpeechBalloon(amp_say_shown,
+                                            MainForm->net_client->GetPlayerId(), 0);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                            }
+                            if (String(MainForm->edits->GetText(EditId_Chat)[1]) == "'")
+                            {
+                                if (MainForm->animation->interface_controller->group->members.size() > 0)
+                                {
+                                    String party_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        party_text = MainForm->net_client->MakeDrunkText(party_text);
+                                    String party_shown =
+                                        MainForm->net_client->CensorText(party_text.SubString(2,
+                                            party_text.Length() - 1));
+                                    if (party_shown.Length() >= 1)
+                                    {
+                                        MainForm->net_client->sender->SendPartyChat(party_text.SubString(2,
+                                            party_text.Length() - 1));
+                                        MainForm->gfx->sprites->ShowSpeechBalloon(party_shown,
+                                            MainForm->net_client->GetPlayerId(), MainForm->config->GetGroupColor());
+                                        MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party,
+                                            CHAT_COLOR_DEFAULT,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            party_shown, true);
+                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Party,
+                                            CHAT_COLOR_PRIVATE,
+                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                            party_shown, true);
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                            }
+                            // In a private tab the text goes to that tab's partner.
+                            // Elsewhere the name comes first, then a space.
+                            if (MainForm->edits->GetText(EditId_Chat)[1] == '!')
+                            {
+                                if (MainForm->animation->interface_controller->chat->active_tab <= 2)
+                                {
+                                    String reply_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        reply_text = MainForm->net_client->MakeDrunkText(reply_text);
+                                    String reply_name = "";
+                                    String reply_body = reply_text.SubString(2, reply_text.Length() - 1);
+                                    String reply_shown = MainForm->net_client->CensorText(reply_body);
+                                    if (reply_shown.Length() >= 1)
+                                    {
+                                        if (MainForm->animation->interface_controller->chat->active_tab == 1)
+                                            reply_name =
+                                                MainForm->animation->interface_controller->chat->first_private_name;
+                                        else
+                                            reply_name =
+                                                MainForm->animation->interface_controller->chat->second_private_name;
+                                        if (reply_body.Length() >= 2)
+                                        {
+                                            if (reply_name != "")
+                                            {
+                                                MainForm->sfx->PlaySfx(SfxSound_Send);
+                                                MainForm->net_client->sender->SendPrivateMessage(LowerCase(reply_name),
+                                                    reply_body);
+                                                MainForm->animation->interface_controller->chat->OpenPrivateTab(reply_name);
+                                                int reply_tab =
+                                                    MainForm->animation->interface_controller->chat->FindPrivateTab(reply_name);
+                                                if (reply_tab != -1)
+                                                    MainForm->animation->interface_controller->chat->AddPrivateMessage(reply_tab,
+                                                        CHAT_COLOR_PRIVATE,
+                                                        MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                                        reply_shown, true);
+                                            }
+                                        }
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                }
+                                else
+                                {
+                                    String private_text = MainForm->edits->GetText(EditId_Chat);
+                                    if (MainForm->animation->interface_controller->chat->IsDrunk())
+                                        private_text = MainForm->net_client->MakeDrunkText(private_text);
+                                    int name_end = private_text.Pos(" ");
+                                    if (name_end >= 3)
+                                    {
+                                        String private_name = private_text.SubString(2, name_end - 2);
+                                        String private_body =
+                                            private_text.SubString(name_end + 1, private_text.Length() - name_end);
+                                        String private_shown = MainForm->net_client->CensorText(private_body);
+                                        if (private_shown.Length() >= 1)
+                                        {
+                                            if (private_name.Length() >= 4 && private_name.Length() <= 13 &&
+                                                private_body.Length() >= 1)
+                                            {
+                                                if (LowerCase(private_name) !=
+                                                    LowerCase(MainForm->players->GetName(MainForm->net_client->GetPlayerId())))
+                                                {
+                                                    MainForm->sfx->PlaySfx(SfxSound_Send);
+                                                    MainForm->net_client->sender->SendPrivateMessage(LowerCase(private_name),
+                                                        private_body);
+                                                    MainForm->animation->interface_controller->chat->OpenPrivateTab(private_name);
+                                                    int private_tab =
+                                                        MainForm->animation->interface_controller->chat->FindPrivateTab(private_name);
+                                                    if (private_tab != -1)
+                                                        MainForm->animation->interface_controller->chat->AddPrivateMessage(private_tab,
+                                                            CHAT_COLOR_PRIVATE,
+                                                            MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
+                                                            private_shown, true);
+                                                }
+                                            }
+                                        }
+                                        else
+                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                                MainForm->strings->GetText(GameText_YourMindPreventsYou));
+                                    }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                            MainForm->strings->GetText(GameText_InvalidInputTryUse));
+                                }
+                            }
+                        }
+                        MainForm->edits->ClearFocusedText();
+                    }
+                }
+            }
+            if (MainForm->edits->IsFocused(EditId_Password) && MainForm->animation->GetScreenMode() ==
+                ScreenMode_Menu && MainForm->animation->GetSubState() == MenuScreen_Login &&
+                MainForm->animation->menu->login_enabled)
+            {
+                if (MainForm->edits->GetText(EditId_AccountName) != "" && MainForm->edits->GetText(EditId_Password) !=
+                    "")
+                {
+                    MainForm->animation->menu->login_enabled = false;
+                    MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
+                        MainForm->edits->GetText(EditId_Password));
+                }
+            }
+            if (MainForm->edits->IsFocused(EditId_AccountName) && MainForm->animation->GetScreenMode() ==
+                ScreenMode_Menu && MainForm->animation->GetSubState() == MenuScreen_GridAccountName)
+            {
+                if (MainForm->edits->GetText(EditId_AccountName) != "")
+                {
+                    MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
+                    MainForm->animation->menu->account_name = MainForm->edits->GetText(EditId_AccountName);
+                    MainForm->animation->menu->account_name =
+                        MainForm->net_client->Capitalize(MainForm->animation->menu->account_name);
+                    MainForm->animation->menu->grid_column = random(4) + 1;
+                    MainForm->animation->menu->grid_row = random(4) + 1;
+                    MainForm->animation->menu->password = "";
+                    MainForm->edits->Clear();
+                    MainForm->net_client->login_failure_count = 0;
+                    MainForm->gfx->LoadPasswordScreen();
+                    MainForm->keyboard->grid_enter_wait = 12;
+                    MainForm->animation->SetSubState(MenuScreen_PasswordGrid);
+                    if (MainForm->animation->menu->retry_ticks > 0)
+                    {
+                        if (LowerCase(MainForm->animation->menu->retry_account_name) ==
+                            LowerCase(MainForm->animation->menu->account_name))
+                        {
+                            MainForm->animation->menu->retry_ticks = 0;
+                            MainForm->animation->menu->password = MainForm->animation->menu->retry_password;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch (...)
+    {
+        ReleaseModifierKeys();
+        return false;
+    }
+    return true;
+}
+
+// Types the pressed keys into the focused edit box: letters, digits and signs as the keyboard layout and shift give
+// them, space, backspace and line breaks, with key repeat.
+bool KeyBoard::HandleTypedKeys()
+{
+    // Each key's repeat wait counts down by one.
+    for (int key = 0; key < 61; key++)
+    {
+        if (key_waits[key] > 0)
+            key_waits[key]--;
+    }
+    if (!MainForm->edits->GetCount())
+        return true;
+    if (!MainForm->edits->caret_enabled)
+        return true;
+    if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
+    {
+        if (attack_key_used)
+            return true;
+        if (wasd_key_used)
+            return true;
+    }
+    try
+    {
+        if (!MainForm->animation->CanSendChat())
+            return true;
+        // The typed character, from the key state and the keyboard layout setting.
+        // Layouts 1 to 3 move symbols to other keys.
+        // Layout 3 also swaps A with Q and Z with W, as AZERTY does.
+        char shifted = false;
+        String typed = "";
+        if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+            (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
+            shifted = true;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_SPACE] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(0))
+                typed += ' ';
+        }
+        else
+            ResetKeyRepeat(0);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_GRAVE] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(1))
+                typed += '~';
+        }
+        else
+            ResetKeyRepeat(1);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(2))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '!';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '!';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '!';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '1';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += '&';
+                else
+                    typed += '1';
+            }
+        }
+        else
+            ResetKeyRepeat(2);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(3))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '@';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '@';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '2';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += (char)-23;
+                else
+                    typed += '2';
+            }
+        }
+        else
+            ResetKeyRepeat(3);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(4))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '#';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "#";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '#';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '3';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += '"';
+                else
+                    typed += '3';
+            }
+        }
+        else
+            ResetKeyRepeat(4);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(5))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '$';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '$';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '$';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '4';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += "'";
+                else
+                    typed += '4';
+            }
+        }
+        else
+            ResetKeyRepeat(5);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(6))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '%';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '%';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '%';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '5';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += '(';
+                else
+                    typed += '5';
+            }
+        }
+        else
+            ResetKeyRepeat(6);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(7))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '^';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "&";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '&';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '6';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += (char)-89;
+                else
+                    typed += '6';
+            }
+        }
+        else
+            ResetKeyRepeat(7);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(8))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '&';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "_";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '/';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '7';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += (char)-24;
+                else
+                    typed += '7';
+            }
+        }
+        else
+            ResetKeyRepeat(8);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(9))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '*';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "(";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '(';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '8';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += '!';
+                else
+                    typed += '8';
+            }
+        }
+        else
+            ResetKeyRepeat(9);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(10))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '(';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += ")";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += ')';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '9';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += (char)-25;
+                else
+                    typed += '9';
+            }
+        }
+        else
+            ResetKeyRepeat(10);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(11))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ')';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '=';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '0';
+                }
+                else if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                    typed += (char)-32;
+                else
+                    typed += '0';
+            }
+        }
+        else
+            ResetKeyRepeat(11);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(12))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '_';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "?";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '?';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += ')';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '-';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "/";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '+';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += ')';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(12);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_EQUALS] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(13))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '+';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '~';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '-';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '=';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '-';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(13);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_LBRACKET] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(14))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '[';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '^';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += (char)-59;
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '^';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '[';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '*';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += (char)-27;
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '[';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(14);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_RBRACKET] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(15))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ']';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '|';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '^';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '*';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ']';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '*';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '\\';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += ']';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(15);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_SEMICOLON] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(16))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ':';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '+';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += (char)-42;
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += 'M';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ';';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '+';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += (char)-10;
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '-';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(16);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_APOSTROPHE] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(17))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '"';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '"';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += "\xc4";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '%';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += (char)-28;
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += "'";
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(17);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_BACKSLASH] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(18))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '|';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '>';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '*';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += (char)-93;
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '\\';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '<';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += "'";
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '?';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(18);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_COMMA] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(19))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '<';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += ';';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += ';';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '.';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += ',';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += ',';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += ',';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += ';';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(19);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_PERIOD] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(20))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '>';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += ':';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += ':';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += ':';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '.';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '.';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '.';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '/';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(20);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_SLASH] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(59))
+            {
+                if (shifted)
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '?';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '=';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '_';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '+';
+                }
+                else
+                {
+                    if (!MainForm->config->GetKeyboardLayout())
+                        typed += '/';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Dutch)
+                        typed += '.';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_Swedish)
+                        typed += '-';
+                    if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                        typed += '=';
+                }
+            }
+        }
+        else
+            ResetKeyRepeat(59);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(21))
+            {
+                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                {
+                    if (shifted)
+                        typed += "Q";
+                    else
+                        typed += "q";
+                }
+                else if (shifted)
+                    typed += "A";
+                else
+                    typed += "a";
+            }
+        }
+        else
+            ResetKeyRepeat(21);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_B] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(22))
+            {
+                if (shifted)
+                    typed += "B";
+                else
+                    typed += "b";
+            }
+        }
+        else
+            ResetKeyRepeat(22);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_C] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(23))
+            {
+                if (shifted)
+                    typed += "C";
+                else
+                    typed += "c";
+            }
+        }
+        else
+            ResetKeyRepeat(23);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_D] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(24))
+            {
+                if (shifted)
+                    typed += "D";
+                else
+                    typed += "d";
+            }
+        }
+        else
+            ResetKeyRepeat(24);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(25))
+            {
+                if (shifted)
+                    typed += "E";
+                else
+                    typed += "e";
+            }
+        }
+        else
+            ResetKeyRepeat(25);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(26))
+            {
+                if (shifted)
+                    typed += "F";
+                else
+                    typed += "f";
+            }
+        }
+        else
+            ResetKeyRepeat(26);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_G] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(27))
+            {
+                if (shifted)
+                    typed += "G";
+                else
+                    typed += "g";
+            }
+        }
+        else
+            ResetKeyRepeat(27);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(28))
+            {
+                if (shifted)
+                    typed += "H";
+                else
+                    typed += "h";
+            }
+        }
+        else
+            ResetKeyRepeat(28);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_I] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(29))
+            {
+                if (shifted)
+                    typed += "I";
+                else
+                    typed += "i";
+            }
+        }
+        else
+            ResetKeyRepeat(29);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_J] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(30))
+            {
+                if (shifted)
+                    typed += "J";
+                else
+                    typed += "j";
+            }
+        }
+        else
+            ResetKeyRepeat(30);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_K] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(31))
+            {
+                if (shifted)
+                    typed += "K";
+                else
+                    typed += "k";
+            }
+        }
+        else
+            ResetKeyRepeat(31);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_L] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(32))
+            {
+                if (shifted)
+                    typed += "L";
+                else
+                    typed += "l";
+            }
+        }
+        else
+            ResetKeyRepeat(32);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_M] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(33))
+            {
+                if (shifted)
+                    typed += "M";
+                else
+                    typed += "m";
+            }
+        }
+        else
+            ResetKeyRepeat(33);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_N] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(35))
+            {
+                if (shifted)
+                    typed += "N";
+                else
+                    typed += "n";
+            }
+        }
+        else
+            ResetKeyRepeat(35);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_O] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(36))
+            {
+                if (shifted)
+                    typed += "O";
+                else
+                    typed += "o";
+            }
+        }
+        else
+            ResetKeyRepeat(36);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(37))
+            {
+                if (shifted)
+                    typed += "P";
+                else
+                    typed += "p";
+            }
+        }
+        else
+            ResetKeyRepeat(37);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(38))
+            {
+                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                {
+                    if (shifted)
+                        typed += "A";
+                    else
+                        typed += "a";
+                }
+                else if (shifted)
+                    typed += "Q";
+                else
+                    typed += "q";
+            }
+        }
+        else
+            ResetKeyRepeat(38);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_R] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(39))
+            {
+                if (shifted)
+                    typed += "R";
+                else
+                    typed += "r";
+            }
+        }
+        else
+            ResetKeyRepeat(39);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_S] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(40))
+            {
+                if (shifted)
+                    typed += "S";
+                else
+                    typed += "s";
+            }
+        }
+        else
+            ResetKeyRepeat(40);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_T] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(41))
+            {
+                if (shifted)
+                    typed += "T";
+                else
+                    typed += "t";
+            }
+        }
+        else
+            ResetKeyRepeat(41);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_U] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(42))
+            {
+                if (shifted)
+                    typed += "U";
+                else
+                    typed += "u";
+            }
+        }
+        else
+            ResetKeyRepeat(42);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(43))
+            {
+                if (shifted)
+                    typed += "V";
+                else
+                    typed += "v";
+            }
+        }
+        else
+            ResetKeyRepeat(43);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_W] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(44))
+            {
+                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                {
+                    if (shifted)
+                        typed += "Z";
+                    else
+                        typed += "z";
+                }
+                else if (shifted)
+                    typed += "W";
+                else
+                    typed += "w";
+            }
+        }
+        else
+            ResetKeyRepeat(44);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_X] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(45))
+            {
+                if (shifted)
+                    typed += "X";
+                else
+                    typed += "x";
+            }
+        }
+        else
+            ResetKeyRepeat(45);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_Y] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(46))
+            {
+                if (shifted)
+                    typed += "Y";
+                else
+                    typed += "y";
+            }
+        }
+        else
+            ResetKeyRepeat(46);
+        if ((MainForm->DIKeyboardState1->Keys[DIK_Z] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(47))
+            {
+                if (MainForm->config->GetKeyboardLayout() == KeyboardLayout_French)
+                {
+                    if (shifted)
+                        typed += "W";
+                    else
+                        typed += "w";
+                }
+                else if (shifted)
+                    typed += "Z";
+                else
+                    typed += "z";
+            }
+        }
+        else
+            ResetKeyRepeat(47);
+        // On the menu screens the number pad types its digits and point.
+        if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
+        {
+            if ((MainForm->DIKeyboardState1->Keys[DIK_DECIMAL] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(48))
+                    typed += '.';
+            }
+            else
+                ResetKeyRepeat(48);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(49))
+                    typed += '0';
+            }
+            else
+                ResetKeyRepeat(49);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(50))
+                    typed += '1';
+            }
+            else
+                ResetKeyRepeat(50);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(51))
+                    typed += '2';
+            }
+            else
+                ResetKeyRepeat(51);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(52))
+                    typed += '3';
+            }
+            else
+                ResetKeyRepeat(52);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD4] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(53))
+                    typed += '4';
+            }
+            else
+                ResetKeyRepeat(53);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD5] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(54))
+                    typed += '5';
+            }
+            else
+                ResetKeyRepeat(54);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD6] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(55))
+                    typed += '6';
+            }
+            else
+                ResetKeyRepeat(55);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD7] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(56))
+                    typed += '7';
+            }
+            else
+                ResetKeyRepeat(56);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD8] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(57))
+                    typed += '8';
+            }
+            else
+                ResetKeyRepeat(57);
+            if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD9] & 0x80) != 0)
+            {
+                if (TakeKeyRepeat(58))
+                    typed += '9';
+            }
+            else
+                ResetKeyRepeat(58);
+        }
+        if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
+        {
+            if (TakeKeyRepeat(60))
+                MainForm->edits->TypeLineBreak();
+            else
+                ResetKeyRepeat(60);
+        }
+        // Backspace deletes once, then again after a long wait, and quicker from there while held.
+        if (backspace_wait >= 1)
+            backspace_wait--;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) == 0)
+            backspace_wait = 0;
+        if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0 && !typed.Length() && backspace_wait <= 2)
+        {
+            if (backspace_wait >= 1)
+                backspace_wait = 6;
+            else
+                backspace_wait = 32;
+            MainForm->edits->Backspace();
+        }
+        if (typed.Length() > 0)
+            MainForm->edits->TypeText(typed);
+    }
+    catch (...)
+    {
+        ReleaseModifierKeys();
+        return false;
+    }
+    return true;
+}
+
+// True when a key may act now; the next must wait 48 ticks.
+bool KeyBoard::TakeKeyDelay()
+{
+    if (key_delay > 0)
+        return false;
+    key_delay = 24;
+    return true;
+}
+
+// True when the held key may act again; the first press waits 80 ticks, each repeat 16.
+bool KeyBoard::TakeKeyRepeat(unsigned char key)
+{
+    if (key_waits[key] > 3)
+        return false;
+    key;
+    if (!key_waits[key])
+        key_waits[key] = 40;
+    else
+        key_waits[key] = 8;
+    return true;
+}
+
+void KeyBoard::ResetKeyRepeat(unsigned char key)
+{
+    key_waits[key] = 0;
+}
+
+// True when any box or window is open over the game.
+bool KeyBoard::IsAnyWindowOpen()
+{
+    if (MainForm->animation->game->message_visible)
+        return true;
+    if (MainForm->animation->game->large_box_visible)
+        return true;
+    if (MainForm->animation->game->input_box_visible)
+        return true;
+    if (MainForm->animation->game->form_visible)
+        return true;
+    if (MainForm->animation->paperdoll->is_visible)
+        return true;
+    if (MainForm->animation->book->is_visible)
+        return true;
+    if (MainForm->animation->trade->is_visible)
+        return true;
+    if (MainForm->animation->locker->is_visible)
+        return true;
+    if (MainForm->animation->learn->is_visible)
+        return true;
+    if (MainForm->animation->shop->is_visible)
+        return true;
+    if (MainForm->animation->stat->is_visible)
+        return true;
+    if (MainForm->animation->guild->is_visible)
+        return true;
+    if (MainForm->animation->memo->is_visible)
+        return true;
+    if (MainForm->animation->dialog->is_visible)
+        return true;
+    if (MainForm->animation->report->is_visible)
+        return true;
+    if (MainForm->animation->law->is_visible)
+        return true;
+    if (MainForm->animation->inn->is_visible)
+        return true;
+    if (MainForm->animation->bank->is_visible)
+        return true;
+    if (MainForm->animation->jukebox->is_visible)
+        return true;
+    if (MainForm->animation->musician->is_visible)
+        return true;
+    if (MainForm->animation->barber->is_visible)
+        return true;
+    if (MainForm->animation->chest->is_visible)
+        return true;
+    if (MainForm->animation->social->is_open)
+        return true;
+    if (MainForm->animation->message_board->is_visible)
+        return true;
+    if (MainForm->animation->quests->is_visible)
+        return true;
+    if (MainForm->animation->game->amount_box_visible)
+        return true;
+    return false;
+}
+
+void KeyBoard::ReleaseModifierKeys()
+{
+    walk_key_held = false;
+    wasd_key_used = false;
+    attack_key_used = false;
 }

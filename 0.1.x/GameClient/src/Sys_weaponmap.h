@@ -1,6 +1,8 @@
 #ifndef Sys_weaponmapH
 #define Sys_weaponmapH
 
+#define MAX_WEAPON_GRAPHICS 240
+
 enum WeaponGraphic
 {
     WeaponGraphic_DarkBlade = 39,
@@ -14,8 +16,6 @@ enum WeaponGraphic
     WeaponGraphic_Gun = 58,
     WeaponGraphic_ScavBow = 73
 };
-
-#define MAX_WEAPON_GRAPHICS 240
 
 // Per weapon: the swing effect drawn with it, and whether it uses the ranged attack frames.
 struct WeaponMapper

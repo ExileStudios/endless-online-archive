@@ -3,6 +3,7 @@
 
 #include "Ctrl_stats.h"
 #include "Tmainform.h"
+
 #pragma package(smart_init)
 
 StatController::StatController()

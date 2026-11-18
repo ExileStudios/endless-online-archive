@@ -3,6 +3,8 @@
 
 #include <Classes.hpp>
 
+#define PLAYERLIST_VISIBLE_NAMES 7
+
 enum PlayerFilter
 {
     PlayerFilter_All = 0,

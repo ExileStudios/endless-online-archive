@@ -3,6 +3,7 @@
 
 #include "Sys_effect.h"
 #include "Tmainform.h"
+
 #pragma package(smart_init)
 
 MapEffect::MapEffect()

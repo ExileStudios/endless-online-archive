@@ -4,11 +4,8 @@
 #include "Ctrl_dialog.h"
 #include "Tmainform.h"
 #include "Packetoperations.h"
-#pragma package(smart_init)
 
-#define DIALOG_BUTTON_BACK_FRAME 5
-#define DIALOG_BUTTON_NEXT_FRAME 7
-#define DIALOG_THUMB_TRAVEL 52.0
+#pragma package(smart_init)
 
 DialogController::DialogController()
 {
@@ -47,18 +44,15 @@ DialogController::~DialogController()
 // Adds a text with its right-hand value, wrapped to the page width; a link line takes the next free link slot.
 void DialogController::AddText(String text, String right_text, bool add_blank_line)
 {
-    if (text.Length() > 0)
+    // A line starting with an asterisk is a reply link
+    if (text.Length() > 0 && text[1] == '*')
     {
-        // A line starting with an asterisk is a reply link
-        if (text[1] == '*')
+        for (int slot = 0; slot < DIALOG_MAX_LINKS; slot++)
         {
-            for (int slot = 0; slot < DIALOG_MAX_LINKS; slot++)
+            if (link_line_indices[slot] < 0)
             {
-                if (link_line_indices[slot] < 0)
-                {
-                    link_line_indices[slot] = lines->Count;
-                    break;
-                }
+                link_line_indices[slot] = lines->Count;
+                break;
             }
         }
     }
@@ -85,18 +79,19 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
                     char split_done = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            lines->Add(fitted_text);
-                            line_right_texts->Add(right_text);
-                            text.Delete(1, fitted_text.Length());
-                            split_done = true;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                lines->Add(fitted_text);
+                                line_right_texts->Add(right_text);
+                                text.Delete(1, fitted_text.Length());
+                                split_done = true;
+                                break;
+                            }
+                            fitted_text = prefix;
                         }
-                        fitted_text = prefix;
                     }
                     if (!split_done)
                     {
@@ -366,12 +361,12 @@ void DialogController::MouseMove(int x, int y)
             window_y = 119;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= window_y + 43 || y >= window_y + 143 || x <= window_x + 17 || x >= window_x + 252 || is_dragging))
+    if (y > window_y + 43 && y < window_y + 143 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         int row = (y - window_y - 47) / 16;
         if (row > 6)
             row = -1;
-        int line_count = lines->Count;
+        line_count = lines->Count;
         if (showing_quest_list)
             line_count = quest_names->Count;
         if (line_count <= row)
@@ -387,7 +382,7 @@ void DialogController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < window_x + 89 || x > window_x + 169 || y < window_y + 153 || y > window_y + 179))
+    if (x >= window_x + 89 && x <= window_x + 169 && y >= window_y + 153 && y <= window_y + 179)
     {
         if (!prev_button_hovered)
         {
@@ -400,7 +395,7 @@ void DialogController::MouseMove(int x, int y)
         prev_button_hovered = false;
         MainForm->redraw_needed = true;
     }
-    if (!(x < window_x + 183 || x > window_x + 273 || y < window_y + 153 || y > window_y + 179))
+    if (x >= window_x + 183 && x <= window_x + 273 && y >= window_y + 153 && y <= window_y + 179)
     {
         if (!next_button_hovered)
         {
@@ -454,9 +449,7 @@ void DialogController::UpdateScrollHover(int x, int y)
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line of the dialog or the quest list.
 void DialogController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -469,9 +462,9 @@ void DialogController::DragScrollThumb(int y)
             line_count = quest_names->Count;
         if (line_count > 6)
         {
-            thumb_fraction = thumb_offset / 52.0;
-            scaled_line = (line_count - 6.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / 52.0;
+            double scaled_line = (line_count - 6.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }
@@ -484,16 +477,14 @@ void DialogController::DragScrollThumb(int y)
 // Scrolls the dialog or the quest list up one line and moves the scroll thumb to match.
 void DialogController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
     int line_count = lines->Count;
     if (showing_quest_list)
         line_count = quest_names->Count;
     if (line_count > 6 && top_line > 0)
     {
         top_line--;
-        scroll_fraction = (double)top_line / (double)(line_count - 6);
-        thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (line_count - 6);
+        double thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;
@@ -511,8 +502,8 @@ void DialogController::ScrollDown()
     if (result - 6 > top_line)
     {
         top_line++;
-        scroll_fraction = (double)top_line / (double)(result - 6);
-        thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (result - 6);
+        double thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_changed = true;
         MainForm->redraw_needed = true;

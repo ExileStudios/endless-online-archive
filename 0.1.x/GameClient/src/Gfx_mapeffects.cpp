@@ -1,9 +1,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Gfx_mapeffects.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
 #include "Gfx_effect.h"
+
 #pragma package(smart_init)
 
 EffectGraphics::EffectGraphics(char preload)
@@ -31,11 +33,11 @@ void EffectGraphics::AgeGraphics()
 {
     for (vector<EffectWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
@@ -44,9 +46,11 @@ void Gfx_mapeffects_UnusedLiterals1()
     "";
 }
 
-// Loads the first queued effect graphic, opening the library when no load has it open.
+// Loads one waiting effect graphic from its library each call; one that failed to load twice is freed and waits no
+// longer.
 void EffectGraphics::LoadPendingGraphic()
 {
+    vector<EffectWrapper>::iterator it;
     // The call after the effect graphic queue empties closes the library again, unless it is kept open.
     if (queue_drained)
     {
@@ -65,25 +69,44 @@ void EffectGraphics::LoadPendingGraphic()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Effects).c_str());
             library_open = true;
         }
-        for (vector<EffectWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
+        it = entries.begin();
+        while (it != entries.end())
         {
             if (!it->is_loaded)
             {
-                HMODULE open_library = library;
-                it->CreateResource();
-                GraphicSize size = it->resource->LoadSurfaces((int)open_library, 3 * it->graphic_id + 101);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
+                if (it->idle_ticks > 1)
                 {
+                    if (it->idle_ticks == 2)
+                    {
+                        it->idle_ticks = 250;
+                        it->FreeResource();
+                        pending_count--;
+                        if (!pending_count)
+                            queue_drained = true;
+                    }
+                }
+                else
+                {
+                    int open_library = (int)library;
+                    it->CreateResource();
+                    GraphicSize size = it->resource->LoadSurfaces(open_library, 3 * it->graphic_id + 101);
+                    it->width = size.width;
+                    it->height = size.height;
+                    if (size.width == -1)
+                    {
+                        it->idle_ticks++;
+                        break;
+                    }
                     it->is_loaded = true;
+                    it->unfetched_frames = 0;
                     it->idle_ticks = 0;
                     pending_count--;
+                    if (!pending_count)
+                        queue_drained = true;
+                    break;
                 }
-                if (!pending_count)
-                    queue_drained = true;
-                break;
             }
+            it++;
         }
     }
 }
@@ -98,7 +121,7 @@ void EffectGraphics::PurgeUnusedGraphics()
         result = 0;
         for (vector<EffectWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->idle_ticks >= 120)
+            if (it->unfetched_frames >= 120)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -117,11 +140,12 @@ bool EffectGraphics::RequestGraphic(int graphic_id)
     char not_queued = true;
     for (it = entries.begin(); it != entries.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     // No effect graphic is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -137,7 +161,7 @@ EffectWrapper EffectGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }

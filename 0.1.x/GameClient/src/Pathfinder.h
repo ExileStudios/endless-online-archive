@@ -1,6 +1,7 @@
 #ifndef PathfinderH
 #define PathfinderH
 
+#include <new>
 #include <vector.h>
 
 #include "Pathnode.h"
@@ -9,14 +10,13 @@
 struct PathFinder
 {
     vector<PathNode> nodes;
-    Windows::TPoint steps[16];
+    TPoint steps[16];
     int generation_end;
     int previous_generation_end;
     int generation_start;
     int current_step;
     int step_count;
     char is_active;
-    char unused_bytes[3];
 
     PathFinder();
     ~PathFinder();
@@ -25,7 +25,7 @@ struct PathFinder
     void FollowPath();
     char IsPathActive();
     void CancelPath();
-    Windows::TPoint GetCurrentStep();
+    TPoint GetCurrentStep();
     void AdvanceStep();
 };
 

@@ -1,6 +1,8 @@
 #ifndef Ctrl_musicianH
 #define Ctrl_musicianH
 
+#define MUSICIAN_CELL_SIZE 20
+
 // The musician window: a grid of notes to play on the instrument held.
 struct MusicianController
 {

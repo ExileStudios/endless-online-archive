@@ -1,11 +1,12 @@
 #ifndef Gfx_iconH
 #define Gfx_iconH
 
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The surface of one spell icon, filled from a bitmap resource of its library.
 struct IconResource
@@ -17,9 +18,8 @@ struct IconResource
 
     IconResource();
     ~IconResource();
+    TRect GetIconRect(int frame);
     GraphicSize LoadSurface(int library, int resource_id);
-    Windows::TRect GetFrameRect(int frame);
 };
-
 
 #endif

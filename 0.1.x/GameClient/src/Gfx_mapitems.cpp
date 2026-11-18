@@ -1,10 +1,12 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Gfx_mapitems.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
 #include "Gfx_item.h"
 #include "Gfx_subitem.h"
+
 #pragma package(smart_init)
 
 ItemGraphics::ItemGraphics(char preload)
@@ -13,7 +15,6 @@ ItemGraphics::ItemGraphics(char preload)
     sub_item_last_index = -1;
     pending_count = 0;
     sub_item_pending_count = 0;
-    queue_drained = false;
     sub_items_drained = false;
     library_open = false;
     keep_library_open = preload;
@@ -34,13 +35,16 @@ ItemGraphics::~ItemGraphics()
 // The library is opened again when it is kept open or item pictures for the windows are still pending.
 void ItemGraphics::ReopenLibrary()
 {
-    if (pending_count > 0 || keep_library_open)
+    if (pending_count > 0 || sub_item_pending_count > 0 || keep_library_open)
     {
         FreeLibrary(library);
         if (!keep_library_open)
+        {
             pending_count = 0;
+            sub_item_pending_count = 0;
+        }
     }
-    if (keep_library_open || sub_item_pending_count > 0)
+    if (keep_library_open)
         library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
 }
 
@@ -49,11 +53,11 @@ void ItemGraphics::AgeGraphics()
 {
     for (vector<ItemWrapper>::iterator it = items.begin(); it != items.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
@@ -62,28 +66,28 @@ void ItemGraphics::AgeSubItemGraphics()
 {
     for (vector<SubItemWrapper>::iterator it = sub_items.begin(); it != sub_items.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
-// Loads the first queued map item picture and the first queued window item picture, opening the library when no
-// load has it open.
+// Loads the item and inventory pictures waiting to load, each into its own surface, from the item library.
 void ItemGraphics::LoadPendingGraphics()
 {
-    // The call after both queues empty closes the library again, unless it is kept open.
-    if (queue_drained || sub_items_drained)
+    vector<ItemWrapper>::iterator it;
+    vector<SubItemWrapper>::iterator sub_item;
+    if (sub_items_drained)
     {
         if (library_open && !keep_library_open)
         {
             FreeLibrary(library);
             library_open = false;
         }
-        queue_drained = false;
         sub_items_drained = false;
+        MainForm->redraw_needed = true;
     }
     if (pending_count > 0)
     {
@@ -92,27 +96,45 @@ void ItemGraphics::LoadPendingGraphics()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
             library_open = true;
         }
-        vector<ItemWrapper>::iterator it;
-        for (it = items.begin(); it != items.end(); it++)
+        it = items.begin();
+        while (it != items.end())
         {
             if (!it->is_loaded)
             {
-                HMODULE open_library = library;
-                it->CreateResource();
-                // Each item owns two resource ids in a row: the map picture, then the window picture.
-                GraphicSize size = it->resource->LoadSurface((int)open_library, 2 * it->graphic_id + 101);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
+                if (it->idle_ticks > 1)
                 {
+                    if (it->idle_ticks == 2)
+                    {
+                        it->idle_ticks = 250;
+                        it->FreeResource();
+                        pending_count--;
+                        if (!pending_count && !sub_item_pending_count)
+                            sub_items_drained = true;
+                    }
+                }
+                else
+                {
+                    int open_library = (int)library;
+                    it->CreateResource();
+                    // Each item owns two resource ids in a row: the map picture, then the window picture.
+                    GraphicSize size = it->resource->LoadSurface(open_library, 2 * it->graphic_id + 101);
+                    it->width = size.width;
+                    it->height = size.height;
+                    if (size.width == -1)
+                    {
+                        it->idle_ticks++;
+                        break;
+                    }
                     it->is_loaded = true;
+                    it->unfetched_frames = 0;
                     it->idle_ticks = 0;
                     pending_count--;
+                    if (!pending_count && !sub_item_pending_count)
+                        sub_items_drained = true;
+                    break;
                 }
-                if (pending_count <= 0 && sub_item_pending_count <= 0)
-                    queue_drained = true;
-                break;
             }
+            it++;
         }
     }
     if (sub_item_pending_count > 0)
@@ -122,43 +144,62 @@ void ItemGraphics::LoadPendingGraphics()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
             library_open = true;
         }
-        vector<SubItemWrapper>::iterator it;
-        for (it = sub_items.begin(); it != sub_items.end(); it++)
+        sub_item = sub_items.begin();
+        while (sub_item != sub_items.end())
         {
-            if (!it->is_loaded)
+            if (!sub_item->is_loaded)
             {
-                HMODULE sub_item_library = library;
-                it->CreateResource();
-                GraphicSize sub_item_size = it->resource->LoadSurface((int)sub_item_library, 2 * it->graphic_id + 102);
-                it->width = sub_item_size.width;
-                it->height = sub_item_size.height;
-                if (sub_item_size.width != -1 && sub_item_size.height != 1)
+                if (sub_item->idle_ticks > 1)
                 {
-                    it->is_loaded = true;
-                    it->idle_ticks = 0;
-                    sub_item_pending_count--;
+                    if (sub_item->idle_ticks == 2)
+                    {
+                        sub_item->idle_ticks = 250;
+                        sub_item->FreeResource();
+                        sub_item_pending_count--;
+                        if (!pending_count && !sub_item_pending_count)
+                            sub_items_drained = true;
+                    }
                 }
-                if (pending_count <= 0 && sub_item_pending_count <= 0)
-                    sub_items_drained = true;
-                break;
+                else
+                {
+                    int sub_open_library = (int)library;
+                    sub_item->CreateResource();
+                    GraphicSize sub_item_size =
+                        sub_item->resource->LoadSurface(sub_open_library, 2 * sub_item->graphic_id + 102);
+                    sub_item->width = sub_item_size.width;
+                    sub_item->height = sub_item_size.height;
+                    if (sub_item_size.width == -1)
+                    {
+                        sub_item->idle_ticks++;
+                        break;
+                    }
+                    sub_item->is_loaded = true;
+                    sub_item->unfetched_frames = 0;
+                    sub_item->idle_ticks = 0;
+                    sub_item_pending_count--;
+                    if (!pending_count && !sub_item_pending_count)
+                        sub_items_drained = true;
+                    break;
+                }
             }
+            sub_item++;
         }
     }
 }
 
 // Frees every item picture that has gone unfetched for its purge age; window pictures are kept a little longer.
-bool ItemGraphics::PurgeUnusedGraphics()
+void ItemGraphics::PurgeUnusedGraphics()
 {
     char purged;
     bool result;
     // An erase ends the walk, so it starts over after each item picture it frees.
     do
     {
-        vector<ItemWrapper>::iterator it;
         purged = false;
+        vector<ItemWrapper>::iterator it;
         for (it = items.begin(); it != items.end(); it++)
         {
-            if (it->idle_ticks >= 40)
+            if (it->unfetched_frames >= 100)
             {
                 it->FreeResource();
                 items.erase(it);
@@ -169,20 +210,18 @@ bool ItemGraphics::PurgeUnusedGraphics()
     } while (purged);
     do
     {
-        vector<SubItemWrapper>::iterator it;
         result = false;
-        for (it = sub_items.begin(); it != sub_items.end(); it++)
+        for (vector<SubItemWrapper>::iterator sub_item = sub_items.begin(); sub_item != sub_items.end(); sub_item++)
         {
-            if (it->idle_ticks >= 50)
+            if (sub_item->unfetched_frames >= 80)
             {
-                it->FreeResource();
-                sub_items.erase(it);
+                sub_item->FreeResource();
+                sub_items.erase(sub_item);
                 result = true;
                 break;
             }
         }
     } while (result);
-    return result;
 }
 
 // Frees every map item picture and empties that list.
@@ -194,7 +233,12 @@ void ItemGraphics::ReleaseGraphics()
     {
         items.clear();
         last_index = -1;
-        pending_count = 0;
+        if (pending_count > 0)
+        {
+            pending_count = 0;
+            if (!pending_count && !sub_item_pending_count)
+                sub_items_drained = true;
+        }
     }
 }
 
@@ -207,7 +251,12 @@ void ItemGraphics::ReleaseSubItemGraphics()
     {
         sub_items.clear();
         sub_item_last_index = -1;
-        sub_item_pending_count = 0;
+        if (sub_item_pending_count > 0)
+        {
+            sub_item_pending_count = 0;
+            if (!pending_count && !sub_item_pending_count)
+                sub_items_drained = true;
+        }
     }
 }
 
@@ -219,11 +268,12 @@ bool ItemGraphics::RequestGraphic(int graphic_id)
     char not_queued = true;
     for (it = items.begin(); it != items.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     // No map item picture is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -239,11 +289,12 @@ bool ItemGraphics::RequestSubItemGraphic(int graphic_id)
     char not_queued = true;
     for (it = sub_items.begin(); it != sub_items.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
         QueueSubItemGraphic(graphic_id);
@@ -258,7 +309,7 @@ ItemWrapper ItemGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }
@@ -273,7 +324,7 @@ SubItemWrapper ItemGraphics::GetSubItemGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }

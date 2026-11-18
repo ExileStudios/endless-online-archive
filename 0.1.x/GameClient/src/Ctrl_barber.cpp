@@ -6,6 +6,7 @@
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Ctrl_status.h"
+
 #pragma package(smart_init)
 
 BarberController::BarberController()
@@ -41,10 +42,9 @@ void BarberController::Open(int session_id)
     MainForm->players->ReloadGraphics(PlayerId_Preview);
     MainForm->gfx->CreateBarberGraphics();
     MainForm->gfx->LoadBarberGraphics();
-    int level_price = 200 * MainForm->animation->interface_controller->status->level;
-    price = level_price;
-    if (level_price < 200)
-        price = 200;
+    price = 20 * MainForm->animation->interface_controller->status->level;
+    if (price < 20)
+        price = 20;
     npc_session_id = session_id;
     is_visible = true;
     MainForm->redraw_needed = true;
@@ -86,7 +86,7 @@ void BarberController::MouseDown(int x, int y, int button)
             {
                 MainForm->sfx->PlaySfx(SfxSound_Select);
                 hair_style++;
-                if (hair_style > 20)
+                if (hair_style > 50)
                     hair_style = 0;
                 MainForm->players->SetPreviewHairStyle(hair_style);
                 MainForm->players->ReloadGraphics(PlayerId_Preview);
@@ -155,7 +155,7 @@ void BarberController::MouseMove(int x, int y)
             window_y = 116;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= window_y + 20 || y >= window_y + 134 || x <= window_x + 17 || x >= window_x + 190 || is_dragging))
+    if (y > window_y + 20 && y < window_y + 134 && x > window_x + 17 && x < window_x + 190 && !is_dragging)
     {
         int row = (y - window_y - 23) / NPC_LIST_ROW_HEIGHT;
         if (row > 2)
@@ -171,7 +171,7 @@ void BarberController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < window_x + 215 || x > window_x + 304 || y < window_y + 151 || y > window_y + 178))
+    if (x >= window_x + 215 && x <= window_x + 304 && y >= window_y + 151 && y <= window_y + 178)
     {
         if (!close_hovered)
         {

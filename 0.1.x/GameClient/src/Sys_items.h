@@ -1,6 +1,7 @@
 #ifndef Sys_itemsH
 #define Sys_itemsH
 
+#include <new>
 #include <vector.h>
 
 #include "Sys_item.h"
@@ -10,13 +11,11 @@ struct MapItems
 {
     char hover_label_shown;
     char list_changed;
-    char unused_bytes[6];
     vector<MapItem> items;
     vector<MapItem> protected_items;
     int current_index;
     int mouse_x;
     int mouse_y;
-    char second_unused_bytes[4];
 
     MapItems();
     ~MapItems();

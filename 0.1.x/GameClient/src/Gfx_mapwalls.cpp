@@ -1,9 +1,11 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Gfx_mapwalls.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
 #include "Gfx_wall.h"
+
 #pragma package(smart_init)
 
 WallGraphics::WallGraphics(char preload)
@@ -42,17 +44,19 @@ void WallGraphics::AgeGraphics()
 {
     for (vector<WallWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
     {
-        if (!it->was_used && it->is_loaded)
-            it->idle_ticks++;
+        if (!it->fetched && it->is_loaded)
+            it->unfetched_frames++;
         else
-            it->idle_ticks = 0;
-        it->was_used = false;
+            it->unfetched_frames = 0;
+        it->fetched = false;
     }
 }
 
-// Loads the first queued wall, opening the library when no load has it open.
+// Loads one waiting wall graphic from its library each call; one that failed to load twice is freed and waits no
+// longer.
 void WallGraphics::LoadPendingGraphic()
 {
+    vector<WallWrapper>::iterator it;
     // The call after the wall queue empties closes the library again, unless it is kept open.
     if (queue_drained)
     {
@@ -71,31 +75,50 @@ void WallGraphics::LoadPendingGraphic()
             library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapWalls).c_str());
             library_open = true;
         }
-        for (vector<WallWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
+        it = entries.begin();
+        while (it != entries.end())
         {
             if (!it->is_loaded)
             {
-                HMODULE open_library = library;
-                it->CreateResource();
-                GraphicSize size = it->resource->LoadSurface((int)open_library, it->graphic_id + 100);
-                it->width = size.width;
-                it->height = size.height;
-                if (size.width != -1 && size.height != 1)
+                if (it->idle_ticks > 1)
                 {
+                    if (it->idle_ticks == 2)
+                    {
+                        it->idle_ticks = 250;
+                        it->FreeResource();
+                        pending_count--;
+                        if (!pending_count)
+                            queue_drained = true;
+                    }
+                }
+                else
+                {
+                    int open_library = (int)library;
+                    it->CreateResource();
+                    GraphicSize size = it->resource->LoadSurface(open_library, it->graphic_id + 100);
+                    it->width = size.width;
+                    it->height = size.height;
+                    if (size.width == -1)
+                    {
+                        it->idle_ticks++;
+                        break;
+                    }
                     it->is_loaded = true;
+                    it->unfetched_frames = 0;
                     it->idle_ticks = 0;
                     pending_count--;
+                    if (!pending_count)
+                        queue_drained = true;
+                    break;
                 }
-                if (!pending_count)
-                    queue_drained = true;
-                break;
             }
+            it++;
         }
     }
 }
 
 // Frees every wall that has gone unfetched for the purge age.
-bool WallGraphics::PurgeUnusedGraphics()
+void WallGraphics::PurgeUnusedGraphics()
 {
     bool result;
     // An erase ends the walk, so it starts over after each wall it frees.
@@ -104,7 +127,7 @@ bool WallGraphics::PurgeUnusedGraphics()
         result = false;
         for (vector<WallWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->idle_ticks >= 42)
+            if (it->unfetched_frames >= 80)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -113,7 +136,6 @@ bool WallGraphics::PurgeUnusedGraphics()
             }
         }
     } while (result);
-    return result;
 }
 
 // Frees every wall and empties the list.
@@ -125,7 +147,11 @@ void WallGraphics::ReleaseGraphics()
     {
         entries.clear();
         last_index = -1;
-        pending_count = 0;
+        if (pending_count > 0)
+        {
+            pending_count = 0;
+            queue_drained = true;
+        }
     }
 }
 
@@ -139,26 +165,28 @@ void WallGraphics::LoadGraphicNow(int graphic_id)
         if (graphic_id == it->graphic_id)
             result = true;
     }
-    if (!result && (Application->Active || MainForm->config->GetFullscreen() == 0))
+    if (!result && (Application->Active || !MainForm->config->GetFullscreen()))
     {
         WallWrapper handle(graphic_id);
         entries.insert(entries.end(), handle);
-        for (it = entries.begin(); it != entries.end(); it++)
+        it = entries.begin();
+        while (it != entries.end())
         {
             if (!it->is_loaded && graphic_id == it->graphic_id)
             {
-                HMODULE module = library;
+                int module = (int)library;
                 it->CreateResource();
-                GraphicSize size = it->resource->LoadSurface((int)module, it->graphic_id + 100);
+                GraphicSize size = it->resource->LoadSurface(module, it->graphic_id + 100);
                 it->width = size.width;
                 it->height = size.height;
                 if (size.width != -1 && size.height != 1)
                 {
                     it->is_loaded = true;
-                    it->idle_ticks = 0;
+                    it->unfetched_frames = 0;
                 }
                 break;
             }
+            it++;
         }
     }
 }
@@ -171,11 +199,12 @@ bool WallGraphics::RequestGraphic(int graphic_id)
     char not_queued = true;
     for (it = entries.begin(); it != entries.end(); it++)
     {
-        if (graphic_id != it->graphic_id)
-            continue;
-        not_queued = false;
-        if (it->is_loaded)
-            is_loaded = true;
+        if (graphic_id == it->graphic_id)
+        {
+            not_queued = false;
+            if (it->is_loaded)
+                is_loaded = true;
+        }
     }
     // No wall is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -191,7 +220,7 @@ WallWrapper WallGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = true;
+            i->fetched = true;
             break;
         }
     }

@@ -3,6 +3,8 @@
 
 #include <Classes.hpp>
 
+#define HELP_VISIBLE_LINES 7
+
 // The help panel: a page read from a help file, as lines with a bold flag, an icon flag and an optional link to
 // another page, with a scroll bar.
 struct HelpController

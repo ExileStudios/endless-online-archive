@@ -7,8 +7,12 @@
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
 #include "Ctrl_status.h"
+#include "Ctrl_inventory.h"
+#include "Ctrl_tooltip.h"
+
 #pragma package(smart_init)
 
+// A paperdoll with no item in any slot, its window at its default spot.
 PaperdollController::PaperdollController()
 {
     window_x = 133;
@@ -34,6 +38,10 @@ PaperdollController::PaperdollController()
     equipped_bracer1 = -1;
     equipped_bracer2 = -1;
     equipped_accessory = -1;
+    tooltip = new Tooltip(6, 0);
+    tooltip->SetFlipEdge(630, 63);
+    tooltip->SetVerticalAlign(TooltipAlign_Centered);
+    tooltip->SetShowCursed(true);
 }
 
 PaperdollController::~PaperdollController()
@@ -44,13 +52,10 @@ PaperdollController::~PaperdollController()
 // The item's type picks the box, wherever it is dropped; a drop on a right-hand box asks for the second of a pair.
 void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
 {
-    char can_equip;
-    int sub_slot;
-    int item_type;
     int required_class;
     bool dropped_on_slot = false;
-    can_equip = false;
-    sub_slot = 0;
+    char can_equip = false;
+    int sub_slot = 0;
     if (is_own_character)
     {
         if (x >= window_x + 86 && y >= window_y + 19 && x <= window_x + 141 && y <= window_y + 72)
@@ -94,8 +99,9 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             dropped_on_slot = true;
         if (dropped_on_slot)
         {
-            item_type = MainForm->item_values->GetType(item_id);
+            int item_type = MainForm->item_values->GetType(item_id);
             required_class = MainForm->item_values->GetClassRequirement(item_id);
+            // The player's class must be the one the item asks for, or one that grows out of it.
             if (!MainForm->class_values->IsDescendantOf(MainForm->animation->interface_controller->status->class_id,
                 required_class))
             {
@@ -265,6 +271,12 @@ void PaperdollController::Open(int frame_row, String name_text, String home_text
     bracer1_graphic = -1;
     bracer2_graphic = -1;
     accessory_graphic = -1;
+}
+
+void PaperdollController::Close()
+{
+    is_visible = false;
+    MainForm->redraw_needed = true;
 }
 
 // A click on the paperdoll: the left button picks up an equipped item to drag, or starts moving the window.
@@ -642,17 +654,16 @@ void PaperdollController::MouseDown(int x, int y, int button)
                 MainForm->dragging = true;
             }
         }
-        if (!slot_clicked && x >= window_x)
+        // A click on no slot starts dragging the window.
+        if (!slot_clicked && x >= window_x && x <= window_x + 360 && y >= window_y && y <= window_y + 280)
         {
-            if (x <= window_x + 360 && y >= window_y && y <= window_y + 280)
-            {
-                is_dragging = true;
-                drag_mode = 1;
-                drag_offset_x = x - window_x;
-                drag_offset_y = y - window_y;
-            }
+            is_dragging = true;
+            drag_mode = 1;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
         }
     }
+    // Another button takes the item under the mouse off, when the inventory has room; a cursed one stays.
     else if (is_own_character)
     {
         if (x >= window_x + 86 && y >= window_y + 19 && x <= window_x + 141 && y <= window_y + 72 && head_graphic > 0)
@@ -723,7 +734,8 @@ void PaperdollController::MouseDown(int x, int y, int button)
     }
 }
 
-// Moves a dragged window, kept on screen, tracks the close button, and names the hovered box in the status bar.
+// Moves a dragged window, kept on screen; tracks the close button and the equipment box under the mouse, showing the
+// equipped item's tip there.
 void PaperdollController::MouseMove(int x, int y)
 {
     if (is_dragging && drag_mode == 1)
@@ -755,126 +767,148 @@ void PaperdollController::MouseMove(int x, int y)
         MainForm->redraw_needed = true;
     }
     if (x >= window_x + 86 && y >= window_y + 19 && x <= window_x + 141 && y <= window_y + 72 &&
-        !MainForm->animation->interface_controller->inventory->dragging_from_paperdoll && hovered_slot != PaperdollSlot_Head)
+        !MainForm->animation->interface_controller->inventory->dragging_from_paperdoll)
     {
-        String head_text = MainForm->strings->GetText(GameText_HatEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Head))
+            ShowSlotInfo(GameText_HatEquipment, head_item_id, 141, 44);
         if (head_item_id > 0)
-            head_text = head_text + ", " + MainForm->item_values->GetName(head_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, head_text);
-        hovered_slot = PaperdollSlot_Head;
+            return;
     }
-    if (x >= window_x + 151 && y >= window_y + 50 && x <= window_x + 206 && y <= window_y + 72 && hovered_slot != PaperdollSlot_Necklace)
+    if (x >= window_x + 151 && y >= window_y + 50 && x <= window_x + 206 && y <= window_y + 72)
     {
-        String necklace_text = MainForm->strings->GetText(GameText_NecklaceEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Necklace))
+            ShowSlotInfo(GameText_NecklaceEquipment, necklace_item_id, 206, 50);
         if (necklace_item_id > 0)
-            necklace_text = necklace_text + ", " + MainForm->item_values->GetName(necklace_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, necklace_text);
-        hovered_slot = PaperdollSlot_Necklace;
+            return;
     }
-    if (x >= window_x + 21 && y >= window_y + 81 && x <= window_x + 76 && y <= window_y + 178 && hovered_slot != PaperdollSlot_Weapon)
+    if (x >= window_x + 21 && y >= window_y + 81 && x <= window_x + 76 && y <= window_y + 178)
     {
-        String weapon_text = MainForm->strings->GetText(GameText_WeaponEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Weapon))
+            ShowSlotInfo(GameText_WeaponEquipment, weapon_item_id, 76, 131);
         if (weapon_item_id > 0)
-            weapon_text = weapon_text + ", " + MainForm->item_values->GetName(weapon_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, weapon_text);
-        hovered_slot = PaperdollSlot_Weapon;
+            return;
     }
-    if (x >= window_x + 86 && y >= window_y + 81 && x <= window_x + 141 && y <= window_y + 178 && hovered_slot != PaperdollSlot_Armor)
+    if (x >= window_x + 86 && y >= window_y + 81 && x <= window_x + 141 && y <= window_y + 178)
     {
-        String armor_text = MainForm->strings->GetText(GameText_ArmorEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Armor))
+            ShowSlotInfo(GameText_ArmorEquipment, armor_item_id, 141, 131);
         if (armor_item_id > 0)
-            armor_text = armor_text + ", " + MainForm->item_values->GetName(armor_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, armor_text);
-        hovered_slot = PaperdollSlot_Armor;
+            return;
     }
-    if (x >= window_x + 151 && y >= window_y + 81 && x <= window_x + 206 && y <= window_y + 178 && hovered_slot != PaperdollSlot_Shield)
+    if (x >= window_x + 151 && y >= window_y + 81 && x <= window_x + 206 && y <= window_y + 178)
     {
-        String shield_text = MainForm->strings->GetText(GameText_ShieldEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Shield))
+            ShowSlotInfo(GameText_ShieldEquipment, shield_item_id, 206, 131);
         if (shield_item_id > 0)
-            shield_text = shield_text + ", " + MainForm->item_values->GetName(shield_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, shield_text);
-        hovered_slot = PaperdollSlot_Shield;
+            return;
     }
-    if (x >= window_x + 21 && y >= window_y + 187 && x <= window_x + 76 && y <= window_y + 240 && hovered_slot != PaperdollSlot_Gloves)
+    if (x >= window_x + 21 && y >= window_y + 187 && x <= window_x + 76 && y <= window_y + 240)
     {
-        String gloves_text = MainForm->strings->GetText(GameText_GlovesEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Gloves))
+            ShowSlotInfo(GameText_GlovesEquipment, gloves_item_id, 76, 212);
         if (gloves_item_id > 0)
-            gloves_text = gloves_text + ", " + MainForm->item_values->GetName(gloves_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, gloves_text);
-        hovered_slot = PaperdollSlot_Gloves;
+            return;
     }
-    if (x >= window_x + 86 && y >= window_y + 187 && x <= window_x + 141 && y <= window_y + 209 && hovered_slot != PaperdollSlot_Belt)
+    if (x >= window_x + 86 && y >= window_y + 187 && x <= window_x + 141 && y <= window_y + 209)
     {
-        String belt_text = MainForm->strings->GetText(GameText_BeltEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Belt))
+            ShowSlotInfo(GameText_BeltEquipment, belt_item_id, 141, 187);
         if (belt_item_id > 0)
-            belt_text = belt_text + ", " + MainForm->item_values->GetName(belt_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, belt_text);
-        hovered_slot = PaperdollSlot_Belt;
+            return;
     }
-    if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209 && hovered_slot != PaperdollSlot_Text71Left)
+    if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209)
     {
-        String ring1_text = MainForm->strings->GetText(GameText_RingEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text71Left))
+            ShowSlotInfo(GameText_RingEquipment, ring1_item_id, 173, 187);
         if (ring1_item_id > 0)
-            ring1_text = ring1_text + ", " + MainForm->item_values->GetName(ring1_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, ring1_text);
-        hovered_slot = PaperdollSlot_Text71Left;
+            return;
     }
-    if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209 && hovered_slot != PaperdollSlot_Text71Right)
+    if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209)
     {
-        String ring2_text = MainForm->strings->GetText(GameText_RingEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text71Right))
+            ShowSlotInfo(GameText_RingEquipment, ring2_item_id, 206, 187);
         if (ring2_item_id > 0)
-            ring2_text = ring2_text + ", " + MainForm->item_values->GetName(ring2_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, ring2_text);
-        hovered_slot = PaperdollSlot_Text71Right;
+            return;
     }
-    if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Boots)
+    if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271)
     {
-        String boots_text = MainForm->strings->GetText(GameText_BootsEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Boots))
+            ShowSlotInfo(GameText_BootsEquipment, boots_item_id, 141, 243);
         if (boots_item_id > 0)
-            boots_text = boots_text + ", " + MainForm->item_values->GetName(boots_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, boots_text);
-        hovered_slot = PaperdollSlot_Boots;
+            return;
     }
-    if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240 && hovered_slot != PaperdollSlot_Text72Left)
+    if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240)
     {
-        String armlet1_text = MainForm->strings->GetText(GameText_ArmletEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text72Left))
+            ShowSlotInfo(GameText_ArmletEquipment, armlet1_item_id, 173, 218);
         if (armlet1_item_id > 0)
-            armlet1_text = armlet1_text + ", " + MainForm->item_values->GetName(armlet1_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, armlet1_text);
-        hovered_slot = PaperdollSlot_Text72Left;
+            return;
     }
-    if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240 && hovered_slot != PaperdollSlot_Text72Right)
+    if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240)
     {
-        String armlet2_text = MainForm->strings->GetText(GameText_ArmletEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text72Right))
+            ShowSlotInfo(GameText_ArmletEquipment, armlet2_item_id, 206, 218);
         if (armlet2_item_id > 0)
-            armlet2_text = armlet2_text + ", " + MainForm->item_values->GetName(armlet2_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, armlet2_text);
-        hovered_slot = PaperdollSlot_Text72Right;
+            return;
     }
-    if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text73Left)
+    if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271)
     {
-        String bracer1_text = MainForm->strings->GetText(GameText_BracerEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text73Left))
+            ShowSlotInfo(GameText_BracerEquipment, bracer1_item_id, 173, 249);
         if (bracer1_item_id > 0)
-            bracer1_text = bracer1_text + ", " + MainForm->item_values->GetName(bracer1_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, bracer1_text);
-        hovered_slot = PaperdollSlot_Text73Left;
+            return;
     }
-    if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text73Right)
+    if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271)
     {
-        String bracer2_text = MainForm->strings->GetText(GameText_BracerEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text73Right))
+            ShowSlotInfo(GameText_BracerEquipment, bracer2_item_id, 206, 249);
         if (bracer2_item_id > 0)
-            bracer2_text = bracer2_text + ", " + MainForm->item_values->GetName(bracer2_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, bracer2_text);
-        hovered_slot = PaperdollSlot_Text73Right;
+            return;
     }
-    if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text76)
+    if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271)
     {
-        String accessory_text = MainForm->strings->GetText(GameText_MiscellaneousEquipment);
+        if (SetHoveredSlot(PaperdollSlot_Text76))
+            ShowSlotInfo(76, accessory_item_id, 76, 249);
         if (accessory_item_id > 0)
-            accessory_text = accessory_text + ", " + MainForm->item_values->GetName(accessory_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, accessory_text);
-        hovered_slot = PaperdollSlot_Text76;
+            return;
     }
+    if (tooltip->Hide())
+        MainForm->redraw_needed = true;
+    hovered_slot = PaperdollSlot_None;
+}
+
+bool PaperdollController::SetHoveredSlot(unsigned char slot)
+{
+    if (slot != hovered_slot)
+    {
+        hovered_slot = slot;
+        return true;
+    }
+    return false;
+}
+
+bool PaperdollController::HasHoveredSlot()
+{
+    if (hovered_slot > PaperdollSlot_NoSlot)
+        return true;
+    return false;
+}
+
+// Puts the paperdoll slot's name on the status line, with the worn item's name and weight and the weight carried,
+// and shows the item's tip.
+void PaperdollController::ShowSlotInfo(unsigned char text_id, int item_id, int x_offset, int y_offset)
+{
+    String message = MainForm->strings->GetText(text_id);
+    if (item_id > 0)
+    {
+        tooltip->ShowItem(item_id);
+        tooltip->SetAnchorX(window_x + x_offset);
+        tooltip->SetAnchorY(window_y + y_offset);
+        message += ", " + MainForm->item_values->GetName(item_id);
+        message += ", " + IntToStr(MainForm->item_values->GetWeight(item_id)) + " weight";
+    }
+    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, message);
+    MainForm->redraw_needed = true;
 }
 
 // Ends moving the window.

@@ -10,12 +10,15 @@ struct IconWrapper
     unsigned short graphic_id;
     char is_loaded;
     char was_used;
-    short idle_ticks;
+    unsigned char idle_ticks;
+    char fetched;
+    short unfetched_frames;
 
     IconWrapper();
     IconWrapper(int requested_id);
     ~IconWrapper();
     void CreateResource();
+    void FreeResource();
 };
 
 #endif

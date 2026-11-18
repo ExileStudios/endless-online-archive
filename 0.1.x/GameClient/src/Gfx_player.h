@@ -16,11 +16,13 @@ enum PlayerFrame
     PlayerFrame_RangedAttack = 10
 };
 
-class TDDBltFX;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#define PLAYER_FRAME_WIDTH 68
 
 // The surfaces of one player: front and back sheets of eleven frames, the emote face strip and the name tag.
 struct PlayerResources
@@ -30,10 +32,10 @@ struct PlayerResources
     TDx_DrawSurface *emote_strip;
     TDx_DrawSurface *name_tag_surface;
     TDDBltFX *fill_fx;
-    Windows::TRect sheet_rect;
-    Windows::TRect emote_strip_rect;
-    Windows::TRect name_tag_text_rect;
-    Windows::TRect name_tag_rect;
+    TRect sheet_rect;
+    TRect emote_strip_rect;
+    TRect name_tag_text_rect;
+    TRect name_tag_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;
@@ -41,13 +43,13 @@ struct PlayerResources
     PlayerResources();
     ~PlayerResources();
     void ClearSheets();
-    void DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    void DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    void DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    void DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    bool DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    bool DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    bool DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    bool DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
     void RenderNameTag(String text, int color_index);
-    Windows::TRect GetFrameRect(int frame);
-    Windows::TRect GetEmoteFaceRect(int emote_index);
+    TRect GetFrameRect(int frame);
+    TRect GetEmoteFaceRect(int emote_index);
 };
 
 #endif

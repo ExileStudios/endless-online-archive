@@ -3,9 +3,8 @@
 
 #include "Tmainform.h"
 #include "Gfx_sprites.h"
-#pragma package(smart_init)
 
-#define MAP_ITEM_REMOVAL_TICKS 6
+#pragma package(smart_init)
 
 MapItems::MapItems()
 {
@@ -22,8 +21,8 @@ void MapItems::UpdateHoverLabel()
     if (!MainForm->players->hover_label_shown && !MainForm->npcs->hover_label_shown)
     {
         char first_match = true;
-        for (vector<MapItem>::reverse_iterator it(items.end()); it != vector<MapItem>::reverse_iterator(items.begin());
-            it++)
+        vector<MapItem>::reverse_iterator it(items.end());
+        for (; it != vector<MapItem>::reverse_iterator(items.begin()); it++)
         {
             if (MainForm->map->GetCursorX() == (*it).x && MainForm->map->GetCursorY() == (*it).y)
             {
@@ -77,12 +76,12 @@ void MapItems::UpdateHoverLabel()
     }
     else
     {
-        for (vector<MapItem>::reverse_iterator it(items.end()); it != vector<MapItem>::reverse_iterator(items.begin());
-            it++)
+        vector<MapItem>::reverse_iterator clear_it(items.end());
+        for (; clear_it != vector<MapItem>::reverse_iterator(items.begin()); clear_it++)
         {
-            if ((*it).label_shown)
+            if ((*clear_it).label_shown)
             {
-                (*it).label_shown = false;
+                (*clear_it).label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -147,7 +146,7 @@ void MapItems::SortByPosition()
     do
     {
         swapped = false;
-        for (int i = 0; i < (int)GetCount() - 1; i++)
+        for (int i = 0; i < (int)(GetCount() - 1); i++)
         {
             MapItem handle;
             if (items[i].y == items[i + 1].y && items[i].x > items[i + 1].x)
@@ -215,21 +214,22 @@ MapItem MapItems::GetItem(int index)
 int MapItems::GetProtectionOwnerAt(int x, int y)
 {
     int owner_id = -1;
-    vector<MapItem>::iterator it;
-    for (it = items.begin(); it != items.end(); it++)
+    vector<MapItem>::iterator walk;
+    for (walk = items.begin(); walk != items.end(); walk++)
     {
-        if (x == it->x && y == it->y)
-        {
-            if (it->protection_ticks > 0)
-                owner_id = it->owner_id;
-        }
+        if (x == walk->x && y == walk->y && walk->protection_ticks > 0)
+            owner_id = walk->owner_id;
     }
     if (owner_id == PlayerId_None)
     {
+        vector<MapItem>::iterator it;
         for (it = protected_items.begin(); it != protected_items.end(); it++)
         {
-            if (x == it->x && y == it->y && it->protection_ticks > 0)
-                owner_id = it->owner_id;
+            if (x == it->x && y == it->y)
+            {
+                if ((it->protection_ticks > 0))
+                    owner_id = it->owner_id;
+            }
         }
     }
     return owner_id;
@@ -239,18 +239,19 @@ int MapItems::GetProtectionOwnerAt(int x, int y)
 int MapItems::GetProtectionOwner(int uid)
 {
     int owner_id = -1;
-    vector<MapItem>::iterator it;
-    for (it = items.begin(); it != items.end(); it++)
+    vector<MapItem>::iterator walk;
+    for (walk = items.begin(); walk != items.end(); walk++)
     {
-        if (uid == it->uid)
+        if (uid == walk->uid)
         {
-            if (it->protection_ticks > 0)
-                owner_id = it->owner_id;
+            if (walk->protection_ticks > 0)
+                owner_id = walk->owner_id;
             break;
         }
     }
     if (owner_id == PlayerId_None)
     {
+        vector<MapItem>::iterator it;
         for (it = protected_items.begin(); it != protected_items.end(); it++)
         {
             if (uid == it->uid && it->protection_ticks > 0)
@@ -280,12 +281,13 @@ bool MapItems::HasItemAt(int x, int y)
     vector<MapItem>::iterator it;
     for (it = items.begin(); it != items.end(); it++)
     {
-        if (x != it->x)
-            continue;
-        if (y == it->y)
+        if ((x == it->x))
         {
-            found = true;
-            break;
+            if ((y == it->y))
+            {
+                found = true;
+                break;
+            }
         }
     }
     return found;

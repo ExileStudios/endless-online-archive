@@ -1,11 +1,12 @@
 #ifndef Gfx_wallH
 #define Gfx_wallH
 
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The surface of one wall graphic, filled from a bitmap resource of its library.
 struct WallResource
@@ -22,9 +23,8 @@ struct WallResource
 
     WallResource();
     ~WallResource();
+    TRect GetFrameRect(int frame);
     GraphicSize LoadSurface(int library, int resource_id);
-    Windows::TRect GetFrameRect(int frame);
 };
-
 
 #endif

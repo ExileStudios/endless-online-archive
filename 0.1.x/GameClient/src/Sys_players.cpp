@@ -8,10 +8,8 @@
 #include "Ctrl_game.h"
 #include "Gfx_player.h"
 #include "Ctrl_social.h"
-#pragma package(smart_init)
 
-#define EMOTE_FRAME_COUNT 3
-#define MIN_PAPERDOLL_RESOURCE 101
+#pragma package(smart_init)
 
 Players::Players(char preload_option)
 {
@@ -112,14 +110,16 @@ void Players::ReloadGraphicsLibraries()
 // One step of every player's timers and animations, then the name label of the player under the mouse.
 void Players::Animate()
 {
+    Player *i;
+    int screen_x;
+    int screen_y;
     char position_changed;
     char recenter_view;
-    char no_hover_yet;
-    int screen_x = 0;
-    int screen_y;
+    int effect_volume;
     position_changed = false;
     recenter_view = false;
-    for (vector<Player>::iterator i = players.begin(); i != players.end(); i++)
+    i = players.begin();
+    while (i != players.end())
     {
         // A text label counts down; a blinking one redraws on odd counts.
         if (i->text_label_shown)
@@ -161,7 +161,8 @@ void Players::Animate()
             i->effect_start = false;
             i->effect_running = true;
             i->effect_frame = 0;
-            MainForm->sound_mapper->PlayEffectSound(i->effect_id);
+            effect_volume = MainForm->players->GetDistanceVolume(i->player_id);
+            MainForm->sound_mapper->PlayEffectSound(i->effect_id, effect_volume);
         }
         if (i->effect_running)
         {
@@ -244,7 +245,10 @@ void Players::Animate()
             if (i->jump_frame <= 2)
             {
                 if (!i->jump_frame)
-                    MainForm->sfx->PlaySfx(SfxSound_Jump);
+                {
+                    int step_volume = MainForm->sfx->GetDistanceVolume((short)i->x, (short)i->y);
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_Jump, step_volume);
+                }
                 i->jump_frame++;
             }
             else
@@ -275,24 +279,21 @@ void Players::Animate()
             i->attack_frame = -1;
             i->attacking = true;
         }
-        if (i->chair_sit_start)
+        if (i->chair_sit_start && i->sit_sheets_loaded)
         {
-            if (i->sit_sheets_loaded)
+            i->sitting_on_chair = true;
+            i->chair_sit_start = false;
+            i->sitting_on_floor = false;
+            i->floor_sit_start = false;
+            i->x = i->target_x;
+            i->y = i->target_y;
+            i->direction = i->target_direction;
+            i->redraw = true;
+            position_changed = true;
+            if (i->recenter_view)
             {
-                i->sitting_on_chair = true;
-                i->chair_sit_start = false;
-                i->sitting_on_floor = false;
-                i->floor_sit_start = false;
-                i->x = i->target_x;
-                i->y = i->target_y;
-                i->direction = i->target_direction;
-                i->redraw = true;
-                position_changed = true;
-                if (i->recenter_view)
-                {
-                    i->recenter_view = false;
-                    recenter_view = true;
-                }
+                i->recenter_view = false;
+                recenter_view = true;
             }
         }
         if (i->floor_sit_start && i->sit_sheets_loaded)
@@ -307,22 +308,19 @@ void Players::Animate()
             i->redraw = true;
             position_changed = true;
         }
-        if (i->stand_up_start)
+        if (i->stand_up_start && i->stand_sheet_loaded)
         {
-            if (i->stand_sheet_loaded)
+            i->sitting_on_chair = false;
+            i->sitting_on_floor = false;
+            i->stand_up_start = false;
+            i->x = i->target_x;
+            i->y = i->target_y;
+            i->redraw = true;
+            position_changed = true;
+            if (i->recenter_view)
             {
-                i->sitting_on_chair = false;
-                i->sitting_on_floor = false;
-                i->stand_up_start = false;
-                i->x = i->target_x;
-                i->y = i->target_y;
-                i->redraw = true;
-                position_changed = true;
-                if (i->recenter_view)
-                {
-                    i->recenter_view = false;
-                    recenter_view = true;
-                }
+                i->recenter_view = false;
+                recenter_view = true;
             }
         }
         if (i->attacking)
@@ -333,7 +331,11 @@ void Players::Animate()
                 if (i->attack_frame == 1)
                 {
                     if (!i->silent_attack)
-                        MainForm->sound_mapper->PlayWeaponSound(i->weapon);
+                    {
+                        int weapon_volume;
+                        weapon_volume = MainForm->players->GetDistanceVolume(i->player_id);
+                        MainForm->sound_mapper->PlayWeaponSound(i->weapon, weapon_volume);
+                    }
                     i->silent_attack = false;
                     if (i->weapon == 49 || i->weapon == 50)
                     {
@@ -412,7 +414,8 @@ void Players::Animate()
             !i->attacking && !i->cast_start && !i->casting && !i->emote_start && !i->emoting)
         {
             i->level_up_pending = false;
-            MainForm->sfx->PlaySfx(SfxSound_LevelUp);
+            int arrive_volume = MainForm->sfx->GetDistanceVolume((short)i->x, (short)i->y);
+            MainForm->sfx->PlayEffectSoundAt(SfxSound_LevelUp, arrive_volume);
             MainForm->map->BlockActionsBriefly();
             i->emote_start = true;
             i->emoting = false;
@@ -426,11 +429,11 @@ void Players::Animate()
             if (i->balloon_timer <= 1)
                 i->CloseBalloon();
         }
+        i++;
     }
-    no_hover_yet = true;
-    // From the end of the list back; only the first player found under the mouse gets the label.
-    for (vector<Player>::reverse_iterator it(players.end()); it != vector<Player>::reverse_iterator(players.begin());
-        it++)
+    char no_hover_yet = true;
+    vector<Player>::reverse_iterator it(players.end());
+    for (; it != vector<Player>::reverse_iterator(players.begin()); it++)
     {
         // The tile's position on screen.
         screen_x = 32 * (*it).x - 32 * (*it).y + MainForm->map->GetScrollOffsetX() + 310;
@@ -446,28 +449,20 @@ void Players::Animate()
                         label_style = 1;
                     if (MainForm->animation->social->IsFriend((*it).name))
                         label_style = 6;
-                    String label_text = (*it).name;
-                    // The guild tag is added unless it starts with a zero or has a space in its first two places.
-                    if ((*it).guild_tag.Length() > 1)
+                    String label_text = (&*it)->name;
+                    if ((*it).guild_tag.Length() > 1 && (&*it)->guild_tag[2] != 32 && (&*it)->guild_tag[1] != 32 &&
+                        (&*it)->guild_tag[1] != 48)
                     {
-                        if ((*it).guild_tag[2] != 32)
+                        // A three-letter tag ending in a space shows its first two letters.
+                        if ((*it).guild_tag.Length() == 3)
                         {
-                            if ((*it).guild_tag[1] != 32)
-                            {
-                                if ((*it).guild_tag[1] != 48)
-                                {
-                                    if ((*it).guild_tag.Length() == 3)
-                                    {
-                                        if ((*it).guild_tag[3] == 32)
-                                            label_text = label_text + " " + (*it).guild_tag.SubString(1, 2);
-                                        else
-                                            label_text = label_text + " " + (*it).guild_tag;
-                                    }
-                                    else
-                                        label_text = label_text + " " + (*it).guild_tag;
-                                }
-                            }
+                            if ((&*it)->guild_tag[3] == 32)
+                                label_text = label_text + " " + (&*it)->guild_tag.SubString(1, 2);
+                            else
+                                label_text = label_text + " " + (&*it)->guild_tag;
                         }
+                        else
+                            label_text = label_text + " " + (&*it)->guild_tag;
                     }
                     MainForm->gfx->sprites->ShowNameLabel(label_text, label_style);
                     (*it).hover_label_shown = true;
@@ -481,13 +476,10 @@ void Players::Animate()
                 (*it).redraw = true;
             }
         }
-        else
+        else if ((*it).hover_label_shown)
         {
-            if ((*it).hover_label_shown)
-            {
-                (*it).hover_label_shown = false;
-                (*it).redraw = true;
-            }
+            (*it).hover_label_shown = false;
+            (*it).redraw = true;
         }
     }
     if (no_hover_yet)
@@ -520,31 +512,28 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
                     break;
                 }
             }
-            else
+            else if (!IsInViewRange(center_x, center_y, it->x, it->y) && it->player_id <= PlayerId_LocalLimit)
             {
-                if (!IsInViewRange(center_x, center_y, it->x, it->y) && it->player_id <= PlayerId_LocalLimit)
+                if (!it->out_of_range)
                 {
-                    if (!it->out_of_range)
-                    {
-                        it->out_of_range = true;
-                        it->removal_countdown = 4;
-                    }
-                    else
-                    {
-                        it->removal_countdown--;
-                        if (it->removal_countdown <= 0)
-                        {
-                            it->FreeResources();
-                            it->CloseBalloon();
-                            players.erase(it);
-                            list_changed = true;
-                            break;
-                        }
-                    }
+                    it->out_of_range = true;
+                    it->removal_countdown = 4;
                 }
                 else
-                    it->out_of_range = false;
+                {
+                    it->removal_countdown--;
+                    if (it->removal_countdown <= 0)
+                    {
+                        it->FreeResources();
+                        it->CloseBalloon();
+                        players.erase(it);
+                        list_changed = true;
+                        break;
+                    }
+                }
             }
+            else
+                it->out_of_range = false;
         }
     } while (list_changed);
 }
@@ -593,9 +582,30 @@ void Players::LoadGraphicsLibraries(int gender)
 // after a run of calls that draw nothing for that gender.
 void Players::LoadPendingGraphics()
 {
-    int loaded_count = 0;
-    for (vector<Player>::iterator i = players.begin(); i != players.end() && loaded_count <= 3; i++)
+    int loaded_count;
+    Player *i;
+    int gender;
+    int skin;
+    int hair_resource;
+    int boots_resource;
+    int armor_resource;
+    int hat_resource;
+    int weapon_resource;
+    int shield_resource;
+    char hair_hidden;
+    char hair_over_hat;
+    char back_shield;
+    int hair_library;
+    int boots_library;
+    int armor_library;
+    int hat_library;
+    int weapon_library;
+    int shield_library;
+    loaded_count = 0;
+    i = players.begin();
+    while (players.end() != i && loaded_count <= 3)
     {
+        // A reload frees the player's sheets and marks every one of them to load again.
         if (i->reload_requested && Application->Active)
         {
             i->FreeResources();
@@ -614,18 +624,19 @@ void Players::LoadPendingGraphics()
         }
         if (i->graphics_pending && !i->reload_requested && (Application->Active || !MainForm->config->GetFullscreen()))
         {
-            int gender = i->gender;
-            int skin = i->skin;
+            gender = i->gender;
+            skin = i->skin;
             // Each part's first bitmap in its library; a number out of range draws nothing.
-            int hair_resource = 40 * i->hair_style + 4 * i->hair_color + 61;
-            int boots_resource = RESOURCES_PER_GRAPHIC * i->boots + 61;
-            int armor_resource = 50 * i->armor + 51;
-            int hat_resource = 10 * i->hat + 91;
-            int weapon_resource = 100 * i->weapon + 1;
-            int shield_resource = 50 * i->shield + 51;
-            char hair_hidden = false;
-            char hair_over_hat = false;
-            char back_shield = false;
+            hair_resource = 40 * i->hair_style + 4 * i->hair_color + 61;
+            boots_resource = 40 * i->boots + 61;
+            armor_resource = 50 * i->armor + 51;
+            hat_resource = 10 * i->hat + 91;
+            weapon_resource = 100 * i->weapon + 1;
+            shield_resource = 50 * i->shield + 51;
+            hair_hidden = false;
+            hair_over_hat = false;
+            back_shield = false;
+            // A graphic number outside 101 to 10000 draws nothing.
             if (hair_resource < MIN_PAPERDOLL_RESOURCE || hair_resource > 10000)
                 hair_resource = 0;
             if (boots_resource < MIN_PAPERDOLL_RESOURCE || boots_resource > 10000)
@@ -638,6 +649,7 @@ void Players::LoadPendingGraphics()
                 weapon_resource = 0;
             if (shield_resource < MIN_PAPERDOLL_RESOURCE || shield_resource > 10000)
                 shield_resource = 0;
+            // Some hats tuck the hair in and others hide it; some shields are worn on the back.
             if (i->hat >= HatGraphic_FirstHairOverHat && i->hat <= HatGraphic_DragonMask)
                 hair_over_hat = true;
             if (i->hat == HatGraphic_FrogHead || i->hat == HatGraphic_Pilotte || i->hat == HatGraphic_Glasses ||
@@ -657,12 +669,6 @@ void Players::LoadPendingGraphics()
                 i->shield == ShieldGraphic_FireArrows || i->shield == ShieldGraphic_GoodForceWings ||
                 i->shield == ShieldGraphic_FireForceWings)
                 back_shield = true;
-            int hair_library;
-            int boots_library;
-            int armor_library;
-            int hat_library;
-            int weapon_library;
-            int shield_library;
             if (!gender)
             {
                 hair_library = (int)hair_library_gender_zero;
@@ -681,6 +687,7 @@ void Players::LoadPendingGraphics()
                 weapon_library = (int)weapon_library_gender_one;
                 shield_library = (int)shield_library_gender_one;
             }
+            // The standing frames, while the player stands still or gets up.
             if (((!i->sitting_on_chair && !i->sitting_on_floor && !i->walking && !i->jumping && !i->attacking &&
                 !i->casting) || i->stand_up_start) && !i->stand_sheet_loaded)
             {
@@ -876,7 +883,7 @@ void Players::LoadPendingGraphics()
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, 18, 6, shield_library, shield_resource + 2);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, 21, 6, shield_library, shield_resource + 1);
                     i->redraw = true;
                     i->sit_sheets_loaded = true;
                     loaded_count++;
@@ -885,153 +892,161 @@ void Players::LoadPendingGraphics()
                 {
                 }
             }
-            // The own character's step cells are drawn before they first move.
-            if (i->walking || i->walk_start || i->jumping || i->jump_start ||
-                MainForm->net_client->GetPlayerId() == i->player_id)
+            // The sitting frames, on a chair or on the floor.
+            // The walking frames; the player's own character loads them even while standing.
+            if ((i->walking || i->walk_start || i->jumping || i->jump_start ||
+                MainForm->net_client->GetPlayerId() == i->player_id) && !i->walk_sheets_loaded)
             {
-                if (!i->walk_sheets_loaded)
+                try
                 {
-                    try
+                    LoadGraphicsLibraries(gender);
+                    if (!i->sheets_cleared)
                     {
-                        LoadGraphicsLibraries(gender);
-                        if (!i->sheets_cleared)
-                        {
-                            i->resources->ClearSheets();
-                            i->sheets_cleared = true;
-                        }
-                        if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
-                        {
-                            for (int back_shield_walk_sheet = 1; back_shield_walk_sheet <= 2; back_shield_walk_sheet++)
-                            {
-                                if (shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                                    i->resources->DrawFrontLayer(back_shield_walk_sheet, 18, 1, shield_library,
-                                        shield_resource);
-                            }
-                        }
-                        if ((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one))
-                        {
-                            for (int j = 1; j <= 2; j++)
-                            {
-                                if (weapon_resource >= MIN_PAPERDOLL_RESOURCE)
-                                {
-                                    i->resources->DrawFrontLayer(j, 0, 0, weapon_library, j + weapon_resource + 1);
-                                    i->resources->DrawBackLayer(j, 0, 0, weapon_library, j + weapon_resource + 5);
-                                }
-                            }
-                        }
-                        if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
-                        {
-                            for (int k = 1; k <= 2; k++)
-                            {
-                                if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
-                                {
-                                    i->resources->DrawFrontLayer(k, 28, 8, hair_library, hair_resource);
-                                    i->resources->DrawBackLayer(k, 28, 8, hair_library, hair_resource + 2);
-                                }
-                            }
-                        }
-                        i->resources->front_sheet->BltFast(98 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 0, skin, 0),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        i->resources->front_sheet->BltFast(166 - gender, gender + 19,
-                            MainForm->gfx->sprites->walk_sheet,
-                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 0, skin, 1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        i->resources->back_sheet->BltFast(98, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 1, skin, 0),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        i->resources->back_sheet->BltFast(166, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 1, skin, 1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
-                        {
-                            if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
-                            {
-                                for (int boots_walk_sheet = 1; boots_walk_sheet <= 2; boots_walk_sheet++)
-                                {
-                                    i->resources->DrawFrontLayer(boots_walk_sheet, 26, 56, boots_library,
-                                        boots_resource + boots_walk_sheet + 1);
-                                    i->resources->DrawBackLayer(boots_walk_sheet, 26, 56, boots_library,
-                                        boots_resource + boots_walk_sheet + 5);
-                                }
-                            }
-                        }
-                        if ((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one))
-                        {
-                            if (armor_resource >= MIN_PAPERDOLL_RESOURCE)
-                            {
-                                for (int armor_walk_sheet = 1; armor_walk_sheet <= 2; armor_walk_sheet++)
-                                {
-                                    i->resources->DrawFrontLayer(armor_walk_sheet, 26, 7, armor_library,
-                                        armor_resource + armor_walk_sheet + 1);
-                                    i->resources->DrawBackLayer(armor_walk_sheet, 26, 7, armor_library,
-                                        armor_resource + armor_walk_sheet + 5);
-                                }
-                            }
-                        }
-                        if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
-                        {
-                            for (int m = 1; m <= 2; m++)
-                            {
-                                if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
-                                {
-                                    i->resources->DrawFrontLayer(m, 28, 8, hair_library, hair_resource + 1);
-                                    i->resources->DrawBackLayer(m, 28, 8, hair_library, hair_resource + 3);
-                                }
-                            }
-                        }
-                        if ((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one))
-                        {
-                            for (int n = 1; n <= 2; n++)
-                            {
-                                if (hat_resource >= MIN_PAPERDOLL_RESOURCE)
-                                {
-                                    i->resources->DrawFrontLayerPixelKeyed(n, 28, 5, hat_library, hat_resource);
-                                    i->resources->DrawBackLayerPixelKeyed(n, 28, 5, hat_library, hat_resource + 2);
-                                }
-                            }
-                        }
-                        if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
-                        {
-                            for (int late_hair_walk_sheet = 1; late_hair_walk_sheet <= 2; late_hair_walk_sheet++)
-                            {
-                                if (hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
-                                {
-                                    i->resources->DrawFrontLayer(late_hair_walk_sheet, 28, 8, hair_library,
-                                        hair_resource + 1);
-                                    i->resources->DrawBackLayer(late_hair_walk_sheet, 28, 8, hair_library,
-                                        hair_resource + 3);
-                                }
-                            }
-                        }
-                        if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
-                        {
-                            for (int ii = 1; ii <= 2; ii++)
-                            {
-                                if (shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
-                                {
-                                    i->resources->DrawFrontLayer(ii, 19, 34, shield_library, ii + shield_resource + 1);
-                                    i->resources->DrawBackLayer(ii, 19, 34, shield_library, ii + shield_resource + 5);
-                                }
-                            }
-                        }
-                        if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
-                        {
-                            for (int back_shield_rear_walk_sheet = 1; back_shield_rear_walk_sheet <= 2;
-                                back_shield_rear_walk_sheet++)
-                            {
-                                if (shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                                    i->resources->DrawBackLayer(back_shield_rear_walk_sheet, 18, 1, shield_library,
-                                        shield_resource + 1);
-                            }
-                        }
-                        i->redraw = true;
-                        i->walk_sheets_loaded = true;
-                        loaded_count++;
+                        i->resources->ClearSheets();
+                        i->sheets_cleared = true;
                     }
-                    catch (...)
+                    if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
                     {
+                        for (int back_shield_walk_sheet = 1; back_shield_walk_sheet <= 2; back_shield_walk_sheet++)
+                        {
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
+                                i->resources->DrawFrontLayer(back_shield_walk_sheet, 18, 1, shield_library,
+                                    shield_resource);
+                        }
                     }
+                    if ((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one))
+                    {
+                        for (int weapon_walk_frame = 1; weapon_walk_frame <= 2; weapon_walk_frame++)
+                        {
+                            if (weapon_resource >= MIN_PAPERDOLL_RESOURCE)
+                            {
+                                i->resources->DrawFrontLayer(weapon_walk_frame, 0, 0, weapon_library,
+                                    weapon_resource + weapon_walk_frame + 1);
+                                i->resources->DrawBackLayer(weapon_walk_frame, 0, 0, weapon_library,
+                                    weapon_resource + weapon_walk_frame + 5);
+                            }
+                        }
+                    }
+                    if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
+                    {
+                        for (int hair_walk_frame = 1; hair_walk_frame <= 2; hair_walk_frame++)
+                        {
+                            if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
+                            {
+                                i->resources->DrawFrontLayer(hair_walk_frame, 28, 8, hair_library, hair_resource);
+                                i->resources->DrawBackLayer(hair_walk_frame, 28, 8, hair_library, hair_resource + 2);
+                            }
+                        }
+                    }
+                    i->resources->front_sheet->BltFast(98 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 0),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->front_sheet->BltFast(166 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 1),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->back_sheet->BltFast(98, gender + 19, MainForm->gfx->sprites->walk_sheet,
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 0),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->back_sheet->BltFast(166, gender + 19, MainForm->gfx->sprites->walk_sheet,
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 1),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
+                    {
+                        if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
+                        {
+                            for (int boots_walk_sheet = 1; boots_walk_sheet <= 2; boots_walk_sheet++)
+                            {
+                                i->resources->DrawFrontLayer(boots_walk_sheet, 26, 56, boots_library,
+                                    boots_resource + boots_walk_sheet + 1);
+                                i->resources->DrawBackLayer(boots_walk_sheet, 26, 56, boots_library,
+                                    boots_resource + boots_walk_sheet + 5);
+                            }
+                        }
+                    }
+                    if ((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one))
+                    {
+                        if (armor_resource >= MIN_PAPERDOLL_RESOURCE)
+                        {
+                            for (int armor_walk_sheet = 1; armor_walk_sheet <= 2; armor_walk_sheet++)
+                            {
+                                i->resources->DrawFrontLayer(armor_walk_sheet, 26, 7, armor_library,
+                                    armor_resource + armor_walk_sheet + 1);
+                                i->resources->DrawBackLayer(armor_walk_sheet, 26, 7, armor_library,
+                                    armor_resource + armor_walk_sheet + 5);
+                            }
+                        }
+                    }
+                    if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
+                    {
+                        for (int hair_top_walk_frame = 1; hair_top_walk_frame <= 2; hair_top_walk_frame++)
+                        {
+                            if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
+                            {
+                                i->resources->DrawFrontLayer(hair_top_walk_frame, 28, 8, hair_library,
+                                    hair_resource + 1);
+                                i->resources->DrawBackLayer(hair_top_walk_frame, 28, 8, hair_library,
+                                    hair_resource + 3);
+                            }
+                        }
+                    }
+                    if ((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one))
+                    {
+                        for (int hat_walk_frame = 1; hat_walk_frame <= 2; hat_walk_frame++)
+                        {
+                            if (hat_resource >= MIN_PAPERDOLL_RESOURCE)
+                            {
+                                i->resources->DrawFrontLayerPixelKeyed(hat_walk_frame, 28, 5, hat_library,
+                                    hat_resource);
+                                i->resources->DrawBackLayerPixelKeyed(hat_walk_frame, 28, 5, hat_library,
+                                    hat_resource + 2);
+                            }
+                        }
+                    }
+                    if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
+                    {
+                        for (int late_hair_walk_sheet = 1; late_hair_walk_sheet <= 2; late_hair_walk_sheet++)
+                        {
+                            if (hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
+                            {
+                                i->resources->DrawFrontLayer(late_hair_walk_sheet, 28, 8, hair_library,
+                                    hair_resource + 1);
+                                i->resources->DrawBackLayer(late_hair_walk_sheet, 28, 8, hair_library,
+                                    hair_resource + 3);
+                            }
+                        }
+                    }
+                    if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
+                    {
+                        for (int shield_walk_frame = 1; shield_walk_frame <= 2; shield_walk_frame++)
+                        {
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE)
+                            {
+                                if (!back_shield)
+                                {
+                                    i->resources->DrawFrontLayer(shield_walk_frame, 19, 34, shield_library,
+                                        shield_resource + shield_walk_frame + 1);
+                                    i->resources->DrawBackLayer(shield_walk_frame, 19, 34, shield_library,
+                                        shield_resource + shield_walk_frame + 5);
+                                }
+                            }
+                        }
+                    }
+                    if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
+                    {
+                        for (int back_shield_rear_walk_sheet = 1; back_shield_rear_walk_sheet <= 2;
+                            back_shield_rear_walk_sheet++)
+                        {
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
+                                i->resources->DrawBackLayer(back_shield_rear_walk_sheet, 18, 1, shield_library,
+                                    shield_resource + 1);
+                        }
+                    }
+                    i->redraw = true;
+                    i->walk_sheets_loaded = true;
+                    loaded_count++;
+                }
+                catch (...)
+                {
                 }
             }
             if ((i->walking || i->walk_start || i->jumping || i->jump_start) && !i->walk_tail_sheets_loaded)
@@ -1055,23 +1070,23 @@ void Players::LoadPendingGraphics()
                     }
                     if ((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one))
                     {
-                        for (int jj = 3; jj <= 4; jj++)
+                        for (int j = 3; j <= 4; j++)
                         {
                             if (weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                             {
-                                i->resources->DrawFrontLayer(jj, 0, 0, weapon_library, jj + weapon_resource + 1);
-                                i->resources->DrawBackLayer(jj, 0, 0, weapon_library, jj + weapon_resource + 5);
+                                i->resources->DrawFrontLayer(j, 0, 0, weapon_library, weapon_resource + j + 1);
+                                i->resources->DrawBackLayer(j, 0, 0, weapon_library, weapon_resource + j + 5);
                             }
                         }
                     }
                     if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
                     {
-                        for (int hair_tail_sheet = 3; hair_tail_sheet <= 4; hair_tail_sheet++)
+                        for (int k = 3; k <= 4; k++)
                         {
                             if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                             {
-                                i->resources->DrawFrontLayer(hair_tail_sheet, 28, 8, hair_library, hair_resource);
-                                i->resources->DrawBackLayer(hair_tail_sheet, 28, 8, hair_library, hair_resource + 2);
+                                i->resources->DrawFrontLayer(k, 28, 8, hair_library, hair_resource);
+                                i->resources->DrawBackLayer(k, 28, 8, hair_library, hair_resource + 2);
                             }
                         }
                     }
@@ -1091,12 +1106,12 @@ void Players::LoadPendingGraphics()
                     {
                         if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            for (int boots_tail_sheet = 3; boots_tail_sheet <= 4; boots_tail_sheet++)
+                            for (int boots_tail_frame = 3; boots_tail_frame <= 4; boots_tail_frame++)
                             {
-                                i->resources->DrawFrontLayer(boots_tail_sheet, 26, 56, boots_library,
-                                    boots_resource + boots_tail_sheet + 1);
-                                i->resources->DrawBackLayer(boots_tail_sheet, 26, 56, boots_library,
-                                    boots_resource + boots_tail_sheet + 5);
+                                i->resources->DrawFrontLayer(boots_tail_frame, 26, 56, boots_library,
+                                    boots_resource + boots_tail_frame + 1);
+                                i->resources->DrawBackLayer(boots_tail_frame, 26, 56, boots_library,
+                                    boots_resource + boots_tail_frame + 5);
                             }
                         }
                     }
@@ -1104,38 +1119,34 @@ void Players::LoadPendingGraphics()
                     {
                         if (armor_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            for (int armor_tail_sheet = 3; armor_tail_sheet <= 4; armor_tail_sheet++)
+                            for (int armor_tail_frame = 3; armor_tail_frame <= 4; armor_tail_frame++)
                             {
-                                i->resources->DrawFrontLayer(armor_tail_sheet, 26, 7, armor_library,
-                                    armor_resource + armor_tail_sheet + 1);
-                                i->resources->DrawBackLayer(armor_tail_sheet, 26, 7, armor_library,
-                                    armor_resource + armor_tail_sheet + 5);
+                                i->resources->DrawFrontLayer(armor_tail_frame, 26, 7, armor_library,
+                                    armor_resource + armor_tail_frame + 1);
+                                i->resources->DrawBackLayer(armor_tail_frame, 26, 7, armor_library,
+                                    armor_resource + armor_tail_frame + 5);
                             }
                         }
                     }
                     if ((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one))
                     {
-                        for (int hair_top_tail_sheet = 3; hair_top_tail_sheet <= 4; hair_top_tail_sheet++)
+                        for (int m = 3; m <= 4; m++)
                         {
                             if (hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                             {
-                                i->resources->DrawFrontLayer(hair_top_tail_sheet, 28, 8, hair_library,
-                                    hair_resource + 1);
-                                i->resources->DrawBackLayer(hair_top_tail_sheet, 28, 8, hair_library,
-                                    hair_resource + 3);
+                                i->resources->DrawFrontLayer(m, 28, 8, hair_library, hair_resource + 1);
+                                i->resources->DrawBackLayer(m, 28, 8, hair_library, hair_resource + 3);
                             }
                         }
                     }
                     if ((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one))
                     {
-                        for (int hat_tail_sheet = 3; hat_tail_sheet <= 4; hat_tail_sheet++)
+                        for (int ii = 3; ii <= 4; ii++)
                         {
                             if (hat_resource >= MIN_PAPERDOLL_RESOURCE)
                             {
-                                i->resources->DrawFrontLayerPixelKeyed(hat_tail_sheet, 28, 5, hat_library,
-                                    hat_resource);
-                                i->resources->DrawBackLayerPixelKeyed(hat_tail_sheet, 28, 5, hat_library,
-                                    hat_resource + 2);
+                                i->resources->DrawFrontLayerPixelKeyed(ii, 28, 5, hat_library, hat_resource);
+                                i->resources->DrawBackLayerPixelKeyed(ii, 28, 5, hat_library, hat_resource + 2);
                             }
                         }
                     }
@@ -1156,10 +1167,15 @@ void Players::LoadPendingGraphics()
                     {
                         for (int kk = 3; kk <= 4; kk++)
                         {
-                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE)
                             {
-                                i->resources->DrawFrontLayer(kk, 19, 34, shield_library, kk + shield_resource + 1);
-                                i->resources->DrawBackLayer(kk, 19, 34, shield_library, kk + shield_resource + 5);
+                                if (!back_shield)
+                                {
+                                    i->resources->DrawFrontLayer(kk, 19, 34, shield_library,
+                                        shield_resource + kk + 1);
+                                    i->resources->DrawBackLayer(kk, 19, 34, shield_library,
+                                        shield_resource + kk + 5);
+                                }
                             }
                         }
                     }
@@ -1192,16 +1208,12 @@ void Players::LoadPendingGraphics()
                         i->sheets_cleared = true;
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
-                        shield_resource >= MIN_PAPERDOLL_RESOURCE)
+                        shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                     {
-                        if (back_shield)
-                        {
-                            i->resources->DrawFrontLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource +
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource + 2);
+                        if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 18, 0, shield_library, shield_resource +
                                 2);
-                            if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                                i->resources->DrawFrontLayer(PlayerFrame_Attack2, 18, 0, shield_library,
-                                    shield_resource + 2);
-                        }
                     }
                     if (((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                         weapon_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1299,19 +1311,16 @@ void Players::LoadPendingGraphics()
                         }
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
-                        hair_resource >= MIN_PAPERDOLL_RESOURCE)
+                        hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                     {
-                        if (hair_over_hat)
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 3);
+                        if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 1);
-                            i->resources->DrawBackLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 3);
-                            if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                            {
-                                i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 12 - gender, hair_library,
-                                    hair_resource + 1);
-                                i->resources->DrawBackLayer(PlayerFrame_Attack2, 2 * gender + 26, 8, hair_library,
-                                    hair_resource + 3);
-                            }
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 12 - gender, hair_library,
+                                hair_resource + 1);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 2 * gender + 26, 8, hair_library,
+                                hair_resource + 3);
                         }
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
@@ -1328,16 +1337,12 @@ void Players::LoadPendingGraphics()
                         }
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
-                        shield_resource >= MIN_PAPERDOLL_RESOURCE)
+                        shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                     {
-                        if (back_shield)
-                        {
-                            i->resources->DrawBackLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource +
-                                3);
-                            if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                                i->resources->DrawBackLayer(PlayerFrame_Attack2, 18, 0, shield_library,
-                                    shield_resource + 3);
-                        }
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource + 3);
+                        if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 18, 0, shield_library,
+                                shield_resource + 3);
                     }
                     if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                     {
@@ -1456,10 +1461,10 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 2);
                     }
                     i->resources->front_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &MainForm->gfx->sprites->GetSpellCastCellRect(gender, 0, skin),
+                        &MainForm->gfx->sprites->GetSpellCastRect(gender, FacingDirection_Down, skin),
                         DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &MainForm->gfx->sprites->GetSpellCastCellRect(gender, 1, skin),
+                        &MainForm->gfx->sprites->GetSpellCastRect(gender, FacingDirection_Left, skin),
                         DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1538,14 +1543,12 @@ void Players::LoadPendingGraphics()
                     if (MainForm->gfx->sprites->emote_buffer_created)
                     {
                         i->resources->emote_strip->BltFast(0, 0, MainForm->gfx->sprites->face_sheet,
-                            &MainForm->gfx->sprites->GetFaceStripRect(gender, skin), DDBLTFAST_WAIT);
+                            &MainForm->gfx->sprites->GetFaceFrameRect(gender, skin), DDBLTFAST_WAIT);
                         for (int face_index = 0; face_index < 11; face_index++)
-                        {
                             i->resources->emote_strip->BltFast(13 * face_index, 0,
                                 MainForm->gfx->sprites->emote_buffer->surface,
                                 &MainForm->gfx->sprites->emote_buffer->surface_rect,
                                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        }
                         MainForm->gfx->sprites->FreeEmoteBuffer();
                     }
                     i->redraw = true;
@@ -1564,6 +1567,7 @@ void Players::LoadPendingGraphics()
                 i->redraw = true;
             }
         }
+        i++;
     }
     if (!preload_graphics)
     {
@@ -1673,7 +1677,7 @@ void Players::SortByPosition()
         for (int i = 0; i < (int)GetCount() - 1; i++)
         {
             Player handle;
-            if (this->players[i].y == this->players[i + 1].y)
+            if (players[i].y == players[i + 1].y)
             {
                 if (players[i].x > players[i + 1].x)
                 {
@@ -1766,7 +1770,7 @@ void Players::ShowBalloon(int player_id, String *lines, int width, int height, i
         if (player_id == it->player_id)
         {
             it->ShowBalloon(lines, width, height, tinted);
-            return;
+            break;
         }
     }
 }
@@ -1944,16 +1948,13 @@ void Players::StartJump(int player_id, int x, int y, int direction)
     {
         if (player_id == it->player_id)
         {
-            if (it->text_label_shown)
-            {
-                if (it->text_label_blinking)
-                    it->text_label_shown = false;
-            }
+            if (it->text_label_shown && it->text_label_blinking)
+                it->text_label_shown = false;
             it->jump_start = true;
             it->target_x = x;
             it->target_y = y;
             it->target_direction = direction;
-            return;
+            break;
         }
     }
 }
@@ -1966,17 +1967,14 @@ void Players::StartWalk(int player_id, int x, int y, int direction)
     {
         if (player_id == it->player_id)
         {
-            if (it->text_label_shown)
-            {
-                if (it->text_label_blinking)
-                    it->text_label_shown = false;
-            }
+            if (it->text_label_shown && it->text_label_blinking)
+                it->text_label_shown = false;
             it->walk_start = true;
             it->target_x = x;
             it->target_y = y;
             it->walk_target_direction = direction;
             it->target_direction = direction;
-            return;
+            break;
         }
     }
 }
@@ -1988,11 +1986,8 @@ void Players::SetDirection(int player_id, int direction)
     {
         if (player_id == it->player_id)
         {
-            if (it->text_label_shown)
-            {
-                if (it->text_label_blinking)
-                    it->text_label_shown = false;
-            }
+            if (it->text_label_shown && it->text_label_blinking)
+                it->text_label_shown = false;
             it->redraw = true;
             it->direction = direction;
             it->sitting_on_chair = false;
@@ -2434,7 +2429,7 @@ int Players::FindPlayerAt(int x, int y)
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
-        if ((unsigned int)x == it->x && (unsigned int)y == it->y)
+        if (x == (int)it->x && y == (int)it->y)
         {
             player_id = it->player_id;
             break;
@@ -2450,11 +2445,14 @@ bool Players::HasVisiblePlayerAt(int x, int y)
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
-        if ((unsigned int)x == it->x && (unsigned int)y == it->y)
+        if ((x == (int)it->x))
         {
-            if (!it->hidden)
-                found = true;
-            break;
+            if ((y == (int)it->y))
+            {
+                if (!it->hidden)
+                    found = true;
+                break;
+            }
         }
     }
     return found;
@@ -2466,7 +2464,7 @@ bool Players::HasPlayerAt(int x, int y)
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
-        if ((unsigned int)x == it->x && (unsigned int)y == it->y)
+        if (x == (int)it->x && y == (int)it->y)
         {
             found = true;
             break;
@@ -2478,7 +2476,8 @@ bool Players::HasPlayerAt(int x, int y)
 // Shows a damage or heal number over the player for a few passes.
 void Players::ShowDamage(int player_id, int amount, char heal)
 {
-    for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
+    vector<Player>::iterator it = players.begin();
+    while (it != players.end())
     {
         if (player_id == it->player_id)
         {
@@ -2494,24 +2493,24 @@ void Players::ShowDamage(int player_id, int amount, char heal)
             it->damage_heal = heal;
             break;
         }
+        it++;
     }
 }
 
 // Shows the player's health bar for duration passes; percent scales to the bar's width.
 void Players::ShowHealthBar(int player_id, int percent, int duration)
 {
-    double bar_width;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            bar_width = percent * HEALTH_BAR_SCALE;
+            double bar_width = percent * HEALTH_BAR_SCALE;
             it->health_bar_start = true;
             it->health_bar_shown = false;
             it->health_bar_timer = duration;
             it->health_bar_width = bar_width;
-            return;
+            break;
         }
     }
 }
@@ -2533,14 +2532,14 @@ void Players::StartEffect(int player_id, int effect_id)
             it->effect_solid_layer = MainForm->magic_mapper->solid_layer[effect_id];
             it->effect_last_frame = MainForm->magic_mapper->GetFrameCount(effect_id) - 2;
             it->effect_loops_left = MainForm->magic_mapper->GetLoopCount(effect_id);
-            return;
+            break;
         }
     }
 }
 
 char Players::IsEffectPlaying(int player_id)
 {
-    char playing = false;
+    int playing = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2577,6 +2576,7 @@ void Players::StartEmote(int player_id, int emote_id)
                 it->emote_id = 11;
             it->emote_first_frame = 1;
             it->emote_frame_count = EMOTE_FRAME_COUNT;
+            // Each emote's first frame on the sheet; the emotes sit four frames apart, in their own order.
             if (emote_id == 1)
                 it->emote_first_frame = 1;
             if (emote_id == 3)
@@ -2615,7 +2615,7 @@ void Players::StartEmote(int player_id, int emote_id)
 
 char Players::IsEmoting(int player_id)
 {
-    char emoting = false;
+    int emoting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2634,7 +2634,7 @@ char Players::IsWalking(int player_id)
     {
         if (player_id == it->player_id)
         {
-            walking = it->walking;
+            walking = (unsigned char)it->walking;
             break;
         }
     }
@@ -2652,14 +2652,14 @@ void Players::StartAttack(int player_id, int direction, char silent)
             it->attack_start = true;
             it->silent_attack = silent;
             it->direction = direction;
-            return;
+            break;
         }
     }
 }
 
 char Players::IsAttacking(int player_id)
 {
-    char attacking = false;
+    int attacking = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2689,7 +2689,7 @@ void Players::StartSpellCast(int player_id, int direction)
 
 char Players::IsCasting(int player_id)
 {
-    char casting = false;
+    int casting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2714,7 +2714,7 @@ void Players::StartStandUp(int player_id, int x, int y)
             it->target_y = y;
             if (player_id == MainForm->net_client->GetPlayerId())
                 it->recenter_view = true;
-            return;
+            break;
         }
     }
 }
@@ -2727,17 +2727,14 @@ void Players::StartSitOnFloor(int player_id, int x, int y, int direction)
     {
         if (player_id == it->player_id)
         {
-            if (it->text_label_shown)
-            {
-                if (it->text_label_blinking)
-                    it->text_label_shown = false;
-            }
+            if (it->text_label_shown && it->text_label_blinking)
+                it->text_label_shown = false;
             it->floor_sit_start = true;
             it->floor_direction = direction;
             it->target_x = x;
             it->target_y = y;
             it->target_direction = direction;
-            return;
+            break;
         }
     }
 }
@@ -2759,14 +2756,14 @@ void Players::StartSitOnChair(int player_id, int x, int y, int direction)
             it->target_direction = direction;
             if (player_id == MainForm->net_client->GetPlayerId())
                 it->recenter_view = true;
-            return;
+            break;
         }
     }
 }
 
 char Players::IsSittingOnFloor(int player_id)
 {
-    char sitting = false;
+    int sitting = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2781,7 +2778,7 @@ char Players::IsSittingOnFloor(int player_id)
 
 char Players::IsSittingOnChair(int player_id)
 {
-    char sitting = false;
+    int sitting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2791,6 +2788,26 @@ char Players::IsSittingOnChair(int player_id)
         }
     }
     return sitting;
+}
+
+// A volume for sounds of the player, 200 lower for each step between them and the own character.
+int Players::GetDistanceVolume(int player_id)
+{
+    vector<Player>::iterator it;
+    int volume = 0;
+    for (it = players.begin(); it != players.end(); it++)
+    {
+        if (player_id == it->player_id)
+        {
+            int own_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+            int own_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
+            volume -= abs((int)it->x - own_x);
+            volume -= abs((int)it->y - own_y);
+            volume = 200 * volume;
+            break;
+        }
+    }
+    return volume;
 }
 
 // A copy of the player with the id.
@@ -2813,8 +2830,6 @@ Player Players::GetPlayer(int index)
 // Frees every player's cells and balloon, then empties the list.
 void Players::Clear()
 {
-    int unused_int;
-    int second_unused_int;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         it->FreeResources();

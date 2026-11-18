@@ -1,12 +1,12 @@
 #ifndef Gfx_npcsH
 #define Gfx_npcsH
 
-class TDDBltFX;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDBltFX.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
 
-struct Npc;
+#include "Sys_npc.h"
 
 // Draws the npcs in the map view: the frame of each npc's action, its health bar, damage number and balloon text.
 struct NpcGraphics
@@ -29,15 +29,15 @@ struct NpcGraphics
     int buffer_width;
     int buffer_height;
     char unused_bytes[8];
-    Windows::TRect dest_rect;
+    TRect dest_rect;
 
     NpcGraphics();
     ~NpcGraphics();
     void DrawNpc(Npc npc, int draw_alpha, int x_offset);
-    void BlitFrame(Windows::TRect screen_rect, TDx_DrawSurface *sheet, Windows::TRect source_rect, bool keyed);
-    void DrawTranslucentBuffer(Windows::TRect screen_rect);
-    Windows::TRect ClipToView(Windows::TRect rect);
-    Windows::TRect GetClippedSourceRect(Windows::TRect rect);
+    void BlitFrame(TRect screen_rect, TDx_DrawSurface *sheet, TRect source_rect, bool keyed);
+    void DrawTranslucentBuffer(TRect screen_rect);
+    TRect ClipToView(TRect rect);
+    TRect GetClippedSourceRect(TRect rect);
     void ShowSpeechBalloon(String text, int npc_index, int style);
 };
 

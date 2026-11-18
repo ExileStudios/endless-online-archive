@@ -1,6 +1,14 @@
 #ifndef Ctrl_paperdollH
 #define Ctrl_paperdollH
 
+struct Tooltip;
+
+
+enum ItemSpecial
+{
+    ItemSpecial_Bound = 4,
+    ItemSpecial_Cursed = 5
+};
 
 enum PaperdollSlot
 {
@@ -23,17 +31,12 @@ enum PaperdollSlot
     PaperdollSlot_Text76 = 15
 };
 
-enum ItemSpecial
-{
-    ItemSpecial_Bound = 4,
-    ItemSpecial_Cursed = 5
-};
-
 // The paperdoll window: a character's equipment boxes and info lines, and the own character's equipment.
 // The *_item_id and *_graphic members are the boxes shown, the equipped_* members the own character's equipment.
 struct PaperdollController
 {
     char close_hovered;
+    Tooltip *tooltip;
     char is_visible;
     int window_x;
     int window_y;
@@ -119,10 +122,14 @@ struct PaperdollController
     ~PaperdollController();
     void EquipDroppedItem(int item_id, int x, int y);
     void Open(int frame_row, String name_text, String home_text, String partner_text, String title_text,
-        String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level,
-        char own_character_flag);
+    String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level,
+    char own_character_flag);
+    void Close();
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
+    bool SetHoveredSlot(unsigned char slot);
+    bool HasHoveredSlot();
+    void ShowSlotInfo(unsigned char text_id, int item_id, int x_offset, int y_offset);
     void MouseUp();
     void SetHeadSlot(int item_id);
     void SetNecklaceSlot(int item_id);

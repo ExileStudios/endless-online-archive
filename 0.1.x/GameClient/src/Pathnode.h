@@ -4,7 +4,7 @@
 // One tile of the path search: the tile, the node it was reached from, and the pass.
 struct PathNode
 {
-    bool expanded;
+    char expanded;
     int id;
     int parent_id;
     int x;

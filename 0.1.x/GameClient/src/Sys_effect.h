@@ -4,8 +4,8 @@
 // A spell effect on a map tile: its frame, the loops left and which layers it draws.
 struct MapEffect
 {
-    bool sound_pending;
-    bool finished;
+    char sound_pending;
+    char finished;
     int x;
     int y;
     int effect_id;

@@ -4,8 +4,8 @@
 #include "Mapprotection.h"
 #include "Tmainform.h"
 #include "Pathfinder.h"
-#include <fstream.h>
-#include <stdlib.h>
+#include "Gfx_mapwalls.h"
+
 #pragma package(smart_init)
 
 // An empty map with no view centre, no scrolling and no warp in progress.
@@ -107,10 +107,10 @@ String MapController::ReadMapName(int map_number)
 // Reads the checksum and size of the local map file, for comparison with the ones the server sends.
 void MapController::ReadMapChecksum(int map_number)
 {
-    String data;
     int file;
     int size;
-    char *FileHandle;
+    char *file_handle;
+    String data;
     try
     {
         data = IntToStr(map_number);
@@ -121,13 +121,13 @@ void MapController::ReadMapChecksum(int map_number)
         file = FileOpen(data.c_str(), fmOpenRead);
         size = FileSeek(file, 0, 2);
         FileSeek(file, 0, 0);
-        FileHandle = new char[size + 1];
-        FileRead(file, FileHandle, size);
+        file_handle = new char[size + 1];
+        FileRead(file, file_handle, size);
         FileClose(file);
-        data = FileHandle;
+        data = file_handle;
         file_size = size;
         data.SetLength(size);
-        delete[] FileHandle;
+        delete[] file_handle;
         if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
         {
             checksum_high = 0;
@@ -145,14 +145,14 @@ void MapController::ReadMapChecksum(int map_number)
 // Writes the downloaded map data to the map's file.
 void MapController::SaveMapFile(int map_number)
 {
-    int i;
-    String lpFileName = IntToStr(map_number);
-    for (i = lpFileName.Length(); i <= 4; i++)
-        lpFileName.Insert("0", 0);
-    lpFileName.Insert("./maps/", 0);
-    lpFileName.Insert(".emf", lpFileName.Length() + 1);
-    std::ofstream handle;
-    handle.open(lpFileName.c_str(), std::ios::binary);
+    String lp_file_name = IntToStr(map_number);
+    int i = lp_file_name.Length();
+    for (; i <= 4; i++)
+        lp_file_name.Insert("0", 0);
+    lp_file_name.Insert("./maps/", 0);
+    lp_file_name.Insert(".emf", lp_file_name.Length() + 1);
+    basic_ofstream<char, char_traits<char> > handle;
+    handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << map_data.c_str();
     handle.close();
 }
@@ -165,11 +165,11 @@ void MapController::SaveMapFile(int map_number)
 // 40-41 the fill tile, 42 the minimap setting and 43 the item setting.
 void MapController::LoadMap(int map_number)
 {
-    int hFile;
-    DWORD nNumberOfBytesToRead;
-    char *FileHandle;
-    int spec_y = 0;
-    int spec_x = 0;
+    int spec_x;
+    int spec_y;
+    int h_file;
+    int n_number_of_bytes_to_read;
+    char *file_handle;
     String data;
     try
     {
@@ -177,23 +177,21 @@ void MapController::LoadMap(int map_number)
         loaded_map_id = map_number;
         for (int i = data.Length(); i <= 4; i++)
             data.Insert("0", 0);
-        int count;
-        int row_count;
         data.Insert("./maps/", 0);
         data.Insert(".emf", data.Length() + 1);
-        hFile = FileOpen(data.c_str(), fmOpenRead);
-        nNumberOfBytesToRead = FileSeek(hFile, 0, 2);
-        FileSeek(hFile, 0, 0);
-        FileHandle = new char[nNumberOfBytesToRead + 1];
-        FileRead(hFile, FileHandle, nNumberOfBytesToRead);
-        FileClose(hFile);
-        data = FileHandle;
-        data.SetLength(nNumberOfBytesToRead);
-        delete[] FileHandle;
+        h_file = FileOpen(data.c_str(), fmOpenRead);
+        n_number_of_bytes_to_read = FileSeek(h_file, 0, 2);
+        FileSeek(h_file, 0, 0);
+        file_handle = new char[n_number_of_bytes_to_read + 1];
+        FileRead(h_file, file_handle, n_number_of_bytes_to_read);
+        FileClose(h_file);
+        data = file_handle;
+        data.SetLength(n_number_of_bytes_to_read);
+        delete[] file_handle;
         if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
             return;
         String header = MainForm->net_client->DeobfuscateString(data.SubString(8, 24));
-        name = header.SubString(1, 16);
+        name = header.SubString(1, 23);
         map_type = MainForm->net_client->DecodeNumber(data.SubString(32, 1));
         map_attribute = MainForm->net_client->DecodeNumber(data.SubString(33, 1));
         music_id = MainForm->net_client->DecodeNumber(data.SubString(34, 1));
@@ -201,6 +199,8 @@ void MapController::LoadMap(int map_number)
         ambient_sound = MainForm->net_client->DecodeNumber(data.SubString(36, 2));
         width = MainForm->net_client->DecodeNumber(data.SubString(38, 1));
         height = MainForm->net_client->DecodeNumber(data.SubString(39, 1));
+        int count;
+        int row_count;
         int fill_tile = MainForm->net_client->DecodeNumber(data.SubString(40, 2));
         int minimap_setting = MainForm->net_client->DecodeNumber(data.SubString(42, 1));
         int item_setting = MainForm->net_client->DecodeNumber(data.SubString(43, 1));
@@ -269,27 +269,27 @@ void MapController::LoadMap(int map_number)
                     blocked[spec_x][spec_y] = true; has_tile_spec[spec_x][spec_y] = false;
                 }
                 // A spec is stored one lower than in the file.
-                if (spec > 0 && spec <= 16)
+                if (spec > MapTileSpec_Wall && spec <= MapTileSpec_BankVault)
                 {
                     objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = true;
                     SetTileSpec(spec_x, spec_y, spec - 1);
-                    if (spec == 8)
+                    if (spec == MapTileSpec_Door)
                         AddDoor(spec_x, spec_y, 0);
                 }
-                if (spec == 18)
+                if (spec == MapTileSpec_Edge)
                 {
                     blocked[spec_x][spec_y] = true;
                     has_tile_spec[spec_x][spec_y] = false;
                     minimap_mask[spec_x][spec_y] = 1;
                 }
-                if (spec == 19)
+                if (spec == MapTileSpec_FakeWall)
                     minimap_mask[spec_x][spec_y] = 2;
-                if (spec > 19 && spec <= 28)
+                if (spec > MapTileSpec_FakeWall && spec <= MapTileSpec_Jukebox)
                 {
                     objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = true;
                     SetTileSpec(spec_x, spec_y, spec - 1);
                 }
-                if (spec >= 29 && spec <= 36)
+                if (spec >= MapTileSpec_Jump && spec <= MapTileSpec_HiddenSpikes)
                     SetTileSpec(spec_x, spec_y, spec - 1);
                 data.Delete(1, 2);
             }
@@ -470,7 +470,8 @@ void MapController::LoadMap(int map_number)
         if (music_id > 0)
         {
             // Modes 0 and 3 change the music only when it differs or has stopped.
-            if (((music_mode == MusicMode_OnceOnChange) || music_mode == MusicMode_LoopOnChange) && (music_id != playing_music_id || !MainForm->sfx->IsMusicPlaying()))
+            if ((music_mode == MusicMode_OnceOnChange || music_mode == MusicMode_LoopOnChange) &&
+                (music_id != playing_music_id || !MainForm->sfx->IsMusicPlaying()))
             {
                 MainForm->sfx->QueueMusic(music_id);
                 playing_music_id = music_id;
@@ -530,11 +531,8 @@ char MapController::IsBlocked(int x, int y)
             {
                 if (x == it->x && y == it->y)
                 {
-                    if (it->spec == TileSpec_OpenDoor || it->spec == TileSpec_Passable)
-                    {
+                    if ((short)it->spec == TileSpec_OpenDoor || (short)it->spec == TileSpec_Passable)
                         tile_blocked = false;
-                        break;
-                    }
                     break;
                 }
             }
@@ -582,15 +580,12 @@ void MapController::OpenDoor(int x, int y)
                 MainForm->gfx->walls->LoadGraphicNow(walls[x][y]);
                 MainForm->redraw_needed = true;
             }
-            else
+            else if (walls_next_row[x][y] > 0)
             {
-                if (walls_next_row[x][y] > 0)
-                {
-                    closed_graphic = walls_next_row[x][y];
-                    walls_next_row[x][y]++;
-                    MainForm->gfx->walls->LoadGraphicNow(walls_next_row[x][y]);
-                    MainForm->redraw_needed = true;
-                }
+                closed_graphic = walls_next_row[x][y];
+                walls_next_row[x][y]++;
+                MainForm->gfx->walls->LoadGraphicNow(walls_next_row[x][y]);
+                MainForm->redraw_needed = true;
             }
             it->close_timer = 24;
             it->open = true;
@@ -601,13 +596,12 @@ void MapController::OpenDoor(int x, int y)
     }
     if (door_found)
     {
-        vector<MapObject>::iterator it;
-        for (it = tile_specs.begin(); it != tile_specs.end(); it++)
+        for (vector<MapObject>::iterator walk = tile_specs.begin(); walk != tile_specs.end(); walk++)
         {
-            if (it->x == x && it->y == y && it->spec == TileSpec_Door)
+            if (walk->x == x && walk->y == y && (short)walk->spec == TileSpec_Door)
             {
-                it->spec = TileSpec_OpenDoor;
-                return;
+                walk->spec = TileSpec_OpenDoor;
+                break;
             }
         }
     }
@@ -669,11 +663,6 @@ void MapController::StopWarpTimeout()
 
 void MapController::ClearTileObjects()
 {
-    int unused_int;
-    int second_unused_int;
-    int third_unused_int;
-    int fourth_unused_int;
-    int fifth_unused_int;
     tile_specs.clear();
     chest_keys.clear();
     doors.clear();
@@ -704,66 +693,66 @@ String MapController::FindSignTextAt(int x, int y)
 }
 
 // The tile of the locker under the screen point, or -1, -1.
-Windows::TPoint MapController::FindLockerAt(int x, int y)
+TPoint MapController::FindLockerAt(int x, int y)
 {
-    TPoint tile;
     int screen_x;
     int screen_y;
+    TPoint tile;
     tile.x = -1;
     tile.y = -1;
     for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        if (it->spec != TileSpec_Locker)
-            continue;
-        screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
-        screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
-        if (screen_x - 15 <= x && screen_x + 28 >= x && screen_y - 16 <= y && screen_y + 67 >= y)
+        if ((short)it->spec == TileSpec_Locker)
         {
-            tile.x = it->x;
-            tile.y = it->y;
-            break;
+            screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
+            screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
+            if (screen_x - 15 <= x && screen_x + 28 >= x && screen_y - 16 <= y && screen_y + 67 >= y)
+            {
+                tile.x = it->x;
+                tile.y = it->y;
+                break;
+            }
         }
     }
     return tile;
 }
 
 // The tile of the chest under the screen point, or -1, -1.
-Windows::TPoint MapController::FindChestAt(int x, int y)
+TPoint MapController::FindChestAt(int x, int y)
 {
-    TPoint tile;
     int screen_x;
     int screen_y;
+    TPoint tile;
     tile.x = -1;
     tile.y = -1;
     for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        if (it->spec != TileSpec_Chest)
-            continue;
-        screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
-        screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
-        if (screen_x - 12 <= x && screen_x + 25 >= x && screen_y + 16 <= y && screen_y + 67 >= y)
+        if ((short)it->spec == TileSpec_Chest)
         {
-            tile.x = it->x;
-            tile.y = it->y;
-            break;
+            screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
+            screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
+            if (screen_x - 12 <= x && screen_x + 25 >= x && screen_y + 16 <= y && screen_y + 67 >= y)
+            {
+                tile.x = it->x;
+                tile.y = it->y;
+                break;
+            }
         }
     }
     return tile;
 }
 
 // The tile of the board under the screen point, or -1, -1.
-Windows::TPoint MapController::FindBoardAt(int x, int y)
+TPoint MapController::FindBoardAt(int x, int y)
 {
-    TPoint tile;
-    unsigned short spec;
     int screen_x;
     int screen_y;
+    TPoint tile;
     tile.x = -1;
     tile.y = -1;
     for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        spec = it->spec;
-        if (spec >= 19 && spec <= 26)
+        if (it->spec >= TileSpec_Board1 && it->spec <= TileSpec_Board8)
         {
             screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
             screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
@@ -779,48 +768,50 @@ Windows::TPoint MapController::FindBoardAt(int x, int y)
 }
 
 // The tile of the jukebox under the screen point, or -1, -1.
-Windows::TPoint MapController::FindJukeboxAt(int x, int y)
+TPoint MapController::FindJukeboxAt(int x, int y)
 {
-    TPoint tile;
     int screen_x;
     int screen_y;
+    TPoint tile;
     tile.x = -1;
     tile.y = -1;
     for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        if (it->spec != TileSpec_Jukebox)
-            continue;
-        screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
-        screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
-        if (screen_x - 18 <= x && screen_x + 33 >= x && screen_y - 10 <= y && screen_y + 66 >= y)
+        if ((short)it->spec == TileSpec_Jukebox)
         {
-            tile.x = it->x;
-            tile.y = it->y;
-            break;
+            screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
+            screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
+            if (screen_x - 18 <= x && screen_x + 33 >= x && screen_y - 10 <= y && screen_y + 66 >= y)
+            {
+                tile.x = it->x;
+                tile.y = it->y;
+                break;
+            }
         }
     }
     return tile;
 }
 
 // The tile of the closed door under the screen point, or -1, -1.
-Windows::TPoint MapController::FindDoorAt(int x, int y)
+TPoint MapController::FindDoorAt(int x, int y)
 {
-    TPoint tile;
     int screen_x;
     int screen_y;
+    TPoint tile;
     tile.x = -1;
     tile.y = -1;
     for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        if (it->spec != TileSpec_Door)
-            continue;
-        screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
-        screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
-        if (screen_x - 22 <= x && screen_x + 35 >= x && screen_y - 56 <= y && screen_y + 67 >= y)
+        if ((short)it->spec == TileSpec_Door)
         {
-            tile.x = it->x;
-            tile.y = it->y;
-            break;
+            screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
+            screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
+            if (screen_x - 22 <= x && screen_x + 35 >= x && screen_y - 56 <= y && screen_y + 67 >= y)
+            {
+                tile.x = it->x;
+                tile.y = it->y;
+                break;
+            }
         }
     }
     return tile;
@@ -892,22 +883,22 @@ int MapController::GetDoorKey(int x, int y)
     return key;
 }
 
-// Whether a trap tile is a few steps from the view centre, counting steps along the grid.
-char MapController::IsNearTrap()
+// A level for the nearest trap tile, -1000 less 160 for each step from the view centre; -3000 when there is none.
+int MapController::IsNearTrap()
 {
-    char is_near;
-    int unused_int;
-    int dx;
+    vector<MapObject>::iterator it;
     int dy;
-    is_near = 0;
-    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
+    int is_near = -3000;
+    for (it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
-        if (it->spec != TileSpec_Trap)
-            continue;
-        dx = abs(it->x - GetCenterX());
-        dy = abs(it->y - GetCenterY());
-        if (dx + dy < 7)
-            is_near = 1;
+        if ((short)it->spec == TileSpec_Trap)
+        {
+            int dx = abs(it->x - GetCenterX());
+            dy = abs(it->y - GetCenterY());
+            dy = -1000 - 160 * (dx + dy);
+            if (dy > is_near)
+                is_near = dy;
+        }
     }
     return is_near;
 }
@@ -929,48 +920,39 @@ int MapController::GetTileSpec(int x, int y)
 }
 
 // The spec of the tile when the player can use it from the current tile, or -1.
-unsigned int MapController::GetUsableTileSpec(int x, int y)
+int MapController::GetUsableTileSpec(int x, int y)
 {
-    unsigned int spec;
-    int player_x;
-    int player_y;
-    unsigned short spec_above;
-    unsigned short spec_right;
-    unsigned short spec_left;
-    unsigned short spec_below;
-    spec = -1;
+    vector<MapObject>::iterator it;
+    int spec = -1;
     if (has_tile_spec[x][y])
     {
-        for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
+        for (it = tile_specs.begin(); it != tile_specs.end(); it++)
         {
             if (x == it->x && it->y == y)
             {
                 if (it->spec <= TileSpec_ChairAnySide)
                 {
-                    player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
-                    player_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
-                    spec_above = it->spec;
-                    if ((!spec_above || spec_above == TileSpec_ChairYHighXHigh || spec_above == TileSpec_ChairAnySide) && player_x == it->x &&
-                        it->y == player_y - 1)
+                    int player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+                    int player_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
+                    short spec_above = it->spec;
+                    if ((spec_above == TileSpec_ChairYHigh || spec_above == TileSpec_ChairYHighXHigh ||
+                        spec_above == TileSpec_ChairAnySide) && player_x == it->x && it->y == player_y - 1)
                         spec = it->spec;
-                    spec_right = it->spec;
-                    if ((spec_right == TileSpec_ChairXLow || spec_right == TileSpec_ChairXLowYLow || spec_right == TileSpec_ChairAnySide) && it->x == player_x + 1 &&
-                        player_y == it->y)
+                    short spec_right = it->spec;
+                    if ((spec_right == TileSpec_ChairXLow || spec_right == TileSpec_ChairXLowYLow ||
+                        spec_right == TileSpec_ChairAnySide) && it->x == player_x + 1 && player_y == it->y)
                         spec = it->spec;
-                    spec_left = it->spec;
-                    if ((spec_left == TileSpec_ChairXHigh || spec_left == TileSpec_ChairYHighXHigh || spec_left == TileSpec_ChairAnySide) && it->x == player_x - 1 &&
-                        player_y == it->y)
+                    short spec_left = it->spec;
+                    if ((spec_left == TileSpec_ChairXHigh || spec_left == TileSpec_ChairYHighXHigh ||
+                        spec_left == TileSpec_ChairAnySide) && it->x == player_x - 1 && player_y == it->y)
                         spec = it->spec;
-                    spec_below = it->spec;
-                    if ((spec_below == TileSpec_ChairYLow || spec_below == TileSpec_ChairXLowYLow || spec_below == TileSpec_ChairAnySide) && player_x == it->x &&
-                        it->y == player_y + 1)
-                    {
+                    short spec_below = it->spec;
+                    if ((spec_below == TileSpec_ChairYLow || spec_below == TileSpec_ChairXLowYLow ||
+                        spec_below == TileSpec_ChairAnySide) && player_x == it->x && it->y == player_y + 1)
                         spec = it->spec;
-                        break;
-                    }
-                    break;
                 }
-                spec = it->spec;
+                else
+                    spec = it->spec;
                 break;
             }
         }
@@ -1002,9 +984,9 @@ void MapController::UpdateCursorTile(int screen_x, int screen_y)
     int shifted_y = screen_y + 640;
     shifted_x = screen_x + 620;
     int tile_offset_y = (shifted_y + 4 - shifted_x / 2) / 32;
-    int tile_offset_x = (shifted_y - -shifted_x / 2) / 32;
-    cursor_x = center_x + tile_offset_x - 39;
-    cursor_y = center_y + tile_offset_y - 10;
+    int adjusted_y = (shifted_y - -shifted_x / 2) / 32;
+    cursor_x = adjusted_y + center_x - 39;
+    cursor_y = tile_offset_y + center_y - 10;
     if (cursor_x != last_cursor_x || cursor_y != last_cursor_y)
         cursor_moved = true;
     last_cursor_x = cursor_x;
@@ -1021,17 +1003,18 @@ int MapController::GetCursorY()
     return cursor_y;
 }
 
-// One step of the map's timers: the path marker, the brief action block, door closing, the warp delay
-// and timeout, and the scrolling of the view.
+// One step of the map's timers: the path marker, the brief action block, the ambient sound of the nearest source,
+// door closing, the warp delay and timeout, and the scrolling of the view.
 void MapController::Animate()
 {
-    int player_x;
-    int player_y;
-    int nearest;
+    MapDoor *it;
     int dx;
     MapObject *spec_it;
     int dy;
     int door_graphic;
+    MapObject *tile_spec;
+    int player_x;
+    int player_y;
     if (path_marker_shown)
     {
         MainForm->redraw_needed = true;
@@ -1043,20 +1026,24 @@ void MapController::Animate()
         action_block_tick = false;
     else
         action_blocked = false;
+    // The ambient sound plays by the nearest tile of spec 32 within 25 steps, and fades out beyond.
+    // The ambient sound plays by the nearest ambient source tile within 25 steps, and fades out beyond.
     if (ambient_sound > 0)
     {
-        vector<MapObject>::iterator it;
         player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
         player_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
-        nearest = 26;
-        for (it = tile_specs.begin(); it != tile_specs.end(); it++)
+        int nearest = 26;
+        spec_it = tile_specs.begin();
+        while (spec_it != tile_specs.end())
         {
-            if (it->spec != TileSpec_AmbientSource)
-                continue;
-            dx = abs(player_x - it->x);
-            dy = abs(player_y - it->y);
-            if (nearest > dx + dy)
-                nearest = dx + dy;
+            if ((short)spec_it->spec == TileSpec_AmbientSource)
+            {
+                dx = abs(player_x - spec_it->x);
+                dy = abs(player_y - spec_it->y);
+                if (nearest > dx + dy)
+                    nearest = dx + dy;
+            }
+            spec_it++;
         }
         if (nearest < 25)
             MainForm->sfx->PlayAmbientSound(ambient_sound, nearest);
@@ -1065,37 +1052,42 @@ void MapController::Animate()
     }
     else
         MainForm->sfx->FadeOutAmbientSound();
-    vector<MapDoor>::iterator it;
-    for (it = doors.begin(); it != doors.end(); it++)
+    it = doors.begin();
+    while (it != doors.end())
     {
-        if (!it->open)
-            continue;
-        it->close_timer--;
-        if (it->close_timer <= 0)
+        if (it->open)
         {
-            int door_x = it->x;
-            int door_y = it->y;
-            door_graphic = it->closed_graphic;
-            if (door_graphic > 0)
+            it->close_timer--;
+            if (it->close_timer <= 0)
             {
-                if (walls[door_x][door_y] > 0)
-                    walls[door_x][door_y] = door_graphic;
-                else if (walls_next_row[door_x][door_y] > 0)
-                    walls_next_row[door_x][door_y] = door_graphic;
+                int door_x = it->x;
+                int door_y = it->y;
+                door_graphic = it->closed_graphic;
+                if (door_graphic > 0)
+                {
+                    if (walls[door_x][door_y] > 0)
+                        walls[door_x][door_y] = door_graphic;
+                    else if (walls_next_row[door_x][door_y] > 0)
+                        walls_next_row[door_x][door_y] = door_graphic;
+                }
+                tile_spec = tile_specs.begin();
+                while (tile_spec != tile_specs.end())
+                {
+                    if (door_x == tile_spec->x && tile_spec->y == door_y && (short)tile_spec->spec == TileSpec_OpenDoor)
+                        tile_spec->spec = TileSpec_Door;
+                    tile_spec++;
+                }
+                if (MainForm->net_client->IsInSoundRange(door_x, door_y, MainForm->map->GetCenterX(),
+                    MainForm->map->GetCenterY()))
+                    MainForm->sfx->PlayEffectSoundAt(SfxSound_DoorClose, MainForm->sfx->GetDistanceVolume(door_x,
+                        door_y));
+                it->closed_graphic = 0;
+                it->open = false;
+                MainForm->redraw_needed = true;
+                break;
             }
-            for (vector<MapObject>::iterator tile_spec = tile_specs.begin(); tile_spec != tile_specs.end(); tile_spec++)
-            {
-                if (door_x == tile_spec->x && tile_spec->y == door_y && tile_spec->spec == TileSpec_OpenDoor)
-                    tile_spec->spec = TileSpec_Door;
-            }
-            if (MainForm->net_client->IsInSoundRange(door_x, door_y, MainForm->map->GetCenterX(),
-                MainForm->map->GetCenterY()))
-                MainForm->sfx->PlaySfx(SfxSound_DoorClose);
-            it->closed_graphic = 0;
-            it->open = false;
-            MainForm->redraw_needed = true;
-            break;
         }
+        it++;
     }
     if (warp_delay > 0)
     {
@@ -1153,7 +1145,7 @@ void MapController::Animate()
             scroll_offset_x = 0 - (8 * GetScrollStep() + 32 * center_x - 32) + 32 * center_y;
             scroll_offset_y = 0 - (4 * GetScrollStep() + 16 * center_x - 16) - 16 * center_y;
         }
-        if (!GetScrollDirection())
+        if (GetScrollDirection() == FacingDirection_Down)
         {
             scroll_offset_x = 8 * GetScrollStep() + 32 * center_y + (0 - 32 * center_x) - 32;
             scroll_offset_y = 0 - 16 * center_x - (4 * GetScrollStep() + 16 * center_y - 16);
@@ -1375,7 +1367,7 @@ void MapController::StartScroll(int direction)
     cursor_update_pending = true;
 }
 
-char MapController::IsScrolling()
+bool MapController::IsScrolling()
 {
     return scrolling || scroll_requested;
 }
@@ -1402,7 +1394,7 @@ void MapController::UnfreezePlayer()
 }
 
 // Whether the player is held: briefly blocked, frozen for a warp or waiting out a warp delay.
-char MapController::IsActionBlocked()
+bool MapController::IsActionBlocked()
 {
     return action_blocked || frozen || warp_delay > 0;
 }

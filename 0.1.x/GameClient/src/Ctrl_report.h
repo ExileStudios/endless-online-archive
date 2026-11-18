@@ -2,6 +2,7 @@
 #define Ctrl_reportH
 
 #include <Classes.hpp>
+
 #define REPORT_MAX_LINKS 3
 
 // The help window opened from the help button: lines of text, up to three of them links, with a scroll bar.
@@ -16,7 +17,9 @@ struct ReportController
     char scroll_up_hovered;
     char scroll_down_hovered;
     char unused_flag;
-    int link_line_indices[REPORT_MAX_LINKS];
+    int link_line_indices[1];
+    int report_link_line;
+    int question_link_line;
     TStringList *lines;
     TStringList *line_values;
     TStringList *unused_lines;

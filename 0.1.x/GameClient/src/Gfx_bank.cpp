@@ -3,7 +3,7 @@
 
 #include "Gfx_bank.h"
 #include "Tmainform.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 BankGraphics::BankGraphics()

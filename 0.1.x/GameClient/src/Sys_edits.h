@@ -1,6 +1,14 @@
 #ifndef Sys_editsH
 #define Sys_editsH
 
+enum EditCharFilter
+{
+    EditCharFilter_NoPunctuation = 1,
+    EditCharFilter_AlphanumericSpaces = 2,
+    EditCharFilter_LettersSpaces = 3,
+    EditCharFilter_Letters = 4
+};
+
 enum EditGroup
 {
     EditGroup_Menu = 2,
@@ -8,14 +16,6 @@ enum EditGroup
     EditGroup_InputForm = 105,
     EditGroup_MsgBoard = 109,
     EditGroup_All = 240
-};
-
-enum EditCharFilter
-{
-    EditCharFilter_NoPunctuation = 1,
-    EditCharFilter_AlphanumericSpaces = 2,
-    EditCharFilter_LettersSpaces = 3,
-    EditCharFilter_Letters = 4
 };
 
 enum EditCaseMode
@@ -28,7 +28,10 @@ enum EditCaseMode
     EditCaseMode_Name = 5
 };
 
+#include <new>
 #include <vector.h>
+
+#include "Sys_edit.h"
 
 enum EditId
 {
@@ -44,9 +47,9 @@ enum EditId
     EditId_Email = 10,
     EditId_Chat = 11,
     EditId_InputBox = 12,
-    EditId_Amount = 13,
     EditId_FormFirstRow = 14,
     EditId_FormSecondRow = 15,
+    EditId_Amount = 13,
     EditId_FormThirdRow = 16,
     EditId_FormFourthRow = 17,
     EditId_FormFifthRow = 18,
@@ -54,21 +57,17 @@ enum EditId
     EditId_Captcha = 23
 };
 
-#include "Sys_edit.h"
-
 // The text boxes on screen, which one has the focus, the caret blink, and the lock on the chat box.
 struct Edits
 {
     bool caret_blink_on;
     bool caret_enabled;
     bool chat_locked;
-    char unused_bytes[5];
     vector<Edit> edits;
     int current_index;
     bool tick_redraw;
     bool text_changed;
     int lock_countdown;
-    char second_unused_bytes[4];
 
     Edits();
     ~Edits();
@@ -77,9 +76,9 @@ struct Edits
     bool ConsumeTickRedraw();
     void TypeText(String text);
     void TypeLineBreak();
-    void ClearFocusedText();
+    char ClearFocusedText();
     void Backspace();
-    void AddEdit(int id, unsigned int screen_group, int x, int y, int width, int height);
+    void AddEdit(int id, int screen_group, int x, int y, int width, int height);
     void RemoveEdit(int id);
     void UnfocusAll();
     void FocusClickedEdit(Edit edit_x);

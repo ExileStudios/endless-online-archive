@@ -7,28 +7,18 @@
 #include "Ctrl_game.h"
 #include "Ctrl_inn.h"
 #include "Ctrl_law.h"
-#pragma package(smart_init)
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_trade.h"
 
-void Ctrl_report_UnusedLiterals1()
-{
-    "#";
-    "#";
-    " [";
-    "]";
-    ",";
-    " ";
-    "";
-    "/";
-    "/";
-    " ";
-    "";
-}
+#pragma package(smart_init)
 
 ReportController::ReportController()
 {
     int new_list;
-    int second_new_list;
-    int third_new_list;
+    int new_list_2;
+    int new_list_3;
     lines = new TStringList();
     line_values = new TStringList();
     unused_lines = new TStringList();
@@ -56,21 +46,33 @@ ReportController::~ReportController()
 {
 }
 
+void Ctrl_report_UnusedLiterals1()
+{
+    "#";
+    "#";
+    " [";
+    "]";
+    ",";
+    " ";
+    "";
+    "/";
+    "/";
+    " ";
+    "";
+}
+
 // Adds a text wrapped to the window's width, with a value shown at the right end of each of its lines.
 void ReportController::AddText(String text, String right_text, bool add_blank_line)
 {
-    if (text.Length() > 0)
+    // A text starting with a star becomes the next free link
+    if (text.Length() > 0 && text[1] == '*')
     {
-        // A text starting with a star becomes the next free link
-        if (text[1] == '*')
+        for (int slot = 0; slot < REPORT_MAX_LINKS; slot++)
         {
-            for (int slot = 0; slot < REPORT_MAX_LINKS; slot++)
+            if (link_line_indices[slot] < 0)
             {
-                if (link_line_indices[slot] < 0)
-                {
-                    link_line_indices[slot] = lines->Count;
-                    break;
-                }
+                link_line_indices[slot] = lines->Count;
+                break;
             }
         }
     }
@@ -97,18 +99,19 @@ void ReportController::AddText(String text, String right_text, bool add_blank_li
                     char split_done = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            lines->Add(fitted_text);
-                            line_values->Add(right_text);
-                            text.Delete(1, fitted_text.Length());
-                            split_done = true;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                lines->Add(fitted_text);
+                                line_values->Add(right_text);
+                                text.Delete(1, fitted_text.Length());
+                                split_done = true;
+                                break;
+                            }
+                            fitted_text = prefix;
                         }
-                        fitted_text = prefix;
                     }
                     if (!split_done)
                     {
@@ -177,8 +180,8 @@ int ReportController::GetTopLine()
     return top_line;
 }
 
-// A click on the thumb grabs it, one on a link follows it, and one on an arrow scrolls; any click in the window
-// while the thumb is not grabbed also starts moving it.
+// A click on the thumb grabs it, and one on an arrow scrolls. The links open the web page, the report form or the
+// question box. Any click in the window while the thumb is not grabbed also starts moving it.
 void ReportController::MouseDown(int x, int y, int button)
 {
     if (x >= window_x + 252 && x <= window_x + 267)
@@ -192,15 +195,21 @@ void ReportController::MouseDown(int x, int y, int button)
     }
     if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252)
     {
-        int line = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+        int line = (y - window_y - 47) / 16 + top_line;
         // The first link opens a web page, the second the player report form, the third the question box
         if (line == link_line_indices[0])
         {
+            String url = "jvvr<11yyy0gpfnguu/qpnkpg0eqo1rytgeqxgt{0jvon";
+            for (int i = 1; i <= url.Length(); i++)
+            {
+                url[i] = url[i] - 1;
+                url[i] = url[i] - 1;
+            }
             MainForm->sfx->PlaySfx(SfxSound_Select);
-            ShellExecuteA(Application->Handle, "open", "http://www.endless-online.com/pwrecovery.html", 0, 0,
-                SW_SHOWMAXIMIZED);
+            ShellExecuteA(Application->Handle, "open", url.c_str(), 0, 0, SW_SHOWMAXIMIZED);
+            return;
         }
-        if (line == link_line_indices[1])
+        if (line == report_link_line)
         {
             MainForm->sfx->PlaySfx(SfxSound_Select);
             MainForm->animation->game->OpenInputForm(FormKind_ReportPlayer, 2, EditCharFilter_AlphanumericSpaces, 32,

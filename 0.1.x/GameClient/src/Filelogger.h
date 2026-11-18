@@ -1,7 +1,7 @@
 #ifndef FileloggerH
 #define FileloggerH
 
-#include <stdio.h>
+#define LOG_CHANNEL_GLOBAL 2
 
 // The chat log file.
 struct FFileLog

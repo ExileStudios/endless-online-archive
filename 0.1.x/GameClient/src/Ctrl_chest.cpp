@@ -1,11 +1,14 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Ctrl_chest.h"
 #include "Tmainform.h"
 #include "Ctrl_game.h"
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
 #include "Ctrl_status.h"
+#include "Ctrl_inventory.h"
+
 #pragma package(smart_init)
 
 ChestController::ChestController()
@@ -65,49 +68,40 @@ void ChestController::Close()
 // window starts moving it.
 void ChestController::MouseDown(int x, int y, int button)
 {
-    char handled;
-    TPoint chest_pos;
-    handled = false;
+    char handled = false;
     if (button == 1)
     {
-        if (y > window_y + 24 && y < window_y + 243 && window_x + 17 < x)
+        if (y > window_y + 24 && y < window_y + 243 && window_x + 17 < x && window_x + 252 > x)
         {
-            if (window_x + 252 > x)
+            handled = true;
+            TPoint chest_pos;
+            chest_pos.x = chest_x;
+            chest_pos.y = chest_y;
+            int result = (y - window_y - 18) / NPC_LIST_ROW_HEIGHT;
+            if (result >= 0 && result < (int)items.size())
             {
-                handled = true;
-                chest_pos.x = chest_x;
-                chest_pos.y = chest_y;
-                int result = (y - window_y - 18) / NPC_LIST_ROW_HEIGHT;
-                if (result >= 0)
+                if (MainForm->animation->interface_controller->inventory->HasRoomForItem(items[result].item_id))
                 {
-                    if (result < (int)items.size())
+                    if (MainForm->animation->interface_controller->status->weight +
+                        MainForm->item_values->GetWeight(items[result].item_id) <=
+                        MainForm->animation->interface_controller->status->max_weight)
+                        MainForm->net_client->sender->SendChestTakeItem(chest_pos, items[result].item_id);
+                    else
                     {
-                        if (MainForm->animation->interface_controller->inventory->HasRoomForItem(items[result].item_id))
-                        {
-                            if (MainForm->animation->interface_controller->status->weight +
-                                MainForm->item_values->GetWeight(items[result].item_id) <=
-                                MainForm->animation->interface_controller->status->max_weight)
-                            {
-                                MainForm->net_client->sender->SendChestTakeItem(chest_pos, items[result].item_id);
-                            }
-                            else
-                            {
-                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                    MainForm->strings->GetText(GameText_Warning),
-                                    MainForm->strings->GetText(GameText_ItsTooHeavyYou));
-                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                    MainForm->strings->GetText(GameText_ItsTooHeavyYou));
-                            }
-                        }
-                        else
-                        {
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                MainForm->strings->GetText(GameText_Warning),
-                                MainForm->strings->GetText(GameText_YouCouldNotPick));
-                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                MainForm->strings->GetText(GameText_YouCouldNotPick));
-                        }
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                            MainForm->strings->GetText(GameText_Warning),
+                            MainForm->strings->GetText(GameText_ItsTooHeavyYou));
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                            MainForm->strings->GetText(GameText_ItsTooHeavyYou));
                     }
+                }
+                else
+                {
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        MainForm->strings->GetText(GameText_Warning),
+                        MainForm->strings->GetText(GameText_YouCouldNotPick));
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                        MainForm->strings->GetText(GameText_YouCouldNotPick));
                 }
             }
         }
@@ -140,7 +134,7 @@ void ChestController::MouseMove(int x, int y)
             window_y = 39;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= window_y + 24 || y >= window_y + 243 || x <= window_x + 17 || x >= window_x + 252 || is_dragging))
+    if (y > window_y + 24 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         int row = (y - window_y - 18) / NPC_LIST_ROW_HEIGHT;
         if (row >= (int)items.size())
@@ -156,7 +150,7 @@ void ChestController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
-    if (!(x < window_x + 92 || x > window_x + 182 || y < window_y + 231 || y > window_y + 254))
+    if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 231 && y <= window_y + 254)
     {
         if (!close_hovered)
         {

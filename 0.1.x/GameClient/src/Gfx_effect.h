@@ -1,11 +1,12 @@
 #ifndef Gfx_effectH
 #define Gfx_effectH
 
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The surfaces of one effect graphic: up to three layers (base, blended, solid), each a strip of frames.
 struct EffectResource
@@ -24,9 +25,8 @@ struct EffectResource
 
     EffectResource();
     ~EffectResource();
+    TRect GetFrameRect(int frame);
     GraphicSize LoadSurfaces(int library, int base_resource_id);
-    Windows::TRect GetFrameRect(int frame);
 };
-
 
 #endif

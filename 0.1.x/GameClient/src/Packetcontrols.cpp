@@ -7,6 +7,8 @@
 #include "Packetproces.h"
 #include "Ctrl_credits.h"
 #include "Ctrl_game.h"
+#include <stdlib.h>
+
 #pragma package(smart_init)
 
 // Creates the packet sender and processor, clears the connection state and loads the chat word filter.
@@ -46,9 +48,9 @@ Client::~Client()
 void Client::LoadWordFilter()
 {
     int file_handle;
-    DWORD file_size;
+    int file_size;
     char *buffer;
-    String Str;
+    String str;
     try
     {
         file_handle = FileOpen(MainForm->strings->GetDataFilePath(DataFile_WordFilter), fmOpenRead);
@@ -57,17 +59,17 @@ void Client::LoadWordFilter()
         buffer = new char[file_size + 1];
         FileRead(file_handle, buffer, file_size);
         FileClose(file_handle);
-        Str = buffer;
-        Str.SetLength(file_size);
+        str = buffer;
+        str.SetLength(file_size);
         delete[] buffer;
     }
     catch (...)
     {
     }
-    std::string file_bytes = Str.c_str();
-    Str = UnscrambleBytes(26, file_bytes.begin(), file_bytes.end());
+    string file_bytes = str.c_str();
+    str = UnscrambleBytes(26, file_bytes.begin(), file_bytes.end());
     String filter_word;
-    BeginTokens(Str, 58);
+    BeginTokens(str, 58);
     do
     {
         filter_word = NextToken();
@@ -80,9 +82,11 @@ void Client::LoadWordFilter()
 // number of drive C.
 void Client::SendInitRequest()
 {
-    DWORD VolumeSerialNumber;
-    DWORD MaximumComponentLength;
-    DWORD FileSystemFlags;
+    unsigned long volume_serial_number;
+    unsigned long maximum_component_length;
+    unsigned long file_system_flags;
+    char volume_name_buffer[VOLUME_NAME_BUFFER_SIZE];
+    char file_system_name_buffer[FILE_SYSTEM_NAME_BUFFER_SIZE];
     try
     {
         randomize();
@@ -92,11 +96,9 @@ void Client::SendInitRequest()
     }
     try
     {
-        char VolumeNameBuffer[VOLUME_NAME_BUFFER_SIZE];
-        char FileSystemNameBuffer[FILE_SYSTEM_NAME_BUFFER_SIZE];
-        GetVolumeInformationA("c:\\", VolumeNameBuffer, 1000, &VolumeSerialNumber, &MaximumComponentLength,
-            &FileSystemFlags, FileSystemNameBuffer, 1000);
-        String serial_text = VolumeSerialNumber;
+        GetVolumeInformationA("c:\\", volume_name_buffer, 1000, &volume_serial_number, &maximum_component_length,
+            &file_system_flags, file_system_name_buffer, 1000);
+        String serial_text = volume_serial_number;
         if (serial_text.Length() > 32)
             serial_text = serial_text.SubString(1, 32);
         unsigned char marker_byte = 255;
@@ -114,7 +116,7 @@ void Client::SendInitRequest()
         packet = packet + serial_text;
         packet = EncodeNumber(packet.Length(), 2) + packet;
         sequence_counter = 0;
-        MainForm->client->Socket->SendText(packet);
+        ((TCustomWinSocket *)MainForm->client->Socket)->SendText(packet);
     }
     catch (...)
     {
@@ -145,95 +147,80 @@ int Client::GetPlayerId()
 // Returns whether the frame was one of these.
 bool Client::HandleRawPacket(String frame)
 {
-    bool is_raw;
     int init_sequence;
-    is_raw = false;
+    bool is_raw = false;
     if (frame.Length() >= 2)
     {
         try
         {
-            if (ByteValue(frame[1]) == 255)
+            if (ByteValue(frame[1]) == 255 && ByteValue(frame[2]) == 255)
             {
-                if (ByteValue(frame[2]) == 255)
+                is_raw = true;
+                // A bare rejection: the server refused the connection.
+                if (frame.Length() == 3 && ByteValue(frame[3]) == 1)
+                    init_rejected = true;
+                // A ban, permanent or for the minutes the next byte gives.
+                if (frame.Length() >= 4 && ByteValue(frame[3]) == 3)
                 {
-                    is_raw = true;
-                    if (frame.Length() == 3)
-                    {
-                        // A bare rejection: the server refused the connection.
-                        if (ByteValue(frame[3]) == 1)
-                            init_rejected = true;
-                    }
-                    if (frame.Length() >= 4)
-                    {
-                        // A ban, permanent or for the minutes the next byte gives.
-                        if (ByteValue(frame[3]) == 3)
-                        {
-                            is_banned = true;
-                            if (ByteValue(frame[4]) >= 2)
-                                is_permanent_ban = true;
-                            if (frame.Length() >= 5)
-                                ban_minutes = ByteValue(frame[5]);
-                        }
-                    }
-                    if (frame.Length() >= 6)
-                    {
-                        // A version rejection: the server names the version it wants.
-                        if (ByteValue(frame[3]) == 1)
-                        {
-                            version_rejected = true;
-                            int version_major = DecodeNumber(String(frame[4]));
-                            int version_minor = DecodeNumber(String(frame[5]));
-                            int version_build = DecodeNumber(String(frame[6]));
-                            MainForm->edits->caret_enabled = false;
-                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                MainForm->strings->GetDialogText(DialogText_ConnectionRefused, false),
-                                MainForm->strings->GetDialogText(DialogText_ConnectionRefused, true) + " " +
-                                MainForm->VersionString(version_major, version_minor, version_build) + ".");
-                        }
-                    }
-                    if (frame.Length() >= 12)
-                    {
-                        // The init reply: sequence start, both keys, the player id and the server's challenge answer.
-                        // The client answers with its keys and its id, now encrypted.
-                        if (ByteValue(frame[3]) == 2)
-                        {
-                            int sequence_byte = ByteValue(frame[4]);
-                            init_sequence = 7 * sequence_byte + ByteValue(frame[5]);
-                            init_sequence = init_sequence - 13;
-                            SetConnectionKeys(init_sequence, ByteValue(frame[6]), ByteValue(frame[7]));
-                            String player_id_text = frame.SubString(8, 2);
-                            server_challenge_hash = DecodeNumber(frame.SubString(10, 3));
-                            SetPlayerId(DecodeNumber(player_id_text));
-                            String reply = EncodeNumber(send_key, 2);
-                            reply = reply + EncodeNumber(receive_key, 2);
-                            reply = reply + EncodeNumber(player_id, 2);
-                            is_initialized = true;
-                            ShowPendingScreen();
-                            SendPacket(AC_CONFIRM, OP_SECURITY, reply);
-                        }
-                    }
-                    // The other kinds are handed to the packet processor as packets of their own.
-                    if (frame.Length() >= 3)
-                    {
-                        if (ByteValue(frame[3]) == 4)
-                            processor->DispatchPacket(AC_SET, OP_MAP, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 5)
-                            processor->DispatchPacket(AC_SYN1, OP_PLAY, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 6)
-                            processor->DispatchPacket(AC_SYN2, OP_PLAY, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 7)
-                            processor->DispatchPacket(AC_SYN3, OP_PLAY, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 8)
-                            processor->DispatchPacket(AC_SYN4, OP_PLAY, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 12)
-                            processor->DispatchPacket(AC_SYN5, OP_PLAY, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 9)
-                            processor->DispatchPacket(AC_LIST, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 10)
-                            processor->DispatchPacket(AC_NEW, OP_MAP, frame.SubString(4, frame.Length() - 3));
-                        if (ByteValue(frame[3]) == 11)
-                            processor->DispatchPacket(AC_RESULT, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));
-                    }
+                    is_banned = true;
+                    if (ByteValue(frame[4]) >= 2)
+                        is_permanent_ban = true;
+                    if (frame.Length() >= 5)
+                        ban_minutes = ByteValue(frame[5]);
+                }
+                // A version rejection: the server names the version it wants.
+                if (frame.Length() >= 6 && ByteValue(frame[3]) == 1)
+                {
+                    version_rejected = true;
+                    int version_major = DecodeNumber(frame[4]);
+                    int version_minor = DecodeNumber(frame[5]);
+                    int version_build = DecodeNumber(frame[6]);
+                    MainForm->edits->caret_enabled = false;
+                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                        MainForm->strings->GetDialogText(DialogText_ConnectionRefused, false),
+                        MainForm->strings->GetDialogText(DialogText_ConnectionRefused, true) + " " +
+                            MainForm->VersionString(version_major, version_minor, version_build) + ".");
+                }
+                if (frame.Length() >= 12 && ByteValue(frame[3]) == 2)
+                {
+                    // The init reply: sequence start, both keys, the player id and the server's challenge answer.
+                    // The client answers with its keys and its id, now encrypted.
+                    int key_seed = ByteValue(frame[4]);
+                    init_sequence = ByteValue(frame[5]) + 7 * key_seed;
+                    key_seed = init_sequence;
+                    key_seed = key_seed - 13;
+                    SetConnectionKeys(key_seed, ByteValue(frame[6]), ByteValue(frame[7]));
+                    String player_id_text = frame.SubString(8, 2);
+                    server_challenge_hash = DecodeNumber(frame.SubString(10, 3));
+                    SetPlayerId(DecodeNumber(player_id_text));
+                    String reply = EncodeNumber(send_key, 2);
+                    reply = reply + EncodeNumber(receive_key, 2);
+                    reply = reply + EncodeNumber(player_id, 2);
+                    is_initialized = true;
+                    ShowPendingScreen();
+                    SendPacket(AC_CONFIRM, OP_SECURITY, reply);
+                }
+                // The other kinds are handed to the packet processor as packets of their own.
+                if (frame.Length() >= 3)
+                {
+                    if (ByteValue(frame[3]) == 4)
+                        processor->DispatchPacket(AC_SET, OP_MAP, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 5)
+                        processor->DispatchPacket(AC_SYN1, OP_PLAY, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 6)
+                        processor->DispatchPacket(AC_SYN2, OP_PLAY, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 7)
+                        processor->DispatchPacket(AC_SYN3, OP_PLAY, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 8)
+                        processor->DispatchPacket(AC_SYN4, OP_PLAY, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 12)
+                        processor->DispatchPacket(AC_SYN5, OP_PLAY, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 9)
+                        processor->DispatchPacket(AC_LIST, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 10)
+                        processor->DispatchPacket(AC_NEW, OP_MAP, frame.SubString(4, frame.Length() - 3));
+                    if (ByteValue(frame[3]) == 11)
+                        processor->DispatchPacket(AC_RESULT, OP_PLAYERS, frame.SubString(4, frame.Length() - 3));
                 }
             }
         }
@@ -246,9 +233,8 @@ bool Client::HandleRawPacket(String frame)
 
 // Collects received bytes and handles each complete frame: raw frames directly, the others decrypted with the
 // receive key and dispatched by family and action.
-void Client::ReceiveData(Scktcomp::TCustomWinSocket *socket, String text)
+void Client::ReceiveData(TCustomWinSocket *socket, String text)
 {
-    int i;
     receive_buffer.Insert(text, receive_buffer.Length() + 1);
     // A runaway receive buffer closes the connection.
     if (receive_buffer.Length() > 400000)
@@ -256,31 +242,31 @@ void Client::ReceiveData(Scktcomp::TCustomWinSocket *socket, String text)
         socket->Close();
         return;
     }
-    while (this->receive_buffer.Length() >= 3)
+    while (receive_buffer.Length() >= 3)
     {
         int frame_length = 2;
-        frame_length += this->DecodeLength(this->receive_buffer.SubString(1, 2));
-        if (this->receive_buffer.Length() < frame_length)
+        frame_length = DecodeLength(receive_buffer.SubString(1, 2)) + frame_length;
+        if (receive_buffer.Length() < frame_length)
             break;
-        if (!this->HandleRawPacket(this->receive_buffer.SubString(3, frame_length - 2)))
+        if (!HandleRawPacket(receive_buffer.SubString(3, frame_length - 2)))
         {
-            String frame = this->receive_buffer.SubString(3, frame_length - 2);
-            for (i = 1; i <= frame.Length(); i++)
+            String frame = receive_buffer.SubString(3, frame_length - 2);
+            for (int i = 1; i <= frame.Length(); i++)
             {
                 int frame_byte = (unsigned char)frame[i];
                 // Undoes the sender's FlipHighBits: the high bit of each byte but 128 is flipped back.
                 if (frame_byte < 128)
-                    frame[i] = frame[i] + 128;
+                    frame[i] = frame[i] - 128;
                 if (frame_byte > 128)
-                    frame[i] = frame[i] + 128;
+                    frame[i] = frame[i] - 128;
             }
-            std::string frame_bytes = frame.c_str();
-            frame = UnscrambleBytes(this->receive_key, frame_bytes.begin(), frame_bytes.end());
-            int action = this->ByteValue(frame[1]);
-            int family = this->ByteValue(frame[2]);
-            this->processor->DispatchPacket(action, family, frame.SubString(3, frame.Length() - 2));
+            string frame_bytes = frame.c_str();
+            frame = UnscrambleBytes(receive_key, frame_bytes.begin(), frame_bytes.end());
+            int action = ByteValue(frame[1]);
+            int family = ByteValue(frame[2]);
+            processor->DispatchPacket(action, family, frame.SubString(3, frame.Length() - 2));
         }
-        this->receive_buffer.Delete(1, frame_length);
+        receive_buffer.Delete(1, frame_length);
     }
 }
 
@@ -314,11 +300,8 @@ bool Client::IsInSoundRange(int from_x, int from_y, int to_x, int to_y)
         if (dx + dy <= 14)
             in_range = true;
     }
-    else
-    {
-        if (dx + dy <= 11)
-            in_range = true;
-    }
+    else if (dx + dy <= 11)
+        in_range = true;
     return in_range;
 }
 
@@ -337,11 +320,8 @@ bool Client::IsWallInDrawRange(int from_x, int from_y, int to_x, int to_y)
         if (dx + dy <= 40 && dx <= from_x + 19 && dy <= from_y + 19)
             in_range = true;
     }
-    else
-    {
-        if (dx + dy <= 13)
-            in_range = true;
-    }
+    else if (dx + dy <= 13)
+        in_range = true;
     return in_range;
 }
 
@@ -360,11 +340,8 @@ bool Client::IsObjectInDrawRange(int from_x, int from_y, int to_x, int to_y)
         if (dx + dy <= 24)
             in_range = true;
     }
-    else
-    {
-        if (dx + dy <= 15)
-            in_range = true;
-    }
+    else if (dx + dy <= 15)
+        in_range = true;
     return in_range;
 }
 
@@ -383,11 +360,8 @@ bool Client::IsTallObjectInDrawRange(int from_x, int from_y, int to_x, int to_y)
         if (dx + dy <= 32)
             in_range = true;
     }
-    else
-    {
-        if (dx + dy <= 15)
-            in_range = true;
-    }
+    else if (dx + dy <= 15)
+        in_range = true;
     return in_range;
 }
 
@@ -406,10 +380,9 @@ bool Client::IsInDrawRange(int from_x, int from_y, int to_x, int to_y)
     return in_range;
 }
 
-// Whether two tiles are the same tile or next to each other along x or y.
-bool Client::IsAdjacent(int from_x, int from_y, int to_x, int to_y)
+// The direction from one tile to the next one beside it, 1 to 4; 0 when they are not side by side.
+char Client::GetAdjacentDirection(int from_x, int from_y, int to_x, int to_y)
 {
-    bool is_adjacent = false;
     int dx = to_x - from_x;
     int dy = to_y - from_y;
     if (dx < 0)
@@ -417,8 +390,17 @@ bool Client::IsAdjacent(int from_x, int from_y, int to_x, int to_y)
     if (dy < 0)
         dy = 0 - dy;
     if (dx + dy <= 1)
-        is_adjacent = true;
-    return is_adjacent;
+    {
+        if (from_x < to_x)
+            return 2;
+        if (from_x > to_x)
+            return 4;
+        if (from_y < to_y)
+            return 3;
+        if (from_y > to_y)
+            return 1;
+    }
+    return 0;
 }
 
 // Decodes a frame length from its two leading bytes, each a base-253 digit plus one, lowest first.
@@ -431,9 +413,9 @@ unsigned int Client::DecodeLength(String encoded)
         for (int i = 1; i <= encoded.Length(); i++)
         {
             unsigned char raw_byte = encoded[i];
-            if (raw_byte == 254 || !raw_byte)
+            if (raw_byte == 254 || raw_byte == 0)
                 break;
-            int digit = raw_byte;
+            digit = raw_byte;
             digit--;
             if (i == 1)
                 length += digit;
@@ -457,51 +439,47 @@ void Packetcontrols_UnusedLiterals1()
 }
 
 // Encodes a number as base-253 digits plus one, lowest first, padded to min_length with the filler byte.
-String Client::EncodeNumber(unsigned int value, int min_length)
+DEFINE_ENCODE_NUMBER(Client)
+
+// Decodes up to four base-253 digits, lowest first; the filler byte ends the number.
+int Client::DecodeNumber(String encoded)
 {
-    unsigned int remaining = value;
-    unsigned int quotient;
-    char digit_char;
-    int i;
-    String result = "";
+    int digit;
+    int result = 0;
     try
     {
-        do
+        for (int i = 1; i <= encoded.Length(); i++)
         {
-            double exact_quotient = remaining / 253.0;
-            quotient = exact_quotient;
-            int remainder = remaining % NUMBER_ENCODING_BASE;
-            digit_char = remainder + 1;
-            result.Insert(digit_char, result.Length() + 1);
-            if (quotient >= 1)
-                remaining = quotient;
-        } while (quotient >= 1);
+            unsigned char exact_quotient = encoded[i];
+            if (exact_quotient == 254)
+                break;
+            digit = exact_quotient;
+            digit--;
+            if (i == 1)
+                result += digit;
+            if (i == 2)
+                result += NUMBER_ENCODING_BASE * digit;
+            if (i == 3)
+                result += 64009 * digit;
+            if (i == 4)
+                result += digit * 0xF71AE5;
+        }
     }
     catch (...)
     {
-        result = "";
-    }
-    if (result.Length() < min_length)
-    {
-        char digit_char = -2;
-        int pad_count = min_length - result.Length();
-        for (i = 0; i < pad_count; i++)
-            result.Insert(digit_char, result.Length() + 1);
+        result = 0;
     }
     return result;
 }
 
-// Decodes up to four base-253 digits, lowest first; the filler byte ends the number.
-DEFINE_CLIENT_DECODE_NUMBER(Client)
-
 // The answer the server must give to the client's init challenge; the login and account replies check it.
 int Client::HashChallenge(int sent_challenge)
 {
-    sent_challenge++;
-    int mod = sent_challenge % 11 + 1;
-    int factor = sent_challenge % 9 + 1;
-    int addend = sent_challenge % 2004 + 1;
-    int hash = 11092004 - sent_challenge;
+    int hash = sent_challenge + 1;
+    int mod = hash % 11 + 1;
+    int factor = hash % 9 + 1;
+    int addend = hash % 2004 + 1;
+    hash = 11092004 - hash;
     hash = hash % (119 * mod);
     hash = 119 * (factor * hash);
     hash = addend + hash + 110904;
@@ -512,7 +490,7 @@ int Client::HashChallenge(int sent_challenge)
 String Client::EncryptPacket(int key, String packet)
 {
     String result = "";
-    std::string packet_bytes = packet.c_str();
+    string packet_bytes = packet.c_str();
     result = ScrambleBytes(key, packet_bytes.begin(), packet_bytes.end());
     result = FlipHighBits(result);
     return result;
@@ -528,18 +506,17 @@ void Packetcontrols_UnusedLiterals2()
 // alternately from the front and the back.
 String Client::ScrambleBytes(int divisor, char *data_begin, char *data_end)
 {
-    int divisor_copy;
     String result = "";
-    divisor_copy = divisor;
+    int divisor_copy = divisor;
     try
     {
-        std::stack<char > held_chars;
-        std::deque<char > reordered_chars;
+        stack<char> held_chars;
+        deque<char> reordered_chars;
         for (; data_begin != data_end; data_begin++)
         {
             unsigned char current_byte = *data_begin;
             int char_code = current_byte;
-            if (!(char_code % divisor_copy))
+            if (char_code % divisor_copy == 0)
                 held_chars.push(*data_begin);
             else
             {
@@ -560,12 +537,12 @@ String Client::ScrambleBytes(int divisor, char *data_begin, char *data_end)
         {
             if (!reordered_chars.empty())
             {
-                result.Insert(reordered_chars.front(), result.Length() + 1);
+                result.Insert((char)reordered_chars.front(), result.Length() + 1);
                 reordered_chars.pop_front();
             }
             if (!reordered_chars.empty())
             {
-                result.Insert(reordered_chars.back(), result.Length() + 1);
+                result.Insert((char)reordered_chars.back(), result.Length() + 1);
                 reordered_chars.pop_back();
             }
         }
@@ -579,30 +556,27 @@ String Client::ScrambleBytes(int divisor, char *data_begin, char *data_end)
 
 // Undoes ScrambleBytes: takes the bytes at odd places in order and the others from the end, then reverses the runs
 // of bytes whose code divides by the key again.
-String Client::UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned char *data_end)
+String Client::UnscrambleBytes(int divisor, char *data_begin, char *data_end)
 {
-    int divisor_copy;
-    char to_first_list;
     String result = "";
-    divisor_copy = divisor;
+    int divisor_copy = divisor;
     try
     {
-        std::stack<char > char_stack;
-        std::queue<char > char_queue;
-        to_first_list = true;
-        while (data_begin != data_end)
+        stack<char> char_stack;
+        queue<char> char_queue;
+        char to_first_list = true;
+        for (; data_begin != data_end; data_begin++)
         {
             if (to_first_list)
             {
-                char_queue.push(*(char *)data_begin);
+                char_queue.push(*data_begin);
                 to_first_list = false;
             }
             else
             {
-                char_stack.push(*(char *)data_begin);
+                char_stack.push(*data_begin);
                 to_first_list = true;
             }
-            data_begin++;
         }
         while (!char_stack.empty())
         {
@@ -616,13 +590,13 @@ String Client::UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned 
             char_queue.pop();
             unsigned char char_byte = current_char;
             int char_code = char_byte;
-            if (!(char_code % divisor_copy))
+            if (char_code % divisor_copy == 0)
                 char_stack.push(current_char);
             else
             {
                 while (!char_stack.empty())
                 {
-                    result.Insert(char_stack.top(), result.Length() + 1);
+                    result.Insert((char)char_stack.top(), result.Length() + 1);
                     char_stack.pop();
                 }
                 result.Insert(current_char, result.Length() + 1);
@@ -630,7 +604,7 @@ String Client::UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned 
         }
         while (!char_stack.empty())
         {
-            result.Insert(char_stack.top(), result.Length() + 1);
+            result.Insert((char)char_stack.top(), result.Length() + 1);
             char_stack.pop();
         }
     }
@@ -644,18 +618,18 @@ String Client::UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned 
 // Decodes a text kept obfuscated in the program: reversed, with each character mirrored within its range by position.
 String Client::DeobfuscateString(String text)
 {
-    char is_mapped;
-    int position;
+    unsigned char char_byte;
+    int mirrored_code;
     int char_code;
     String reversed = "";
     String result = "";
-    position = text.Length();
+    int position = text.Length();
     for (; position >= 1; position--)
         reversed = reversed + text[position];
     for (int i = 1; i <= text.Length(); i++)
     {
         char raw_char = reversed[i];
-        unsigned char char_byte = raw_char;
+        char_byte = raw_char;
         char_code = char_byte;
         if (i % 2 == (text.Length() + 1) % 2)
         {
@@ -672,7 +646,7 @@ String Client::DeobfuscateString(String text)
         }
         else
         {
-            is_mapped = false;
+            char is_mapped = false;
             if (char_code >= 34 && char_code <= 79)
             {
                 int low_mirrored_code;
@@ -726,7 +700,7 @@ bool Client::SendPacket(int action, int family, String data)
         {
             String packet = BuildPacket(send_key, action, family, data);
             if (packet != "")
-                MainForm->client->Socket->SendText(packet);
+                ((TCustomWinSocket *)MainForm->client->Socket)->SendText(packet);
         }
     }
     catch (...)
@@ -736,7 +710,8 @@ bool Client::SendPacket(int action, int family, String data)
     return result;
 }
 
-// After the init reply, opens the screen the connection was made for: the create-account form or the login form.
+// Once connected, shows the screen the connection was made for: the create account form, the account recover text,
+// or the login screen with the saved account name filled in.
 void Client::ShowPendingScreen()
 {
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
@@ -803,7 +778,13 @@ void Client::ShowPendingScreen()
                 MainForm->edits->SetPasswordMode(EditId_Password, true);
                 MainForm->edits->SetMaxLength(EditId_AccountName, 16);
                 MainForm->edits->SetMaxLength(EditId_Password, 12);
-                MainForm->edits->FocusEdit(EditId_AccountName);
+                if (MainForm->config->GetAutoAccountName().Length() < 2)
+                    MainForm->edits->FocusEdit(EditId_AccountName);
+                else
+                {
+                    MainForm->edits->SetText(EditId_AccountName, MainForm->config->GetAutoAccountName());
+                    MainForm->edits->FocusEdit(EditId_Password);
+                }
             }
             else
             {
@@ -971,18 +952,22 @@ void Client::HandleDisconnect()
 // Garbles chat text for a drunk player: added letters, starred vowels and hiccups, cut to the chat length.
 String Client::MakeDrunkText(String text)
 {
+    int unused_roll;
     if (text.Length() > 0)
     {
-        int unused_roll = random(10);
+        unused_roll = random(10);
         for (int i = 1; i <= text.Length(); i++)
         {
             char handled = false;
             if (text[i] == 'e' || text[i] == 'a' || text[i] == 'E' || text[i] == 'A')
             {
-                if (i + 1 <= text.Length())
+                if (i + 1 <= text.Length() && text[i + 1] != 'e' && text[i + 1] != 'a')
                 {
-                    if (text[i + 1] != 'e' && text[i + 1] != 'a' && text[i + 1] != 'E' && text[i + 1] != 'A')
-                        handled = true;
+                    if ((text[i + 1] != 'E'))
+                    {
+                        if ((text[i + 1] != 'A'))
+                            handled = true;
+                    }
                 }
                 if (i == text.Length())
                     handled = true;
@@ -995,10 +980,19 @@ String Client::MakeDrunkText(String text)
             }
             if (text[i] == 'u' || text[i] == 'o' || text[i] == 'U' || text[i] == 'O')
             {
-                if (i + 1 <= text.Length())
+                if ((i + 1 <= text.Length()))
                 {
-                    if (text[i + 1] != 'u' && text[i + 1] != 'o' && text[i + 1] != 'U' && text[i + 1] != 'O')
-                        handled = true;
+                    if ((text[i + 1] != 'u'))
+                    {
+                        if ((text[i + 1] != 'o'))
+                        {
+                            if ((text[i + 1] != 'U'))
+                            {
+                                if ((text[i + 1] != 'O'))
+                                    handled = true;
+                            }
+                        }
+                    }
                 }
                 if (i == text.Length())
                     handled = true;
@@ -1030,18 +1024,19 @@ String Client::MakeDrunkText(String text)
             {
                 int star_roll = random(24);
                 if (star_roll < 2)
-                    text[j] = 42;
+                    text[j] = '*';
             }
         }
         for (int k = 1; k <= text.Length(); k++)
         {
-            if (text[k] != ' ')
-                continue;
-            int hic_roll = random(10);
-            if (hic_roll < 3)
+            if (text[k] == ' ')
             {
-                text.Insert("*hic* ", k + 1);
-                k += 6;
+                int hic_roll = random(10);
+                if (hic_roll < 3)
+                {
+                    text.Insert("*hic* ", k + 1);
+                    k += 6;
+                }
             }
         }
     }
@@ -1059,14 +1054,12 @@ DEFINE_CAPITALIZE(Client)
 // Replaces each filter word in the text with stars when the filter is on; the strict filter drops the whole text.
 String Client::CensorText(String text)
 {
-    char censored_any;
-    int i;
     String result = "";
     String lower_text = LowerCase(text);
     if (MainForm->config->GetFilterEnabled())
     {
-        censored_any = false;
-        for (i = 0; i < word_filter->Count; i++)
+        char censored_any = false;
+        for (int i = 0; i < word_filter->Count; i++)
         {
             if (word_filter->Strings[i].Length() <= lower_text.Length())
             {
@@ -1076,7 +1069,7 @@ String Client::CensorText(String text)
                     {
                         if (word_filter->Strings[i][1] == lower_text[j])
                         {
-                            if (j + word_filter->Strings[i].Length() - 1 <= lower_text.Length())
+                            if (word_filter->Strings[i].Length() + j - 1 <= lower_text.Length())
                             {
                                 if (lower_text.SubString(j, word_filter->Strings[i].Length()) ==
                                     word_filter->Strings[i])
@@ -1191,8 +1184,6 @@ void Packetcontrols_UnusedLiterals3()
 // Builds one encrypted packet: action, family, the rolling sequence number and the data, then its length in front.
 String Client::BuildPacket(int key, int action, int family, String data)
 {
-    char action_byte;
-    char family_byte;
     char is_valid;
     String packet = "";
     try
@@ -1200,10 +1191,12 @@ String Client::BuildPacket(int key, int action, int family, String data)
         char action_char = action;
         char family_char = family;
         is_valid = true;
+        char action_byte;
         if (action_char)
             action_byte = action_char;
         else
             is_valid = false;
+        char family_byte;
         if (family_char)
             family_byte = family_char;
         else
@@ -1223,7 +1216,7 @@ String Client::BuildPacket(int key, int action, int family, String data)
             packet = packet + EncodeNumber(sequence_start + sequence_counter, 1);
             packet = packet + body;
             packet = EncryptPacket(key, packet);
-            unsigned int packet_length = packet.Length();
+            int packet_length = packet.Length();
             packet = EncodeNumber(packet_length, 2) + packet;
         }
     }
@@ -1244,17 +1237,15 @@ int Client::ByteValue(unsigned char ch)
 // Whether enough time has passed since the last action, counted in hundredths of a second of the day.
 char Client::CanAct()
 {
-    TTimeStamp now;
-    int now_tick;
-    int last_tick;
-    now = DateTimeToTimeStamp(Now());
-    now_tick = now.Time / 10;
-    int elapsed = now_tick;
-    last_tick = last_action_tick;
-    elapsed -= last_tick;
-    // Past midnight the count starts again, so a late last action counts as long ago.
-    if (elapsed < 0 && last_tick > 7500000)
-        elapsed = 44;
+    int elapsed;
+    TTimeStamp now = DateTimeToTimeStamp(Now());
+    int now_tick = now.Time / 10;
+    elapsed = now_tick - last_action_tick;
+    if (elapsed < 0)
+    {
+        if (last_action_tick > 7500000)
+            elapsed = 44;
+    }
     if (elapsed < 44)
         return false;
     pending_action_tick = now_tick;
@@ -1270,14 +1261,10 @@ void Client::CommitActionTime()
 // Whether text is four dot-separated numbers.
 bool Client::IsIpAddress(String text)
 {
-    bool is_ip;
-    int digits_in_part;
-    int dot_count;
-    int result_scratch = 0;
+    bool is_ip = true;
     char is_valid = true;
-    is_ip = true;
-    digits_in_part = 0;
-    dot_count = 0;
+    int digits_in_part = 0;
+    int dot_count = 0;
     try
     {
         for (int i = 1; i <= text.Length() && is_valid; i++)

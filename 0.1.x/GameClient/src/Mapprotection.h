@@ -7,7 +7,21 @@ enum WarpTimeoutAction
     WarpTimeoutAction_ConfirmWarp = 2
 };
 
+#include <fstream>
+#include <new>
+#include <string>
 #include <vector.h>
+
+struct PathFinder;
+
+#include "Mapdoor.h"
+#include "Mapobject.h"
+#include "Mapsign.h"
+#include "Mapwarp.h"
+
+#define PVP_MAP_TYPE 3
+#define TILE_HALF_HEIGHT 16
+#define TILE_HALF_WIDTH 32
 
 enum MusicMode
 {
@@ -19,15 +33,6 @@ enum MusicMode
     MusicMode_LoopIfSilent = 5,
     MusicMode_Stop = 6
 };
-#define TILE_HALF_HEIGHT 16
-#define TILE_HALF_WIDTH 32
-
-struct PathFinder;
-
-#include "Mapdoor.h"
-#include "Mapobject.h"
-#include "Mapsign.h"
-#include "Mapwarp.h"
 
 // The current map: its tile layers, doors, chests, warps and signs, the view centre and scrolling, and warp handling.
 struct MapController
@@ -37,7 +42,7 @@ struct MapController
     bool warp_pending;
     bool loading_map;
     bool map_request_pending;
-    unsigned int map_id;
+    int map_id;
     int map_file_size;
     int warp_session_id;
     String map_data;
@@ -55,11 +60,10 @@ struct MapController
     unsigned short top_masks[250][250];
     char blocked[250][250];
     char has_tile_spec[250][250];
-    unsigned short minimap_mask[250][250];
+    short minimap_mask[250][250];
     int trap_reveal_timer;
     int tile_frame;
     bool has_animated_tiles;
-    char unused_bytes[7];
     vector<MapObject> tile_specs;
     vector<MapObject> chest_keys;
     vector<MapDoor> doors;
@@ -101,7 +105,6 @@ struct MapController
     int path_marker_x;
     int path_marker_y;
     int path_marker_timer;
-    char second_unused_bytes[4];
 
     MapController();
     ~MapController();
@@ -124,18 +127,18 @@ struct MapController
     void ClearTileObjects();
     void ClearSigns();
     String FindSignTextAt(int x, int y);
-    Windows::TPoint FindLockerAt(int x, int y);
-    Windows::TPoint FindChestAt(int x, int y);
-    Windows::TPoint FindBoardAt(int x, int y);
-    Windows::TPoint FindJukeboxAt(int x, int y);
-    Windows::TPoint FindDoorAt(int x, int y);
+    TPoint FindLockerAt(int x, int y);
+    TPoint FindChestAt(int x, int y);
+    TPoint FindBoardAt(int x, int y);
+    TPoint FindJukeboxAt(int x, int y);
+    TPoint FindDoorAt(int x, int y);
     int GetWarpLevel(int x, int y);
     int GetChairSpec(int x, int y);
     int GetChestKey(int x, int y);
     int GetDoorKey(int x, int y);
-    char IsNearTrap();
+    int IsNearTrap();
     int GetTileSpec(int x, int y);
-    unsigned int GetUsableTileSpec(int x, int y);
+    int GetUsableTileSpec(int x, int y);
     void ClearWarps();
     char ConsumeCursorMoved();
     void UpdateCursorTile(int screen_x, int screen_y);
@@ -164,12 +167,12 @@ struct MapController
     bool IsWarpDelayed();
     void DelayWarp();
     void StartScroll(int direction);
-    char IsScrolling();
+    bool IsScrolling();
     bool IsCursorUpdatePending();
     void BlockActionsBriefly();
     void FreezePlayer();
     void UnfreezePlayer();
-    char IsActionBlocked();
+    bool IsActionBlocked();
     bool HasPathMarker();
     void SetPathMarker(int x, int y);
     int GetPathMarkerX();

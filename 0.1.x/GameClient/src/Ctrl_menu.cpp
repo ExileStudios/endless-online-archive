@@ -4,10 +4,8 @@
 #include "Ctrl_menu.h"
 #include "Tmainform.h"
 #include <stdlib.h>
-#pragma package(smart_init)
 
-#define GRID_PASSWORD_LIMIT 15
-#define MENU_THUMB_TRAVEL 72.0
+#pragma package(smart_init)
 
 MenuController::MenuController()
 {
@@ -49,7 +47,7 @@ MenuController::MenuController()
     form_cancel_button_hover = false;
     login_ok_button_hover = false;
     login_cancel_button_hover = false;
-    unused_flag = false;
+    intro_finished = false;
     unused_value = 0;
     is_message_open = false;
     message_x = DEFAULT_MESSAGE_BOX_X;
@@ -493,9 +491,7 @@ void MenuController::UpdateScrollbarHover(int mouse_x, int mouse_y)
 // Scrolls the text window to match the thumb: 72 pixels of track over the lines past the 7 shown.
 void MenuController::DragScrollbar(int mouse_y)
 {
-    double thumb_ratio;
-    double scaled_offset;
-    int unused_int;
+    int new_offset;
     if (is_dragging_thumb)
     {
         int thumb_position = mouse_y - thumb_grab_offset - text_window_y;
@@ -506,9 +502,9 @@ void MenuController::DragScrollbar(int mouse_y)
         int line_count = text_lines->Count;
         if (line_count > 7)
         {
-            thumb_ratio = thumb_position / 72.0;
-            scaled_offset = (line_count - 7.0) * thumb_ratio;
-            int new_offset = scaled_offset;
+            double thumb_ratio = thumb_position / 72.0;
+            double scaled_offset = (line_count - 7.0) * thumb_ratio;
+            new_offset = scaled_offset;
             if (new_offset != text_scroll_offset)
                 text_scroll_offset = new_offset;
         }
@@ -519,14 +515,12 @@ void MenuController::DragScrollbar(int mouse_y)
 // Scrolls the text window up a line and moves the thumb to match.
 void MenuController::ScrollUp()
 {
-    double offset_ratio;
-    double thumb_position;
     int line_count = text_lines->Count;
     if (line_count > 7 && text_scroll_offset > 0)
     {
         text_scroll_offset--;
-        offset_ratio = (double)text_scroll_offset / (double)(line_count - 7);
-        thumb_position = MENU_THUMB_TRAVEL * offset_ratio;
+        double offset_ratio = (double)text_scroll_offset / (line_count - 7);
+        double thumb_position = MENU_THUMB_TRAVEL * offset_ratio;
         text_scrollbar_position = thumb_position;
     }
 }
@@ -540,8 +534,8 @@ void MenuController::ScrollDown()
     if (line_count - 7 > text_scroll_offset)
     {
         text_scroll_offset++;
-        offset_ratio = (double)text_scroll_offset / (double)(line_count - 7);
-        thumb_position = MENU_THUMB_TRAVEL * offset_ratio;
+        double offset_ratio = (double)text_scroll_offset / (line_count - 7);
+        double thumb_position = MENU_THUMB_TRAVEL * offset_ratio;
         text_scrollbar_position = thumb_position;
     }
 }
@@ -649,7 +643,7 @@ void MenuController::AddSelectedLetter()
             password = password + "9";
     }
     letter_delay_ticks = 4;
-    if (!(password.Length() % 2))
+    if (password.Length() % 2 == 0)
     {
         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
         grid_column = random(4) + 1;

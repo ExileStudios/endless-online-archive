@@ -4,15 +4,9 @@
 #include "Npcvalues.h"
 #include "Classvalues.h"
 #include "Packetcontrols.h"
-#include <fstream.h>
 #include <io.h>
 #include <stdio.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 NpcValues::NpcValues()
@@ -34,13 +28,13 @@ NpcValues::~NpcValues()
 // With more than 900 NPCs the last part file is read too; the values are kept only when its header matches.
 void NpcValues::ReadHeader()
 {
-    String file_text;
+    int file_handle;
+    int file_size;
+    char *buffer;
     int first_checksum_high;
     int first_checksum_low;
-    int file_handle;
-    DWORD file_size;
-    char *buffer;
     int total_records;
+    String file_text;
     String file_name = file_prefix + "001.enf";
     try
     {
@@ -70,7 +64,7 @@ void NpcValues::ReadHeader()
     {
         file_text = "";
         file_name = file_prefix;
-        int last_file_number = total_records / PUB_RECORDS_PER_FILE + 1;
+        int last_file_number = total_records / 900 + 1;
         if (last_file_number < 10)
             file_name = file_name + "00" + IntToStr(last_file_number) + ".enf";
         else
@@ -124,13 +118,13 @@ void NpcValues::ReadHeader()
 // Writes one part of the NPC file as the server sent it.
 void NpcValues::SaveFilePart(int part_number, String data)
 {
-    String lpFileName = file_prefix;
+    String lp_file_name = file_prefix;
     if (part_number < 10)
-        lpFileName = lpFileName + "00" + IntToStr(part_number) + ".enf";
+        lp_file_name = lp_file_name + "00" + IntToStr(part_number) + ".enf";
     else
-        lpFileName = lpFileName + "0" + IntToStr(part_number) + ".enf";
-    std::ofstream handle;
-    handle.open(lpFileName.c_str(), std::ios::binary);
+        lp_file_name = lp_file_name + "0" + IntToStr(part_number) + ".enf";
+    basic_ofstream<char, char_traits<char> > handle;
+    handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << data.c_str();
     handle.close();
 }
@@ -138,15 +132,13 @@ void NpcValues::SaveFilePart(int part_number, String data)
 // Reads every NPC part file into the list, once until the files change.
 void NpcValues::Load()
 {
-    int file_number;
-    int loaded_count;
-    int record_total;
-    int hFile;
+    int file_size;
+    char *buffer;
     if (!is_loaded)
     {
-        file_number = 1;
-        loaded_count = 0;
-        record_total = 1;
+        int file_number = 1;
+        int loaded_count = 0;
+        int record_total = 1;
         do
         {
             String file_text;
@@ -155,16 +147,15 @@ void NpcValues::Load()
                 file_path = file_path + "00" + IntToStr(file_number) + ".enf";
             else
                 file_path = file_path + "0" + IntToStr(file_number) + ".enf";
+            int h_file;
             try
             {
-                DWORD file_size;
-                char *buffer;
-                hFile = FileOpen(file_path.c_str(), fmOpenRead);
-                file_size = FileSeek(hFile, 0, 2);
-                FileSeek(hFile, 0, 0);
+                h_file = FileOpen(file_path.c_str(), fmOpenRead);
+                file_size = FileSeek(h_file, 0, 2);
+                FileSeek(h_file, 0, 0);
                 buffer = new char[file_size + 1];
-                FileRead(hFile, buffer, file_size);
-                FileClose(hFile);
+                FileRead(h_file, buffer, file_size);
+                FileClose(h_file);
                 file_text = buffer;
                 file_text.SetLength(file_size);
                 delete[] buffer;
@@ -211,7 +202,7 @@ void NpcValues::Load()
             }
             catch (...)
             {
-                FileClose(hFile);
+                FileClose(h_file);
                 is_loaded = false;
             }
             file_number++;
@@ -223,18 +214,18 @@ void NpcValues::Load()
 void NpcValues::DeleteFiles()
 {
     char file_found = true;
-    String lpFileName;
+    String lp_file_name;
     try
     {
         for (int i = 1; i <= 100 && file_found; i++)
         {
-            lpFileName = file_prefix;
+            lp_file_name = file_prefix;
             if (i < 10)
-                lpFileName = lpFileName + "00" + IntToStr(i) + ".enf";
+                lp_file_name = lp_file_name + "00" + IntToStr(i) + ".enf";
             else
-                lpFileName = lpFileName + "0" + IntToStr(i) + ".enf";
-            if (!access(lpFileName.c_str(), 0))
-                remove(lpFileName.c_str());
+                lp_file_name = lp_file_name + "0" + IntToStr(i) + ".enf";
+            if (!access(lp_file_name.c_str(), 0))
+                remove(lp_file_name.c_str());
             else
                 file_found = false;
         }
@@ -309,18 +300,18 @@ String NpcValues::GetName(int npc_id)
 }
 
 // The two type numbers of an NPC, both 0 when the id is not in the list.
-NpcTypeInfo NpcValues::GetType(int npc_id)
+TPoint NpcValues::GetType(int npc_id)
 {
-    NpcTypeInfo type_pair;
-    type_pair.npc_type = NpcType_Friendly;
-    type_pair.behavior_id = 0;
+    TPoint type_pair;
+    type_pair.x = NpcType_Friendly;
+    type_pair.y = 0;
     vector<NpcValue>::iterator it;
     for (it = records.begin(); it != records.end(); it++)
     {
         if (npc_id == it->npc_id)
         {
-            type_pair.npc_type = it->npc_type;
-            type_pair.behavior_id = it->behavior_id;
+            type_pair.x = it->npc_type;
+            type_pair.y = it->behavior_id;
             break;
         }
     }

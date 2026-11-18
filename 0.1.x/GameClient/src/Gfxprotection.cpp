@@ -30,26 +30,15 @@
 #include "Gfx_stats.h"
 #include "Gfx_trade.h"
 #include <stdlib.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
-#define INTERFACE_GFX_FILE 2
-#define MENU_ARTWORK_X 229
-#define MENU_ARTWORK_Y 70
-#define SIDE_ARTWORK_X 42
-#define SIDE_ARTWORK_Y 140
-#define SLOT_GFX_FILE 3
 
 // Makes the intro, sprite and npc graphics and every map graphics list; the screen and window graphics come later.
 GfxController::GfxController(char preload_tiles, char preload_map_graphics)
 {
     intro = new IntroGraphics();
     sprites = new SpriteGraphics();
-    npcs = new NpcGraphics();
+    npc_cache = new NpcGraphics();
     objects = new ObjectGraphics(preload_map_graphics);
     tiles = new TileGraphics(preload_tiles);
     walls = new WallGraphics(preload_map_graphics);
@@ -93,8 +82,8 @@ GfxController::~GfxController()
         delete intro;
     if (sprites)
         delete sprites;
-    if (npcs)
-        delete npcs;
+    if (npc_cache)
+        delete npc_cache;
     if (objects)
         delete objects;
     if (walls)
@@ -291,7 +280,7 @@ void GfxController::FreeChestGraphics()
 }
 
 // Replaces the hover label with a new one for text, in the colour that label_style picks.
-void GfxController::CreateHoverLabel(int text_width, unsigned int height, int label_style, String text)
+void GfxController::CreateHoverLabel(int text_width, int height, int label_style, String text)
 {
     if (hover_label_created)
     {
@@ -335,19 +324,17 @@ void GfxController::FreeGameGraphics()
 // Loads the trade window background and the item slot frame into the trade graphics.
 void GfxController::LoadTradeGraphics()
 {
-    HMODULE interface_library_copy;
-    HMODULE slot_library_copy;
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (interface_library)
     {
-        interface_library_copy = interface_library;
+        HMODULE interface_library_copy = interface_library;
         if (trade_created)
-            GraphicSize background_size = trade->LoadBackground(interface_library_copy, InterfaceBitmap_TradeWindow);
+            trade->LoadBackground(interface_library_copy, InterfaceBitmap_TradeWindow);
     }
     HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
     if (slot_library)
     {
-        slot_library_copy = slot_library;
+        HMODULE slot_library_copy = slot_library;
         if (trade_created)
             trade->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
     }
@@ -356,19 +343,17 @@ void GfxController::LoadTradeGraphics()
 // Loads the shop window background and the item slot frame into the shop graphics.
 void GfxController::LoadShopGraphics()
 {
-    HMODULE interface_library_copy;
-    HMODULE slot_library_copy;
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (interface_library)
     {
-        interface_library_copy = interface_library;
+        HMODULE interface_library_copy = interface_library;
         if (shop_created)
-            GraphicSize background_size = shop->LoadBackground(interface_library_copy, InterfaceBitmap_ShopWindow);
+            shop->LoadBackground(interface_library_copy, InterfaceBitmap_ShopWindow);
     }
     HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
     if (slot_library)
     {
-        slot_library_copy = slot_library;
+        HMODULE slot_library_copy = slot_library;
         if (shop_created)
             shop->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
     }
@@ -377,11 +362,10 @@ void GfxController::LoadShopGraphics()
 // Loads the npc quest dialog window background.
 void GfxController::LoadDialogGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (dialog_created)
             dialog->LoadSurface(library_copy, InterfaceBitmap_DialogWindow);
     }
@@ -390,19 +374,17 @@ void GfxController::LoadDialogGraphics()
 // The report window reuses the shop graphics: its own background with the shop item slot frame.
 void GfxController::LoadReportGraphics()
 {
-    HMODULE interface_library_copy;
-    HMODULE slot_library_copy;
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (interface_library)
     {
-        interface_library_copy = interface_library;
+        HMODULE interface_library_copy = interface_library;
         if (shop_created)
-            GraphicSize background_size = shop->LoadBackground(interface_library_copy, InterfaceBitmap_ReportWindow);
+            shop->LoadBackground(interface_library_copy, InterfaceBitmap_ReportWindow);
     }
     HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
     if (slot_library)
     {
-        slot_library_copy = slot_library;
+        HMODULE slot_library_copy = slot_library;
         if (shop_created)
             shop->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
     }
@@ -411,11 +393,10 @@ void GfxController::LoadReportGraphics()
 // Loads the character stats window background.
 void GfxController::LoadStatGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (stat_created)
             stat->LoadSurface(library_copy, InterfaceBitmap_StatWindow);
     }
@@ -424,11 +405,10 @@ void GfxController::LoadStatGraphics()
 // Loads the message board sheet; the quest window loads it too.
 void GfxController::LoadMsgBoardGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (message_board_created)
             message_board->LoadSurface(library_copy, InterfaceBitmap_MsgBoardWindow);
     }
@@ -437,11 +417,10 @@ void GfxController::LoadMsgBoardGraphics()
 // Loads the friends and ignore window background.
 void GfxController::LoadSocialGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (social_created)
             social->LoadSurface(library_copy, InterfaceBitmap_ShopWindow);
     }
@@ -450,11 +429,10 @@ void GfxController::LoadSocialGraphics()
 // Loads the bank window background.
 void GfxController::LoadBankGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (bank_created)
             bank->LoadSurface(library_copy, InterfaceBitmap_BankWindow);
     }
@@ -463,11 +441,10 @@ void GfxController::LoadBankGraphics()
 // Loads the jukebox window background.
 void GfxController::LoadJukeboxGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (jukebox_created)
             jukebox->LoadSurface(library_copy, InterfaceBitmap_JukeboxWindow);
     }
@@ -477,24 +454,20 @@ void GfxController::LoadJukeboxGraphics()
 void GfxController::LoadMusicianGraphics()
 {
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    if (library && musician_created)
     {
-        if (musician_created)
-        {
-            GraphicSize background_size = musician->LoadBackground(library, InterfaceBitmap_MusicianWindow);
-            GraphicSize cell_sheet_size = musician->LoadCellSheet(library, InterfaceBitmap_CellSheet);
-        }
+        musician->LoadBackground(library, InterfaceBitmap_MusicianWindow);
+        musician->LoadCellSheet(library, InterfaceBitmap_CellSheet);
     }
 }
 
 // Loads the barber window background.
 void GfxController::LoadBarberGraphics()
 {
-    HMODULE library_copy;
     HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (library)
     {
-        library_copy = library;
+        HMODULE library_copy = library;
         if (barber_created)
             barber->LoadSurface(library_copy, InterfaceBitmap_BarberWindow);
     }
@@ -503,19 +476,17 @@ void GfxController::LoadBarberGraphics()
 // Loads the chest window background and the item slot frame into the chest graphics.
 void GfxController::LoadChestGraphics()
 {
-    HMODULE interface_library_copy;
-    HMODULE slot_library_copy;
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (interface_library)
     {
-        interface_library_copy = interface_library;
+        HMODULE interface_library_copy = interface_library;
         if (chest_created)
-            GraphicSize background_size = chest->LoadBackground(interface_library_copy, InterfaceBitmap_ChestWindow);
+            chest->LoadBackground(interface_library_copy, InterfaceBitmap_ChestWindow);
     }
     HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
     if (slot_library)
     {
-        slot_library_copy = slot_library;
+        HMODULE slot_library_copy = slot_library;
         if (chest_created)
             chest->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
     }
@@ -525,10 +496,12 @@ void GfxController::LoadChestGraphics()
 // still kept, and the animation sheet and scroll icons from the interface file.
 void GfxController::LoadMenuGraphics(char single_panel)
 {
+    int menu_library_copy;
+    int interface_library_copy;
     HMODULE menu_library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
     if (menu_library)
     {
-        int menu_library_copy = (int)menu_library;
+        menu_library_copy = (int)menu_library;
         if (intro_created)
             intro->LoadSurface(menu_library_copy, MenuBitmap_Intro);
         // A single-panel layout loads one lower panel of its own instead of both panels and the key sheet.
@@ -555,21 +528,23 @@ void GfxController::LoadMenuGraphics(char single_panel)
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (interface_library)
     {
-        int interface_library_copy = (int)interface_library;
+        interface_library_copy = (int)interface_library;
         menu->LoadAnimationSheet(interface_library_copy, InterfaceBitmap_AnimationSheet);
         menu->LoadScrollIcons(interface_library_copy, InterfaceBitmap_ScrollIcons);
         FreeLibrary(interface_library);
     }
 }
 
-// Loads the game screen: buttons and boxes from the menu graphics file, then every interface sheet and background
-// from the interface file.
+// Loads the game screen's interface pictures, from the bars and chat to the icons, cursors and effects, and warns
+// that the client needs patching when the last of them is missing.
 void GfxController::LoadGameGraphics()
 {
+    int interface_library_copy;
+    int menu_library_copy;
     HMODULE menu_library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
     if (menu_library)
     {
-        int menu_library_copy = (int)menu_library;
+        menu_library_copy = (int)menu_library;
         game->LoadButtonSheet(menu_library_copy, MenuBitmap_SmallButtons);
         game->LoadMessageBoxBackground(menu_library_copy, MenuBitmap_GameMessageBox);
         game->LoadTextBoxBackground(menu_library_copy, MenuBitmap_TextBoxBackground);
@@ -578,10 +553,11 @@ void GfxController::LoadGameGraphics()
     HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
     if (menu_library)
     {
-        int interface_library_copy = (int)interface_library;
+        interface_library_copy = (int)interface_library;
         interface_graphics->LoadHudBackground(interface_library_copy, InterfaceBitmap_HudBackground);
         interface_graphics->LoadClockBackground(interface_library_copy, InterfaceBitmap_ClockBackground);
         interface_graphics->LoadTooltipBackground(interface_library_copy, InterfaceBitmap_TooltipBackground);
+        interface_graphics->ClearChatPanel();
         interface_graphics->LoadChatInputBackground(interface_library_copy, InterfaceBitmap_ChatInputBackground);
         interface_graphics->LoadSmallIcons(interface_library_copy, InterfaceBitmap_SmallIcons);
         interface_graphics->LoadChatTabs(interface_library_copy, InterfaceBitmap_ChatTabs);
@@ -752,10 +728,10 @@ void GfxController::LoadMainMenuScreen(bool random_artwork)
     if (library)
     {
         int library_copy = (int)library;
-        this->menu->LoadBackground(library_copy, this->menu->background_id);
+        menu->LoadBackground(library_copy, menu->background_id);
         if (random_artwork)
             menu->artwork_id = random(4) + 141;
-        this->menu->LoadArtwork(library_copy, this->menu->artwork_id);
+        menu->LoadArtwork(library_copy, menu->artwork_id);
         menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
         FreeLibrary(library);
     }
@@ -768,9 +744,9 @@ void GfxController::LoadCreateAccountScreen()
     if (library)
     {
         int library_copy = (int)library;
-        this->menu->LoadBackground(library_copy, this->menu->background_id);
+        menu->LoadBackground(library_copy, menu->background_id);
         menu->DrawFormLabels(0, 0);
-        this->menu->LoadArtwork(library_copy, random(8) + 161);
+        menu->LoadArtwork(library_copy, random(8) + 161);
         menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
         FreeLibrary(library);
     }
@@ -783,8 +759,8 @@ void GfxController::LoadPasswordScreen()
     if (library)
     {
         int library_copy = (int)library;
-        this->menu->LoadBackground(library_copy, this->menu->background_id);
-        this->menu->LoadArtwork(library_copy, this->menu->artwork_id);
+        menu->LoadBackground(library_copy, menu->background_id);
+        menu->LoadArtwork(library_copy, menu->artwork_id);
         menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
         menu->DrawUpperPanelOnBackground(266, 184);
         FreeLibrary(library);
@@ -798,8 +774,8 @@ void GfxController::LoadLoginScreen()
     if (library)
     {
         int library_copy = (int)library;
-        this->menu->LoadBackground(library_copy, this->menu->background_id);
-        this->menu->LoadArtwork(library_copy, this->menu->artwork_id);
+        menu->LoadBackground(library_copy, menu->background_id);
+        menu->LoadArtwork(library_copy, menu->artwork_id);
         menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
         menu->DrawLowerPanelOnBackground(266, 284);
         FreeLibrary(library);
@@ -813,11 +789,11 @@ void GfxController::LoadCharacterSelectScreen()
     if (library)
     {
         int library_copy = (int)library;
-        this->menu->LoadBackground(library_copy, this->menu->background_id);
+        menu->LoadBackground(library_copy, menu->background_id);
         menu->DrawSlotFrameOnBackground(334, 36);
         menu->DrawSlotFrameOnBackground(334, 160);
         menu->DrawSlotFrameOnBackground(334, 284);
-        this->menu->LoadArtwork(library_copy, random(8) + 161);
+        menu->LoadArtwork(library_copy, random(8) + 161);
         menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
         FreeLibrary(library);
     }

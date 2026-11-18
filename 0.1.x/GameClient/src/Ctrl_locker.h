@@ -3,17 +3,24 @@
 
 #include <vector.h>
 
+struct Tooltip;
+
 #include "Iteminventory.h"
+
+#define LOCKER_VISIBLE_ROWS 5
 
 // The locker window: the items in the locker at a map tile, in a scrolling list.
 struct LockerController
 {
     vector<InventoryItem> items;
     char close_hovered;
+    Tooltip *tooltip;
     char scroll_up_hovered;
     char scroll_down_hovered;
     char unused_flag;
     char is_visible;
+    int hovered_slot;
+    int hovered_col;
     int hovered_row;
     int window_x;
     int window_y;
@@ -44,6 +51,8 @@ struct LockerController
     int GetScrollThumbOffset();
     int GetTopRow();
     void ClearItems();
+    void ClearList();
+    void AdjustScroll();
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
     void UpdateScrollHover(int x, int y);

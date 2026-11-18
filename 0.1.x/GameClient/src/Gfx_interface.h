@@ -1,6 +1,15 @@
 #ifndef Gfx_interfaceH
 #define Gfx_interfaceH
 
+enum HealthBarFill
+{
+    HealthBarFill_Green = 0,
+    HealthBarFill_Yellow = 1,
+    HealthBarFill_Red = 2,
+    HealthBarFill_Second = 4,
+    HealthBarFill_Third = 5
+};
+
 enum ButtonState
 {
     ButtonState_Normal = 0,
@@ -19,12 +28,6 @@ enum SmallTabButton
     SmallTabButton_Ignore = 1
 };
 
-enum InventoryButton
-{
-    InventoryButton_Left = 0,
-    InventoryButton_Right = 1
-};
-
 enum StatusIcon
 {
     StatusIcon_Weapon = 0,
@@ -33,6 +36,12 @@ enum StatusIcon
     StatusIcon_Pvp = 3,
     StatusIcon_Boss = 4,
     StatusIcon_Drain = 5
+};
+
+enum InventoryButton
+{
+    InventoryButton_Left = 0,
+    InventoryButton_Right = 1
 };
 
 enum HudButton
@@ -50,6 +59,18 @@ enum HudButton
     HudButton_Help = 10
 };
 
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#define DRAG_BACKUP_WIDTH 50
+#define DRAG_ICON_BACKUP_HEIGHT 50
+#define INFO_NAME_MAX_WIDTH 68
+#define SCREEN_HEIGHT 480
+#define SCREEN_WIDTH 640
+#define SLOT_FRAME_PITCH 49
+
 enum PanelBackground
 {
     PanelBackground_Chat = 128,
@@ -63,20 +84,16 @@ enum PanelBackground
     PanelBackground_Help = 163
 };
 
-#define CORNER_BUTTON_HEIGHT 53
-#define HEALTH_BAR_SCALE 0.36
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
-
 // The game screen's interface: the HUD, the side panels (chat, inventory, spells, skills, status, player list,
 // group, settings, help, news), their sheets and buttons, and the drag image of an item, spell or skill.
 struct InterfaceGraphics
 {
+    int theme_0_colors[7];
+    int theme_1_colors[7];
     TDx_DrawSurface *hud_background;
     TDx_DrawSurface *clock_background;
     TDx_DrawSurface *tooltip_background;
+    TDx_DrawSurface *chat_panel_surface;
     TDx_DrawSurface *chat_mode_icons;
     TDx_DrawSurface *chat_input_background;
     TDx_DrawSurface *small_icons;
@@ -99,24 +116,24 @@ struct InterfaceGraphics
     TDx_DrawSurface *emote_sheet;
     TDx_DrawSurface *weapon_effects;
     TDx_DrawSurface *drag_save_surface;
-    Windows::TRect hud_background_rect;
-    Windows::TRect clock_rect;
-    Windows::TRect tooltip_rect;
-    Windows::TRect chat_input_rect;
-    Windows::TRect hud_frame_rect;
-    Windows::TRect hud_left_frame_rect;
-    Windows::TRect hud_top_frame_rect;
-    Windows::TRect panel_rect;
-    Windows::TRect loading_icon_rect;
-    Windows::TRect drag_rect;
-    Windows::TRect book_scrollbar_rect;
-    Windows::TRect status_icon_left_rect;
-    Windows::TRect status_icon_right_rect;
-    Windows::TRect status_bars_frame_rect;
-    Windows::TRect health_bar_frame_rect;
-    Windows::TRect health_bar_shadow_rect;
-    Windows::TRect miss_label_rect;
-    Windows::TRect bar_text_box_rect;
+    TRect hud_background_rect;
+    TRect clock_rect;
+    TRect tooltip_rect;
+    TRect chat_input_rect;
+    TRect hud_frame_rect;
+    TRect hud_left_frame_rect;
+    TRect hud_top_frame_rect;
+    TRect panel_rect;
+    TRect loading_icon_rect;
+    TRect drag_rect;
+    TRect book_scrollbar_rect;
+    TRect status_icon_left_rect;
+    TRect status_icon_right_rect;
+    TRect status_bars_frame_rect;
+    TRect health_bar_frame_rect;
+    TRect health_bar_shadow_rect;
+    TRect miss_label_rect;
+    TRect bar_text_box_rect;
     bool minimap_visible;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
@@ -127,26 +144,34 @@ struct InterfaceGraphics
 
     InterfaceGraphics();
     ~InterfaceGraphics();
-    Windows::TRect GetChatTabRect(int tab);
-    Windows::TRect GetStatusBarFillRect(int bar, int segments);
-    Windows::TRect GetListIconRect(int row, int column);
-    Windows::TRect GetTabButtonRect(int tab, int state);
-    Windows::TRect GetSettingMarkerRect(int state);
-    Windows::TRect GetRaiseButtonRect(int state);
-    Windows::TRect GetScrollIconRect(int icon);
-    Windows::TRect GetChatModeIconRect(int mode);
-    Windows::TRect GetSmallIconRect(int icon);
-    Windows::TRect GetCornerButtonRect(int state);
-    Windows::TRect GetListModeIconRect(int mode);
-    Windows::TRect GetGroupIconRect(int icon);
-    Windows::TRect GetSpellProgressRect(int progress);
-    Windows::TRect GetSlotHighlightRect(int slot);
-    Windows::TRect GetSpellSlotLabelRect(int slot);
-    Windows::TRect GetSpellSlotFrameRect(int slot);
-    Windows::TRect GetSkillSlotFrameRect(int slot);
-    Windows::TRect GetInventoryButtonRect(int button, int state);
-    Windows::TRect GetSmallTabButtonRect(int state, int tab);
-    Windows::TRect GetInventoryWideButtonRect(ButtonState state);
+    int GetThemeColor(int theme, int shade);
+    TRect GetChatTabRect(int tab);
+    TRect GetDamageDigitRect(int style, int digit);
+    TRect GetHealthBarFillRect(int color, int length);
+    TRect GetStatusBarFillRect(int bar, int segments);
+    TRect GetListIconRect(int row, int column);
+    TRect GetTabButtonRect(int tab, int state);
+    TRect GetSettingMarkerRect(int state);
+    TRect GetRaiseButtonRect(int state);
+    TRect GetScrollIconRect(int icon);
+    TRect GetChatModeIconRect(int mode);
+    TRect GetSmallIconRect(int icon);
+    TRect GetCornerButtonRect(int tab);
+    TRect GetMinimapTileRect(int edge);
+    TRect GetCellRect(int effect, int direction);
+    TRect GetListModeIconRect(int mode);
+    TRect GetBackRect(int width, int height);
+    TRect GetStatusIconRect(int icon, bool small_icon);
+    TRect GetWideCellRect(int frame);
+    TRect GetGroupIconRect(int icon);
+    TRect GetSpellProgressRect(int progress);
+    TRect GetSlotHighlightRect(int slot);
+    TRect GetSpellSlotLabelRect(int slot);
+    TRect GetSpellSlotFrameRect(int slot);
+    TRect GetSkillSlotFrameRect(int slot);
+    TRect GetInventoryButtonRect(int button, int state);
+    TRect GetSmallTabButtonRect(int state, int tab);
+    TRect GetInventoryWideButtonRect(ButtonState state);
     void SaveScreenshot();
     void LoadEmoteSheet(int library, int resource_id);
     void LoadWeaponEffects(int library, int resource_id);
@@ -155,6 +180,7 @@ struct InterfaceGraphics
     void LoadClockBackground(int library, int resource_id);
     void LoadGroupIcons(int library, int resource_id);
     void LoadTooltipBackground(int library, int resource_id);
+    void ClearChatPanel();
     void LoadChatInputBackground(int library, int resource_id);
     void LoadSmallIcons(int library, int resource_id);
     void LoadHudSheet(int library, int resource_id);
@@ -172,6 +198,7 @@ struct InterfaceGraphics
     void LoadTileCursor(int library, int resource_id);
     void LoadControlSheet(int library, int resource_id);
     void LoadScrollIcons(int library, int resource_id);
+    TRect GetWideIconRect(int frame);
     void DrawChatModeIcon();
     void DrawCornerButton();
     void DrawPlayerListScrollButtons();
@@ -211,25 +238,17 @@ struct InterfaceGraphics
     void RestoreItemDragBackground();
     void RestoreSpellDragBackground();
     void RestoreSkillDragBackground();
-    Windows::TRect GetMinimapEdgeRect(int edge);
-    Windows::TRect GetWeaponEffectRect(int effect, int direction);
-    Windows::TRect GetTooltipRect(int width, int height);
-    Windows::TRect GetStatusIconRect(int icon, bool small_icon);
-    Windows::TRect GetTileCursorRect(int frame);
-    Windows::TRect GetEmoteFrameRect(int frame);
 };
 
-Windows::TRect Gfx_interface_GetDamageDigitRect(int interface_graphics, int style, int digit);
-Windows::TRect Gfx_interface_GetHealthBarRect(int interface_graphics, int color, int length);
 
 // Shared body: a class defines its GetCornerButtonRect with DEFINE_GET_CORNER_BUTTON_RECT(TheClass).
 #define DEFINE_GET_CORNER_BUTTON_RECT(Class) \
-Windows::TRect Class::GetCornerButtonRect(int state) \
+TRect Class::GetCornerButtonRect(int state) \
 { \
     TRect corner_button_rect; \
     corner_button_rect.left = 0; \
     corner_button_rect.right = 50; \
-    corner_button_rect.top = CORNER_BUTTON_HEIGHT * state; \
+    corner_button_rect.top = 53 * state; \
     corner_button_rect.bottom = 53 * state + 53; \
     return corner_button_rect; \
 }

@@ -4,15 +4,9 @@
 #include "Skillvalues.h"
 #include "Classvalues.h"
 #include "Packetcontrols.h"
-#include <fstream.h>
 #include <io.h>
 #include <stdio.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 SkillValues::SkillValues()
@@ -34,13 +28,13 @@ SkillValues::~SkillValues()
 // With more than 900 skills the last part file is read too; the values are kept only when its header matches.
 void SkillValues::ReadHeader()
 {
-    String file_text;
+    int file_handle;
+    int file_size;
+    char *buffer;
     int first_checksum_high;
     int first_checksum_low;
-    int file_handle;
-    DWORD file_size;
-    char *buffer;
     int total_records;
+    String file_text;
     String file_name = file_prefix + "001.esf";
     try
     {
@@ -70,7 +64,7 @@ void SkillValues::ReadHeader()
     {
         file_text = "";
         file_name = file_prefix;
-        int last_file_number = total_records / PUB_RECORDS_PER_FILE + 1;
+        int last_file_number = total_records / 900 + 1;
         if (last_file_number < 10)
             file_name = file_name + "00" + IntToStr(last_file_number) + ".esf";
         else
@@ -124,15 +118,13 @@ void SkillValues::ReadHeader()
 // Reads every skill part file into the list, once until the files change.
 void SkillValues::Load()
 {
-    int file_number;
-    int loaded_count;
-    int record_total;
-    int hFile;
+    int fields_start;
+    char *buffer;
     if (!is_loaded)
     {
-        file_number = 1;
-        loaded_count = 0;
-        record_total = 1;
+        int file_number = 1;
+        int loaded_count = 0;
+        int record_total = 1;
         do
         {
             String file_text;
@@ -141,18 +133,17 @@ void SkillValues::Load()
                 file_path = file_path + "00" + IntToStr(file_number) + ".esf";
             else
                 file_path = file_path + "0" + IntToStr(file_number) + ".esf";
+            int h_file;
             try
             {
-                DWORD file_size;
-                char *buffer;
-                hFile = FileOpen(file_path.c_str(), fmOpenRead);
-                file_size = FileSeek(hFile, 0, 2);
-                FileSeek(hFile, 0, 0);
-                buffer = new char[file_size + 1];
-                FileRead(hFile, buffer, file_size);
-                FileClose(hFile);
+                h_file = FileOpen(file_path.c_str(), fmOpenRead);
+                fields_start = FileSeek(h_file, 0, 2);
+                FileSeek(h_file, 0, 0);
+                buffer = new char[fields_start + 1];
+                FileRead(h_file, buffer, fields_start);
+                FileClose(h_file);
                 file_text = buffer;
-                file_text.SetLength(file_size);
+                file_text.SetLength(fields_start);
                 delete[] buffer;
                 if (file_text[1] != 'E' || file_text[2] != 'S' || file_text[3] != 'F')
                     return;
@@ -168,7 +159,6 @@ void SkillValues::Load()
                 for (int i = 0; loaded_count < record_total && i < 900; i++)
                 {
                     int name_length = DecodeNumber(file_text.SubString(1, 1));
-                    int fields_start;
                     int shout_length = DecodeNumber(file_text.SubString(2, 1));
                     // Each skill: two length bytes, the name, the shout, then 51 bytes of numbers.
                     fields_start = name_length + shout_length + 2;
@@ -210,7 +200,7 @@ void SkillValues::Load()
             }
             catch (...)
             {
-                FileClose(hFile);
+                FileClose(h_file);
                 is_loaded = false;
             }
             file_number++;
@@ -222,13 +212,13 @@ void SkillValues::Load()
 // Writes one part of the skill file as the server sent it.
 void SkillValues::SaveFilePart(int part_number, String data)
 {
-    String lpFileName = file_prefix;
+    String lp_file_name = file_prefix;
     if (part_number < 10)
-        lpFileName = lpFileName + "00" + IntToStr(part_number) + ".esf";
+        lp_file_name = lp_file_name + "00" + IntToStr(part_number) + ".esf";
     else
-        lpFileName = lpFileName + "0" + IntToStr(part_number) + ".esf";
-    std::ofstream handle;
-    handle.open(lpFileName.c_str(), std::ios::binary);
+        lp_file_name = lp_file_name + "0" + IntToStr(part_number) + ".esf";
+    basic_ofstream<char, char_traits<char> > handle;
+    handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << data.c_str();
     handle.close();
 }
@@ -237,18 +227,18 @@ void SkillValues::SaveFilePart(int part_number, String data)
 void SkillValues::DeleteFiles()
 {
     char file_found = true;
-    String lpFileName;
+    String lp_file_name;
     try
     {
         for (int i = 1; i <= 100 && file_found; i++)
         {
-            lpFileName = file_prefix;
+            lp_file_name = file_prefix;
             if (i < 10)
-                lpFileName = lpFileName + "00" + IntToStr(i) + ".esf";
+                lp_file_name = lp_file_name + "00" + IntToStr(i) + ".esf";
             else
-                lpFileName = lpFileName + "0" + IntToStr(i) + ".esf";
-            if (!access(lpFileName.c_str(), 0))
-                remove(lpFileName.c_str());
+                lp_file_name = lp_file_name + "0" + IntToStr(i) + ".esf";
+            if (!access(lp_file_name.c_str(), 0))
+                remove(lp_file_name.c_str());
             else
                 file_found = false;
         }
@@ -258,15 +248,15 @@ void SkillValues::DeleteFiles()
     }
 }
 
-void SkillValues::AddSkill(int skill_id, String name, String shout, short icon, short graphic, short tp_cost,
-    short sp_cost, short cast_time, short category, short spare_byte, short type,
-    short element, short element_power, short target_restriction, short target_type,
-    short target_time, short area, short max_level,
-    short min_damage, short max_damage, short accuracy,
-    short evade, short armor, short return_damage,
-    short hp_heal, short tp_heal, short sp_heal,
-    short bonus_str, short bonus_int, short bonus_wis,
-    short bonus_agi, short bonus_con, short bonus_cha)
+void SkillValues::AddSkill(int skill_id, String name, String shout, int icon, short graphic, short tp_cost,
+    short sp_cost, short cast_time, int category, int spare_byte, int type, short element,
+    short element_power, short target_restriction, short target_type, short target_time,
+    short area, short max_level, int min_damage,
+    int max_damage, int accuracy, int evade, int armor,
+    int return_damage, short hp_heal, short tp_heal,
+    short sp_heal, short bonus_str, short bonus_int,
+    short bonus_wis, short bonus_agi, short bonus_con,
+    short bonus_cha)
 {
     SkillValue handle(skill_id);
     handle.name = name;
@@ -315,6 +305,16 @@ int SkillValues::FindByName(String name)
             return it->skill_id;
     }
     return -1;
+}
+
+SkillValue SkillValues::GetSkill(int skill_id)
+{
+    for (vector<SkillValue>::iterator skill = records.begin(); skill != records.end(); skill++)
+    {
+        if (skill->skill_id == skill_id)
+            return *skill;
+    }
+    return SkillValue(0);
 }
 
 int SkillValues::GetGraphic(int skill_id)

@@ -1,12 +1,12 @@
 #ifndef Gfx_msgboardH
 #define Gfx_msgboardH
 
-#define TALL_FRAME_HEIGHT 290
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The message board sheet: two window frames stacked one above the other.
 // The quest window draws from it too.
@@ -23,7 +23,7 @@ struct MsgBoardGraphics
 
     MsgBoardGraphics();
     ~MsgBoardGraphics();
-    Windows::TRect GetFrameRect(int frame);
+    TRect GetFrameRect(int frame);
     GraphicSize LoadSurface(HMODULE library, int resource_id);
 };
 

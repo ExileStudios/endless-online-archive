@@ -12,7 +12,8 @@ struct Dx_MidiPlayer;
 struct SfxController
 {
     Dx_MidiPlayer *midi_player;
-    char sound_enabled;
+    int sound_volume;
+    int music_volume;
     bool play_from_jukebox;
     int ambient_sound_id;
     int ambient_volume;
@@ -23,13 +24,16 @@ struct SfxController
     bool music_pending;
     int queued_music_id;
     int music_retry_countdown;
+    short volume_countdown;
 
-    SfxController(char sound_on);
+    SfxController(int sound_level, int music_level);
     ~SfxController();
-    void CreateMidiPlayer();
+    void InitMidiPlayer();
     void PlayInstrumentNote(int instrument_id, int note_id);
+    void PlayEffectSoundAt(int sound_id, short volume);
     void PlaySfx(int sound_id);
-    void PlaySoundFile(String file_path);
+    void PlaySoundFile(String file_path, int volume);
+    int ScaleVolume(int volume, int level);
     void PlayMusic(int music_id);
     void QueueJukeboxSong(int song_id);
     void QueueMusic(int music_id);
@@ -37,12 +41,14 @@ struct SfxController
     int GetQueuedMusic();
     char IsMusicPlaying();
     void StopMusic();
-    void PlayAmbientSound(int sound_id, int distance);
+    void PlayAmbientSound(int sound_id, short distance);
     void FadeOutAmbientSound();
     void UpdateSounds();
     bool IsMusicRetryReady();
     void StartMusicRetryDelay();
-    void SetSoundEnabled(char enabled);
+    void SetSoundEnabled(int enabled);
+    void SetMusicVolume(int volume);
+    int GetDistanceVolume(short x, short y);
 };
 
 #endif

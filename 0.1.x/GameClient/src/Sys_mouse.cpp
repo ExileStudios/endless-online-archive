@@ -33,9 +33,28 @@
 #include "Ctrl_playerlist.h"
 #include "Ctrl_settings.h"
 #include "Ctrl_status.h"
-#pragma package(smart_init)
+#include <mmsystem.h>
+#include <stdlib.h>
+#include <vector.h>
+#include "Ctrl_chest.h"
+#include "Ctrl_group.h"
+#include "Ctrl_inventory.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_msgboard.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_skills.h"
+#include "Ctrl_spells.h"
+#include "Ctrl_trade.h"
+#include "Gfx_mapblends.h"
+#include "Gfx_mapitems.h"
+#include "Gfx_mapmasks.h"
+#include "Gfx_mapobjects.h"
+#include "Gfx_maptiles.h"
+#include "Gfx_mapwalls.h"
+#include "Pathfinder.h"
 
-#define WRAP_TEXT_WIDTH 200
+#pragma package(smart_init)
 
 Mouser::Mouser()
 {
@@ -93,13 +112,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->message_ok_hovered)
                     {
-                        if (MainForm->animation->game->message_ok_hovered)
-                        {
-                            MainForm->animation->game->message_ok_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->message_ok_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->message_x + 91 <= x &&
                         x <= MainForm->animation->game->message_x + 179 &&
@@ -112,13 +128,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->message_cancel_hovered)
                     {
-                        if (MainForm->animation->game->message_cancel_hovered)
-                        {
-                            MainForm->animation->game->message_cancel_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->message_cancel_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                 }
                 if (MainForm->animation->game->large_box_visible)
@@ -135,13 +148,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->large_box_ok_hovered)
                     {
-                        if (MainForm->animation->game->large_box_ok_hovered)
-                        {
-                            MainForm->animation->game->large_box_ok_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->large_box_ok_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->large_box_x + 91 <= x &&
                         x <= MainForm->animation->game->large_box_x + 179 &&
@@ -154,13 +164,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->large_box_cancel_hovered)
                     {
-                        if (MainForm->animation->game->large_box_cancel_hovered)
-                        {
-                            MainForm->animation->game->large_box_cancel_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->large_box_cancel_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                 }
                 if (MainForm->animation->game->input_box_visible)
@@ -177,13 +184,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->input_box_ok_hovered)
                     {
-                        if (MainForm->animation->game->input_box_ok_hovered)
-                        {
-                            MainForm->animation->game->input_box_ok_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->input_box_ok_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->input_box_x + 134 <= x &&
                         MainForm->animation->game->input_box_x + 222 >= x &&
@@ -196,13 +200,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->input_box_cancel_hovered)
                     {
-                        if (MainForm->animation->game->input_box_cancel_hovered)
-                        {
-                            MainForm->animation->game->input_box_cancel_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->input_box_cancel_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                 }
                 // From here on only the first open window, in this order, gets the move.
@@ -225,13 +226,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->form_ok_hovered)
                     {
-                        if (MainForm->animation->game->form_ok_hovered)
-                        {
-                            MainForm->animation->game->form_ok_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->form_ok_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->form_x + 166 <= x && MainForm->animation->game->form_x + 254 >= x &&
                         MainForm->animation->game->form_y + 194 - button_shift <= y &&
@@ -243,13 +241,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->form_cancel_hovered)
                     {
-                        if (MainForm->animation->game->form_cancel_hovered)
-                        {
-                            MainForm->animation->game->form_cancel_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->form_cancel_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                 }
                 if (MainForm->animation->social->is_open && !window_handled)
@@ -276,13 +271,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->amount_ok_hovered)
                     {
-                        if (MainForm->animation->game->amount_ok_hovered)
-                        {
-                            MainForm->animation->game->amount_ok_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->amount_ok_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->amount_box_x + 153 <= x &&
                         MainForm->animation->game->amount_box_x + 241 >= x &&
@@ -295,13 +287,10 @@ void Mouser::HandleMove()
                             MainForm->redraw_needed = true;
                         }
                     }
-                    else
+                    else if (MainForm->animation->game->amount_cancel_hovered)
                     {
-                        if (MainForm->animation->game->amount_cancel_hovered)
-                        {
-                            MainForm->animation->game->amount_cancel_hovered = false;
-                            MainForm->redraw_needed = true;
-                        }
+                        MainForm->animation->game->amount_cancel_hovered = false;
+                        MainForm->redraw_needed = true;
                     }
                 }
                 if (MainForm->animation->trade->is_visible && !window_handled)
@@ -397,19 +386,15 @@ void Mouser::HandleMove()
                 if (MainForm->animation->quests->is_visible && !window_handled)
                     MainForm->animation->quests->MouseMove(x, y);
             }
-            else
+            else if (MainForm->gfx->game->view_clip_rect.left <= x && x <= MainForm->gfx->game->view_clip_rect.right &&
+                MainForm->gfx->game->view_clip_rect.top <= y && MainForm->gfx->game->view_clip_rect.bottom >= y)
             {
-                if (MainForm->gfx->game->view_clip_rect.left <= x && x <= MainForm->gfx->game->view_clip_rect.right &&
-                    MainForm->gfx->game->view_clip_rect.top <= y && MainForm->gfx->game->view_clip_rect.bottom >= y)
-                {
-                    MainForm->players->SetMousePosition(x, y);
-                    MainForm->npcs->SetMousePosition(x, y);
-                    MainForm->map_items->SetMousePosition(x, y);
-                    MainForm->map->UpdateCursorTile(x, y);
-                }
+                MainForm->players->SetMousePosition(x, y);
+                MainForm->npcs->SetMousePosition(x, y);
+                MainForm->map_items->SetMousePosition(x, y);
+                MainForm->map->UpdateCursorTile(x, y);
             }
             MainForm->animation->interface_controller->OnMouseMove(x, y);
-            // In game the sub-state is the interface panel that is open.
             if (MainForm->animation->GetSubState() == GamePanel_Inventory)
                 MainForm->animation->interface_controller->inventory->MouseMove(x, y);
             if (MainForm->animation->GetSubState() == GamePanel_Spells)
@@ -598,7 +583,6 @@ void Mouser::HandleMove()
                             MainForm->animation->menu->login_cancel_button_hover = false;
                     }
                 }
-                // The keys of the password grid's soft keypad light under the mouse.
                 if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
                 {
                     if (x >= 464 && x <= 486 && y >= 335 && y <= 354)
@@ -682,23 +666,23 @@ void Mouser::HandleMove()
 // panels; on the menu screens the open box or form, or else the screen's buttons.
 // button is 0 for the left button and 1 for the right. x and y are where the press was; mouse points at the
 // last position a move left, which most of the button tests read.
-void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
+void Mouser::HandleMouseDown(int click_x, int click_y, int button)
 {
     char close_input;
-    int skill_id = 0;
-    int player_slot = 0;
-    int player_x = 0;
-    int player_y;
     char npc_clicked;
-    int npc_height = 0;
+    int near_height;
+    int self_x;
+    char menu_handled = false;
+    int player_screen_y;
     int npc_y;
-    char menu_closed = false;
-    int menu_slot = 0;
-    int menu_x = 0;
-    int menu_y = 0;
+    char handled;
+    char box_closed;
+    char unused_value;
+    // In the game an open box or window takes the click first; with none open, the panels and the map.
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
         MainForm->animation->game->ResetIdleTimer();
+        // Only the first open box or window, in this order, takes the click.
         if (MainForm->animation->game->message_visible || MainForm->animation->game->large_box_visible ||
             MainForm->animation->game->input_box_visible || MainForm->animation->game->form_visible ||
             MainForm->animation->barber->is_visible || MainForm->animation->guild->is_visible ||
@@ -722,18 +706,16 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             MainForm->animation->social->is_open || MainForm->animation->message_board->is_visible ||
             MainForm->animation->quests->is_visible || MainForm->animation->game->amount_box_visible)
         {
-            // Only the first open box or window, in this order, takes the click.
-            char handled = false;
-            char box_closed = false;
+            handled = false;
+            box_closed = false;
             if (MainForm->animation->game->message_visible)
             {
                 handled = true;
                 box_closed = false;
-                MainForm->animation->game->MouseDown(x, y);
-                if (*mouse >= MainForm->animation->game->message_x + 184 &&
-                    *mouse <= MainForm->animation->game->message_x + 272 &&
-                    mouse[1] >= MainForm->animation->game->message_y + 83 &&
-                    mouse[1] <= MainForm->animation->game->message_y + 109)
+                MainForm->animation->game->MouseDown(click_x, click_y);
+                if (x >= MainForm->animation->game->message_x + 184 &&
+                    x <= MainForm->animation->game->message_x + 272 && y >= MainForm->animation->game->message_y + 83 &&
+                    y <= MainForm->animation->game->message_y + 109)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->game->message_visible = false;
@@ -743,11 +725,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     if (MainForm->animation->game->message_kind == ConfirmAction_ConnectionLost)
                         MainForm->animation->interface_controller->Logout();
                 }
-                // The left button answers what the box asked; the box's kind says what that was.
-                if (*mouse >= MainForm->animation->game->message_x + 90 &&
-                    *mouse <= MainForm->animation->game->message_x + 178 &&
-                    mouse[1] >= MainForm->animation->game->message_y + 83 &&
-                    mouse[1] <= MainForm->animation->game->message_y + 109)
+                if (x >= MainForm->animation->game->message_x + 90 && x <= MainForm->animation->game->message_x + 178 &&
+                    y >= MainForm->animation->game->message_y + 83 && y <= MainForm->animation->game->message_y + 109)
                 {
                     if (MainForm->animation->game->message_kind == ConfirmAction_Logout)
                     {
@@ -787,10 +766,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 Sleep(150);
                             }
                             if (MainForm->Dx_Sound1->DSEnumerate(0) && MainForm->sound_driver_names->Count > 0)
-                                MainForm->Dx_Sound1->Create((GUID *)MainForm->sound_driver_guids->Items[0]);
+                                MainForm->Dx_Sound1->Create((_GUID *)MainForm->sound_driver_guids->Items[0]);
                             MainForm->animation->interface_controller->settings->MarkDirty();
-                            MainForm->config->SetSoundEnabled(1);
-                            MainForm->sfx->SetSoundEnabled(1);
+                            MainForm->config->SetSoundVolume(100);
+                            MainForm->sfx->SetSoundEnabled(100);
                             MainForm->config->SetSoundAvailable(1);
                             MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         }
@@ -805,11 +784,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         box_closed = true;
                         try
                         {
-                            MainForm->sfx->CreateMidiPlayer();
+                            MainForm->sfx->InitMidiPlayer();
                             MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                             MainForm->animation->interface_controller->settings->MarkDirty();
-                            MainForm->config->SetMusicEnabled(1);
-                            MainForm->config->SetMusicAvailable(1);
+                            MainForm->config->SetMusicEnabled(100);
+                            MainForm->config->SetMusicAvailable(100);
                         }
                         catch (...)
                         {
@@ -840,7 +819,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         if (MainForm->animation->trade->own_items.size() > 0 &&
                             !MainForm->animation->trade->trade_locked && !MainForm->animation->trade->IsAcceptDelayed())
                         {
-                            MainForm->animation->trade->SetAcceptDelay(TRADE_ACCEPT_DELAY_TICKS);
+                            MainForm->animation->trade->SetAcceptDelay(10);
                             if (MainForm->animation->interface_controller->inventory->CanFitTradeItems())
                             {
                                 MainForm->sfx->PlaySfx(SfxSound_Accept);
@@ -1066,11 +1045,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             {
                 handled = true;
                 box_closed = false;
-                MainForm->animation->game->MouseDown(x, y);
-                if (*mouse >= MainForm->animation->game->large_box_x + 184 &&
-                    *mouse <= MainForm->animation->game->large_box_x + 272 &&
-                    mouse[1] >= MainForm->animation->game->large_box_y + 147 &&
-                    mouse[1] <= MainForm->animation->game->large_box_y + 173)
+                MainForm->animation->game->MouseDown(click_x, click_y);
+                if (x >= MainForm->animation->game->large_box_x + 184 &&
+                    x <= MainForm->animation->game->large_box_x + 272 &&
+                    y >= MainForm->animation->game->large_box_y + 147 &&
+                    y <= MainForm->animation->game->large_box_y + 173)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->game->large_box_visible = false;
@@ -1078,10 +1057,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->redraw_needed = true;
                     box_closed = true;
                 }
-                if (*mouse >= MainForm->animation->game->large_box_x + 90 &&
-                    *mouse <= MainForm->animation->game->large_box_x + 178 &&
-                    mouse[1] >= MainForm->animation->game->large_box_y + 147 &&
-                    mouse[1] <= MainForm->animation->game->large_box_y + 173)
+                if (x >= MainForm->animation->game->large_box_x + 90 &&
+                    x <= MainForm->animation->game->large_box_x + 178 &&
+                    y >= MainForm->animation->game->large_box_y + 147 &&
+                    y <= MainForm->animation->game->large_box_y + 173)
                 {
                     if (MainForm->animation->game->large_box_kind == LargeBoxKind_CraftItem)
                     {
@@ -1162,11 +1141,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->game->input_box_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->game->MouseDown(x, y);
-                if (*mouse >= MainForm->animation->game->input_box_x + 41 &&
-                    *mouse <= MainForm->animation->game->input_box_x + 129 &&
-                    mouse[1] >= MainForm->animation->game->input_box_y + 103 &&
-                    mouse[1] <= MainForm->animation->game->input_box_y + 129)
+                MainForm->animation->game->MouseDown(click_x, click_y);
+                if (x >= MainForm->animation->game->input_box_x + 41 &&
+                    x <= MainForm->animation->game->input_box_x + 129 &&
+                    y >= MainForm->animation->game->input_box_y + 103 &&
+                    y <= MainForm->animation->game->input_box_y + 129)
                 {
                     close_input = true;
                     if (MainForm->animation->game->input_box_kind == InputBoxKind_AddFriend)
@@ -1278,7 +1257,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     if (MainForm->animation->game->input_box_kind == InputBoxKind_FindSkill)
                     {
                         String skill_name = LowerCase(MainForm->edits->GetText(EditId_InputBox));
-                        skill_id = MainForm->skill_values->FindByName(skill_name);
+                        int skill_id = MainForm->skill_values->FindByName(skill_name);
                         if (skill_id < 0)
                         {
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
@@ -1334,10 +1313,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->animation->game->CloseInputBox();
                     }
                 }
-                if (*mouse >= MainForm->animation->game->input_box_x + 134 &&
-                    *mouse <= MainForm->animation->game->input_box_x + 222 &&
-                    mouse[1] >= MainForm->animation->game->input_box_y + 103 &&
-                    mouse[1] <= MainForm->animation->game->input_box_y + 129)
+                if (x >= MainForm->animation->game->input_box_x + 134 &&
+                    x <= MainForm->animation->game->input_box_x + 222 &&
+                    y >= MainForm->animation->game->input_box_y + 103 &&
+                    y <= MainForm->animation->game->input_box_y + 129)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->game->CloseInputBox();
@@ -1352,21 +1331,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     form_button_shift = INPUT_FORM_ROW_HEIGHT * (5 - form_button_shift);
                 else
                     form_button_shift = 0;
-                MainForm->animation->game->MouseDown(x, y);
-                if (*mouse >= MainForm->animation->game->form_x + 166 &&
-                    *mouse <= MainForm->animation->game->form_x + 254 &&
-                    mouse[1] >= MainForm->animation->game->form_y + 194 - form_button_shift &&
-                    mouse[1] <= MainForm->animation->game->form_y + 220 - form_button_shift)
+                MainForm->animation->game->MouseDown(click_x, click_y);
+                if (x >= MainForm->animation->game->form_x + 166 && x <= MainForm->animation->game->form_x + 254 &&
+                    y >= MainForm->animation->game->form_y + 194 - form_button_shift &&
+                    y <= MainForm->animation->game->form_y + 220 - form_button_shift)
                 {
                     MainForm->edits->SetVisible(EditId_Amount, true);
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->game->CloseInputForm();
                     MainForm->redraw_needed = true;
                 }
-                if (*mouse >= MainForm->animation->game->form_x + 73 &&
-                    *mouse <= MainForm->animation->game->form_x + 161 &&
-                    mouse[1] >= MainForm->animation->game->form_y + 194 - form_button_shift &&
-                    mouse[1] <= MainForm->animation->game->form_y + 220 - form_button_shift)
+                if (x >= MainForm->animation->game->form_x + 73 && x <= MainForm->animation->game->form_x + 161 &&
+                    y >= MainForm->animation->game->form_y + 194 - form_button_shift &&
+                    y <= MainForm->animation->game->form_y + 220 - form_button_shift)
                 {
                     MainForm->animation->game->SaveInputFormRows();
                     if (MainForm->animation->game->form_kind == FormKind_GuildCreate)
@@ -1402,7 +1379,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 MainForm->strings->GetDialogText(DialogText_WrongInputGuildShort, true));
                             create_failed = true;
                         }
-                        if (!create_failed && LowerCase(String(guild_tag[1])) != LowerCase(String(guild_name[1])))
+                        if (!create_failed && LowerCase(guild_tag[1]) != LowerCase(guild_name[1]))
                         {
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_InvalidTag, false),
@@ -1474,12 +1451,15 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         char rank_failed = false;
                         String member_name = MainForm->edits->GetText(EditId_FormFirstRow);
                         String rank_text = MainForm->edits->GetText(EditId_FormSecondRow);
-                        if (!rank_failed && (member_name == "" || rank_text == ""))
+                        if (!rank_failed)
                         {
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                MainForm->strings->GetDialogText(DialogText_WrongInputFields, false),
-                                MainForm->strings->GetDialogText(DialogText_WrongInputFields, true));
-                            rank_failed = true;
+                            if ((int)(member_name == "" || rank_text == ""))
+                            {
+                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                                    MainForm->strings->GetDialogText(DialogText_WrongInputFields, false),
+                                    MainForm->strings->GetDialogText(DialogText_WrongInputFields, true));
+                                rank_failed = true;
+                            }
                         }
                         if (rank_text == "0")
                             rank_text = "9";
@@ -1506,11 +1486,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->social->is_open && !handled)
             {
                 handled = true;
-                MainForm->animation->social->OnMouseClick(x, y, button);
-                if (*mouse >= MainForm->animation->social->window_x + 48 &&
-                    *mouse <= MainForm->animation->social->window_x + 138 &&
-                    mouse[1] >= MainForm->animation->social->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->social->window_y + 279)
+                MainForm->animation->social->OnMouseClick(click_x, click_y, button);
+                if (x >= MainForm->animation->social->window_x + 48 &&
+                    x <= MainForm->animation->social->window_x + 138 &&
+                    y >= MainForm->animation->social->window_y + 253 &&
+                    y <= MainForm->animation->social->window_y + 279)
                 {
                     MainForm->animation->social->close_button_hover = false;
                     MainForm->animation->social->add_button_hover = false;
@@ -1522,10 +1502,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_AddIgnore,
                             MainForm->strings->GetText(GameText_WhoDoYouWant), EditCharFilter_Letters, 12);
                 }
-                if (*mouse >= MainForm->animation->social->window_x + 144 &&
-                    *mouse <= MainForm->animation->social->window_x + 234 &&
-                    mouse[1] >= MainForm->animation->social->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->social->window_y + 279)
+                if (x >= MainForm->animation->social->window_x + 144 &&
+                    x <= MainForm->animation->social->window_x + 234 &&
+                    y >= MainForm->animation->social->window_y + 253 &&
+                    y <= MainForm->animation->social->window_y + 279)
                 {
                     MainForm->edits->SetVisible(EditId_Amount, true);
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
@@ -1536,11 +1516,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->message_board->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->message_board->MouseDown(x, y, button);
-                if (*mouse >= MainForm->animation->message_board->window_x + 284 &&
-                    *mouse <= MainForm->animation->message_board->window_x + 374 &&
-                    mouse[1] >= MainForm->animation->message_board->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->message_board->window_y + 279)
+                MainForm->animation->message_board->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->message_board->window_x + 284 &&
+                    x <= MainForm->animation->message_board->window_x + 374 &&
+                    y >= MainForm->animation->message_board->window_y + 253 &&
+                    y <= MainForm->animation->message_board->window_y + 279)
                 {
                     char board_handled = false;
                     if (MainForm->animation->message_board->view_mode <= 0 && !board_handled)
@@ -1603,49 +1583,35 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                     MainForm->strings->GetDialogText(DialogText_NoMessage, true));
                                 MainForm->edits->caret_enabled = false;
                             }
-                            if (post_subject.Length() > 0)
+                            if (post_subject.Length() > 0 && post_message.Length() > 0)
                             {
-                                if (post_message.Length() > 0)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                                    MainForm->edits->SetEditable(POST_SUBJECT_EDIT, false);
-                                    MainForm->edits->SetEditable(POST_MESSAGE_EDIT, false);
-                                    MainForm->animation->message_board->SubmitPost(post_subject, post_message);
-                                }
+                                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                                MainForm->edits->SetEditable(POST_SUBJECT_EDIT, false);
+                                MainForm->edits->SetEditable(POST_MESSAGE_EDIT, false);
+                                MainForm->animation->message_board->SubmitPost(post_subject, post_message);
                             }
                         }
                     }
                 }
-                if (*mouse >= MainForm->animation->message_board->window_x + 380 &&
-                    *mouse <= MainForm->animation->message_board->window_x + 470 &&
-                    mouse[1] >= MainForm->animation->message_board->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->message_board->window_y + 279)
+                if (x >= MainForm->animation->message_board->window_x + 380 &&
+                    x <= MainForm->animation->message_board->window_x + 470 &&
+                    y >= MainForm->animation->message_board->window_y + 253 &&
+                    y <= MainForm->animation->message_board->window_y + 279)
                 {
                     if (MainForm->animation->message_board->view_mode <= 0)
-                    {
                         MainForm->edits->SetVisible(EditId_Amount, true);
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->message_board->Close();
-                        MainForm->redraw_needed = true;
-                    }
-                    else
-                    {
-                        MainForm->animation->message_board->ResetScroll();
-                        MainForm->animation->message_board->view_mode = 0;
-                        MainForm->animation->message_board->HidePostEdits();
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->message_board->Close();
                 }
             }
             if (MainForm->animation->game->amount_box_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->game->MouseDown(x, y);
-                if (*mouse >= MainForm->animation->game->amount_box_x + 60 &&
-                    *mouse <= MainForm->animation->game->amount_box_x + 148 &&
-                    mouse[1] >= MainForm->animation->game->amount_box_y + 125 &&
-                    mouse[1] <= MainForm->animation->game->amount_box_y + 151)
+                MainForm->animation->game->MouseDown(click_x, click_y);
+                if (x >= MainForm->animation->game->amount_box_x + 60 &&
+                    x <= MainForm->animation->game->amount_box_x + 148 &&
+                    y >= MainForm->animation->game->amount_box_y + 125 &&
+                    y <= MainForm->animation->game->amount_box_y + 151)
                 {
                     if (MainForm->edits->GetText(EditId_Amount).Length() > 0)
                     {
@@ -1706,9 +1672,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                             buy_question = buy_question + " ";
                             buy_question = buy_question + MainForm->strings->GetText(GameText_For);
                             buy_question = buy_question + " ";
-                            buy_question = buy_question +
-                                IntToStr(MainForm->animation->shop->selected_price *
-                                StrToInt(MainForm->edits->GetText(EditId_Amount)));
+                            buy_question =
+                                buy_question +
+                                    IntToStr(StrToInt(MainForm->edits->GetText(EditId_Amount)) *
+                                        MainForm->animation->shop->selected_price);
                             buy_question = buy_question + " ";
                             buy_question = buy_question + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                             buy_question = buy_question + " ?";
@@ -1728,9 +1695,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                             sell_question = sell_question + " ";
                             sell_question = sell_question + MainForm->strings->GetText(GameText_For);
                             sell_question = sell_question + " ";
-                            sell_question = sell_question +
-                                IntToStr(MainForm->animation->shop->selected_price *
-                                StrToInt(MainForm->edits->GetText(EditId_Amount)));
+                            sell_question =
+                                sell_question +
+                                    IntToStr(StrToInt(MainForm->edits->GetText(EditId_Amount)) *
+                                        MainForm->animation->shop->selected_price);
                             sell_question = sell_question + " ";
                             sell_question = sell_question + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                             sell_question = sell_question + " ?";
@@ -1746,23 +1714,12 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 Windows::TPoint locker_pos;
                                 locker_pos.x = MainForm->animation->locker->locker_x;
                                 locker_pos.y = MainForm->animation->locker->locker_y;
-                                int locker_total = locker_amount +
-                                    MainForm->animation->locker->GetItemAmount(MainForm->animation->game->amount_item_id);
+                                int locker_total =
+                                    MainForm->animation->locker->GetItemAmount(MainForm->animation->game->amount_item_id) +
+                                        locker_amount;
                                 if (locker_total <= 200)
-                                {
-                                    if (MainForm->animation->locker->CanStoreItem(MainForm->animation->game->amount_item_id))
-                                    {
-                                        MainForm->net_client->sender->SendLockerAddItem(locker_pos,
-                                            MainForm->animation->game->amount_item_id, locker_amount);
-                                    }
-                                    else
-                                    {
-                                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                            MainForm->strings->GetDialogText(DialogText_LockerFullHold, false),
-                                            MainForm->strings->GetDialogText(DialogText_LockerFullHold, true));
-                                        MainForm->edits->caret_enabled = false;
-                                    }
-                                }
+                                    MainForm->net_client->sender->SendLockerAddItem(locker_pos,
+                                        MainForm->animation->game->amount_item_id, locker_amount);
                                 else
                                 {
                                     MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
@@ -1799,10 +1756,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->redraw_needed = true;
                     }
                 }
-                if (*mouse >= MainForm->animation->game->amount_box_x + 153 &&
-                    *mouse <= MainForm->animation->game->amount_box_x + 241 &&
-                    mouse[1] >= MainForm->animation->game->amount_box_y + 125 &&
-                    mouse[1] <= MainForm->animation->game->amount_box_y + 151)
+                if (x >= MainForm->animation->game->amount_box_x + 153 &&
+                    x <= MainForm->animation->game->amount_box_x + 241 &&
+                    y >= MainForm->animation->game->amount_box_y + 125 &&
+                    y <= MainForm->animation->game->amount_box_y + 151)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->interface_controller->inventory->input_enabled = true;
@@ -1820,11 +1777,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->trade->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->trade->MouseDown(x, y, button);
-                if (*mouse >= MainForm->animation->trade->window_x + 357 &&
-                    *mouse <= MainForm->animation->trade->window_x + 445 &&
-                    mouse[1] >= MainForm->animation->trade->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->trade->window_y + 280)
+                MainForm->animation->trade->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->trade->window_x + 357 &&
+                    x <= MainForm->animation->trade->window_x + 445 &&
+                    y >= MainForm->animation->trade->window_y + 253 && y <= MainForm->animation->trade->window_y + 280)
                 {
                     if (MainForm->animation->trade->partner_items.size() > 0 &&
                         MainForm->animation->trade->own_items.size() > 0)
@@ -1859,10 +1815,9 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->edits->caret_enabled = false;
                     }
                 }
-                if (*mouse >= MainForm->animation->trade->window_x + 450 &&
-                    *mouse <= MainForm->animation->trade->window_x + 538 &&
-                    mouse[1] >= MainForm->animation->trade->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->trade->window_y + 280)
+                if (x >= MainForm->animation->trade->window_x + 450 &&
+                    x <= MainForm->animation->trade->window_x + 538 &&
+                    y >= MainForm->animation->trade->window_y + 253 && y <= MainForm->animation->trade->window_y + 280)
                 {
                     if (!MainForm->animation->trade->own_agreed)
                     {
@@ -1887,101 +1842,81 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     }
                 }
             }
-            if (MainForm->animation->paperdoll->is_visible)
+            if (MainForm->animation->paperdoll->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->paperdoll->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->paperdoll->window_x + 277 &&
+                    x <= MainForm->animation->paperdoll->window_x + 367 &&
+                    y >= MainForm->animation->paperdoll->window_y + 254 &&
+                    y <= MainForm->animation->paperdoll->window_y + 281)
                 {
-                    handled = true;
-                    MainForm->animation->paperdoll->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->paperdoll->window_x + 277 &&
-                        *mouse <= MainForm->animation->paperdoll->window_x + 367 &&
-                        mouse[1] >= MainForm->animation->paperdoll->window_y + 254 &&
-                        mouse[1] <= MainForm->animation->paperdoll->window_y + 281)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->paperdoll->is_visible = false;
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->paperdoll->Close();
                 }
             }
-            if (MainForm->animation->book->is_visible)
+            if (MainForm->animation->book->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->book->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->book->window_x + 277 && x <= MainForm->animation->book->window_x + 367 &&
+                    y >= MainForm->animation->book->window_y + 254 && y <= MainForm->animation->book->window_y + 281)
                 {
-                    handled = true;
-                    MainForm->animation->book->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->book->window_x + 277 &&
-                        *mouse <= MainForm->animation->book->window_x + 367 &&
-                        mouse[1] >= MainForm->animation->book->window_y + 254 &&
-                        mouse[1] <= MainForm->animation->book->window_y + 281)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->book->is_visible = false;
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->book->is_visible = false;
+                    MainForm->redraw_needed = true;
                 }
             }
-            if (MainForm->animation->bank->is_visible)
+            if (MainForm->animation->bank->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->bank->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->bank->window_x + 93 && x <= MainForm->animation->bank->window_x + 181 &&
+                    y >= MainForm->animation->bank->window_y + 192 && y <= MainForm->animation->bank->window_y + 218)
                 {
-                    handled = true;
-                    MainForm->animation->bank->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->bank->window_x + 93 &&
-                        *mouse <= MainForm->animation->bank->window_x + 181 &&
-                        mouse[1] >= MainForm->animation->bank->window_y + 192 &&
-                        mouse[1] <= MainForm->animation->bank->window_y + 218)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->bank->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->bank->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
-            if (MainForm->animation->musician->is_visible)
+            if (MainForm->animation->musician->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->musician->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->musician->window_x + 93 &&
+                    x <= MainForm->animation->musician->window_x + 181 &&
+                    y >= MainForm->animation->musician->window_y + 82 &&
+                    y <= MainForm->animation->musician->window_y + 108)
                 {
-                    handled = true;
-                    MainForm->animation->musician->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->musician->window_x + 93 &&
-                        *mouse <= MainForm->animation->musician->window_x + 181 &&
-                        mouse[1] >= MainForm->animation->musician->window_y + 82 &&
-                        mouse[1] <= MainForm->animation->musician->window_y + 108)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->musician->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->musician->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
-            if (MainForm->animation->jukebox->is_visible)
+            if (MainForm->animation->jukebox->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->jukebox->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->jukebox->window_x + 93 &&
+                    x <= MainForm->animation->jukebox->window_x + 181 &&
+                    y >= MainForm->animation->jukebox->window_y + 155 &&
+                    y <= MainForm->animation->jukebox->window_y + 181)
                 {
-                    handled = true;
-                    MainForm->animation->jukebox->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->jukebox->window_x + 93 &&
-                        *mouse <= MainForm->animation->jukebox->window_x + 181 &&
-                        mouse[1] >= MainForm->animation->jukebox->window_y + 155 &&
-                        mouse[1] <= MainForm->animation->jukebox->window_y + 181)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->jukebox->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->jukebox->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
             if (MainForm->animation->learn->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->learn->MouseDown(x, y, button);
+                MainForm->animation->learn->MouseDown(click_x, click_y, button);
                 if (MainForm->animation->learn->page == LearnPage_Menu)
                 {
-                    if (*mouse >= MainForm->animation->learn->window_x + 92 &&
-                        *mouse <= MainForm->animation->learn->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->learn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->learn->window_y + 279)
+                    if (x >= MainForm->animation->learn->window_x + 92 &&
+                        x <= MainForm->animation->learn->window_x + 182 &&
+                        y >= MainForm->animation->learn->window_y + 253 &&
+                        y <= MainForm->animation->learn->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->learn->Close();
@@ -1990,19 +1925,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 }
                 else
                 {
-                    if (*mouse >= MainForm->animation->learn->window_x + 144 &&
-                        *mouse <= MainForm->animation->learn->window_x + 234 &&
-                        mouse[1] >= MainForm->animation->learn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->learn->window_y + 279)
+                    if (x >= MainForm->animation->learn->window_x + 144 &&
+                        x <= MainForm->animation->learn->window_x + 234 &&
+                        y >= MainForm->animation->learn->window_y + 253 &&
+                        y <= MainForm->animation->learn->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->learn->Close();
                         MainForm->redraw_needed = true;
                     }
-                    if (*mouse >= MainForm->animation->learn->window_x + 48 &&
-                        *mouse <= MainForm->animation->learn->window_x + 138 &&
-                        mouse[1] >= MainForm->animation->learn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->learn->window_y + 279)
+                    if (x >= MainForm->animation->learn->window_x + 48 &&
+                        x <= MainForm->animation->learn->window_x + 138 &&
+                        y >= MainForm->animation->learn->window_y + 253 &&
+                        y <= MainForm->animation->learn->window_y + 279)
                     {
                         if (MainForm->animation->learn->page == LearnPage_SkillList ||
                             MainForm->animation->learn->page == LearnPage_Reset)
@@ -2022,13 +1957,13 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->shop->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->shop->MouseDown(x, y, button);
-                if (!MainForm->animation->shop->page)
+                MainForm->animation->shop->MouseDown(click_x, click_y, button);
+                if (MainForm->animation->shop->page == ShopPage_Menu)
                 {
-                    if (*mouse >= MainForm->animation->shop->window_x + 92 &&
-                        *mouse <= MainForm->animation->shop->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->shop->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->shop->window_y + 279)
+                    if (x >= MainForm->animation->shop->window_x + 92 &&
+                        x <= MainForm->animation->shop->window_x + 182 &&
+                        y >= MainForm->animation->shop->window_y + 253 &&
+                        y <= MainForm->animation->shop->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->shop->Close();
@@ -2037,19 +1972,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 }
                 else
                 {
-                    if (*mouse >= MainForm->animation->shop->window_x + 144 &&
-                        *mouse <= MainForm->animation->shop->window_x + 234 &&
-                        mouse[1] >= MainForm->animation->shop->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->shop->window_y + 279)
+                    if (x >= MainForm->animation->shop->window_x + 144 &&
+                        x <= MainForm->animation->shop->window_x + 234 &&
+                        y >= MainForm->animation->shop->window_y + 253 &&
+                        y <= MainForm->animation->shop->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->shop->Close();
                         MainForm->redraw_needed = true;
                     }
-                    if (*mouse >= MainForm->animation->shop->window_x + 48 &&
-                        *mouse <= MainForm->animation->shop->window_x + 138 &&
-                        mouse[1] >= MainForm->animation->shop->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->shop->window_y + 279)
+                    if (x >= MainForm->animation->shop->window_x + 48 &&
+                        x <= MainForm->animation->shop->window_x + 138 &&
+                        y >= MainForm->animation->shop->window_y + 253 &&
+                        y <= MainForm->animation->shop->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         ShopController *shop = MainForm->animation->shop;
@@ -2060,33 +1995,30 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     }
                 }
             }
-            if (MainForm->animation->locker->is_visible)
+            if (MainForm->animation->locker->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->locker->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->locker->window_x + 92 &&
+                    x <= MainForm->animation->locker->window_x + 182 &&
+                    y >= MainForm->animation->locker->window_y + 253 &&
+                    y <= MainForm->animation->locker->window_y + 279)
                 {
-                    handled = true;
-                    MainForm->animation->locker->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->locker->window_x + 92 &&
-                        *mouse <= MainForm->animation->locker->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->locker->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->locker->window_y + 279)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->locker->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->locker->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
             if (MainForm->animation->guild->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->guild->MouseDown(x, y, button);
+                MainForm->animation->guild->MouseDown(click_x, click_y, button);
                 if (MainForm->animation->guild->page == GuildPage_Main)
                 {
-                    if (*mouse >= MainForm->animation->guild->window_x + 92 &&
-                        *mouse <= MainForm->animation->guild->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->guild->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->guild->window_y + 279)
+                    if (x >= MainForm->animation->guild->window_x + 92 &&
+                        x <= MainForm->animation->guild->window_x + 182 &&
+                        y >= MainForm->animation->guild->window_y + 253 &&
+                        y <= MainForm->animation->guild->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->guild->Close();
@@ -2095,19 +2027,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 }
                 else
                 {
-                    if (*mouse >= MainForm->animation->guild->window_x + 144 &&
-                        *mouse <= MainForm->animation->guild->window_x + 234 &&
-                        mouse[1] >= MainForm->animation->guild->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->guild->window_y + 279)
+                    if (x >= MainForm->animation->guild->window_x + 144 &&
+                        x <= MainForm->animation->guild->window_x + 234 &&
+                        y >= MainForm->animation->guild->window_y + 253 &&
+                        y <= MainForm->animation->guild->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->guild->Close();
                         MainForm->redraw_needed = true;
                     }
-                    if (*mouse >= MainForm->animation->guild->window_x + 48 &&
-                        *mouse <= MainForm->animation->guild->window_x + 138 &&
-                        mouse[1] >= MainForm->animation->guild->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->guild->window_y + 279)
+                    if (x >= MainForm->animation->guild->window_x + 48 &&
+                        x <= MainForm->animation->guild->window_x + 138 &&
+                        y >= MainForm->animation->guild->window_y + 253 &&
+                        y <= MainForm->animation->guild->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->guild->ClearText();
@@ -2134,11 +2066,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->dialog->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->dialog->MouseDown(x, y, button);
-                if (*mouse >= MainForm->animation->dialog->window_x + 89 &&
-                    *mouse <= MainForm->animation->dialog->window_x + 169 &&
-                    mouse[1] >= MainForm->animation->dialog->window_y + 153 &&
-                    mouse[1] <= MainForm->animation->dialog->window_y + 179)
+                MainForm->animation->dialog->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->dialog->window_x + 89 &&
+                    x <= MainForm->animation->dialog->window_x + 169 &&
+                    y >= MainForm->animation->dialog->window_y + 153 &&
+                    y <= MainForm->animation->dialog->window_y + 179)
                 {
                     if (MainForm->animation->dialog->prev_button_kind == 1)
                     {
@@ -2153,10 +2085,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->redraw_needed = true;
                     }
                 }
-                if (*mouse >= MainForm->animation->dialog->window_x + 183 &&
-                    *mouse <= MainForm->animation->dialog->window_x + 273 &&
-                    mouse[1] >= MainForm->animation->dialog->window_y + 153 &&
-                    mouse[1] <= MainForm->animation->dialog->window_y + 179)
+                if (x >= MainForm->animation->dialog->window_x + 183 &&
+                    x <= MainForm->animation->dialog->window_x + 273 &&
+                    y >= MainForm->animation->dialog->window_y + 153 &&
+                    y <= MainForm->animation->dialog->window_y + 179)
                 {
                     if (MainForm->animation->dialog->showing_quest_list)
                     {
@@ -2164,69 +2096,56 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->animation->dialog->Close();
                         MainForm->redraw_needed = true;
                     }
+                    else if (MainForm->animation->dialog->next_button_kind == DIALOG_BUTTON_OK_FRAME)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                        MainForm->net_client->sender->SendQuestDialogOk(MainForm->animation->dialog->dialog_echo_a,
+                            MainForm->animation->dialog->quest_id, MainForm->animation->dialog->dialog_echo_b);
+                        MainForm->animation->dialog->Close();
+                        MainForm->redraw_needed = true;
+                    }
                     else
                     {
-                        if (MainForm->animation->dialog->next_button_kind == DIALOG_BUTTON_OK_FRAME)
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                            MainForm->net_client->sender->SendQuestDialogOk(MainForm->animation->dialog->dialog_echo_a,
-                                MainForm->animation->dialog->quest_id, MainForm->animation->dialog->dialog_echo_b);
-                            MainForm->animation->dialog->Close();
-                            MainForm->redraw_needed = true;
-                        }
-                        else
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_Select);
-                            MainForm->animation->dialog->NextPage();
-                            MainForm->redraw_needed = true;
-                        }
-                    }
-                }
-            }
-            if (MainForm->animation->memo->is_visible)
-            {
-                if (!handled)
-                {
-                    handled = true;
-                    MainForm->animation->memo->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->memo->window_x + 92 &&
-                        *mouse <= MainForm->animation->memo->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->memo->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->memo->window_y + 279)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->memo->Close();
+                        MainForm->sfx->PlaySfx(SfxSound_Select);
+                        MainForm->animation->dialog->NextPage();
                         MainForm->redraw_needed = true;
                     }
                 }
             }
-            if (MainForm->animation->report->is_visible)
+            if (MainForm->animation->memo->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->memo->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->memo->window_x + 92 && x <= MainForm->animation->memo->window_x + 182 &&
+                    y >= MainForm->animation->memo->window_y + 253 && y <= MainForm->animation->memo->window_y + 279)
                 {
-                    handled = true;
-                    MainForm->animation->report->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->report->window_x + 92 &&
-                        *mouse <= MainForm->animation->report->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->report->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->report->window_y + 279)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->report->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->memo->Close();
+                    MainForm->redraw_needed = true;
+                }
+            }
+            if (MainForm->animation->report->is_visible && !handled)
+            {
+                handled = true;
+                MainForm->animation->report->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->report->window_x + 92 &&
+                    x <= MainForm->animation->report->window_x + 182 &&
+                    y >= MainForm->animation->report->window_y + 253 &&
+                    y <= MainForm->animation->report->window_y + 279)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->report->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
             if (MainForm->animation->law->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->law->MouseDown(x, y, button);
+                MainForm->animation->law->MouseDown(click_x, click_y, button);
                 if (!MainForm->animation->law->page)
                 {
-                    if (*mouse >= MainForm->animation->law->window_x + 92 &&
-                        *mouse <= MainForm->animation->law->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->law->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->law->window_y + 279)
+                    if (x >= MainForm->animation->law->window_x + 92 && x <= MainForm->animation->law->window_x + 182 &&
+                        y >= MainForm->animation->law->window_y + 253 && y <= MainForm->animation->law->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->law->Close();
@@ -2235,19 +2154,16 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 }
                 else
                 {
-                    if (*mouse >= MainForm->animation->law->window_x + 144 &&
-                        *mouse <= MainForm->animation->law->window_x + 234 &&
-                        mouse[1] >= MainForm->animation->law->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->law->window_y + 279)
+                    if (x >= MainForm->animation->law->window_x + 144 &&
+                        x <= MainForm->animation->law->window_x + 234 &&
+                        y >= MainForm->animation->law->window_y + 253 && y <= MainForm->animation->law->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->law->Close();
                         MainForm->redraw_needed = true;
                     }
-                    if (*mouse >= MainForm->animation->law->window_x + 48 &&
-                        *mouse <= MainForm->animation->law->window_x + 138 &&
-                        mouse[1] >= MainForm->animation->law->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->law->window_y + 279)
+                    if (x >= MainForm->animation->law->window_x + 48 && x <= MainForm->animation->law->window_x + 138 &&
+                        y >= MainForm->animation->law->window_y + 253 && y <= MainForm->animation->law->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->law->ClearText();
@@ -2262,13 +2178,11 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             if (MainForm->animation->inn->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->inn->MouseDown(x, y, button);
+                MainForm->animation->inn->MouseDown(click_x, click_y, button);
                 if (!MainForm->animation->inn->page)
                 {
-                    if (*mouse >= MainForm->animation->inn->window_x + 92 &&
-                        *mouse <= MainForm->animation->inn->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->inn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->inn->window_y + 279)
+                    if (x >= MainForm->animation->inn->window_x + 92 && x <= MainForm->animation->inn->window_x + 182 &&
+                        y >= MainForm->animation->inn->window_y + 253 && y <= MainForm->animation->inn->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->inn->Close();
@@ -2277,19 +2191,16 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 }
                 else
                 {
-                    if (*mouse >= MainForm->animation->inn->window_x + 144 &&
-                        *mouse <= MainForm->animation->inn->window_x + 234 &&
-                        mouse[1] >= MainForm->animation->inn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->inn->window_y + 279)
+                    if (x >= MainForm->animation->inn->window_x + 144 &&
+                        x <= MainForm->animation->inn->window_x + 234 &&
+                        y >= MainForm->animation->inn->window_y + 253 && y <= MainForm->animation->inn->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->inn->Close();
                         MainForm->redraw_needed = true;
                     }
-                    if (*mouse >= MainForm->animation->inn->window_x + 48 &&
-                        *mouse <= MainForm->animation->inn->window_x + 138 &&
-                        mouse[1] >= MainForm->animation->inn->window_y + 253 &&
-                        mouse[1] <= MainForm->animation->inn->window_y + 279)
+                    if (x >= MainForm->animation->inn->window_x + 48 && x <= MainForm->animation->inn->window_x + 138 &&
+                        y >= MainForm->animation->inn->window_y + 253 && y <= MainForm->animation->inn->window_y + 279)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->inn->ClearText();
@@ -2301,65 +2212,52 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     }
                 }
             }
-            if (MainForm->animation->chest->is_visible)
+            if (MainForm->animation->chest->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->chest->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->chest->window_x + 92 && x <= MainForm->animation->chest->window_x + 182 &&
+                    y >= MainForm->animation->chest->window_y + 231 && y <= MainForm->animation->chest->window_y + 254)
                 {
-                    handled = true;
-                    MainForm->animation->chest->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->chest->window_x + 92 &&
-                        *mouse <= MainForm->animation->chest->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->chest->window_y + 231 &&
-                        mouse[1] <= MainForm->animation->chest->window_y + 254)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->chest->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->chest->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
-            if (MainForm->animation->barber->is_visible)
+            if (MainForm->animation->barber->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->barber->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->barber->window_x + 215 &&
+                    x <= MainForm->animation->barber->window_x + 304 &&
+                    y >= MainForm->animation->barber->window_y + 151 &&
+                    y <= MainForm->animation->barber->window_y + 178)
                 {
-                    handled = true;
-                    MainForm->animation->barber->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->barber->window_x + 215 &&
-                        *mouse <= MainForm->animation->barber->window_x + 304 &&
-                        mouse[1] >= MainForm->animation->barber->window_y + 151 &&
-                        mouse[1] <= MainForm->animation->barber->window_y + 178)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->barber->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->barber->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
-            if (MainForm->animation->stat->is_visible)
+            if (MainForm->animation->stat->is_visible && !handled)
             {
-                if (!handled)
+                handled = true;
+                MainForm->animation->stat->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->stat->window_x + 92 && x <= MainForm->animation->stat->window_x + 182 &&
+                    y >= MainForm->animation->stat->window_y + 213 && y <= MainForm->animation->stat->window_y + 239)
                 {
-                    handled = true;
-                    MainForm->animation->stat->MouseDown(x, y, button);
-                    if (*mouse >= MainForm->animation->stat->window_x + 92 &&
-                        *mouse <= MainForm->animation->stat->window_x + 182 &&
-                        mouse[1] >= MainForm->animation->stat->window_y + 213 &&
-                        mouse[1] <= MainForm->animation->stat->window_y + 239)
-                    {
-                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                        MainForm->animation->stat->Close();
-                        MainForm->redraw_needed = true;
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->stat->Close();
+                    MainForm->redraw_needed = true;
                 }
             }
             if (MainForm->animation->quests->is_visible && !handled)
             {
                 handled = true;
-                MainForm->animation->quests->MouseDown(x, y, button);
-                if (*mouse >= MainForm->animation->quests->window_x + 288 &&
-                    *mouse <= MainForm->animation->quests->window_x + 378 &&
-                    mouse[1] >= MainForm->animation->quests->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->quests->window_y + 279)
+                MainForm->animation->quests->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->quests->window_x + 288 &&
+                    x <= MainForm->animation->quests->window_x + 378 &&
+                    y >= MainForm->animation->quests->window_y + 253 &&
+                    y <= MainForm->animation->quests->window_y + 279)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     if (!MainForm->animation->quests->history_requested)
@@ -2389,10 +2287,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     }
                     MainForm->redraw_needed = true;
                 }
-                if (*mouse >= MainForm->animation->quests->window_x + 380 &&
-                    *mouse <= MainForm->animation->quests->window_x + 470 &&
-                    mouse[1] >= MainForm->animation->quests->window_y + 253 &&
-                    mouse[1] <= MainForm->animation->quests->window_y + 279)
+                if (x >= MainForm->animation->quests->window_x + 380 &&
+                    x <= MainForm->animation->quests->window_x + 470 &&
+                    y >= MainForm->animation->quests->window_y + 253 &&
+                    y <= MainForm->animation->quests->window_y + 279)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->quests->Close();
@@ -2404,7 +2302,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
         {
             // No window is open: the corner close button, the bars along the top, then the map.
             char bar_clicked = false;
-            if ((y > 10 && y < 17 && x > 590 && 3 * y + 560 > x) || (y > 16 && y < 31 && x > 590 && y + 594 > x))
+            if ((click_y > 10 && click_y < 17 && click_x > 590 && 3 * click_y + 560 > click_x) ||
+                (click_y > 16 && click_y < 31 && click_x > 590 && click_y + 594 > click_x))
             {
                 bar_clicked = true;
                 // During a warp or a map download the close button logs out without asking.
@@ -2418,14 +2317,16 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->edits->caret_enabled = false;
                 }
             }
-            if (x >= 55 && x <= 542 && y <= 10)
+            // Only the top edge of the strip and its two ends belong to the bars; the rest of it is the map.
+            if (click_x >= 55 && click_x <= 542 && click_y <= 10)
             {
                 bar_clicked = true;
-                MainForm->animation->interface_controller->game_bars->MouseDown(x, y, button);
+                MainForm->animation->interface_controller->game_bars->MouseDown(click_x, click_y, button);
             }
-            if (MainForm->gfx->game->view_clip_rect.top < y && MainForm->gfx->game->view_clip_rect.bottom > y &&
-                MainForm->gfx->game->view_clip_rect.left < x && MainForm->gfx->game->view_clip_rect.right > x &&
-                !bar_clicked)
+            if (MainForm->gfx->game->view_clip_rect.top < click_y &&
+                MainForm->gfx->game->view_clip_rect.bottom > click_y &&
+                MainForm->gfx->game->view_clip_rect.left < click_x &&
+                MainForm->gfx->game->view_clip_rect.right > click_x && !bar_clicked)
             {
                 // A dragged item goes to the open window under it, or onto the map within reach.
                 if (MainForm->animation->interface_controller->inventory->is_dragging)
@@ -2436,10 +2337,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         if (MainForm->animation->trade->is_visible)
                         {
                             drop_handled = true;
-                            if (MainForm->animation->trade->window_y + 43 < y &&
-                                MainForm->animation->trade->window_y + 243 > y &&
-                                MainForm->animation->trade->window_x + 280 < x &&
-                                MainForm->animation->trade->window_x + 515 > x &&
+                            if (MainForm->animation->trade->window_y + 43 < click_y &&
+                                MainForm->animation->trade->window_y + 243 > click_y &&
+                                MainForm->animation->trade->window_x + 280 < click_x &&
+                                MainForm->animation->trade->window_x + 515 > click_x &&
                                 !MainForm->animation->game->message_visible &&
                                 !MainForm->animation->trade->trade_locked)
                             {
@@ -2451,22 +2352,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         MainForm->strings->GetDialogText(DialogText_LoreItem, true));
                                     MainForm->edits->caret_enabled = false;
                                 }
+                                else if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
+                                    2)
+                                {
+                                    MainForm->net_client->sender->SendTradeAddItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                                        1);
+                                    MainForm->animation->interface_controller->inventory->input_enabled = true;
+                                }
                                 else
                                 {
-                                    if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                                        2)
-                                    {
-                                        MainForm->net_client->sender->SendTradeAddItem(MainForm->animation->interface_controller->inventory->drag_item_id,
-                                            1);
-                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                    }
-                                    else
-                                    {
-                                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_TradeAddItem,
-                                            MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
-                                            MainForm->animation->interface_controller->inventory->drag_item_id, 0);
-                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                    }
+                                    MainForm->animation->game->OpenAmountBox(AmountBoxKind_TradeAddItem,
+                                        MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
+                                        MainForm->animation->interface_controller->inventory->drag_item_id, 0);
+                                    MainForm->animation->interface_controller->inventory->input_enabled = true;
                                 }
                             }
                         }
@@ -2474,15 +2372,15 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         {
                             drop_handled = true;
                             MainForm->animation->paperdoll->EquipDroppedItem(MainForm->animation->interface_controller->inventory->drag_item_id,
-                                x, y);
+                                click_x, click_y);
                         }
                         if (MainForm->animation->bank->is_visible)
                         {
                             drop_handled = true;
-                            if (MainForm->animation->bank->window_y + 50 < y &&
-                                MainForm->animation->bank->window_y + 170 > y &&
-                                MainForm->animation->bank->window_x + 17 < x &&
-                                MainForm->animation->bank->window_x + 252 > x &&
+                            if (MainForm->animation->bank->window_y + 50 < click_y &&
+                                MainForm->animation->bank->window_y + 170 > click_y &&
+                                MainForm->animation->bank->window_x + 17 < click_x &&
+                                MainForm->animation->bank->window_x + 252 > click_x &&
                                 MainForm->animation->interface_controller->inventory->drag_item_id == ItemId_Gold)
                             {
                                 int gold_amount =
@@ -2512,10 +2410,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         if (MainForm->animation->locker->is_visible)
                         {
                             drop_handled = true;
-                            if (MainForm->animation->locker->window_y + 17 < y &&
-                                MainForm->animation->locker->window_y + 217 > y &&
-                                MainForm->animation->locker->window_x + 17 < x &&
-                                MainForm->animation->locker->window_x + 252 > x)
+                            if (MainForm->animation->locker->window_y + 17 < click_y &&
+                                MainForm->animation->locker->window_y + 217 > click_y &&
+                                MainForm->animation->locker->window_x + 17 < click_x &&
+                                MainForm->animation->locker->window_x + 252 > click_x)
                             {
                                 if (MainForm->animation->interface_controller->inventory->drag_item_id > 1)
                                 {
@@ -2526,7 +2424,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         drop_locker_pos.x = MainForm->animation->locker->locker_x;
                                         drop_locker_pos.y = MainForm->animation->locker->locker_y;
                                         if (MainForm->animation->locker->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                                            WRAP_TEXT_WIDTH)
+                                            200)
                                         {
                                             if (MainForm->animation->locker->CanStoreItem(MainForm->animation->interface_controller->inventory->drag_item_id))
                                             {
@@ -2574,10 +2472,10 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         if (MainForm->animation->chest->is_visible)
                         {
                             drop_handled = true;
-                            if (MainForm->animation->chest->window_y + 17 < y &&
-                                MainForm->animation->chest->window_y + 217 > y &&
-                                MainForm->animation->chest->window_x + 17 < x &&
-                                MainForm->animation->chest->window_x + 252 > x)
+                            if (MainForm->animation->chest->window_y + 17 < click_y &&
+                                MainForm->animation->chest->window_y + 217 > click_y &&
+                                MainForm->animation->chest->window_x + 17 < click_x &&
+                                MainForm->animation->chest->window_x + 252 > click_x)
                             {
                                 if (MainForm->item_values->GetSpecial(MainForm->animation->interface_controller->inventory->drag_item_id) ==
                                     ItemSpecial_Bound)
@@ -2587,30 +2485,28 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         MainForm->strings->GetDialogText(DialogText_LoreItem, true));
                                     MainForm->edits->caret_enabled = false;
                                 }
+                                else if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
+                                    2)
+                                {
+                                    TPoint drop_chest_pos;
+                                    drop_chest_pos.x = MainForm->animation->chest->chest_x;
+                                    drop_chest_pos.y = MainForm->animation->chest->chest_y;
+                                    MainForm->net_client->sender->SendChestAddItem(drop_chest_pos,
+                                        MainForm->animation->interface_controller->inventory->drag_item_id, 1);
+                                    MainForm->animation->interface_controller->inventory->input_enabled = true;
+                                }
                                 else
                                 {
-                                    if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                                        2)
-                                    {
-                                        Windows::TPoint drop_chest_pos;
-                                        drop_chest_pos.x = MainForm->animation->chest->chest_x;
-                                        drop_chest_pos.y = MainForm->animation->chest->chest_y;
-                                        MainForm->net_client->sender->SendChestAddItem(drop_chest_pos,
-                                            MainForm->animation->interface_controller->inventory->drag_item_id, 1);
-                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                    }
-                                    else
-                                    {
-                                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_ChestAddItem,
-                                            MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
-                                            MainForm->animation->interface_controller->inventory->drag_item_id, 0);
-                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                    }
+                                    MainForm->animation->game->OpenAmountBox(AmountBoxKind_ChestAddItem,
+                                        MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
+                                        MainForm->animation->interface_controller->inventory->drag_item_id, 0);
+                                    MainForm->animation->interface_controller->inventory->input_enabled = true;
                                 }
                             }
                         }
                         if (!drop_handled)
                         {
+                            char can_drop;
                             if (MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
                                 MainForm->map->GetCenterY(), MainForm->map->GetCursorX(),
                                 MainForm->map->GetCursorY()) &&
@@ -2618,7 +2514,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                     MainForm->map->GetCursorY()))
                             {
                                 MainForm->animation->interface_controller->inventory->CancelDrag();
-                                char can_drop = true;
+                                can_drop = true;
                                 if (MainForm->item_values->GetSpecial(MainForm->animation->interface_controller->inventory->drag_item_id) ==
                                     ItemSpecial_Bound)
                                 {
@@ -2666,7 +2562,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                                             MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
                                                                 1, MainForm->map->GetCursorX(),
                                                                 MainForm->map->GetCursorY());
-                                                            MainForm->animation->interface_controller->inventory->input_enabled = true;
+                                                            MainForm->animation->interface_controller->inventory->input_enabled =
+                                                                true;
                                                         }
                                                     }
                                                     else
@@ -2674,7 +2571,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                                         MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
                                                             1, MainForm->map->GetCursorX(),
                                                             MainForm->map->GetCursorY());
-                                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
+                                                        MainForm->animation->interface_controller->inventory->input_enabled =
+                                                            true;
                                                     }
                                                 }
                                             }
@@ -2690,17 +2588,13 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                     }
                                 }
                             }
-                            else
+                            else if (!MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
+                                MainForm->map->GetCenterY(), MainForm->map->GetCursorX(), MainForm->map->GetCursorY()))
                             {
-                                if (!MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
-                                    MainForm->map->GetCenterY(), MainForm->map->GetCursorX(),
-                                    MainForm->map->GetCursorY()))
-                                {
-                                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                        MainForm->strings->GetText(GameText_OutOfDropRange));
-                                    MainForm->animation->interface_controller->chat->AddSystemMessage(ChatIcon_OutOfRange, CHAT_COLOR_DEFAULT,
-                                        MainForm->strings->GetText(GameText_OutOfDropRange), true);
-                                }
+                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                    MainForm->strings->GetText(GameText_OutOfDropRange));
+                                MainForm->animation->interface_controller->chat->AddSystemMessage(ChatIcon_OutOfRange,
+                                    CHAT_COLOR_DEFAULT, MainForm->strings->GetText(GameText_OutOfDropRange), true);
                             }
                         }
                     }
@@ -2710,15 +2604,15 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->map->path_finder->CancelPath();
                     if (!button)
                     {
-                        bool click_used = false;
+                        char click_used = false;
                         // The menu a right click opens on a player.
                         // Its options in order: paperdoll, book, join, invite, trade, private message, friend, ignore.
                         if (MainForm->animation->game->player_menu_visible)
                         {
-                            if (MainForm->animation->game->player_menu_x + 12 < x &&
-                                MainForm->animation->game->player_menu_y + 142 > y &&
-                                MainForm->animation->game->player_menu_x + 101 > x &&
-                                MainForm->animation->game->player_menu_y + 5 < y)
+                            if (MainForm->animation->game->player_menu_x + 12 < click_x &&
+                                MainForm->animation->game->player_menu_y + 142 > click_y &&
+                                MainForm->animation->game->player_menu_x + 101 > click_x &&
+                                MainForm->animation->game->player_menu_y + 5 < click_y)
                             {
                                 if (MainForm->animation->game->player_menu_hovered_option >= 0)
                                 {
@@ -2755,7 +2649,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                             }
                                             else
                                             {
-                                                String existing_member = MainForm->animation->interface_controller->group->GetMemberName(MainForm->animation->game->player_menu_target_id);
+                                                String existing_member =
+                                                    MainForm->animation->interface_controller->group->GetMemberName(MainForm->animation->game->player_menu_target_id);
                                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                                                     MainForm->net_client->Capitalize(existing_member) + " " +
                                                         MainForm->strings->GetText(GameText_IsAlreadyInYour));
@@ -2780,7 +2675,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         {
                                             if (!MainForm->animation->interface_controller->group->HasMember(MainForm->animation->game->player_menu_target_id))
                                             {
-                                                MainForm->animation->interface_controller->group->SetInviteCooldown(300);
+                                                MainForm->animation->interface_controller->group->SetInviteCooldown(200);
                                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                                     MainForm->net_client->Capitalize(
                                                     MainForm->animation->game->player_menu_name) + " " +
@@ -2789,7 +2684,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                             }
                                             else
                                             {
-                                                String party_member = MainForm->animation->interface_controller->group->GetMemberName(MainForm->animation->game->player_menu_target_id);
+                                                String party_member =
+                                                    MainForm->animation->interface_controller->group->GetMemberName(MainForm->animation->game->player_menu_target_id);
                                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                                                     MainForm->net_client->Capitalize(party_member) + " " +
                                                         MainForm->strings->GetText(GameText_IsAlreadyInYour));
@@ -2817,7 +2713,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                             {
                                                 if (!MainForm->animation->interface_controller->group->IsInviteCoolingDown())
                                                 {
-                                                    MainForm->animation->interface_controller->group->SetInviteCooldown(300);
+                                                    MainForm->animation->interface_controller->group->SetInviteCooldown(200);
                                                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                                         MainForm->strings->GetText(GameText_RequestedToTrade));
                                                     MainForm->net_client->sender->RequestTrade(MainForm->animation->game->player_menu_target_id);
@@ -2825,8 +2721,15 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                                 else
                                                 {
                                                     close_menu = false;
+                                                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok,
+                                                        ConfirmAction_None,
+                                                        MainForm->strings->GetDialogText(DialogText_TradeWarning,
+                                                        false),
+                                                        MainForm->strings->GetText(GameText_YouRecentlyRequestedAnotherTrade));
                                                     MainForm->animation->interface_controller->chat->AddSystemMessage(ChatIcon_Error,
-                                                        CHAT_COLOR_WARNING, MainForm->strings->GetText(GameText_YouRecentlyRequestedAnotherTrade), false);
+                                                        CHAT_COLOR_WARNING,
+                                                        MainForm->strings->GetText(GameText_YouRecentlyRequestedAnotherTrade),
+                                                        false);
                                                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                                         MainForm->strings->GetText(GameText_YouRecentlyRequestedAnotherTrade));
                                                 }
@@ -2883,22 +2786,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 click_used = true;
                             }
                         }
-                        if (!click_used)
-                        {
-                            if (MainForm->animation->game->SitOnChair(MainForm->map->GetCursorX(),
+                        // Then, in order: sitting, standing up, a chair, a spell's target, an item to pick up, an npc,
+                        // a locker or chest, a sign, a board, a jukebox and a door; a click on none of them walks to the tile.
+                        if (!click_used &&
+                            MainForm->animation->game->SitOnChair(MainForm->map->GetCursorX(),
                                 MainForm->map->GetCursorY()))
-                                click_used = true;
-                        }
+                            click_used = true;
+                        if (!click_used && MainForm->animation->game->StandUp())
+                            click_used = true;
                         if (!click_used)
                         {
-                            if (MainForm->animation->game->StandUp())
-                                click_used = true;
-                        }
-                        if (!click_used)
-                        {
+                            int chair_spec =
+                                MainForm->map->GetChairSpec(MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
                             // A chair is reached from the tile on the side it faces.
-                            int chair_spec = MainForm->map->GetChairSpec(MainForm->map->GetCursorX(),
-                                MainForm->map->GetCursorY());
                             if (chair_spec >= TileSpec_ChairYHigh && chair_spec <= TileSpec_ChairAnySide)
                             {
                                 char chair_walk_started = false;
@@ -2924,9 +2824,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 click_used = true;
                             }
                         }
-                        // Then, in order: a spell's target, an item to pick up, an npc, a locker or chest, a sign,
-                        // a board, a jukebox and a door; a click on none of them walks to the tile.
-                        if (!click_used && (x <= 590 || y >= 35))
+                        if (!click_used && (click_x <= 590 || click_y >= 35))
                         {
                             char click_pending = true;
                             char cast_cleared = false;
@@ -2944,22 +2842,23 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 for (int npc_slot = MainForm->npcs->GetCount() - 1; npc_slot >= 0; npc_slot--)
                                 {
                                     Npc target_npc = MainForm->npcs->GetNpc(npc_slot);
-                                    NpcTypeInfo target_type = MainForm->npc_values->GetType(target_npc.npc_id);
-                                    if (target_type.npc_type == NpcType_Passive || target_type.npc_type ==
-                                        NpcType_Aggressive)
+                                    TPoint target_type = MainForm->npc_values->GetType(target_npc.npc_id);
+                                    if (target_type.x == NpcType_Passive || target_type.x == NpcType_Aggressive)
                                     {
                                         if (target_npc.frame_width > 0 && target_npc.frame_height > 0)
                                         {
-                                            int target_height = target_npc.frame_height;
-                                            if (target_height > 70)
-                                                target_height = 70;
-                                            int target_x = TILE_HALF_WIDTH * target_npc.x - TILE_HALF_WIDTH * target_npc.y +
-                                                MainForm->map->GetScrollOffsetX() + 319;
-                                            int target_y = 16 * target_npc.x + 16 * target_npc.y +
-                                                MainForm->map->GetScrollOffsetY() + 160;
-                                            if (target_x - target_npc.frame_width / 2 <= x &&
-                                                target_npc.frame_width / 2 + target_x >= x &&
-                                                target_y - target_height <= y && target_y + 5 >= y)
+                                            int npc_height = target_npc.frame_height;
+                                            if (npc_height > 70)
+                                                npc_height = 70;
+                                            int target_x =
+                                                TILE_HALF_WIDTH * target_npc.x - TILE_HALF_WIDTH * target_npc.y +
+                                                    MainForm->map->GetScrollOffsetX() + 319;
+                                            int target_y =
+                                                16 * target_npc.x + 16 * target_npc.y +
+                                                    MainForm->map->GetScrollOffsetY() + 160;
+                                            if (target_x - target_npc.frame_width / 2 <= click_x &&
+                                                target_x + target_npc.frame_width / 2 >= click_x &&
+                                                target_y - npc_height <= click_y && target_y + 5 >= click_y)
                                             {
                                                 npc_targeted = true;
                                                 target_npc_index = target_npc.index;
@@ -2971,14 +2870,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                                             MainForm->strings->GetText(GameText_YouCannotAttackThis));
                                 }
-                                for (player_slot = MainForm->players->GetCount() - 1; player_slot >= 0; player_slot--)
+                                char spell_cast;
+                                for (int player_slot = MainForm->players->GetCount() - 1; player_slot >= 0;
+                                    player_slot--)
                                 {
                                     Player target_player = MainForm->players->GetPlayer(player_slot);
-                                    player_x = TILE_HALF_WIDTH * target_player.x - TILE_HALF_WIDTH * target_player.y +
-                                        MainForm->map->GetScrollOffsetX() + 310;
-                                    player_y = TILE_HALF_HEIGHT * target_player.x + TILE_HALF_HEIGHT * target_player.y +
-                                        MainForm->map->GetScrollOffsetY() + 102;
-                                    if (player_x - 1 <= x && player_x + 19 >= x && player_y <= y && player_y + 58 >= y)
+                                    int player_screen_x =
+                                        TILE_HALF_WIDTH * target_player.x - TILE_HALF_WIDTH * target_player.y +
+                                            MainForm->map->GetScrollOffsetX() + 310;
+                                    player_screen_y =
+                                        TILE_HALF_HEIGHT * target_player.x + TILE_HALF_HEIGHT * target_player.y +
+                                            MainForm->map->GetScrollOffsetY() + 102;
+                                    if (player_screen_x - 1 <= click_x && player_screen_x + 19 >= click_x &&
+                                        player_screen_y <= click_y && player_screen_y + 58 >= click_y)
                                     {
                                         player_targeted = true;
                                         target_player_id = target_player.player_id;
@@ -2991,15 +2895,16 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                     npc_targeted = false;
                                     player_targeted = false;
                                 }
-                                char spell_cast = false;
+                                spell_cast = false;
                                 if (!spell_cast && npc_targeted &&
                                     (!MainForm->animation->interface_controller->spells->selected_target_kind ||
                                         MainForm->animation->interface_controller->spells->selected_target_kind == 2))
                                 {
                                     int caster_id = MainForm->net_client->GetPlayerId();
-                                    String npc_spell_shout = MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
-                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout, LabelColor_Silver, true,
-                                        SHOUT_LABEL_TICKS);
+                                    String npc_spell_shout =
+                                        MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
+                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout, LabelColor_Silver,
+                                        true, SHOUT_LABEL_TICKS);
                                     MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
                                     MainForm->animation->interface_controller->spells->BeginCast(MainForm->animation->interface_controller->spells->selected_spell_id,
                                         CastTarget_Npc, target_npc_index);
@@ -3019,7 +2924,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                     else
                                     {
                                         int self_id = MainForm->net_client->GetPlayerId();
-                                        String player_spell_shout = MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
+                                        String player_spell_shout =
+                                            MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
                                         MainForm->players->ShowTextLabel(self_id, player_spell_shout, LabelColor_Silver,
                                             true, SHOUT_LABEL_TICKS);
                                         MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
@@ -3031,46 +2937,50 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 MainForm->animation->interface_controller->spells->ClearSelection();
                                 click_pending = false;
                             }
-                            if (click_pending)
-                            {
-                                if (MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
+                            int item_uid;
+                            int owner_id;
+                            char found_npc;
+                            int npc_x;
+                            if (click_pending &&
+                                MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
                                     MainForm->map->GetCenterY(), MainForm->map->GetCursorX(),
                                     MainForm->map->GetCursorY()))
-                                {
-                                    int item_uid = MainForm->map_items->FindItemAt(MainForm->map->GetCursorX(),
+                            {
+                                item_uid =
+                                    MainForm->map_items->FindItemAt(MainForm->map->GetCursorX(),
                                         MainForm->map->GetCursorY());
-                                    if (item_uid >= 0)
+                                if (item_uid >= 0)
+                                {
+                                    if (MainForm->animation->interface_controller->inventory->HasRoomForItem(MainForm->map_items->GetItemId(item_uid)))
                                     {
-                                        if (MainForm->animation->interface_controller->inventory->HasRoomForItem(MainForm->map_items->GetItemId(item_uid)))
+                                        if (MainForm->animation->interface_controller->status->weight +
+                                            MainForm->item_values->GetWeight(MainForm->map_items->GetItemId(item_uid)) <=
+                                            MainForm->animation->interface_controller->status->max_weight)
                                         {
-                                            if (MainForm->animation->interface_controller->status->weight +
-                                                MainForm->item_values->GetWeight(MainForm->map_items->GetItemId(item_uid)) <=
-                                                MainForm->animation->interface_controller->status->max_weight)
-                                            {
-                                                int owner_id = MainForm->map_items->GetProtectionOwner(item_uid);
-                                                if (owner_id <= PlayerId_Unset ||
-                                                    MainForm->net_client->GetPlayerId() == owner_id)
-                                                    MainForm->net_client->sender->SendPickupItem(item_uid);
-                                                else
-                                                {
-                                                    String owner_name = MainForm->players->GetName(owner_id);
-                                                    if (owner_name.Length() > 0)
-                                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                                            MainForm->strings->GetText(GameText_ThisItemIsProtectedBy) + " " + owner_name);
-                                                    else
-                                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                                            MainForm->strings->GetText(GameText_ThisItemIsProtected));
-                                                }
-                                            }
+                                            owner_id = MainForm->map_items->GetProtectionOwner(item_uid);
+                                            if (owner_id <= PlayerId_Unset ||
+                                                MainForm->net_client->GetPlayerId() == owner_id)
+                                                MainForm->net_client->sender->SendPickupItem(item_uid);
                                             else
-                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                                    MainForm->strings->GetText(GameText_ItsTooHeavyYou));
-                                            click_pending = false;
+                                            {
+                                                String owner_name = MainForm->players->GetName(owner_id);
+                                                if (owner_name.Length() > 0)
+                                                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                                                        MainForm->strings->GetText(GameText_ThisItemIsProtectedBy) +
+                                                            " " + owner_name);
+                                                else
+                                                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                                                        MainForm->strings->GetText(GameText_ThisItemIsProtected));
+                                            }
                                         }
                                         else
-                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                                MainForm->strings->GetText(GameText_YouCouldNotPick));
+                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                                MainForm->strings->GetText(GameText_ItsTooHeavyYou));
+                                        click_pending = false;
                                     }
+                                    else
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                                            MainForm->strings->GetText(GameText_YouCouldNotPick));
                                 }
                             }
                             if (click_pending)
@@ -3078,91 +2988,111 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 npc_clicked = false;
                                 if (!npc_clicked)
                                 {
-                                    char found_npc = false;
-                                    for (int i = MainForm->npcs->GetCount() - 1; i >= 0 && !found_npc; i--)
+                                    found_npc = false;
+                                    for (int npc_index = MainForm->npcs->GetCount() - 1;
+                                        npc_index >= 0 && found_npc == 0; npc_index--)
                                     {
-                                        Npc clicked_npc = MainForm->npcs->GetNpc(i);
+                                        Npc clicked_npc = MainForm->npcs->GetNpc(npc_index);
                                         if (clicked_npc.frame_width > 0 && clicked_npc.frame_height > 0)
                                         {
-                                            npc_height = clicked_npc.frame_height;
-                                            if (npc_height > 70)
-                                                npc_height = 70;
-                                            int npc_x = TILE_HALF_WIDTH * clicked_npc.x - TILE_HALF_WIDTH * clicked_npc.y +
-                                                MainForm->map->GetScrollOffsetX() + 319;
-                                            npc_y = 16 * clicked_npc.x + 16 * clicked_npc.y +
-                                                MainForm->map->GetScrollOffsetY() + 160;
-                                            if (npc_x - clicked_npc.frame_width / 2 <= x &&
-                                                npc_x + clicked_npc.frame_width / 2 >= x && npc_y - npc_height <= y &&
-                                                npc_y + 5 >= y)
+                                            near_height = clicked_npc.frame_height;
+                                            if (near_height > 70)
+                                                near_height = 70;
+                                            npc_x =
+                                                TILE_HALF_WIDTH * clicked_npc.x - TILE_HALF_WIDTH * clicked_npc.y +
+                                                    MainForm->map->GetScrollOffsetX() + 319;
+                                            npc_y =
+                                                16 * clicked_npc.x + 16 * clicked_npc.y +
+                                                    MainForm->map->GetScrollOffsetY() + 160;
+                                            if (npc_x - clicked_npc.frame_width / 2 <= click_x)
                                             {
-                                                found_npc = true;
-                                                npc_clicked = true;
-                                                NpcTypeInfo npc_type = MainForm->npc_values->GetType(clicked_npc.npc_id);
-                                                // The npc's type picks what it opens: shop, inn, bank,
-                                                // barber, guild, priest, law, skill master or quest.
-                                                if (npc_type.npc_type == NpcType_Shop)
-                                                    MainForm->net_client->sender->RequestShopOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Inn)
+                                                if (clicked_npc.frame_width / 2 + npc_x >= click_x &&
+                                                    npc_y - near_height <= click_y && npc_y + 5 >= click_y)
                                                 {
-                                                    MainForm->animation->inn->npc_name = clicked_npc.name;
-                                                    MainForm->net_client->sender->RequestInnOpen(clicked_npc.index);
+                                                    found_npc = true;
+                                                    npc_clicked = true;
+                                                    TPoint npc_type = MainForm->npc_values->GetType(clicked_npc.npc_id);
+                                                    if (npc_type.x == NpcType_Shop)
+                                                        MainForm->net_client->sender->RequestShopOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Inn)
+                                                    {
+                                                        MainForm->animation->inn->npc_name = clicked_npc.name;
+                                                        MainForm->net_client->sender->RequestInnOpen(clicked_npc.index);
+                                                    }
+                                                    if (npc_type.x == NpcType_Bank)
+                                                        MainForm->net_client->sender->RequestBankOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Barber)
+                                                        MainForm->net_client->sender->RequestBarberOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Guild)
+                                                        MainForm->net_client->sender->RequestGuildOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Priest)
+                                                        MainForm->net_client->sender->RequestPriestOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Law)
+                                                    {
+                                                        MainForm->animation->law->npc_name = clicked_npc.name;
+                                                        MainForm->net_client->sender->RequestLawOpen(clicked_npc.index);
+                                                    }
+                                                    if (npc_type.x == NpcType_Trainer)
+                                                        MainForm->net_client->sender->RequestSkillMasterOpen(clicked_npc.index);
+                                                    if (npc_type.x == NpcType_Quest &&
+                                                        MainForm->animation->dialog->request_cooldown <= 0)
+                                                    {
+                                                        MainForm->animation->dialog->npc_name = clicked_npc.name;
+                                                        MainForm->animation->dialog->npc_index = clicked_npc.index;
+                                                        MainForm->animation->dialog->request_cooldown =
+                                                            QUEST_REQUEST_COOLDOWN_TICKS;
+                                                        MainForm->net_client->sender->RequestQuestDialog(clicked_npc.index,
+                                                            QUEST_DEFAULT_DIALOG);
+                                                    }
+                                                    self_x =
+                                                        MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+                                                    unsigned char attack_direction =
+                                                        MainForm->net_client->GetAdjacentDirection(clicked_npc.x,
+                                                            clicked_npc.y, self_x,
+                                                            MainForm->players->GetY(MainForm->net_client->GetPlayerId()));
+                                                    if (attack_direction)
+                                                    {
+                                                        if (MainForm->net_client->CanAct())
+                                                        {
+                                                            MainForm->map->path_finder->CancelPath();
+                                                            MainForm->animation->game->Attack(false,
+                                                                attack_direction - 1);
+                                                        }
+                                                    }
+                                                    else
+                                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Npc,
+                                                            MainForm->npc_values->GetName(clicked_npc.npc_id));
                                                 }
-                                                if (npc_type.npc_type == NpcType_Bank)
-                                                    MainForm->net_client->sender->RequestBankOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Barber)
-                                                    MainForm->net_client->sender->RequestBarberOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Guild)
-                                                    MainForm->net_client->sender->RequestGuildOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Priest)
-                                                    MainForm->net_client->sender->RequestPriestOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Law)
-                                                {
-                                                    MainForm->animation->law->npc_name = clicked_npc.name;
-                                                    MainForm->net_client->sender->RequestLawOpen(clicked_npc.index);
-                                                }
-                                                if (npc_type.npc_type == NpcType_Trainer)
-                                                    MainForm->net_client->sender->RequestSkillMasterOpen(clicked_npc.index);
-                                                if (npc_type.npc_type == NpcType_Quest &&
-                                                    MainForm->animation->dialog->request_cooldown <= 0)
-                                                {
-                                                    MainForm->animation->dialog->npc_name = clicked_npc.name;
-                                                    MainForm->animation->dialog->npc_index = clicked_npc.index;
-                                                    MainForm->animation->dialog->request_cooldown = QUEST_REQUEST_COOLDOWN_TICKS;
-                                                    MainForm->net_client->sender->RequestQuestDialog(clicked_npc.index,
-                                                        QUEST_DEFAULT_DIALOG);
-                                                }
-                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Npc,
-                                                    MainForm->npc_values->GetName(clicked_npc.npc_id));
                                             }
                                         }
                                     }
                                 }
+                                // A locker or chest opens only from a tile beside it, once per short delay;
+                                // a locked chest needs its key.
                                 if (!npc_clicked && !MainForm->animation->IsObjectClickDelayed())
                                 {
                                     MainForm->animation->StartObjectClickDelay();
                                     int player_x_tile = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
                                     int player_y_tile = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
-                                    TPoint clicked_locker = MainForm->map->FindLockerAt(x, y);
+                                    TPoint clicked_locker = MainForm->map->FindLockerAt(click_x, click_y);
                                     if (clicked_locker.x >= 0 && clicked_locker.y >= 0 &&
-                                        MainForm->net_client->IsAdjacent(clicked_locker.x, clicked_locker.y,
-                                        player_x_tile, player_y_tile))
+                                        MainForm->net_client->GetAdjacentDirection(clicked_locker.x, clicked_locker.y,
+                                            player_x_tile, player_y_tile))
                                     {
                                         npc_clicked = true;
                                         MainForm->net_client->sender->RequestLockerOpen(clicked_locker);
                                     }
-                                    TPoint clicked_chest = MainForm->map->FindChestAt(x, y);
+                                    TPoint clicked_chest = MainForm->map->FindChestAt(click_x, click_y);
                                     if (clicked_chest.x >= 0 && clicked_chest.y >= 0 &&
-                                        MainForm->net_client->IsAdjacent(clicked_chest.x, clicked_chest.y,
-                                        player_x_tile, player_y_tile))
+                                        MainForm->net_client->GetAdjacentDirection(clicked_chest.x, clicked_chest.y,
+                                            player_x_tile, player_y_tile))
                                     {
                                         npc_clicked = true;
                                         int chest_key = MainForm->map->GetChestKey(clicked_chest.x, clicked_chest.y);
                                         if (chest_key > 0)
                                         {
                                             if (MainForm->animation->interface_controller->inventory->HasKey(chest_key))
-                                            {
                                                 MainForm->net_client->sender->RequestChestOpen(clicked_chest);
-                                            }
                                             else
                                             {
                                                 String chest_key_name = MainForm->item_values->GetKeyName(chest_key);
@@ -3177,22 +3107,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                             }
                                         }
                                         else
-                                        {
                                             MainForm->net_client->sender->RequestChestOpen(clicked_chest);
-                                        }
                                     }
                                 }
                                 if (!npc_clicked)
                                 {
-                                    String sign_data = MainForm->map->FindSignTextAt(x, y);
+                                    String sign_data = MainForm->map->FindSignTextAt(click_x, click_y);
                                     if (sign_data.Length() > 1)
                                     {
                                         npc_clicked = true;
                                         if (!MainForm->animation->game->message_visible)
                                         {
-                                            // Sign text: a length, the title, then the message.
-                                            int title_length = MainForm->net_client->DecodeNumber(sign_data.SubString(1,
-                                                1));
+                                            int title_length =
+                                                MainForm->net_client->DecodeNumber(sign_data.SubString(1, 1));
                                             sign_data.Delete(1, 1);
                                             String sign_title = sign_data.SubString(1, title_length);
                                             sign_data.Delete(1, title_length);
@@ -3208,20 +3135,19 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 }
                                 if (!npc_clicked)
                                 {
-                                    Windows::TPoint board_tile = MainForm->map->FindBoardAt(x, y);
+                                    TPoint board_tile = MainForm->map->FindBoardAt(click_x, click_y);
                                     if (board_tile.x > 0 && board_tile.y > 0)
                                     {
                                         npc_clicked = true;
-                                        // The eight board specs follow each other, so the spec gives the board number.
-                                        int board_id = (int)MainForm->map->GetUsableTileSpec(board_tile.x,
-                                            board_tile.y) - 19;
+                                        int board_id =
+                                            MainForm->map->GetUsableTileSpec(board_tile.x, board_tile.y) - 19;
                                         if (board_id >= 0 && board_id <= 7)
                                             MainForm->net_client->sender->RequestBoardOpen(board_id);
                                     }
                                 }
                                 if (!npc_clicked)
                                 {
-                                    TPoint jukebox_tile = MainForm->map->FindJukeboxAt(x, y);
+                                    TPoint jukebox_tile = MainForm->map->FindJukeboxAt(click_x, click_y);
                                     if (jukebox_tile.x > 0 && jukebox_tile.y > 0)
                                     {
                                         npc_clicked = true;
@@ -3230,7 +3156,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 }
                                 if (!npc_clicked)
                                 {
-                                    Windows::TPoint door_tile = MainForm->map->FindDoorAt(x, y);
+                                    TPoint door_tile = MainForm->map->FindDoorAt(click_x, click_y);
                                     if (door_tile.x > 0 && door_tile.y > 0)
                                     {
                                         npc_clicked = true;
@@ -3238,9 +3164,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                         if (door_key > 0)
                                         {
                                             if (MainForm->animation->interface_controller->inventory->HasKey(door_key))
-                                            {
                                                 MainForm->net_client->sender->SendOpenDoor(door_tile.x, door_tile.y);
-                                            }
                                             else
                                             {
                                                 String door_key_name = MainForm->item_values->GetKeyName(door_key);
@@ -3255,9 +3179,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                             }
                                         }
                                         else
-                                        {
                                             MainForm->net_client->sender->SendOpenDoor(door_tile.x, door_tile.y);
-                                        }
                                     }
                                 }
                                 if (!npc_clicked)
@@ -3275,23 +3197,25 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     // On the player's own figure it asks for the player's own paperdoll.
                     if (button == 1)
                     {
-                        menu_closed = false;
+                        menu_handled = false;
                         if (MainForm->animation->game->player_menu_visible)
                         {
                             MainForm->animation->game->ClosePlayerMenu();
-                            menu_closed = true;
+                            menu_handled = true;
                         }
-                        if (!menu_closed)
+                        if (!menu_handled)
                         {
-                            for (menu_slot = MainForm->players->GetCount() - 1; menu_slot >= 0; menu_slot--)
+                            for (int menu_slot = MainForm->players->GetCount() - 1; menu_slot >= 0; menu_slot--)
                             {
                                 Player menu_player = MainForm->players->GetPlayer(menu_slot);
-                                menu_x = TILE_HALF_WIDTH * menu_player.x - TILE_HALF_WIDTH * menu_player.y + MainForm->map->GetScrollOffsetX() +
-                                    310;
-                                menu_y = TILE_HALF_HEIGHT * menu_player.x + TILE_HALF_HEIGHT * menu_player.y + MainForm->map->GetScrollOffsetY() +
-                                    102;
-                                if (menu_x - 1 <= x && menu_x + 19 >= x && menu_y <= y && menu_y + 58 >= y &&
-                                    menu_player.hover_label_shown)
+                                int menu_x =
+                                    TILE_HALF_WIDTH * menu_player.x - TILE_HALF_WIDTH * menu_player.y +
+                                        MainForm->map->GetScrollOffsetX() + 310;
+                                int menu_y =
+                                    TILE_HALF_HEIGHT * menu_player.x + TILE_HALF_HEIGHT * menu_player.y +
+                                        MainForm->map->GetScrollOffsetY() + 102;
+                                if (menu_x - 1 <= click_x && menu_x + 19 >= click_x && menu_y <= click_y &&
+                                    menu_y + 58 >= click_y && menu_player.hover_label_shown)
                                 {
                                     if (MainForm->net_client->GetPlayerId() != menu_player.player_id)
                                     {
@@ -3314,223 +3238,84 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
         // Asking for the player list holds every panel click until the list comes or a short wait ends.
         if (MainForm->animation->interface_controller->player_list_button_ready)
         {
+            // The open panel takes the click, then the buttons beside it.
             if (MainForm->animation->GetSubState() == GamePanel_Status)
-                MainForm->animation->interface_controller->status->MouseDown(x, y, button);
+                MainForm->animation->interface_controller->status->MouseDown(click_x, click_y, button);
             if (MainForm->animation->GetSubState() == GamePanel_Chat)
-                MainForm->animation->interface_controller->chat->OnMouseClick(x, y, button);
+                MainForm->animation->interface_controller->chat->OnMouseClick(click_x, click_y, button);
             if (MainForm->animation->GetSubState() == GamePanel_Settings)
-                MainForm->animation->interface_controller->settings->MouseDown(x, y);
+                MainForm->animation->interface_controller->settings->MouseDown(click_x, click_y);
             if (MainForm->animation->GetSubState() == GamePanel_News)
-                MainForm->animation->interface_controller->news->MouseDown(x, y);
+                MainForm->animation->interface_controller->news->MouseDown(click_x, click_y);
             if (MainForm->animation->GetSubState() == GamePanel_Help)
-                MainForm->animation->interface_controller->help->MouseDown(x, y);
+                MainForm->animation->interface_controller->help->MouseDown(click_x, click_y);
             if (MainForm->animation->GetSubState() == GamePanel_Inventory)
-                MainForm->animation->interface_controller->inventory->MouseDown(x, y, button);
+                MainForm->animation->interface_controller->inventory->MouseDown(click_x, click_y, button);
             if (MainForm->animation->GetSubState() == GamePanel_Spells)
-                MainForm->animation->interface_controller->spells->MouseDown(x, y, button);
+                MainForm->animation->interface_controller->spells->MouseDown(click_x, click_y, button);
             if (MainForm->animation->GetSubState() == GamePanel_Skills)
-                MainForm->animation->interface_controller->skills->MouseDown(x, y, button);
-            if (x >= 62 && x <= 98 && y >= 410 && y <= 428 &&
+                MainForm->animation->interface_controller->skills->MouseDown(click_x, click_y, button);
+            // The left column: the minimap, inventory, spell, skill, chat and status buttons; none works
+            // while an icon is being dragged.
+            if (click_x >= 62 && click_x <= 98 && click_y >= 410 && click_y <= 428 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Chat)
-                {
-                    MainForm->animation->interface_controller->chat->SyncGlobalSubscription();
-                    MainForm->gfx->LoadChatPanel();
-                    MainForm->animation->SetSubState(GamePanel_Chat);
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                        MainForm->strings->GetText(GameText_ChatPanelIsNow));
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->chat->Invalidate();
-                }
-            }
-            if (x >= 590 && x <= 626 && y >= 430 && y <= 448 &&
+                OpenChatPanel(true);
+            if (click_x >= 590 && click_x <= 633 && click_y >= 430 && click_y <= 448 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Help)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->animation->report->Open(MainForm->strings->GetText(GameText_EndlessHelp));
-                    MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_ListWithHelpfullTopics),
-                        "", true);
-                    MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_YouCanAlwaysAsk), "",
-                        true);
-                    MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IForgotMyPassword), "",
-                        false);
-                    MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToReport), "", false);
-                    MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToSpeak), "", false);
-                    MainForm->gfx->LoadHelpPanel();
-                    MainForm->animation->SetSubState(GamePanel_Help);
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                        MainForm->strings->GetText(GameText_GameHelp));
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->help->LoadPage("index");
-                    MainForm->animation->interface_controller->help->MarkTextDirty();
-                }
-                else
-                {
-                    MainForm->animation->interface_controller->help->LoadPage("index");
-                    MainForm->animation->interface_controller->help->MarkTextDirty();
-                }
-            }
-            if (x >= 62 && x <= 98 && y >= 430 && y <= 448 &&
+                OpenHelpPanel(true);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 430 && click_y <= 448 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Status)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadStatusPanel();
-                    MainForm->animation->SetSubState(GamePanel_Status);
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
-                        MainForm->strings->GetText(GameText_StatusPanelIsNow));
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->status->MarkDirty();
-                }
-            }
-            if (x >= 590 && x <= 626 && y >= 350 && y <= 368 &&
+                OpenStatusPanel(true);
+            if (click_x >= 590 && click_x <= 633 && click_y >= 350 && click_y <= 368 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                MainForm->animation->interface_controller->player_list->Clear();
-                MainForm->net_client->sender->RequestOnlinePlayers();
-                MainForm->animation->interface_controller->StartPlayerListCooldown();
-                if (MainForm->animation->GetSubState() != GamePanel_Playerlist)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadPlayerlistPanel();
-                    MainForm->animation->SetSubState(GamePanel_Playerlist);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->player_list->MarkListDirty();
-                }
-            }
+                OpenPlayerlistPanel(true);
             if (MainForm->animation->GetSubState() == GamePanel_Playerlist)
-                MainForm->animation->interface_controller->player_list->MouseDown(x, y, button);
-            if (x >= 590 && x <= 626 && y >= 370 && y <= 388 &&
+                MainForm->animation->interface_controller->player_list->MouseDown(click_x, click_y, button);
+            if (click_x >= 590 && click_x <= 633 && click_y >= 370 && click_y <= 388 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Group)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadGroupPanel();
-                    MainForm->animation->SetSubState(GamePanel_Group);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->group->MarkListDirty();
-                    if (!MainForm->animation->interface_controller->group->IsListRequestCoolingDown())
-                    {
-                        MainForm->animation->interface_controller->group->SetListRequestCooldown(50);
-                        MainForm->net_client->SendPacket(AC_GET, OP_GROUP,
-                            MainForm->net_client->EncodeNumber(
-                            MainForm->animation->interface_controller->group->members.size(), 1));
-                    }
-                }
-            }
+                OpenGroupPanel(true);
             if (MainForm->animation->GetSubState() == GamePanel_Group)
-                MainForm->animation->interface_controller->group->MouseDown(x, y);
-            if (x >= 62 && x <= 98 && y >= 330 && y <= 348 &&
+                MainForm->animation->interface_controller->group->MouseDown(click_x, click_y);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 330 && click_y <= 348 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Inventory)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadInventoryPanel();
-                    MainForm->animation->SetSubState(GamePanel_Inventory);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->inventory->MarkItemsDirty();
-                    MainForm->animation->interface_controller->inventory->MarkHoverDirty();
-                }
-            }
-            if (x >= 62 && x <= 98 && y >= 350 && y <= 368 &&
+                OpenInventoryPanel(true);
+            // The paperdoll button asks for the player's own paperdoll;
+            // with the setting on, the inventory opens too.
+            if (click_x >= 62 && click_x <= 98 && click_y >= 350 && click_y <= 368 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (!MainForm->map->IsMinimapDisabled())
-                {
-                    if (MainForm->gfx->interface_graphics->minimap_visible)
-                    {
-                        MainForm->gfx->interface_graphics->minimap_visible = false;
-                        MainForm->redraw_needed = true;
-                    }
-                    else
-                    {
-                        MainForm->gfx->interface_graphics->minimap_visible = true;
-                        MainForm->redraw_needed = true;
-                    }
-                }
-                else
-                {
-                    MainForm->gfx->interface_graphics->minimap_visible = false;
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                        MainForm->strings->GetText(GameText_ThereIsNoMap));
-                }
-            }
-            if (x >= 62 && x <= 98 && y >= 370 && y <= 388 &&
+                ToggleMinimap(true);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 370 && click_y <= 388 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Spells)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadSpellPanel();
-                    MainForm->animation->SetSubState(GamePanel_Spells);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->spells->MarkDirty();
-                    MainForm->animation->interface_controller->spells->MarkSelectionDirty();
-                }
-            }
-            if (x >= 62 && x <= 98 && y >= 390 && y <= 408 &&
+                OpenSpellPanel(true);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 390 && click_y <= 408 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Skills)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadSkillPanel();
-                    MainForm->animation->SetSubState(GamePanel_Skills);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->skills->MarkDirty();
-                    MainForm->animation->interface_controller->skills->MarkSelectionDirty();
-                }
-            }
-            if (x >= 590 && x <= 626 && y >= 410 && y <= 428 &&
+                OpenSkillPanel(true);
+            if (click_x >= 590 && click_x <= 633 && click_y >= 410 && click_y <= 428 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-            {
-                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                if (MainForm->animation->GetSubState() != GamePanel_Settings)
-                {
-                    MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
-                    MainForm->gfx->LoadSettingsPanel();
-                    MainForm->animation->SetSubState(GamePanel_Settings);
-                    MainForm->animation->interface_controller->Invalidate();
-                    MainForm->animation->interface_controller->settings->MarkDirty();
-                }
-            }
+                OpenSettingsPanel(true);
             // The friend list; the button beside it opens the ignore list.
-            if (x >= 590 && x <= 607 && y >= 311 && y <= 327 && !MainForm->animation->social->is_open)
+            if (click_x >= 598 && click_x <= 615 && click_y >= 311 && click_y <= 330 &&
+                !MainForm->animation->social->is_open)
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                     MainForm->strings->GetText(GameText_FriendList) + " " +
@@ -3545,7 +3330,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 MainForm->animation->social->list_kind = 0;
                 MainForm->net_client->sender->RequestOnlineNames();
             }
-            if (x >= 608 && x <= 624 && y >= 311 && y <= 327 && !MainForm->animation->social->is_open)
+            if (click_x >= 616 && click_x <= 633 && click_y >= 311 && click_y <= 330 &&
+                !MainForm->animation->social->is_open)
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                     MainForm->strings->GetText(GameText_IgnoreList) + " " +
@@ -3561,17 +3347,20 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             }
         }
     }
+    int preview_direction;
+    char password_error;
+    // On the menu screens an open message, text window, form or world load takes the click first.
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
     {
+        char account_error;
         if (MainForm->animation->menu->is_message_open || MainForm->animation->menu->is_text_window_open ||
             MainForm->animation->menu->is_form_open || MainForm->animation->menu->is_loading_world)
         {
-            MainForm->animation->menu->OnMouseDown(x, y);
-            if (MainForm->animation->menu->is_text_window_open &&
-                *mouse >= MainForm->animation->menu->text_window_x + 137 &&
-                *mouse <= MainForm->animation->menu->text_window_x + 225 &&
-                mouse[1] >= MainForm->animation->menu->text_window_y + 196 &&
-                mouse[1] <= MainForm->animation->menu->text_window_y + 224)
+            MainForm->animation->menu->OnMouseDown(click_x, click_y);
+            if (MainForm->animation->menu->is_text_window_open && x >= MainForm->animation->menu->text_window_x + 137 &&
+                x <= MainForm->animation->menu->text_window_x + 225 &&
+                y >= MainForm->animation->menu->text_window_y + 196 &&
+                y <= MainForm->animation->menu->text_window_y + 224)
             {
                 MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                 MainForm->animation->menu->is_text_window_open = false;
@@ -3579,215 +3368,192 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             }
             if (MainForm->animation->menu->is_message_open)
             {
-                if (*mouse >= MainForm->animation->menu->message_x + 182 &&
-                    *mouse <= MainForm->animation->menu->message_x + 270 &&
-                    mouse[1] >= MainForm->animation->menu->message_y + 114 &&
-                    mouse[1] <= MainForm->animation->menu->message_y + 140)
+                if (x >= MainForm->animation->menu->message_x + 182 &&
+                    x <= MainForm->animation->menu->message_x + 270 &&
+                    y >= MainForm->animation->menu->message_y + 114 && y <= MainForm->animation->menu->message_y + 140)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->menu->is_message_open = false;
                     MainForm->edits->caret_enabled = true;
                 }
                 if (MainForm->animation->menu->message_kind == MessageBoxKind_Confirm &&
-                    *mouse >= MainForm->animation->menu->message_x + 89 &&
-                    *mouse <= MainForm->animation->menu->message_x + 177 &&
-                    mouse[1] >= MainForm->animation->menu->message_y + 114 &&
-                    mouse[1] <= MainForm->animation->menu->message_y + 140)
+                    x >= MainForm->animation->menu->message_x + 89 && x <= MainForm->animation->menu->message_x + 177 &&
+                    y >= MainForm->animation->menu->message_y + 114 && y <= MainForm->animation->menu->message_y + 140)
                 {
                     MainForm->net_client->sender->ConfirmCharacterDelete();
                     MainForm->animation->menu->is_message_open = false;
                     MainForm->edits->caret_enabled = true;
                 }
             }
-            if (MainForm->animation->menu->is_form_open)
+            if (MainForm->animation->menu->is_form_open && !MainForm->animation->menu->is_message_open)
             {
-                if (!MainForm->animation->menu->is_message_open)
+                if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
                 {
-                    if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
+                    if (x >= MainForm->animation->menu->form_x + 244 && x <= MainForm->animation->menu->form_x + 325 &&
+                        y >= MainForm->animation->menu->form_y + 75 && y <= MainForm->animation->menu->form_y + 159)
                     {
-                        if (*mouse >= MainForm->animation->menu->form_x + 244 &&
-                            *mouse <= MainForm->animation->menu->form_x + 325 &&
-                            mouse[1] >= MainForm->animation->menu->form_y + 75 &&
-                            mouse[1] <= MainForm->animation->menu->form_y + 159)
+                        preview_direction = MainForm->players->GetDirection(PlayerId_Preview);
+                        if (MainForm->players->GetDirection(PlayerId_Preview) < 3)
+                            MainForm->players->SetDirection(PlayerId_Preview, preview_direction + 1);
+                        else
+                            MainForm->players->SetDirection(PlayerId_Preview, FacingDirection_Down);
+                        MainForm->sfx->PlaySfx(SfxSound_Select);
+                    }
+                    if (x >= MainForm->animation->menu->form_x + 162 && x <= MainForm->animation->menu->form_x + 217)
+                    {
+                        if (y >= MainForm->animation->menu->form_y + 82 && y <= MainForm->animation->menu->form_y + 104)
                         {
-                            int preview_direction = MainForm->players->GetDirection(PlayerId_Preview);
-                            if (MainForm->players->GetDirection(PlayerId_Preview) < 3)
-                                MainForm->players->SetDirection(PlayerId_Preview, preview_direction + 1);
+                            if (MainForm->animation->menu->new_gender < 1)
+                                MainForm->animation->menu->new_gender++;
                             else
-                                MainForm->players->SetDirection(PlayerId_Preview, FacingDirection_Down);
+                                MainForm->animation->menu->new_gender = 0;
+                            MainForm->players->SetPreviewGender(MainForm->animation->menu->new_gender);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
                             MainForm->sfx->PlaySfx(SfxSound_Select);
                         }
-                        if (*mouse >= MainForm->animation->menu->form_x + 162 &&
-                            *mouse <= MainForm->animation->menu->form_x + 217)
+                        if (y >= MainForm->animation->menu->form_y + 111 &&
+                            y <= MainForm->animation->menu->form_y + 133)
                         {
-                            if (mouse[1] >= MainForm->animation->menu->form_y + 82 &&
-                                mouse[1] <= MainForm->animation->menu->form_y + 104)
-                            {
-                                if (MainForm->animation->menu->new_gender < 1)
-                                    MainForm->animation->menu->new_gender++;
-                                else
-                                    MainForm->animation->menu->new_gender = 0;
-                                MainForm->players->SetPreviewGender(MainForm->animation->menu->new_gender);
-                                MainForm->players->ReloadGraphics(PlayerId_Preview);
-                                MainForm->sfx->PlaySfx(SfxSound_Select);
-                            }
-                            if (mouse[1] >= MainForm->animation->menu->form_y + 111 &&
-                                mouse[1] <= MainForm->animation->menu->form_y + 133)
-                            {
-                                if (MainForm->animation->menu->new_hair_style < 20)
-                                    MainForm->animation->menu->new_hair_style++;
-                                else
-                                    MainForm->animation->menu->new_hair_style = 1;
-                                MainForm->players->SetPreviewHairStyle(MainForm->animation->menu->new_hair_style);
-                                MainForm->players->ReloadGraphics(PlayerId_Preview);
-                                MainForm->sfx->PlaySfx(SfxSound_Select);
-                            }
-                            if (mouse[1] >= MainForm->animation->menu->form_y + 138 &&
-                                mouse[1] <= MainForm->animation->menu->form_y + 160)
-                            {
-                                if (MainForm->animation->menu->new_hair_color < 9)
-                                    MainForm->animation->menu->new_hair_color++;
-                                else
-                                    MainForm->animation->menu->new_hair_color = 0;
-                                MainForm->players->SetPreviewHairColor(MainForm->animation->menu->new_hair_color);
-                                MainForm->players->ReloadGraphics(PlayerId_Preview);
-                                MainForm->sfx->PlaySfx(SfxSound_Select);
-                            }
-                            if (mouse[1] >= MainForm->animation->menu->form_y + 165 &&
-                                mouse[1] <= MainForm->animation->menu->form_y + 187)
-                            {
-                                if (MainForm->animation->menu->new_skin < 3)
-                                    MainForm->animation->menu->new_skin++;
-                                else
-                                    MainForm->animation->menu->new_skin = 0;
-                                MainForm->players->SetPreviewSkin(MainForm->animation->menu->new_skin);
-                                MainForm->players->ReloadGraphics(PlayerId_Preview);
-                                MainForm->sfx->PlaySfx(SfxSound_Select);
-                            }
+                            if (MainForm->animation->menu->new_hair_style < 20)
+                                MainForm->animation->menu->new_hair_style++;
+                            else
+                                MainForm->animation->menu->new_hair_style = 1;
+                            MainForm->players->SetPreviewHairStyle(MainForm->animation->menu->new_hair_style);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
+                        }
+                        if (y >= MainForm->animation->menu->form_y + 138 &&
+                            y <= MainForm->animation->menu->form_y + 160)
+                        {
+                            if (MainForm->animation->menu->new_hair_color < 9)
+                                MainForm->animation->menu->new_hair_color++;
+                            else
+                                MainForm->animation->menu->new_hair_color = 0;
+                            MainForm->players->SetPreviewHairColor(MainForm->animation->menu->new_hair_color);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
+                        }
+                        if (y >= MainForm->animation->menu->form_y + 165 &&
+                            y <= MainForm->animation->menu->form_y + 187)
+                        {
+                            if (MainForm->animation->menu->new_skin < 3)
+                                MainForm->animation->menu->new_skin++;
+                            else
+                                MainForm->animation->menu->new_skin = 0;
+                            MainForm->players->SetPreviewSkin(MainForm->animation->menu->new_skin);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
                         }
                     }
-                    if (*mouse >= MainForm->animation->menu->form_x + 158 &&
-                        *mouse <= MainForm->animation->menu->form_x + 246 &&
-                        mouse[1] >= MainForm->animation->menu->form_y + 195 &&
-                        mouse[1] <= MainForm->animation->menu->form_y + 221)
+                }
+                if (x >= MainForm->animation->menu->form_x + 158 && x <= MainForm->animation->menu->form_x + 246 &&
+                    y >= MainForm->animation->menu->form_y + 195 && y <= MainForm->animation->menu->form_y + 221)
+                {
+                    if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG &&
+                        MainForm->animation->menu->create_character_enabled)
                     {
-                        if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
+                        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                        if (MainForm->edits->GetText(EditId_InputBox) != "")
                         {
-                            if (MainForm->animation->menu->create_character_enabled)
+                            if (MainForm->edits->GetText(EditId_InputBox).Length() < 4)
                             {
-                                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                                if (MainForm->edits->GetText(EditId_InputBox) != "")
-                                {
-                                    if (MainForm->edits->GetText(EditId_InputBox).Length() < 4)
-                                    {
-                                        MainForm->edits->caret_enabled = false;
-                                        MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                            MainForm->strings->GetDialogText(DialogText_WrongName, false),
-                                            MainForm->strings->GetDialogText(DialogText_WrongName, true));
-                                        MainForm->edits->SetText(EditId_InputBox, "");
-                                        MainForm->edits->FocusEdit(EditId_InputBox);
-                                    }
-                                    else
-                                    {
-                                        MainForm->edits->caret_enabled = false;
-                                        MainForm->animation->menu->create_character_enabled = false;
-                                        MainForm->net_client->sender->SendCharacterCreate(MainForm->edits->GetText(EditId_InputBox),
-                                            MainForm->animation->menu->new_gender,
-                                            MainForm->animation->menu->new_hair_style,
-                                            MainForm->animation->menu->new_hair_color,
-                                            MainForm->animation->menu->new_skin);
-                                    }
-                                }
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongName, false),
+                                    MainForm->strings->GetDialogText(DialogText_WrongName, true));
+                                MainForm->edits->SetText(EditId_InputBox, "");
+                                MainForm->edits->FocusEdit(EditId_InputBox);
                             }
-                        }
-                        if (MainForm->animation->menu->form_kind == CHANGE_PASSWORD_DIALOG &&
-                            MainForm->animation->menu->change_password_enabled)
-                        {
-                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                            if (MainForm->edits->GetText(EditId_AccountName) != "" &&
-                                MainForm->edits->GetText(EditId_OldPassword) != "" &&
-                                MainForm->edits->GetText(EditId_NewPassword) != "" &&
-                                MainForm->edits->GetText(EditId_ConfirmNewPassword) != "")
+                            else
                             {
-                                char password_error = false;
-                                if (MainForm->edits->GetText(EditId_NewPassword) !=
-                                    MainForm->edits->GetText(EditId_ConfirmNewPassword))
-                                {
-                                    MainForm->edits->caret_enabled = false;
-                                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                        MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, false),
-                                        MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, true));
-                                    MainForm->edits->SetText(EditId_NewPassword, "");
-                                    MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
-                                    MainForm->edits->FocusEdit(EditId_NewPassword);
-                                    password_error = true;
-                                }
-                                if (MainForm->edits->GetText(EditId_NewPassword).Length() < 6 && !password_error)
-                                {
-                                    MainForm->edits->caret_enabled = false;
-                                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                        MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, false),
-                                        MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, true));
-                                    MainForm->edits->SetText(EditId_NewPassword, "");
-                                    MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
-                                    MainForm->edits->FocusEdit(EditId_NewPassword);
-                                    password_error = true;
-                                }
-                                if (MainForm->edits->HasFewDistinctChars(MainForm->edits->GetText(EditId_NewPassword)) &&
-                                    !password_error)
-                                {
-                                    MainForm->edits->caret_enabled = false;
-                                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                        MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
-                                        MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, true));
-                                    MainForm->edits->SetText(EditId_NewPassword, "");
-                                    MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
-                                    MainForm->edits->FocusEdit(EditId_NewPassword);
-                                    password_error = true;
-                                }
-                                if (!password_error)
-                                {
-                                    MainForm->edits->caret_enabled = false;
-                                    MainForm->animation->menu->change_password_enabled = false;
-                                    MainForm->net_client->sender->SendChangePassword(MainForm->edits->GetText(EditId_AccountName),
-                                        MainForm->edits->GetText(EditId_OldPassword), MainForm->edits->GetText(EditId_NewPassword));
-                                }
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->create_character_enabled = false;
+                                MainForm->net_client->sender->SendCharacterCreate(MainForm->edits->GetText(EditId_InputBox),
+                                    MainForm->animation->menu->new_gender, MainForm->animation->menu->new_hair_style,
+                                    MainForm->animation->menu->new_hair_color, MainForm->animation->menu->new_skin);
                             }
                         }
                     }
-                    if (*mouse >= MainForm->animation->menu->form_x + 250)
+                    if (MainForm->animation->menu->form_kind == CHANGE_PASSWORD_DIALOG &&
+                        MainForm->animation->menu->change_password_enabled)
                     {
-                        if (*mouse <= MainForm->animation->menu->form_x + 338)
+                        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                        if (MainForm->edits->GetText(EditId_AccountName) != "" &&
+                            MainForm->edits->GetText(EditId_OldPassword) != "" &&
+                            MainForm->edits->GetText(EditId_NewPassword) != "" &&
+                            MainForm->edits->GetText(EditId_ConfirmNewPassword) != "")
                         {
-                            if (mouse[1] >= MainForm->animation->menu->form_y + 195)
+                            password_error = false;
+                            if (MainForm->edits->GetText(EditId_NewPassword) !=
+                                MainForm->edits->GetText(EditId_ConfirmNewPassword))
                             {
-                                if (mouse[1] <= MainForm->animation->menu->form_y + 221)
-                                {
-                                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                                    MainForm->animation->menu->is_form_open = false;
-                                    MainForm->players->RemovePreviewPlayer();
-                                    MainForm->edits->Clear();
-                                }
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, false),
+                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, true));
+                                MainForm->edits->SetText(EditId_NewPassword, "");
+                                MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
+                                MainForm->edits->FocusEdit(EditId_NewPassword);
+                                password_error = true;
+                            }
+                            if (MainForm->edits->GetText(EditId_NewPassword).Length() < 6 && !password_error)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, false),
+                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, true));
+                                MainForm->edits->SetText(EditId_NewPassword, "");
+                                MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
+                                MainForm->edits->FocusEdit(EditId_NewPassword);
+                                password_error = true;
+                            }
+                            if (MainForm->edits->HasFewDistinctChars(MainForm->edits->GetText(EditId_NewPassword)) &&
+                                !password_error)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                    MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, true));
+                                MainForm->edits->SetText(EditId_NewPassword, "");
+                                MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
+                                MainForm->edits->FocusEdit(EditId_NewPassword);
+                                password_error = true;
+                            }
+                            if (!password_error)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->change_password_enabled = false;
+                                MainForm->net_client->sender->SendChangePassword(MainForm->edits->GetText(EditId_AccountName),
+                                    MainForm->edits->GetText(EditId_OldPassword),
+                                        MainForm->edits->GetText(EditId_NewPassword));
                             }
                         }
                     }
+                }
+                if (x >= MainForm->animation->menu->form_x + 250 && x <= MainForm->animation->menu->form_x + 338 &&
+                    y >= MainForm->animation->menu->form_y + 195 && y <= MainForm->animation->menu->form_y + 221)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->menu->is_form_open = false;
+                    MainForm->players->RemovePreviewPlayer();
+                    MainForm->edits->Clear();
                 }
             }
         }
         else
         {
             // The character list: the three slots are kept as the players 999991 to 999993.
-            // Each slot has a log-in and a delete button; the first press on delete only arms it and asks.
+            // A click on a slot's figure turns it; its log-in button picks that character.
             if (MainForm->animation->GetSubState() == MenuScreen_CharacterSelect)
             {
-                if (((y > 10 && y < 17 && 3 * y + 560 > x) || (y > 16 && y < 31 && y + 594 > x)) && x >= 594 &&
-                    x <= 624)
+                if (((click_y > 10 && click_y < 17 && 3 * click_y + 560 > click_x) ||
+                    (click_y > 16 && click_y < 31 && click_y + 594 > click_x)) && click_x >= 594 && click_x <= 624)
                 {
                     if (MainForm->client->Active)
-                        MainForm->client->Close();
+                        ((TAbstractSocket *)MainForm->client)->Close();
                     MainForm->animation->menu->is_loading_world = false;
                 }
-                if (x >= 495 && x <= 615 && y >= 93 && y <= 120 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 93 && click_y <= 120 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotFirst))
                 {
@@ -3802,7 +3568,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotFirst));
                 }
-                if (x >= 495 && x <= 615 && y >= 217 && y <= 244 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 217 && click_y <= 244 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotSecond))
                 {
@@ -3817,7 +3583,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotSecond));
                 }
-                if (x >= 495 && x <= 615 && y >= 341 && y <= 368 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 341 && click_y <= 368 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotThird))
                 {
@@ -3832,7 +3598,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotThird));
                 }
-                if (x >= 495 && x <= 615 && y >= 121 && y <= 148 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 121 && click_y <= 148 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotFirst))
                 {
@@ -3852,7 +3618,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 MainForm->strings->GetDialogText(DialogText_DeleteCharacterConfirm, true));
                     }
                 }
-                if (x >= 495 && x <= 615 && y >= 245 && y <= 272 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 245 && click_y <= 272 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotSecond))
                 {
@@ -3872,7 +3638,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 MainForm->strings->GetDialogText(DialogText_DeleteCharacterConfirm, true));
                     }
                 }
-                if (x >= 495 && x <= 615 && y >= 369 && y <= 396 &&
+                if (click_x >= 495 && click_x <= 615 && click_y >= 369 && click_y <= 396 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotThird))
                 {
@@ -3892,7 +3658,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                                 MainForm->strings->GetDialogText(DialogText_DeleteCharacterConfirm, true));
                     }
                 }
-                if (x >= 452 && x <= 570 && y >= 416 && y <= 456)
+                if (click_x >= 452 && click_x <= 570 && click_y >= 416 && click_y <= 456)
                 {
                     MainForm->gfx->LoadChangePasswordPanel();
                     MainForm->animation->menu->change_password_enabled = true;
@@ -3933,7 +3699,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->edits->FocusEdit(EditId_AccountName);
                     MainForm->animation->menu->OpenFormWindow(CHANGE_PASSWORD_DIALOG);
                 }
-                if (x >= 332 && x <= 450 && y >= 416 && y <= 456 &&
+                if (click_x >= 332 && click_x <= 450 && click_y >= 416 && click_y <= 456 &&
                     !MainForm->animation->menu->character_select_cooldown)
                 {
                     MainForm->edits->Clear();
@@ -3944,8 +3710,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             }
             if (MainForm->animation->GetSubState() == MenuScreen_CreateAccount)
             {
-                if (((y > 10 && y < 17 && 3 * y + 560 > x) || (y > 16 && y < 31 && y + 594 > x)) && x >= 594 &&
-                    x <= 624)
+                if (((click_y > 10 && click_y < 17 && 3 * click_y + 560 > click_x) ||
+                    (click_y > 16 && click_y < 31 && click_y + 594 > click_x)) && click_x >= 594 && click_x <= 624)
                 {
                     MainForm->animation->StopAccountProgress();
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
@@ -3954,14 +3720,14 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->gfx->LoadMainMenuScreen(true);
                     MainForm->animation->SetSubState(MenuScreen_Main);
                 }
-                // The button beside the email box types an @.
-                if (x >= 580 && x <= 600 && y >= 363 && y <= 383)
+                if (click_x >= 580 && click_x <= 600 && click_y >= 363 && click_y <= 383)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->edits->FocusEdit(EditId_Email);
                     MainForm->edits->TypeText("@");
                 }
-                if (x >= 358 && x <= 476 && y >= 416 && y <= 455 && MainForm->animation->menu->create_account_enabled)
+                if (click_x >= 358 && click_x <= 476 && click_y >= 416 && click_y <= 455 &&
+                    MainForm->animation->menu->create_account_enabled)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->animation->account_name = MainForm->edits->GetText(EditId_AccountName);
@@ -3976,7 +3742,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->edits->GetText(EditId_AccountDetailB) != "" &&
                         MainForm->edits->GetText(EditId_Email) != "")
                     {
-                        char account_error = false;
+                        account_error = false;
                         if (MainForm->edits->GetText(EditId_AccountName).Length() < 4)
                         {
                             MainForm->edits->caret_enabled = false;
@@ -4069,7 +3835,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                             MainForm->strings->GetDialogText(DialogText_WrongInputFields, true));
                     }
                 }
-                if (x >= 480 && x <= 598 && y >= 416 && y <= 455)
+                if (click_x >= 480 && click_x <= 598 && click_y >= 416 && click_y <= 455)
                 {
                     MainForm->animation->StopAccountProgress();
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
@@ -4083,8 +3849,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 MainForm->animation->GetSubState() == MenuScreen_GridAccountName ||
                 MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             {
-                if (MainForm->animation->GetSubState() == MenuScreen_Login && *mouse >= 360 && *mouse <= 450 && mouse[1] >= 388 &&
-                    mouse[1] <= 417 && MainForm->animation->menu->login_enabled)
+                if (MainForm->animation->GetSubState() == MenuScreen_Login && x >= 360 && x <= 450 && y >= 388 &&
+                    y <= 417 && MainForm->animation->menu->login_enabled)
                 {
                     if (MainForm->edits->GetText(EditId_AccountName) != "" &&
                         MainForm->edits->GetText(EditId_Password) != "")
@@ -4099,8 +3865,8 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         }
                     }
                 }
-                if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && *mouse >= 360 && *mouse <= 450 && mouse[1] >= 388 &&
-                    mouse[1] <= 417 && MainForm->animation->menu->login_enabled)
+                if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && x >= 360 && x <= 450 && y >= 388 &&
+                    y <= 417 && MainForm->animation->menu->login_enabled)
                 {
                     if (MainForm->animation->menu->account_name != "" && MainForm->animation->menu->password != "")
                     {
@@ -4136,7 +3902,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         }
                     }
                 }
-                if (*mouse >= 452 && *mouse <= 542 && mouse[1] >= 388 && mouse[1] <= 417)
+                if (x >= 452 && x <= 542 && y >= 388 && y <= 417)
                 {
                     MainForm->edits->Clear();
                     MainForm->gfx->LoadMainMenuScreen(true);
@@ -4145,7 +3911,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
             }
             if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             {
-                if (*mouse >= 289 && *mouse <= 423 && mouse[1] >= 240 && mouse[1] <= 374)
+                if (x >= 289 && x <= 423 && y >= 240 && y <= 374)
                 {
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetText(GameText_Information),
@@ -4153,42 +3919,38 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                     MainForm->animation->menu->message_shows_image = true;
                     MainForm->edits->caret_enabled = false;
                 }
-                if (*mouse >= 464 && *mouse <= 486 && mouse[1] >= 335 && mouse[1] <= 354 &&
-                    MainForm->animation->menu->grid_row > 0)
+                if (x >= 464 && x <= 486 && y >= 335 && y <= 354 && MainForm->animation->menu->grid_row > 0)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                     MainForm->animation->menu->grid_row--;
                     MainForm->animation->menu->cursor_blink = 5;
                 }
-                if (*mouse >= 445 && *mouse <= 463 && mouse[1] >= 355 && mouse[1] <= 374 &&
-                    MainForm->animation->menu->grid_column > 0)
+                if (x >= 445 && x <= 463 && y >= 355 && y <= 374 && MainForm->animation->menu->grid_column > 0)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                     MainForm->animation->menu->grid_column--;
                     MainForm->animation->menu->cursor_blink = 5;
                 }
-                if (*mouse >= 464 && *mouse <= 486 && mouse[1] >= 355 && mouse[1] <= 374 &&
-                    MainForm->animation->menu->grid_row < 5)
+                if (x >= 464 && x <= 486 && y >= 355 && y <= 374 && MainForm->animation->menu->grid_row < 5)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                     MainForm->animation->menu->grid_row++;
                     MainForm->animation->menu->cursor_blink = 5;
                 }
-                if (*mouse >= 487 && *mouse <= 509 && mouse[1] >= 355 && mouse[1] <= 374 &&
-                    MainForm->animation->menu->grid_column < 5)
+                if (x >= 487 && x <= 509 && y >= 355 && y <= 374 && MainForm->animation->menu->grid_column < 5)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                     MainForm->animation->menu->grid_column++;
                     MainForm->animation->menu->cursor_blink = 5;
                 }
-                if (*mouse >= 514 && *mouse <= 562 && mouse[1] >= 335 && mouse[1] <= 354)
+                if (x >= 514 && x <= 562 && y >= 335 && y <= 354)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->animation->menu->AddSpace();
                 }
-                if (*mouse >= 514 && *mouse <= 562 && mouse[1] >= 355 && mouse[1] <= 374)
+                if (x >= 514 && x <= 562 && y >= 355 && y <= 374)
                     MainForm->animation->menu->AddSelectedLetter();
-                if (*mouse >= 558 && *mouse <= 562 && mouse[1] >= 284 && mouse[1] <= 298)
+                if (x >= 558 && x <= 562 && y >= 284 && y <= 298)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_Send);
                     MainForm->animation->menu->DeleteLastLetter();
@@ -4198,12 +3960,13 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                 MainForm->animation->GetSubState() == MenuScreen_Login || MainForm->animation->GetSubState() == MenuScreen_GridAccountName ||
                 MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             {
-                if (x >= 30 && x <= 210 && y >= 400 && y <= 440)
+                // The main menu buttons, from the bottom: exit, the credits, log in, create an account.
+                if (click_x >= 30 && click_x <= 210 && click_y >= 400 && click_y <= 440)
                 {
                     if (MainForm->mm_timer_id)
-                        timeKillEvent(MainForm->mm_timer_id);
+                        timeKillEvent((unsigned int)MainForm->mm_timer_id);
                     if (MainForm->client->Active)
-                        MainForm->client->Close();
+                        ((TAbstractSocket *)MainForm->client)->Close();
                     MainForm->edits->Clear();
                     MainForm->players->Clear();
                     MainForm->effects->Clear();
@@ -4228,7 +3991,7 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->Dx_Draw1->Destroy();
                     Application->Terminate();
                 }
-                if (x >= 30 && x <= 210 && y >= 360 && y <= 400)
+                if (click_x >= 30 && click_x <= 210 && click_y >= 360 && click_y <= 400)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->edits->Clear();
@@ -4239,89 +4002,27 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->animation->credits->Start();
                     }
                 }
-                if (x >= 30 && x <= 210 && y >= 320 && y <= 360)
+                if (click_x >= 30 && click_x <= 210 && click_y >= 320 && click_y <= 360)
+                    OpenLoginScreen();
+                if (click_x >= 30 && click_x <= 210 && click_y >= 280 && click_y <= 320)
                 {
-                    MainForm->animation->menu->login_enabled = true;
+                    MainForm->animation->menu->create_account_enabled = true;
                     // With no session yet the button only connects; the reply then opens the login screen.
                     if (!MainForm->net_client->is_initialized)
                     {
-                        if (!MainForm->animation->menu->connect_for_login)
+                        if (!MainForm->animation->menu->connect_for_login &&
+                            !MainForm->animation->menu->connect_for_create_account &&
+                            (MainForm->client->Host.Length() > 0 || MainForm->client->Address.Length() > 0))
                         {
-                            if (!MainForm->animation->menu->connect_for_create_account)
+                            if (MainForm->client->Active)
                             {
-                                if (!MainForm->animation->menu->connect_for_login)
-                                {
-                                    if (!MainForm->animation->menu->connect_for_create_account)
-                                    {
-                                        if (MainForm->client->Active)
-                                        {
-                                            MainForm->client->Active = false;
-                                            Sleep(100);
-                                        }
-                                        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                                        MainForm->client->Active = true;
-                                        MainForm->animation->menu->connect_for_login = true;
-                                        MainForm->animation->menu->connect_for_create_account = 0;
-                                    }
-                                }
+                                MainForm->client->Active = false;
+                                Sleep(100);
                             }
-                        }
-                    }
-                    else
-                    {
-                        if (MainForm->animation->credits->is_running)
-                            MainForm->animation->credits->Stop();
-                        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                        MainForm->edits->Clear();
-                        MainForm->net_client->login_failure_count = 0;
-                        MainForm->gfx->LoadLoginScreen();
-                        if (MainForm->config->GetSkipSoftpad())
-                        {
-                            MainForm->animation->SetSubState(MenuScreen_Login);
-                            MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X,
-                                LOGIN_NAME_EDIT_Y, 141, EDIT_LINE_HEIGHT);
-                            MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X,
-                                LOGIN_PASSWORD_EDIT_Y, 141, EDIT_LINE_HEIGHT);
-                            MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-                            MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_NoPunctuation);
-                            MainForm->edits->SetPasswordMode(EditId_Password, 1);
-                            MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                            MainForm->edits->SetMaxLength(EditId_Password, 12);
-                            MainForm->edits->FocusEdit(EditId_AccountName);
-                        }
-                        else
-                        {
-                            MainForm->animation->SetSubState(MenuScreen_GridAccountName);
-                            MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X,
-                                GRID_LOGIN_NAME_EDIT_Y, 161, EDIT_LINE_HEIGHT);
-                            MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-                            MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                            MainForm->edits->FocusEdit(EditId_AccountName);
-                        }
-                    }
-                }
-                if (x >= 30 && x <= 210 && y >= 280 && y <= 320)
-                {
-                    MainForm->animation->menu->create_account_enabled = true;
-                    if (!MainForm->net_client->is_initialized)
-                    {
-                        if (!MainForm->animation->menu->connect_for_login)
-                        {
-                            if (!MainForm->animation->menu->connect_for_create_account)
-                            {
-                                if (MainForm->client->Host.Length() > 0 || MainForm->client->Address.Length() > 0)
-                                {
-                                    if (MainForm->client->Active)
-                                    {
-                                        MainForm->client->Active = false;
-                                        Sleep(100);
-                                    }
-                                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                                    MainForm->client->Active = true;
-                                    MainForm->animation->menu->connect_for_login = false;
-                                    MainForm->animation->menu->connect_for_create_account = 1;
-                                }
-                            }
+                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                            MainForm->client->Active = true;
+                            MainForm->animation->menu->connect_for_login = false;
+                            MainForm->animation->menu->connect_for_create_account = 1;
                         }
                     }
                     else
@@ -4361,10 +4062,12 @@ void Sys_mouse_HandleClick(int *mouse, int x, int y, unsigned int button)
                         MainForm->edits->FocusEdit(EditId_AccountName);
                         MainForm->edits->caret_enabled = false;
                         MainForm->animation->menu->OpenTextWindow();
-                        MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_ItIsVeryImportant), true);
+                        MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_ItIsVeryImportant),
+                            true);
                         MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_LotOfPlayersWho),
                             true);
-                        MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_YourInformationWillOnly), false);
+                        MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_YourInformationWillOnly),
+                            false);
                     }
                 }
             }
@@ -4531,20 +4234,19 @@ void Mouser::HandleWheel(int direction)
 // Ends a drag: an item let go over an open window or the map goes there, and every window stops dragging.
 void Mouser::HandleMouseUp()
 {
-    TPoint locker_position;
-    char over_window;
+    int own_id;
+    int own_y;
+    int own_x;
     int gold_amount;
-    int own_id = 0;
-    int own_x = 0;
-    int own_y = 0;
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
+        // A dragged item goes to the open window under it, or onto the map within reach.
         if (MainForm->animation->interface_controller->inventory->is_dragging &&
             !MainForm->animation->interface_controller->inventory->dragging_from_paperdoll &&
             MainForm->gfx->game->view_clip_rect.top < y && MainForm->gfx->game->view_clip_rect.bottom > y &&
             MainForm->gfx->game->view_clip_rect.left < x && MainForm->gfx->game->view_clip_rect.right > x)
         {
-            over_window = false;
+            char over_window = false;
             if (MainForm->animation->trade->is_visible)
             {
                 over_window = true;
@@ -4560,22 +4262,19 @@ void Mouser::HandleMouseUp()
                             MainForm->strings->GetDialogText(DialogText_LoreItem, true));
                         MainForm->edits->caret_enabled = false;
                     }
+                    else if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
+                        2)
+                    {
+                        MainForm->net_client->sender->SendTradeAddItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                            1);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
+                    }
                     else
                     {
-                        if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                            2)
-                        {
-                            MainForm->net_client->sender->SendTradeAddItem(MainForm->animation->interface_controller->inventory->drag_item_id,
-                                1);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
-                        else
-                        {
-                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_TradeAddItem,
-                                MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
-                                MainForm->animation->interface_controller->inventory->drag_item_id, 0);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
+                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_TradeAddItem,
+                            MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
+                            MainForm->animation->interface_controller->inventory->drag_item_id, 0);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
             }
@@ -4631,11 +4330,11 @@ void Mouser::HandleMouseUp()
                         if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
                             2)
                         {
-                            LockerController *locker = MainForm->animation->locker;
-                            locker_position.x = locker->locker_x;
-                            locker_position.y = locker->locker_y;
-                            if (locker->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                                WRAP_TEXT_WIDTH)
+                            TPoint locker_position;
+                            locker_position.x = MainForm->animation->locker->locker_x;
+                            locker_position.y = MainForm->animation->locker->locker_y;
+                            if (MainForm->animation->locker->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
+                                200)
                             {
                                 if (MainForm->animation->locker->CanStoreItem(MainForm->animation->interface_controller->inventory->drag_item_id))
                                 {
@@ -4690,25 +4389,22 @@ void Mouser::HandleMouseUp()
                             MainForm->strings->GetDialogText(DialogText_LoreItem, true));
                         MainForm->edits->caret_enabled = false;
                     }
+                    else if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
+                        2)
+                    {
+                        TPoint chest_position;
+                        chest_position.x = MainForm->animation->chest->chest_x;
+                        chest_position.y = MainForm->animation->chest->chest_y;
+                        MainForm->net_client->sender->SendChestAddItem(chest_position,
+                            MainForm->animation->interface_controller->inventory->drag_item_id, 1);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
+                    }
                     else
                     {
-                        if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
-                            2)
-                        {
-                            TPoint chest_position;
-                            chest_position.x = MainForm->animation->chest->chest_x;
-                            chest_position.y = MainForm->animation->chest->chest_y;
-                            MainForm->net_client->sender->SendChestAddItem(chest_position,
-                                MainForm->animation->interface_controller->inventory->drag_item_id, 1);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
-                        else
-                        {
-                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_ChestAddItem,
-                                MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
-                                MainForm->animation->interface_controller->inventory->drag_item_id, 0);
-                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                        }
+                        MainForm->animation->game->OpenAmountBox(AmountBoxKind_ChestAddItem,
+                            MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id),
+                            MainForm->animation->interface_controller->inventory->drag_item_id, 0);
+                        MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
             }
@@ -4748,35 +4444,30 @@ void Mouser::HandleMouseUp()
                         if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
                             2)
                         {
-                            if (MainForm->map->GetCursorX() >= 0 && MainForm->map->GetCursorY() >= 0)
+                            if (MainForm->map->GetCursorX() >= 0 && MainForm->map->GetCursorY() >= 0 &&
+                                MainForm->map->GetCursorX() <= MainForm->map->GetWidth() &&
+                                MainForm->map->GetCursorY() <= MainForm->map->GetHeight())
                             {
-                                if (MainForm->map->GetCursorX() <= MainForm->map->GetWidth())
+                                if (MainForm->animation->interface_controller->inventory->drag_item_id == ItemId_Gold)
                                 {
-                                    if (MainForm->map->GetCursorY() <= MainForm->map->GetHeight())
+                                    if (!MainForm->animation->interface_controller->inventory->GetItemAmount(1))
                                     {
-                                        if (MainForm->animation->interface_controller->inventory->drag_item_id ==
-                                            ItemId_Gold)
-                                        {
-                                            if (!MainForm->animation->interface_controller->inventory->GetItemAmount(1))
-                                            {
-                                                String gold_name = MainForm->item_values->GetName(ItemId_Gold);
-                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                                                    MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + gold_name);
-                                            }
-                                            else
-                                            {
-                                                MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
-                                                    1, MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
-                                                MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
-                                                1, MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
-                                            MainForm->animation->interface_controller->inventory->input_enabled = true;
-                                        }
+                                        String gold_name = MainForm->item_values->GetName(ItemId_Gold);
+                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                                            MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + gold_name);
                                     }
+                                    else
+                                    {
+                                        MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                                            1, MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
+                                        MainForm->animation->interface_controller->inventory->input_enabled = true;
+                                    }
+                                }
+                                else
+                                {
+                                    MainForm->net_client->sender->SendDropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                                        1, MainForm->map->GetCursorX(), MainForm->map->GetCursorY());
+                                    MainForm->animation->interface_controller->inventory->input_enabled = true;
                                 }
                             }
                         }
@@ -4790,16 +4481,13 @@ void Mouser::HandleMouseUp()
                         }
                     }
                 }
-                else
+                else if (!MainForm->net_client->IsWithinReach(own_x, own_y, MainForm->map->GetCursorX(),
+                    MainForm->map->GetCursorY()))
                 {
-                    if (!MainForm->net_client->IsWithinReach(own_x, own_y, MainForm->map->GetCursorX(),
-                        MainForm->map->GetCursorY()))
-                    {
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                            MainForm->strings->GetText(GameText_OutOfDropRange));
-                        MainForm->animation->interface_controller->chat->AddSystemMessage(ChatIcon_OutOfRange,
-                            CHAT_COLOR_DEFAULT, MainForm->strings->GetText(GameText_OutOfDropRange), true);
-                    }
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                        MainForm->strings->GetText(GameText_OutOfDropRange));
+                    MainForm->animation->interface_controller->chat->AddSystemMessage(ChatIcon_OutOfRange,
+                        CHAT_COLOR_DEFAULT, MainForm->strings->GetText(GameText_OutOfDropRange), true);
                 }
             }
         }
@@ -4836,4 +4524,247 @@ void Mouser::HandleMouseUp()
     }
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
         MainForm->animation->menu->StopDragging();
+}
+
+// Opens the chat panel, with a click when asked; global chat follows its tab.
+void Mouser::OpenChatPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Chat)
+    {
+        MainForm->animation->interface_controller->chat->SyncGlobalSubscription();
+        MainForm->gfx->LoadChatPanel();
+        MainForm->animation->SetSubState(GamePanel_Chat);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+            MainForm->strings->GetText(GameText_ChatPanelIsNow));
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->chat->Invalidate();
+    }
+}
+
+// Asks the server for the online players and shows the player list panel, leaving global chat.
+void Mouser::OpenPlayerlistPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    MainForm->animation->interface_controller->player_list->Clear();
+    MainForm->net_client->sender->RequestOnlinePlayers();
+    MainForm->animation->interface_controller->StartPlayerListCooldown();
+    if (MainForm->animation->GetSubState() != GamePanel_Playerlist)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadPlayerlistPanel();
+        MainForm->animation->SetSubState(GamePanel_Playerlist);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->player_list->MarkListDirty();
+    }
+}
+
+// Opens the status panel, with a click when asked, leaving global chat.
+void Mouser::OpenStatusPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Status)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadStatusPanel();
+        MainForm->animation->SetSubState(GamePanel_Status);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+            MainForm->strings->GetText(GameText_StatusPanelIsNow));
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->status->MarkDirty();
+    }
+}
+
+// Opens the inventory panel, with a click when asked, leaving global chat.
+void Mouser::OpenInventoryPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Inventory)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadInventoryPanel();
+        MainForm->animation->SetSubState(GamePanel_Inventory);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->inventory->MarkItemsDirty();
+        MainForm->animation->interface_controller->inventory->MarkHoverDirty();
+    }
+}
+
+// Steps the minimap through its modes by the minimap setting, or off; on a map without one it says so.
+void Mouser::ToggleMinimap(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (!MainForm->map->IsMinimapDisabled())
+    {
+        if (MainForm->gfx->interface_graphics->minimap_visible)
+        {
+            MainForm->gfx->interface_graphics->minimap_visible = false;
+            MainForm->redraw_needed = true;
+        }
+        else
+        {
+            MainForm->gfx->interface_graphics->minimap_visible = true;
+            MainForm->redraw_needed = true;
+        }
+    }
+    else
+    {
+        MainForm->gfx->interface_graphics->minimap_visible = false;
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+            MainForm->strings->GetText(GameText_ThereIsNoMap));
+    }
+}
+
+// Shows the group panel, leaving global chat, and asks the server for the member list at most every 50 ticks.
+void Mouser::OpenGroupPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Group)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadGroupPanel();
+        MainForm->animation->SetSubState(GamePanel_Group);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->group->MarkListDirty();
+        if (!MainForm->animation->interface_controller->group->IsListRequestCoolingDown())
+        {
+            MainForm->animation->interface_controller->group->SetListRequestCooldown(50);
+            MainForm->net_client->SendPacket(AC_GET, OP_GROUP,
+                MainForm->net_client->EncodeNumber(MainForm->animation->interface_controller->group->members.size(),
+                    1));
+        }
+    }
+}
+
+// Opens the spell panel, with a click when asked, leaving global chat.
+void Mouser::OpenSpellPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Spells)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadSpellPanel();
+        MainForm->animation->SetSubState(GamePanel_Spells);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->spells->MarkDirty();
+        MainForm->animation->interface_controller->spells->MarkSelectionDirty();
+    }
+}
+
+// Opens the skill panel, with a click when asked, leaving global chat.
+void Mouser::OpenSkillPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Skills)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadSkillPanel();
+        MainForm->animation->SetSubState(GamePanel_Skills);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->skills->MarkDirty();
+        MainForm->animation->interface_controller->skills->MarkSelectionDirty();
+    }
+}
+
+// Opens the settings panel, with a click when asked, leaving global chat.
+void Mouser::OpenSettingsPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Settings)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->gfx->LoadSettingsPanel();
+        MainForm->animation->SetSubState(GamePanel_Settings);
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->settings->MarkDirty();
+    }
+}
+
+// Shows the help panel at its index page with the report window's help lines, leaving global chat; when it is shown
+// already, goes back to the index.
+void Mouser::OpenHelpPanel(bool play_sound)
+{
+    if (play_sound)
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    if (MainForm->animation->GetSubState() != GamePanel_Help)
+    {
+        MainForm->animation->interface_controller->chat->UnsubscribeGlobalChat();
+        MainForm->animation->report->Open(MainForm->strings->GetText(GameText_EndlessHelp));
+        MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_ListWithHelpfullTopics), "", true);
+        MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_YouCanAlwaysAsk), "", true);
+        MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IForgotMyPassword), "", false);
+        MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToReport), "", false);
+        MainForm->animation->report->AddText(MainForm->strings->GetText(GameText_IWantToSpeak), "", false);
+        MainForm->gfx->LoadHelpPanel();
+        MainForm->animation->SetSubState(GamePanel_Help);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
+            MainForm->strings->GetText(GameText_GameHelp));
+        MainForm->animation->interface_controller->Invalidate();
+        MainForm->animation->interface_controller->help->LoadPage("index");
+        MainForm->animation->interface_controller->help->MarkTextDirty();
+    }
+    else
+    {
+        MainForm->animation->interface_controller->help->LoadPage("index");
+        MainForm->animation->interface_controller->help->MarkTextDirty();
+    }
+}
+
+// Opens the login screen with the account name and password boxes, first connecting when no connection is up.
+void Mouser::OpenLoginScreen()
+{
+    MainForm->animation->menu->login_enabled = true;
+    if (!MainForm->net_client->is_initialized)
+    {
+        if (MainForm->animation->menu->connect_for_login || MainForm->animation->menu->connect_for_create_account)
+            return;
+        if (MainForm->animation->menu->connect_for_login || MainForm->animation->menu->connect_for_create_account)
+            return;
+        if (MainForm->client->Active)
+        {
+            MainForm->client->Active = false;
+            Sleep(60);
+        }
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+        MainForm->client->Active = true;
+        MainForm->animation->menu->connect_for_login = true;
+        MainForm->animation->menu->connect_for_create_account = 0;
+        return;
+    }
+    if (MainForm->animation->credits->is_running)
+        MainForm->animation->credits->Stop();
+    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+    MainForm->edits->Clear();
+    MainForm->net_client->login_failure_count = 0;
+    MainForm->gfx->LoadLoginScreen();
+    if (MainForm->config->GetSkipSoftpad())
+    {
+        MainForm->animation->SetSubState(MenuScreen_Login);
+        MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_NAME_EDIT_Y, 141,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_PASSWORD_EDIT_Y, 141,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
+        MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_NoPunctuation);
+        MainForm->edits->SetPasswordMode(EditId_Password, true);
+        MainForm->edits->SetMaxLength(EditId_AccountName, 16);
+        MainForm->edits->SetMaxLength(EditId_Password, 12);
+        MainForm->edits->FocusEdit(EditId_AccountName);
+        return;
+    }
+    MainForm->animation->SetSubState(MenuScreen_GridAccountName);
+    MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, GRID_LOGIN_NAME_EDIT_Y, 161,
+        EDIT_LINE_HEIGHT);
+    MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
+    MainForm->edits->SetMaxLength(EditId_AccountName, 16);
+    MainForm->edits->FocusEdit(EditId_AccountName);
 }

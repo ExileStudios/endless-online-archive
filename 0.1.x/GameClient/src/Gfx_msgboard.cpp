@@ -4,7 +4,7 @@
 #include "Gfx_msgboard.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 MsgBoardGraphics::MsgBoardGraphics()
@@ -30,13 +30,13 @@ MsgBoardGraphics::~MsgBoardGraphics()
 }
 
 // One of the two frames of the message board sheet; a higher frame number gives the second.
-Windows::TRect MsgBoardGraphics::GetFrameRect(int frame)
+TRect MsgBoardGraphics::GetFrameRect(int frame)
 {
     TRect frame_rect;
     if (frame > 1)
         frame = 1;
-    frame_rect.top = TALL_FRAME_HEIGHT * frame;
-    frame_rect.bottom = (TALL_FRAME_HEIGHT *frame) + 290;
+    frame_rect.top = 290 * frame;
+    frame_rect.bottom = 290 * frame + 290;
     frame_rect.left = 0;
     frame_rect.right = 484;
     return frame_rect;
@@ -48,11 +48,11 @@ GraphicSize MsgBoardGraphics::LoadSurface(HMODULE library, int resource_id)
 {
     GraphicSize size;
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     size.width = -1;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id);
+    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
     surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
     surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -93,13 +93,13 @@ GraphicSize MsgBoardGraphics::LoadSurface(HMODULE library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (surface->GetDC(&dc))
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -109,7 +109,7 @@ GraphicSize MsgBoardGraphics::LoadSurface(HMODULE library, int resource_id)
             }
             surface->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
     return size;
 }

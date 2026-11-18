@@ -3,7 +3,7 @@
 
 #include "Gfx_balloon.h"
 #include "Tmainform.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 // Creates both balloon surfaces sized to the text. The fill surface gets the filled bubble and its tail; the text
@@ -40,9 +40,14 @@ Balloon::Balloon(int text_width, int text_height, String *lines, int style)
         try
         {
             MainForm->draw_canvas->Handle = dc;
-            // A group message balloon has its own fill colour; every other balloon is white.
             if (style == 1)
                 MainForm->draw_canvas->Brush->Color = (TColor)0xAAC8DC;
+            else if (style == 2)
+                MainForm->draw_canvas->Brush->Color = (TColor)0xFAB4E6;
+            else if (style == 3)
+                MainForm->draw_canvas->Brush->Color = (TColor)0xF5DCAA;
+            else if (style == 4)
+                MainForm->draw_canvas->Brush->Color = (TColor)0x82F5FF;
             else
                 MainForm->draw_canvas->Brush->Color = clWhite;
             MainForm->draw_canvas->Brush->Style = bsSolid;
@@ -63,7 +68,7 @@ Balloon::Balloon(int text_width, int text_height, String *lines, int style)
             tail_points[3].x = (text_width + 15) / 2; tail_points[3].y = text_height + 12;
             MainForm->draw_canvas->Polyline(tail_points, 3);
             MainForm->draw_canvas->Handle = 0;
-            delete tail_points;
+            delete (char *)tail_points;
         }
         catch (Exception &)
         {
@@ -95,14 +100,14 @@ Balloon::Balloon(int text_width, int text_height, String *lines, int style)
             outline_points[3].x = (text_width + 15) / 2 + 1; outline_points[3].y = text_height + 11;
             outline_points[4].x = (text_width + 15) / 2 + 2; outline_points[4].y = text_height + 8;
             MainForm->draw_canvas->Polyline(outline_points, 4);
-            MainForm->draw_canvas->TextOut(7, 5, lines[0]);
+            MainForm->draw_canvas->TextOut(7, 5, *lines);
             MainForm->draw_canvas->TextOut(7, 18, lines[1]);
             MainForm->draw_canvas->TextOut(7, 31, lines[2]);
             MainForm->draw_canvas->TextOut(7, 44, lines[3]);
             MainForm->draw_canvas->TextOut(7, 57, lines[4]);
             MainForm->draw_canvas->TextOut(7, 70, lines[5]);
             MainForm->draw_canvas->Handle = 0;
-            delete outline_points;
+            delete (char *)outline_points;
         }
         catch (Exception &)
         {

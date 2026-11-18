@@ -1,7 +1,14 @@
 #ifndef Ctrl_spellsH
 #define Ctrl_spellsH
 
+#include <new>
 #include <vector.h>
+
+struct Tooltip;
+
+#include "Itemspell.h"
+
+#define SHOUT_LABEL_TICKS 100
 
 enum CastTarget
 {
@@ -10,9 +17,6 @@ enum CastTarget
     CastTarget_Player = 2,
     CastTarget_Group = 3
 };
-#define SHOUT_LABEL_TICKS 100
-
-#include "Itemspell.h"
 
 // The spell panel: the known spells on a grid that scrolls by rows, the selected spell waiting for a target, and the
 // cast in progress. The grid layout is kept in the registry.
@@ -21,7 +25,7 @@ struct SpellController
     vector<SpellItem> spells;
     vector<SpellItem> known_spells;
     vector<SpellItem> saved_slots;
-    String hover_text;
+    Tooltip *tooltip;
     int hover_spell_id;
     int hover_col;
     int hover_row;
@@ -111,7 +115,7 @@ struct SpellController
     void RestoreLayout();
     void UseSlot(int col, int row);
     void UseSpell(int col, int row, int spell_id);
-    char IsCasting();
+    bool IsCasting();
     void BeginCast(int spell_id, int target_kind, int target_id);
     void CancelCast();
     void ClearSelection();

@@ -6,6 +6,11 @@
 #include "Ctrl_guild.h"
 #include "Ctrl_inn.h"
 #include "Ctrl_law.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_trade.h"
+
 #pragma package(smart_init)
 
 MemoController::MemoController()
@@ -189,7 +194,7 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
 }
 
 // Shows the memo window with the title and an empty page, closing other npc windows.
-void MemoController::Open(String window_title)
+void MemoController::Show(String window_title)
 {
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;

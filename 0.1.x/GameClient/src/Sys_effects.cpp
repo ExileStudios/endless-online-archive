@@ -3,6 +3,7 @@
 
 #include "Sys_effects.h"
 #include "Tmainform.h"
+
 #pragma package(smart_init)
 
 Effects::Effects()
@@ -23,21 +24,23 @@ void Effects::Animate()
         MainForm->redraw_needed = true;
         for (vector<MapEffect>::iterator it = effects.begin(); it != effects.end(); it++)
         {
-            if (it->finished)
-                continue;
-            if (it->sound_pending)
+            if (!it->finished)
             {
-                MainForm->sound_mapper->PlayEffectSound(it->effect_id);
-                it->sound_pending = false;
-            }
-            if (it->frame <= it->last_frame)
-                it->frame++;
-            else
-            {
-                it->loops_left--;
-                it->frame = 0;
-                if (it->loops_left <= 0)
-                    it->finished = true;
+                if (it->sound_pending)
+                {
+                    int volume = MainForm->sfx->GetDistanceVolume(it->x, it->y);
+                    MainForm->sound_mapper->PlayEffectSound(it->effect_id, volume);
+                    it->sound_pending = false;
+                }
+                if (it->frame <= it->last_frame)
+                    it->frame++;
+                else
+                {
+                    it->loops_left--;
+                    it->frame = 0;
+                    if (it->loops_left <= 0)
+                        it->finished = true;
+                }
             }
         }
     }

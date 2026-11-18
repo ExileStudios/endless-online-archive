@@ -2,6 +2,12 @@
 #define Ctrl_socialH
 
 #include <Classes.hpp>
+#include <deque.h>
+#include <queue.h>
+#include <stack.h>
+#include <string>
+
+#define SHORT_NAME_LENGTH 3
 
 // The friend and ignore lists, kept in config/friends.ini and config/ignore.ini, and the window that shows them.
 struct SocialController
@@ -53,8 +59,7 @@ struct SocialController
     void SaveFriendList();
     bool IsIgnored(String name);
     bool IsFriend(String name);
-    String UnscrambleString(int divisor, unsigned char *data_begin,
-        unsigned char *data_end);
+    String UnscrambleString(int divisor, char *data_begin, char *data_end);
     void OnTimer();
     int GetScrollbarPosition();
     int GetScrollOffset();

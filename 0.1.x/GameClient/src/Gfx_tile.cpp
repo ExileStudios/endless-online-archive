@@ -4,7 +4,7 @@
 #include "Gfx_tile.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 TileResource::TileResource()
@@ -31,7 +31,7 @@ TileResource::~TileResource()
 }
 
 // One animation frame of a ground tile: a quarter of a wide sheet, or the whole of a narrow one.
-Windows::TRect TileResource::GetFrameRect(int frame)
+TRect TileResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
     if (surface_rect.right > 250)
@@ -39,7 +39,7 @@ Windows::TRect TileResource::GetFrameRect(int frame)
         int frame_width = surface_rect.right / 4;
         frame_rect.left = frame_width * frame;
         frame_rect.top = 0;
-        frame_rect.right = frame_width * frame + frame_width;
+        frame_rect.right = frame_width + frame_width * frame;
         frame_rect.bottom = surface_rect.bottom;
     }
     else
@@ -52,17 +52,22 @@ Windows::TRect TileResource::GetFrameRect(int frame)
     return frame_rect;
 }
 
-// Loads bitmap resource_id from the library into the ground tile surface and returns its size.
-// The size is -1 when the bitmap could not be drawn onto the ground tile surface.
 GraphicSize TileResource::LoadSurface(int library, int resource_id)
 {
     GraphicSize size;
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     size.width = -1;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return size;
+    }
     surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
     surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -106,13 +111,13 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (surface->GetDC(&dc))
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -122,9 +127,8 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
             }
             surface->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
-    // The colour key makes black see-through on the ground tile.
     if (size.width > 0)
         surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     return size;

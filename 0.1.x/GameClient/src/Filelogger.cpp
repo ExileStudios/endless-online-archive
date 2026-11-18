@@ -1,14 +1,10 @@
 #include <vcl.h>
 #pragma hdrstop
 
-#include "Filelogger.h"
 #include <stdio.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+#include <io.h>
+#include "Filelogger.h"
+
 #pragma package(smart_init)
 
 // Opens the log at once when open_now, the LogChat setting.
@@ -31,8 +27,11 @@ void FFileLog::Open(String path)
 {
     try
     {
-        file = fopen(file_path.c_str(), "a");
-        is_open = true;
+        if (!access(file_path.c_str(), 0))
+        {
+            file = fopen(file_path.c_str(), "a");
+            is_open = true;
+        }
     }
     catch (...)
     {
@@ -65,7 +64,7 @@ void FFileLog::WriteLine(int channel, String text)
                 line.Insert("P", line.Length() + 1);
             if (channel == 1)
                 line.Insert("W", line.Length() + 1);
-            if (channel == 2)
+            if (channel == LOG_CHANNEL_GLOBAL)
                 line.Insert("G", line.Length() + 1);
             if (channel == 3)
                 line.Insert("S", line.Length() + 1);

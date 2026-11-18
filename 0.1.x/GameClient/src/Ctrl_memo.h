@@ -38,7 +38,7 @@ struct MemoController
     void AddItemList(String item_data, int record_size, int amount_size);
     void AddCharacterStats(String stats_data);
     void AddText(String text, String right_text, bool add_blank_line);
-    void Open(String window_title);
+    void Show(String window_title);
     void Close();
     void Tick();
     int GetScrollThumbOffset();

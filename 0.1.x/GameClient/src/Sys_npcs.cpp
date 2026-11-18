@@ -5,6 +5,7 @@
 #include "Gfx_interface.h"
 #include "Gfx_npc.h"
 #include "Gfx_sprites.h"
+
 #pragma package(smart_init)
 
 // An empty list and the per-graphic tables: the drawing offsets of the frames and the attack frames,
@@ -323,25 +324,25 @@ void Npcs::ReloadGraphicsLibrary()
         graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
 }
 
-// One step of every npc's timers and animations, then the name label of the npc under the mouse.
+// One step of every npc's timers and animations, with their sounds, then the name label of the npc under the mouse
+// when no player's label is shown.
 void Npcs::Animate()
 {
-    Npcs *this_copy = this;
-    char walk_started;
-    char no_hover_yet;
+    int screen_x;
     int screen_y;
+    char walk_started;
+    int volume;
     walk_started = false;
-    vector<Npc>::iterator it;
-    for (it = npcs.begin(); it != npcs.end(); it++)
+    Npc *it = npcs.begin();
+    while (it != npcs.end())
     {
-        this_copy = this;
         // Graphics with an idle animation step their idle frame on every pass.
         if (has_idle_animation[it->graphic - 1])
         {
             it->idle_frame++;
             if (it->idle_frame > 3)
                 it->idle_frame = -1;
-            if (!it->idle_frame || it->idle_frame == 2)
+            if (it->idle_frame == 0 || it->idle_frame == 2)
                 it->redraw = true;
         }
         if (it->effect_start)
@@ -349,7 +350,8 @@ void Npcs::Animate()
             it->effect_start = false;
             it->effect_running = true;
             it->effect_frame = 0;
-            MainForm->sound_mapper->PlayEffectSound(it->effect_id);
+            volume = MainForm->sfx->GetDistanceVolume((short)it->x, (short)it->y);
+            MainForm->sound_mapper->PlayEffectSound(it->effect_id, volume);
         }
         if (it->effect_running)
         {
@@ -483,10 +485,10 @@ void Npcs::Animate()
                 if (it->queued_balloon_count > 0)
                 {
                     it->queued_balloon_count--;
-                    String FileHandle[6];
+                    String file_handle[6];
                     for (int j = 0; j < 6; j++)
-                        FileHandle[j] = it->queued_balloon_lines[j][0];
-                    it->ShowBalloon(FileHandle, it->queued_balloon_widths[0], it->queued_balloon_heights[0],
+                        file_handle[j] = it->queued_balloon_lines[j][0];
+                    it->ShowBalloon(file_handle, it->queued_balloon_widths[0], it->queued_balloon_heights[0],
                         it->queued_balloon_tinted[0]);
                     for (int queue_slot = 1; queue_slot < 5; queue_slot++)
                     {
@@ -503,45 +505,42 @@ void Npcs::Animate()
                 }
             }
         }
+        it++;
     }
     // A player under the mouse keeps the label; npcs get one only when no player has it.
     if (!MainForm->players->hover_label_shown)
     {
-        no_hover_yet = true;
-        for (vector<Npc>::reverse_iterator it(npcs.end()); it != vector<Npc>::reverse_iterator(npcs.begin()); it++)
+        char no_hover_yet = true;
+        vector<Npc>::reverse_iterator reverse_it(npcs.end());
+        for (; reverse_it != vector<Npc>::reverse_iterator(npcs.begin()); reverse_it++)
         {
-            int screen_x = 32 * (*it).x - 32 * (*it).y + MainForm->map->GetScrollOffsetX() + 319;
-            screen_y = 16 * (*it).x + 16 * (*it).y + MainForm->map->GetScrollOffsetY() + 160;
-            if (!(screen_x - (*it).frame_width / 2 > mouse_x || (*it).frame_width / 2 + screen_x < mouse_x ||
-                screen_y - (*it).frame_height > mouse_y || screen_y + 5 < mouse_y))
+            screen_x = 32 * (*reverse_it).x - 32 * (*reverse_it).y + MainForm->map->GetScrollOffsetX() + 319;
+            screen_y = 16 * (*reverse_it).x + 16 * (*reverse_it).y + MainForm->map->GetScrollOffsetY() + 160;
+            if (screen_x - (*reverse_it).frame_width / 2 <= mouse_x &&
+                screen_x + (*reverse_it).frame_width / 2 >= mouse_x &&
+                screen_y - (*reverse_it).frame_height <= mouse_y && screen_y + 5 >= mouse_y)
             {
-                if (!(!no_hover_yet || (*it).dying))
+                if (no_hover_yet && !(*reverse_it).dying)
                 {
-                    if (!(*it).label_shown)
+                    if (!(*reverse_it).label_shown)
                     {
-                        String npc_name = MainForm->npc_values->GetName((*it).npc_id);
+                        String npc_name = MainForm->npc_values->GetName((*reverse_it).npc_id);
                         MainForm->gfx->sprites->ShowNameLabel(npc_name, LabelColor_White);
-                        (*it).label_shown = true;
+                        (*reverse_it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }
                     no_hover_yet = false;
                 }
-                else
+                else if ((*reverse_it).label_shown)
                 {
-                    if ((*it).label_shown)
-                    {
-                        (*it).label_shown = false;
-                        MainForm->redraw_needed = true;
-                    }
-                }
-            }
-            else
-            {
-                if ((*it).label_shown)
-                {
-                    (*it).label_shown = false;
+                    (*reverse_it).label_shown = false;
                     MainForm->redraw_needed = true;
                 }
+            }
+            else if ((*reverse_it).label_shown)
+            {
+                (*reverse_it).label_shown = false;
+                MainForm->redraw_needed = true;
             }
         }
         if (no_hover_yet)
@@ -551,11 +550,12 @@ void Npcs::Animate()
     }
     else
     {
-        for (vector<Npc>::reverse_iterator it(npcs.end()); it != vector<Npc>::reverse_iterator(npcs.begin()); it++)
+        vector<Npc>::reverse_iterator clear_it(npcs.end());
+        for (; clear_it != vector<Npc>::reverse_iterator(npcs.begin()); clear_it++)
         {
-            if ((*it).label_shown)
+            if ((*clear_it).label_shown)
             {
-                (*it).label_shown = false;
+                (*clear_it).label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -568,10 +568,8 @@ void Npcs::Animate()
 // Drops npcs whose death countdown ran out, and npcs that stay out of view of the map centre.
 void Npcs::RemoveExpiredNpcs()
 {
-    int center_y;
-    int center_x = 0;
-    center_x = MainForm->map->GetCenterX();
-    center_y = MainForm->map->GetCenterY();
+    int center_x = MainForm->map->GetCenterX();
+    int center_y = MainForm->map->GetCenterY();
     do
     {
         list_changed = false;
@@ -587,31 +585,28 @@ void Npcs::RemoveExpiredNpcs()
                     break;
                 }
             }
-            else
+            else if (!IsInViewRange(center_x, center_y, i->x, i->y))
             {
-                if (!IsInViewRange(center_x, center_y, i->x, i->y))
+                if (!i->out_of_range)
                 {
-                    if (!i->out_of_range)
-                    {
-                        i->out_of_range = true;
-                        i->removal_countdown = 6;
-                    }
-                    else
-                    {
-                        i->removal_countdown--;
-                        if (i->removal_countdown <= 0)
-                        {
-                            i->FreeResources();
-                            i->CloseBalloon();
-                            npcs.erase(i);
-                            list_changed = true;
-                            break;
-                        }
-                    }
+                    i->out_of_range = true;
+                    i->removal_countdown = 10;
                 }
                 else
-                    i->out_of_range = false;
+                {
+                    i->removal_countdown--;
+                    if (i->removal_countdown <= 0)
+                    {
+                        i->FreeResources();
+                        i->CloseBalloon();
+                        npcs.erase(i);
+                        list_changed = true;
+                        break;
+                    }
+                }
             }
+            else
+                i->out_of_range = false;
         }
     } while (list_changed);
 }
@@ -620,16 +615,25 @@ void Npcs::RemoveExpiredNpcs()
 // At most three pending npcs are worked on in a call.
 void Npcs::LoadPendingGraphics()
 {
-    int loaded_count;
+    Npc *i;
+    int frame_index;
+    unsigned char loaded_count;
     int base_resource;
-    int library;
-    int j = 0;
+    int attack_library[1];
+    if (!Application->Active && MainForm->config->GetFullscreen())
+        return;
     loaded_count = 0;
-    for (vector<Npc>::iterator i = npcs.begin(); i != npcs.end() && loaded_count <= 2; i++)
+    i = npcs.begin();
+    for (; i != npcs.end() && loaded_count <= 2; i++)
     {
-        if (i->reload_requested)
+        if (i->load_failures > 2)
         {
-            if (Application->Active)
+            if (i->load_failures == 3)
+                i->load_failures = 250;
+        }
+        else
+        {
+            if (i->reload_requested)
             {
                 i->FreeResources();
                 i->CreateResources();
@@ -637,61 +641,109 @@ void Npcs::LoadPendingGraphics()
                 i->graphics_pending = true;
                 i->load_stage = 0;
             }
-        }
-        if (i->graphics_pending)
-        {
-            if (Application->Active || MainForm->config->GetFullscreen() == 0)
+            if (i->graphics_pending)
             {
                 loaded_count++;
-                // The first bitmap of the npc's graphic in the npc library.
+                if (!preload_graphics && library_ref_count <= 0)
+                    graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
                 base_resource = RESOURCES_PER_GRAPHIC * i->graphic + 61;
+                attack_library[0] = (int)graphics_library;
                 if (!i->load_stage)
                 {
-                    if (!preload_graphics && library_ref_count <= 0)
-                        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
-                    HMODULE library_handle = graphics_library;
-                    i->resources->CreateSheets((int)library_handle, base_resource, has_idle_animation[i->graphic - 1]);
-                    i->frame_width = i->resources->GetFrameWidth();
-                    i->frame_height = i->resources->GetFrameHeight();
+                    if (!i->resources->CreateSheets((void *)attack_library[0], base_resource,
+                        has_idle_animation[i->graphic - 1]))
+                        i->load_failures++;
+                    else
+                    {
+                        i->frame_width = i->resources->GetFrameWidth();
+                        i->frame_height = i->resources->GetFrameHeight();
+                        i->load_stage++;
+                    }
+                }
+                else if (i->load_stage == 1)
+                {
                     if (graphics_library)
                     {
-                        i->resources->LoadFrontFrame(0, (int)library_handle, base_resource);
-                        i->resources->LoadBackFrame(0, (int)library_handle, base_resource + 2);
+                        if (!i->resources->LoadFrontFrame(0, (void *)attack_library[0], base_resource))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadBackFrame(0, (void *)attack_library[0], base_resource + 2))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
                         if (has_idle_animation[i->graphic - 1])
                         {
-                            i->resources->LoadFrontFrame(1, (int)library_handle, base_resource + 1);
-                            i->resources->LoadBackFrame(1, (int)library_handle, base_resource + 3);
+                            if (!i->resources->LoadFrontFrame(1, (void *)attack_library[0], base_resource + 1))
+                            {
+                                i->load_failures++;
+                                continue;
+                            }
+                            if (!i->resources->LoadBackFrame(1, (void *)attack_library[0], base_resource + 3))
+                            {
+                                i->load_failures++;
+                                continue;
+                            }
                         }
                     }
-                }
-                if (i->load_stage == 1)
-                {
-                    library = (int)graphics_library;
-                    if (graphics_library)
-                    {
-                        for (j = 0; j < 4; j++)
-                        {
-                            i->resources->LoadFrontFrame(j + 2, library, j + base_resource + 4);
-                            i->resources->LoadBackFrame(j + 2, library, j + base_resource + 8);
-                        }
-                    }
-                }
-                if (i->load_stage == 2)
-                {
-                    int attack_library = (int)graphics_library;
-                    if (graphics_library)
-                    {
-                        i->resources->LoadFrontFrame(6, attack_library, base_resource + 12);
-                        i->resources->LoadBackFrame(6, attack_library, base_resource + 14);
-                        i->resources->LoadFrontFrame(7, attack_library, base_resource + 13);
-                        i->resources->LoadBackFrame(7, attack_library, base_resource + 15);
-                        i->resources->LoadFrontFrame(8, attack_library, base_resource + 16);
-                        i->resources->LoadBackFrame(8, attack_library, base_resource + 17);
-                    }
-                }
-                if (Application->Active || MainForm->config->GetFullscreen() == 0)
                     i->load_stage++;
-                if (i->load_stage >= 4)
+                }
+                else if (i->load_stage == 2)
+                {
+                    if (graphics_library)
+                    {
+                        for (frame_index = 0; frame_index < 4; frame_index++)
+                        {
+                            if (!i->resources->LoadFrontFrame(frame_index + 2, (void *)attack_library[0],
+                                base_resource + frame_index + 4))
+                                i->load_failures++;
+                            else if (!i->resources->LoadBackFrame(frame_index + 2, (void *)attack_library[0],
+                                base_resource + frame_index + 8))
+                                i->load_failures++;
+                        }
+                    }
+                    i->load_stage++;
+                }
+                else if (i->load_stage == 3)
+                {
+                    if (graphics_library)
+                    {
+                        if (!i->resources->LoadFrontFrame(6, (void *)attack_library[0], base_resource + 12))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadBackFrame(6, (void *)attack_library[0], base_resource + 14))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadFrontFrame(7, (void *)attack_library[0], base_resource + 13))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadBackFrame(7, (void *)attack_library[0], base_resource + 15))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadFrontFrame(8, (void *)attack_library[0], base_resource + 16))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                        if (!i->resources->LoadBackFrame(8, (void *)attack_library[0], base_resource + 17))
+                        {
+                            i->load_failures++;
+                            continue;
+                        }
+                    }
+                    i->load_stage++;
+                }
+                else if (i->load_stage >= 4)
                 {
                     i->graphics_pending = false;
                     i->redraw = true;
@@ -717,7 +769,7 @@ int Npcs::GetNpcId(int index)
     int npc_id = -1;
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (it->index == (unsigned int)index)
+        if ((unsigned int)it->index == index)
         {
             npc_id = it->npc_id;
             break;
@@ -744,7 +796,7 @@ bool Npcs::ConsumeRedraw()
 // True when the tile is in view range of the centre, which reaches further past the centre on both axes.
 DEFINE_IS_IN_VIEW_RANGE(Npcs)
 
-// Sorts the npcs by their position on the map.
+// Sorts the list by y, then by x.
 void Npcs::SortByPosition()
 {
     char swapped;
@@ -782,7 +834,7 @@ bool Npcs::HasNpc(int index)
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index && !it->dying)
+        if (index == it->index && !it->dying)
         {
             found = true;
             break;
@@ -798,7 +850,7 @@ bool Npcs::HasNpcAt(int x, int y)
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)x == it->x && (unsigned int)y == it->y && !it->dying)
+        if (x == (int)it->x && y == (int)it->y && !it->dying)
         {
             found = true;
             break;
@@ -812,7 +864,7 @@ void Npcs::KillNpc(int index)
 {
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             it->dying = true;
             it->death_countdown = 9;
@@ -836,6 +888,7 @@ void Npcs::KillNpcsById(int npc_id)
     }
 }
 
+// A copy of the npc at the index, or an npc of id -1 past the list.
 Npc Npcs::GetNpc(int index)
 {
     return npcs[index];
@@ -847,14 +900,14 @@ void Npcs::StartWalk(int index, int x, int y, int direction)
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             it->walk_start = true;
             it->walk_target_x = x;
             it->walk_target_y = y;
             it->walk_target_direction = direction;
             it->walk_facing = direction;
-            return;
+            break;
         }
     }
 }
@@ -862,9 +915,10 @@ void Npcs::StartWalk(int index, int x, int y, int direction)
 // Shows a damage or heal number over the npc while its timer runs.
 void Npcs::ShowDamage(int index, int amount, char heal)
 {
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    vector<Npc>::iterator it = npcs.begin();
+    while (it != npcs.end())
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             if (amount >= 0)
             {
@@ -878,24 +932,24 @@ void Npcs::ShowDamage(int index, int amount, char heal)
             it->damage_heal = heal;
             break;
         }
+        it++;
     }
 }
 
 // Shows the npc's health bar for duration passes; percent scales to the bar's width.
 void Npcs::ShowHealthBar(int index, int percent, int duration)
 {
-    double bar_width;
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
-            bar_width = percent * HEALTH_BAR_SCALE;
+            double bar_width = percent * HEALTH_BAR_SCALE;
             it->health_bar_start = true;
             it->health_bar_shown = false;
             it->health_bar_timer = duration;
             it->health_bar_width = bar_width;
-            return;
+            break;
         }
     }
 }
@@ -906,7 +960,7 @@ void Npcs::StartEffect(int index, int effect_id)
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             it->effect_start = true;
             it->effect_running = false;
@@ -917,7 +971,7 @@ void Npcs::StartEffect(int index, int effect_id)
             it->effect_solid_layer = MainForm->magic_mapper->solid_layer[effect_id];
             it->effect_last_frame = MainForm->magic_mapper->GetFrameCount(effect_id) - 2;
             it->effect_loops_left = MainForm->magic_mapper->GetLoopCount(effect_id);
-            return;
+            break;
         }
     }
 }
@@ -927,7 +981,7 @@ void Npcs::StartAttack(int index, int direction)
 {
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             it->attack_start = true;
             it->direction = direction;
@@ -952,8 +1006,6 @@ void Npcs::AddNpc(int index, int npc_id, int graphic, String name, int x, int y,
 // Frees every npc's cells and balloon, then empties the list.
 void Npcs::Clear()
 {
-    int unused_int;
-    int second_unused_int;
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
         it->FreeResources();
@@ -976,10 +1028,10 @@ void Npcs::ShowBalloon(int index, String *lines, int width, int height, int tint
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)index == it->index)
+        if (index == it->index)
         {
             it->ShowBalloon(lines, width, height, tinted);
-            return;
+            break;
         }
     }
 }

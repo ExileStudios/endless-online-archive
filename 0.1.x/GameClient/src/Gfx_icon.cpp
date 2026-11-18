@@ -4,13 +4,8 @@
 #include "Gfx_icon.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
-#pragma package(smart_init)
 
-int _ftol()
-{
-    return 0;
-}
+#pragma package(smart_init)
 
 IconResource::IconResource()
 {
@@ -35,29 +30,34 @@ IconResource::~IconResource()
 }
 
 // One of the two frames of a spell icon sheet; any other frame number gives the first.
-Windows::TRect IconResource::GetFrameRect(int frame)
+TRect IconResource::GetIconRect(int frame)
 {
     TRect frame_rect;
     if (frame < 0 || frame > 1)
         frame = 0;
     frame_rect.top = 0;
     frame_rect.bottom = 32;
-    frame_rect.left = 2 * (17 * frame);
-    frame_rect.right = 2 * (17 * frame) + 34;
+    frame_rect.left = 34 * frame;
+    frame_rect.right = 34 * frame + 34;
     return frame_rect;
 }
 
-// Loads bitmap resource_id from the library into the spell icon surface and returns its size.
-// The size is -1 when the bitmap could not be drawn onto the spell icon surface.
 GraphicSize IconResource::LoadSurface(int library, int resource_id)
 {
     GraphicSize size;
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     size.width = -1;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        return size;
+    }
     surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
     surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -94,13 +94,13 @@ GraphicSize IconResource::LoadSurface(int library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (surface->GetDC(&dc))
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -110,9 +110,8 @@ GraphicSize IconResource::LoadSurface(int library, int resource_id)
             }
             surface->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
-    // The colour key makes black see-through on the spell icon.
     if (size.width > 0)
         surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     return size;

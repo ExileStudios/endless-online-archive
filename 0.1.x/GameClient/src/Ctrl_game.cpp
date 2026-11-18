@@ -9,10 +9,12 @@
 #include "Ctrl_paperdoll.h"
 #include "Gfx_sprites.h"
 #include "Ctrl_status.h"
-#pragma package(smart_init)
-#define INPUT_FORM_THUMB_TRAVEL 60.0
-#define SIT_DELAY_TICKS 4
+#include "Ctrl_inventory.h"
+#include "Ctrl_spells.h"
 
+#pragma package(smart_init)
+
+// Starts the game screen with every box closed and placed at its default spot.
 GameController::GameController()
 {
     last_action_time = DateTimeToTimeStamp(Now());
@@ -183,12 +185,15 @@ void GameController::CastUntargetedSpell(int spell_id)
     MainForm->net_client->sender->SendSpellCastDirectional(direction, spell_id);
 }
 
+void GameController::AttackForward(char animation_only)
+{
+    Attack(animation_only, -1);
+}
+
 // One attack in the facing direction, which costs one stamina; with animation_only the attack is shown and not sent.
 // It is refused while another action runs, while sitting, out of stamina, or with a ranged weapon and no ammunition.
-void GameController::Attack(char animation_only)
+void GameController::Attack(char animation_only, int face_direction)
 {
-    int player_x;
-    int direction = FacingDirection_Down;
     ResetIdleTimer();
     if (!MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
         return;
@@ -197,8 +202,8 @@ void GameController::Attack(char animation_only)
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
-        !(MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) ||
-        MainForm->animation->interface_controller->status->stamina <= 0))
+        !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) &&
+        MainForm->animation->interface_controller->status->stamina > 0)
     {
         if (MainForm->item_values->GetSubType(MainForm->animation->paperdoll->equipped_weapon) == 1 &&
             MainForm->item_values->GetSubType(MainForm->animation->paperdoll->equipped_shield) != 2)
@@ -211,12 +216,18 @@ void GameController::Attack(char animation_only)
         if (!IsActionDelayElapsed())
             return;
         // Attacks in a row without a step are capped; each step resets the count
-        if (attack_count > 250)
+        if (attack_count > 910)
             return;
-        direction = MainForm->players->GetDirection(MainForm->net_client->GetPlayerId());
-        player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
-        if (MainForm->map->GetTileSpec(player_x, MainForm->players->GetY(MainForm->net_client->GetPlayerId())) ==
-            TileSpec_Splash)
+        int direction = MainForm->players->GetDirection(MainForm->net_client->GetPlayerId());
+        int player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+        int player_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
+        if (face_direction >= 0)
+        {
+            if (direction != face_direction)
+                MainForm->net_client->sender->SendFace(face_direction);
+            direction = face_direction;
+        }
+        if (MainForm->map->GetTileSpec(player_x, player_y) == TileSpec_Splash)
         {
             MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
             MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
@@ -251,7 +262,29 @@ void GameController::PlayEmote(int emote_id)
 // Against a wall the tile is used instead: a door, chest, locker, board, jukebox or chair, tried in that order.
 void GameController::Walk(int direction)
 {
+    int target_x;
+    int target_y;
     bool tile_action_used;
+    bool opened_up;
+    bool opened_right;
+    bool opened_down;
+    char on_jump_tile;
+    int warp_level_left;
+    char walk_left;
+    char tile_used_left;
+    int usable_spec_left;
+    int warp_level_up;
+    char walk_up;
+    char tile_used_up;
+    int usable_spec_up;
+    int warp_level_right;
+    char walk_right;
+    char tile_used_right;
+    int usable_spec_right;
+    int warp_level_down;
+    char walk_down;
+    char tile_used_down;
+    int usable_spec_down;
     ResetIdleTimer();
     if (!MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
         return;
@@ -263,8 +296,8 @@ void GameController::Walk(int direction)
     {
         if (MainForm->animation->game->player_menu_visible)
             MainForm->animation->game->ClosePlayerMenu();
-        int target_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
-        int target_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
+        target_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+        target_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
         if (MainForm->players->GetDirection(MainForm->net_client->GetPlayerId()) != direction &&
             !MainForm->map->IsCursorUpdatePending())
         {
@@ -277,418 +310,404 @@ void GameController::Walk(int direction)
                 MainForm->map->BlockActionsBriefly();
             }
         }
-        else
+        else if (MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
         {
-            if (MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
+            on_jump_tile = false;
+            if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump)
+                on_jump_tile = true;
+            // Directions: 0 = down, 1 = left, 2 = up, 3 = right
+            if (direction == FacingDirection_Left && MainForm->map->GetCenterX() > 0 && !MainForm->map->IsScrolling())
             {
-                char on_jump_tile = false;
-                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump)
-                    on_jump_tile = true;
-                // Directions: 0 = down, 1 = left, 2 = up, 3 = right
-                if (direction == 1 && MainForm->map->GetCenterX() > 0 &&
-                    !MainForm->map->IsScrolling())
+                target_x--;
+                // While the spot countdown runs, a step back onto the spot is refused
+                if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
+                    return;
+                if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
                 {
-                    target_x--;
-                    // While the spot countdown runs, a step back onto the spot is refused
-                    if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
-                        return;
-                    if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                    warp_level_left = MainForm->map->GetWarpLevel(target_x, target_y);
+                    if (MainForm->animation->interface_controller->status->level >= warp_level_left)
                     {
-                        int warp_level_left = MainForm->map->GetWarpLevel(target_x, target_y);
-                        if (MainForm->animation->interface_controller->status->level >= warp_level_left)
+                        if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
                         {
-                            if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                             {
-                                if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                                walk_left = true;
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
                                 {
-                                    char walk_left = true;
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
-                                    {
-                                        walk_left = false;
-                                        MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
-                                            target_y, direction);
-                                    }
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
-                                    {
-                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
-                                            SpellEffect_WaterSplash);
-                                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
-                                    }
-                                    if (walk_left)
-                                        MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
-                                            target_y, direction);
-                                    MainForm->animation->interface_controller->spells->CancelCast();
-                                    MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
-                                    MainForm->map->StartScroll(FacingDirection_Left);
-                                    attack_count = 0;
-                                    if (ghost_walk)
-                                    {
-                                        MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
-                                        MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
-                                    }
-                                    else
-                                        MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
+                                    walk_left = false;
+                                    MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
                                 }
-                            }
-                            else
-                            {
-                                // A player in the way is noted; Tick walks through them when they keep blocking
-                                blocked_direction = direction;
-                                blocked_x = target_x;
-                                blocked_y = target_y;
-                                if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
-                                    blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
+                                {
+                                    MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                        SpellEffect_WaterSplash);
+                                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                                }
+                                if (walk_left)
+                                    MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                MainForm->animation->interface_controller->spells->CancelCast();
+                                MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
+                                MainForm->map->StartScroll(FacingDirection_Left);
+                                attack_count = 0;
+                                if (ghost_walk)
+                                {
+                                    MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                                    MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
+                                }
+                                else
+                                    MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
                             }
                         }
                         else
                         {
-                            MainForm->map->BlockActionsBriefly();
-                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
+                            // A player in the way is noted; Tick walks through them when they keep blocking
+                            blocked_direction = direction;
+                            blocked_x = target_x;
+                            blocked_y = target_y;
+                            if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
+                                blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
+                        }
+                    }
+                    else
+                    {
+                        MainForm->map->BlockActionsBriefly();
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                            MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
                                 IntToStr(warp_level_left));
+                    }
+                }
+                else
+                {
+                    tile_used_left = false;
+                    usable_spec_left = MainForm->map->GetUsableTileSpec(target_x, target_y);
+                    if (usable_spec_left >= 0 && !MainForm->animation->IsTileUseDelayed())
+                    {
+                        MainForm->animation->StartTileUseDelay();
+                        tile_action_used = TryOpenDoor(target_x, target_y, usable_spec_left);
+                        if (!tile_action_used)
+                        {
+                            tile_action_used = TryOpenChest(target_x, target_y, usable_spec_left);
+                            tile_used_left = true;
+                        }
+                        if (!tile_action_used)
+                        {
+                            tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_left);
+                            tile_used_left = true;
+                        }
+                        if (!tile_action_used)
+                        {
+                            tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_left);
+                            tile_used_left = true;
+                        }
+                        if (!tile_action_used)
+                        {
+                            tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_left);
+                            tile_used_left = true;
+                        }
+                        if (!tile_action_used)
+                        {
+                            TrySitOnChair(target_x, target_y, usable_spec_left);
+                            tile_used_left = true;
+                        }
+                        if (tile_used_left)
+                            MainForm->animation->BlockWalking();
+                    }
+                }
+            }
+            if (direction == FacingDirection_Up && MainForm->map->GetCenterY() > 0 && !MainForm->map->IsScrolling())
+            {
+                target_y--;
+                if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
+                    return;
+                if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                {
+                    warp_level_up = MainForm->map->GetWarpLevel(target_x, target_y);
+                    if (MainForm->animation->interface_controller->status->level >= warp_level_up)
+                    {
+                        if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                        {
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                            {
+                                walk_up = true;
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
+                                {
+                                    walk_up = false;
+                                    MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                }
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
+                                {
+                                    MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                        SpellEffect_WaterSplash);
+                                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                                }
+                                if (walk_up)
+                                    MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                MainForm->animation->interface_controller->spells->CancelCast();
+                                MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
+                                MainForm->map->StartScroll(FacingDirection_Up);
+                                attack_count = 0;
+                                if (ghost_walk)
+                                {
+                                    MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                                    MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
+                                }
+                                else
+                                    MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
+                            }
+                        }
+                        else
+                        {
+                            blocked_direction = direction;
+                            blocked_x = target_x;
+                            blocked_y = target_y;
+                            if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
+                                blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
                         }
                     }
                     else
                     {
-                        char tile_used_left = false;
-                        int usable_spec_left = MainForm->map->GetUsableTileSpec(target_x, target_y);
-                        if (usable_spec_left >= 0 && !MainForm->animation->IsTileUseDelayed())
-                        {
-                            MainForm->animation->StartTileUseDelay();
-                            tile_action_used = TryOpenDoor(target_x, target_y, usable_spec_left);
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenChest(target_x, target_y, usable_spec_left);
-                                tile_used_left = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_left);
-                                tile_used_left = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_left);
-                                tile_used_left = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_left);
-                                tile_used_left = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                TrySitOnChair(target_x, target_y, usable_spec_left);
-                                tile_used_left = true;
-                            }
-                            if (tile_used_left)
-                                MainForm->animation->BlockWalking();
-                        }
+                        MainForm->map->BlockActionsBriefly();
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                            MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " + IntToStr(warp_level_up));
                     }
                 }
-                if (direction == 2 && MainForm->map->GetCenterY() > 0 && !MainForm->map->IsScrolling())
+                else
                 {
-                    target_y--;
-                    if (spot_countdown > 0)
+                    tile_used_up = false;
+                    usable_spec_up = MainForm->map->GetUsableTileSpec(target_x, target_y);
+                    if (usable_spec_up >= 0 && !MainForm->animation->IsTileUseDelayed())
                     {
-                        if (target_x == spot_x && target_y == spot_y)
-                            return;
-                    }
-                    if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
-                    {
-                        int warp_level_up = MainForm->map->GetWarpLevel(target_x, target_y);
-                        if (MainForm->animation->interface_controller->status->level >= warp_level_up)
+                        MainForm->animation->StartTileUseDelay();
+                        opened_up = TryOpenDoor(target_x, target_y, usable_spec_up);
+                        if (!opened_up)
                         {
-                            if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                            opened_up = TryOpenChest(target_x, target_y, usable_spec_up);
+                            tile_used_up = true;
+                        }
+                        if (!opened_up)
+                        {
+                            opened_up = TryOpenLocker(target_x, target_y, usable_spec_up);
+                            tile_used_up = true;
+                        }
+                        if (!opened_up)
+                        {
+                            opened_up = TryOpenBoard(target_x, target_y, usable_spec_up);
+                            tile_used_up = true;
+                        }
+                        if (!opened_up)
+                        {
+                            opened_up = TryOpenJukebox(target_x, target_y, usable_spec_up);
+                            tile_used_up = true;
+                        }
+                        if (!opened_up)
+                        {
+                            TrySitOnChair(target_x, target_y, usable_spec_up);
+                            tile_used_up = true;
+                        }
+                        if (tile_used_up)
+                            MainForm->animation->BlockWalking();
+                    }
+                }
+            }
+            if (direction == FacingDirection_Right && MainForm->map->GetCenterX() < MainForm->map->GetWidth() &&
+                !MainForm->map->IsScrolling())
+            {
+                target_x++;
+                if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
+                    return;
+                if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                {
+                    warp_level_right = MainForm->map->GetWarpLevel(target_x, target_y);
+                    if (MainForm->animation->interface_controller->status->level >= warp_level_right)
+                    {
+                        if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                        {
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                             {
-                                if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                                walk_right = true;
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
                                 {
-                                    char walk_up = true;
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
-                                    {
-                                        walk_up = false;
-                                        MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
-                                            target_y, direction);
-                                    }
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
-                                    {
-                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
-                                            SpellEffect_WaterSplash);
-                                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
-                                    }
-                                    if (walk_up)
-                                        MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
-                                            target_y, direction);
-                                    MainForm->animation->interface_controller->spells->CancelCast();
-                                    MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
-                                    MainForm->map->StartScroll(FacingDirection_Up);
-                                    attack_count = 0;
-                                    if (ghost_walk)
-                                    {
-                                        MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
-                                        MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
-                                    }
-                                    else
-                                        MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
+                                    walk_right = false;
+                                    MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
                                 }
-                            }
-                            else
-                            {
-                                blocked_direction = direction;
-                                blocked_x = target_x;
-                                blocked_y = target_y;
-                                if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
-                                    blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
+                                {
+                                    MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                        SpellEffect_WaterSplash);
+                                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                                }
+                                if (walk_right)
+                                    MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                MainForm->animation->interface_controller->spells->CancelCast();
+                                MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
+                                MainForm->map->StartScroll(FacingDirection_Right);
+                                attack_count = 0;
+                                if (ghost_walk)
+                                {
+                                    MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                                    MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
+                                }
+                                else
+                                    MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
                             }
                         }
                         else
                         {
-                            MainForm->map->BlockActionsBriefly();
-                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
-                                IntToStr(warp_level_up));
+                            blocked_direction = direction;
+                            blocked_x = target_x;
+                            blocked_y = target_y;
+                            if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
+                                blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
                         }
                     }
                     else
                     {
-                        char tile_used_up = false;
-                        int usable_spec_up = MainForm->map->GetUsableTileSpec(target_x, target_y);
-                        if (usable_spec_up >= 0 && !MainForm->animation->IsTileUseDelayed())
-                        {
-                            MainForm->animation->StartTileUseDelay();
-                            tile_action_used = TryOpenDoor(target_x, target_y, usable_spec_up);
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenChest(target_x, target_y, usable_spec_up);
-                                tile_used_up = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_up);
-                                tile_used_up = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_up);
-                                tile_used_up = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_up);
-                                tile_used_up = true;
-                            }
-                            if (!tile_action_used)
-                            {
-                                TrySitOnChair(target_x, target_y, usable_spec_up);
-                                tile_used_up = true;
-                            }
-                            if (tile_used_up)
-                                MainForm->animation->BlockWalking();
-                        }
+                        MainForm->map->BlockActionsBriefly();
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                            MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
+                                IntToStr(warp_level_right));
                     }
                 }
-                if (direction == FacingDirection_Right)
+                else
                 {
-                    if (MainForm->map->GetCenterX() < MainForm->map->GetWidth() && !MainForm->map->IsScrolling())
+                    tile_used_right = false;
+                    usable_spec_right = MainForm->map->GetUsableTileSpec(target_x, target_y);
+                    if (usable_spec_right >= 0 && !MainForm->animation->IsTileUseDelayed())
                     {
-                        target_x++;
-                        if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
-                            return;
-                        if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                        MainForm->animation->StartTileUseDelay();
+                        opened_right = TryOpenDoor(target_x, target_y, usable_spec_right);
+                        if (!opened_right)
                         {
-                            int warp_level_right = MainForm->map->GetWarpLevel(target_x, target_y);
-                            if (MainForm->animation->interface_controller->status->level >= warp_level_right)
+                            opened_right = TryOpenChest(target_x, target_y, usable_spec_right);
+                            tile_used_right = true;
+                        }
+                        if (!opened_right)
+                        {
+                            opened_right = TryOpenLocker(target_x, target_y, usable_spec_right);
+                            tile_used_right = true;
+                        }
+                        if (!opened_right)
+                        {
+                            opened_right = TryOpenBoard(target_x, target_y, usable_spec_right);
+                            tile_used_right = true;
+                        }
+                        if (!opened_right)
+                        {
+                            opened_right = TryOpenJukebox(target_x, target_y, usable_spec_right);
+                            tile_used_right = true;
+                        }
+                        if (!opened_right)
+                        {
+                            TrySitOnChair(target_x, target_y, usable_spec_right);
+                            tile_used_right = true;
+                        }
+                        if (tile_used_right)
+                            MainForm->animation->BlockWalking();
+                    }
+                }
+            }
+            if (direction == FacingDirection_Down && MainForm->map->GetCenterY() < MainForm->map->GetHeight() &&
+                !MainForm->map->IsScrolling())
+            {
+                target_y++;
+                if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
+                    return;
+                if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                {
+                    warp_level_down = MainForm->map->GetWarpLevel(target_x, target_y);
+                    if (MainForm->animation->interface_controller->status->level >= warp_level_down)
+                    {
+                        if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                        {
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                             {
-                                if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
+                                walk_down = true;
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
                                 {
-                                    if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
-                                    {
-                                        char walk_right = true;
-                                        if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump ||
-                                            on_jump_tile)
-                                        {
-                                            walk_right = false;
-                                            MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
-                                                target_y, direction);
-                                        }
-                                        if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
-                                        {
-                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
-                                                SpellEffect_WaterSplash);
-                                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
-                                        }
-                                        if (walk_right)
-                                            MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
-                                                target_y, direction);
-                                        MainForm->animation->interface_controller->spells->CancelCast();
-                                        MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
-                                        MainForm->map->StartScroll(FacingDirection_Right);
-                                        attack_count = 0;
-                                        if (ghost_walk)
-                                        {
-                                            MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
-                                            MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
-                                        }
-                                        else
-                                            MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
-                                    }
+                                    walk_down = false;
+                                    MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                }
+                                if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
+                                {
+                                    MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                        SpellEffect_WaterSplash);
+                                    MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                                }
+                                if (walk_down)
+                                    MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
+                                        target_y, direction);
+                                MainForm->animation->interface_controller->spells->CancelCast();
+                                MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
+                                MainForm->map->StartScroll(FacingDirection_Down);
+                                attack_count = 0;
+                                if (ghost_walk)
+                                {
+                                    MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                                    MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
                                 }
                                 else
-                                {
-                                    blocked_direction = direction;
-                                    blocked_x = target_x;
-                                    blocked_y = target_y;
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
-                                        blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
-                                }
-                            }
-                            else
-                            {
-                                MainForm->map->BlockActionsBriefly();
-                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                    MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
-                                    IntToStr(warp_level_right));
+                                    MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
                             }
                         }
                         else
                         {
-                            char tile_used_right = false;
-                            int usable_spec_right = MainForm->map->GetUsableTileSpec(target_x, target_y);
-                            if (usable_spec_right >= 0 && !MainForm->animation->IsTileUseDelayed())
-                            {
-                                MainForm->animation->StartTileUseDelay();
-                                tile_action_used = TryOpenDoor(target_x, target_y, usable_spec_right);
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenChest(target_x, target_y, usable_spec_right);
-                                    tile_used_right = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_right);
-                                    tile_used_right = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_right);
-                                    tile_used_right = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_right);
-                                    tile_used_right = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    TrySitOnChair(target_x, target_y, usable_spec_right);
-                                    tile_used_right = true;
-                                }
-                                if (tile_used_right)
-                                    MainForm->animation->BlockWalking();
-                            }
+                            blocked_direction = direction;
+                            blocked_x = target_x;
+                            blocked_y = target_y;
+                            if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
+                                blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
                         }
                     }
-                }
-                if (direction == FacingDirection_Down)
-                {
-                    if (MainForm->map->GetCenterY() < MainForm->map->GetHeight() && !MainForm->map->IsScrolling())
+                    else
                     {
-                        target_y++;
-                        if (spot_countdown > 0 && target_x == spot_x && target_y == spot_y)
-                            return;
-                        else if (!MainForm->map->IsBlocked(target_x, target_y) || ghost_walk)
+                        MainForm->map->BlockActionsBriefly();
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                            MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
+                                IntToStr(warp_level_down));
+                    }
+                }
+                else
+                {
+                    tile_used_down = false;
+                    usable_spec_down = MainForm->map->GetUsableTileSpec(target_x, target_y);
+                    if (usable_spec_down >= 0 && !MainForm->animation->IsTileUseDelayed())
+                    {
+                        MainForm->animation->StartTileUseDelay();
+                        opened_down = TryOpenDoor(target_x, target_y, usable_spec_down);
+                        if (!opened_down)
                         {
-                            int warp_level_down = MainForm->map->GetWarpLevel(target_x, target_y);
-                            if (MainForm->animation->interface_controller->status->level >= warp_level_down)
-                            {
-                                if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
-                                {
-                                    if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
-                                    {
-                                        char walk_down = true;
-                                        if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump ||
-                                            on_jump_tile)
-                                        {
-                                            walk_down = false;
-                                            MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
-                                                target_y, direction);
-                                        }
-                                        if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
-                                        {
-                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
-                                                SpellEffect_WaterSplash);
-                                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
-                                        }
-                                        if (walk_down)
-                                            MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
-                                                target_y, direction);
-                                        MainForm->animation->interface_controller->spells->CancelCast();
-                                        MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
-                                        MainForm->map->StartScroll(FacingDirection_Down);
-                                        attack_count = 0;
-                                        if (ghost_walk)
-                                        {
-                                            MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
-                                            MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
-                                        }
-                                        else
-                                            MainForm->net_client->sender->SendWalk(direction, target_x, target_y);
-                                    }
-                                }
-                                else
-                                {
-                                    blocked_direction = direction;
-                                    blocked_x = target_x;
-                                    blocked_y = target_y;
-                                    if (MainForm->map->GetTileSpec(target_x, target_y) != TileSpec_CountdownSpot)
-                                        blocking_player_id = MainForm->players->FindPlayerAt(target_x, target_y);
-                                }
-                            }
-                            else
-                            {
-                                MainForm->map->BlockActionsBriefly();
-                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                    MainForm->strings->GetText(GameText_YouAreNotReady) + " - LVL " +
-                                    IntToStr(warp_level_down));
-                            }
+                            opened_down = TryOpenChest(target_x, target_y, usable_spec_down);
+                            tile_used_down = true;
                         }
-                        else
+                        if (!opened_down)
                         {
-                            char tile_used_down = false;
-                            int usable_spec_down = MainForm->map->GetUsableTileSpec(target_x, target_y);
-                            if (usable_spec_down >= 0 && !MainForm->animation->IsTileUseDelayed())
-                            {
-                                MainForm->animation->StartTileUseDelay();
-                                tile_action_used = TryOpenDoor(target_x, target_y, usable_spec_down);
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenChest(target_x, target_y, usable_spec_down);
-                                    tile_used_down = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_down);
-                                    tile_used_down = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_down);
-                                    tile_used_down = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_down);
-                                    tile_used_down = true;
-                                }
-                                if (!tile_action_used)
-                                {
-                                    TrySitOnChair(target_x, target_y, usable_spec_down);
-                                    tile_used_down = true;
-                                }
-                                if (tile_used_down)
-                                    MainForm->animation->BlockWalking();
-                            }
+                            opened_down = TryOpenLocker(target_x, target_y, usable_spec_down);
+                            tile_used_down = true;
                         }
+                        if (!opened_down)
+                        {
+                            opened_down = TryOpenBoard(target_x, target_y, usable_spec_down);
+                            tile_used_down = true;
+                        }
+                        if (!opened_down)
+                        {
+                            opened_down = TryOpenJukebox(target_x, target_y, usable_spec_down);
+                            tile_used_down = true;
+                        }
+                        if (!opened_down)
+                        {
+                            TrySitOnChair(target_x, target_y, usable_spec_down);
+                            tile_used_down = true;
+                        }
+                        if (tile_used_down)
+                            MainForm->animation->BlockWalking();
                     }
                 }
             }
@@ -898,11 +917,11 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
     int form_rows = form_row_count;
     // Each row under five makes the form one row shorter, so it may sit lower on screen
     if (form_rows < 5)
-        unused_height = INPUT_FORM_ROW_HEIGHT * (5 - form_rows);
+        form_rows = INPUT_FORM_ROW_HEIGHT * (5 - form_rows);
     else
-        unused_height = 0;
-    if (unused_height + 69 <= form_y)
-        form_y = unused_height + 69;
+        form_rows = 0;
+    if (form_rows + 69 <= form_y)
+        form_y = form_rows + 69;
     MainForm->edits->FocusEdit(EditId_FormFirstRow);
     form_dragging = false;
     form_ok_hovered = false;
@@ -1085,71 +1104,60 @@ void GameController::MouseDown(int x, int y)
 // Moves a dragged box (kept on screen), the form's scroll thumb and the amount slider, and tracks hovers.
 void GameController::MouseMove(int x, int y)
 {
-    int slider_offset;
-    double slider_fraction;
     char handled = false;
     if (!handled && message_visible)
     {
         handled = true;
-        if (message_dragging)
+        if (message_dragging && message_drag_mode == 1)
         {
-            if (message_drag_mode == 1)
-            {
-                message_x = x - message_drag_offset_x;
-                message_y = y - message_drag_offset_y;
-                if (message_x <= 10)
-                    message_x = 10;
-                if (message_y <= 8)
-                    message_y = 8;
-                if (message_x >= 340)
-                    message_x = 340;
-                if (message_y >= 184)
-                    message_y = 184;
-                MainForm->redraw_needed = true;
-            }
+            message_x = x - message_drag_offset_x;
+            message_y = y - message_drag_offset_y;
+            if (message_x <= 10)
+                message_x = 10;
+            if (message_y <= 8)
+                message_y = 8;
+            if (message_x >= 340)
+                message_x = 340;
+            if (message_y >= 184)
+                message_y = 184;
+            MainForm->redraw_needed = true;
         }
     }
-    if (!handled)
+    if (!handled && large_box_visible)
     {
-        if (large_box_visible)
+        handled = true;
+        if (large_box_dragging)
         {
-            handled = true;
-            if (large_box_dragging)
-            {
-                large_box_x = x - large_box_drag_offset_x;
-                large_box_y = y - large_box_drag_offset_y;
-                if (large_box_x <= 10)
-                    large_box_x = 10;
-                if (large_box_y <= 8)
-                    large_box_y = 8;
-                if (large_box_x >= 340)
-                    large_box_x = 340;
-                if (large_box_y >= 120)
-                    large_box_y = 120;
-                MainForm->redraw_needed = true;
-            }
+            large_box_x = x - large_box_drag_offset_x;
+            large_box_y = y - large_box_drag_offset_y;
+            if (large_box_x <= 10)
+                large_box_x = 10;
+            if (large_box_y <= 8)
+                large_box_y = 8;
+            if (large_box_x >= 340)
+                large_box_x = 340;
+            if (large_box_y >= 120)
+                large_box_y = 120;
+            MainForm->redraw_needed = true;
         }
     }
-    if (!handled)
+    if (!handled && input_box_visible)
     {
-        if (input_box_visible)
+        handled = true;
+        if (input_box_dragging)
         {
-            handled = true;
-            if (input_box_dragging)
-            {
-                input_box_x = x - input_box_drag_offset_x;
-                input_box_y = y - input_box_drag_offset_y;
-                if (input_box_x <= 10)
-                    input_box_x = 10;
-                if (input_box_y <= 8)
-                    input_box_y = 8;
-                if (input_box_x >= 365)
-                    input_box_x = 365;
-                if (input_box_y >= 161)
-                    input_box_y = 161;
-                MainForm->edits->SetPosition(EditId_InputBox, input_box_x + 43, input_box_y + 73);
-                MainForm->redraw_needed = true;
-            }
+            input_box_x = x - input_box_drag_offset_x;
+            input_box_y = y - input_box_drag_offset_y;
+            if (input_box_x <= 10)
+                input_box_x = 10;
+            if (input_box_y <= 8)
+                input_box_y = 8;
+            if (input_box_x >= 365)
+                input_box_x = 365;
+            if (input_box_y >= 161)
+                input_box_y = 161;
+            MainForm->edits->SetPosition(EditId_InputBox, input_box_x + 43, input_box_y + 73);
+            MainForm->redraw_needed = true;
         }
     }
     if (!handled && form_visible)
@@ -1192,13 +1200,10 @@ void GameController::MouseMove(int x, int y)
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (form_scroll_up_hovered)
         {
-            if (form_scroll_up_hovered)
-            {
-                form_scroll_up_hovered = false;
-                MainForm->redraw_needed = true;
-            }
+            form_scroll_up_hovered = false;
+            MainForm->redraw_needed = true;
         }
         if (x >= form_x + 284 && x <= form_x + 299 && form_y + 163 <= y && form_y + 177 >= y)
         {
@@ -1208,20 +1213,17 @@ void GameController::MouseMove(int x, int y)
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (form_scroll_down_hovered)
         {
-            if (form_scroll_down_hovered)
-            {
-                form_scroll_down_hovered = false;
-                MainForm->redraw_needed = true;
-            }
+            form_scroll_down_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
     if (!handled && amount_box_visible)
     {
         handled = true;
-        if (x >= amount_box_x + amount_slider_offset + 25 && !(x > amount_box_x + amount_slider_offset + 40) &&
-            amount_box_y + 97 <= y && !(amount_box_y + 111 < y))
+        if (x >= amount_box_x + amount_slider_offset + 25 && x <= amount_box_x + amount_slider_offset + 40 &&
+            amount_box_y + 97 <= y && amount_box_y + 111 >= y)
         {
             if (!amount_slider_hovered)
             {
@@ -1236,7 +1238,7 @@ void GameController::MouseMove(int x, int y)
         }
         if (amount_slider_grabbed)
         {
-            slider_offset = x - (amount_box_x + 25) - amount_slider_grab_offset;
+            int slider_offset = x - (amount_box_x + 25) - amount_slider_grab_offset;
             if (slider_offset < 0)
                 slider_offset = 0;
             if (slider_offset > 107)
@@ -1244,7 +1246,7 @@ void GameController::MouseMove(int x, int y)
             if (amount_max > 1)
             {
                 // The slider's left end is 1 and its right end max_amount
-                slider_fraction = slider_offset / 107.0;
+                double slider_fraction = slider_offset / 107.0;
                 int amount_offset = (amount_max - 1) * slider_fraction;
                 amount_slider_offset = slider_offset;
                 amount_offset++;
@@ -1273,19 +1275,16 @@ void GameController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    if (!handled)
+    if (!handled && player_menu_visible)
     {
-        if (player_menu_visible)
+        player_menu_hovered_option = -1;
+        if (x > player_menu_x + 12 && x < player_menu_x + 92)
         {
-            player_menu_hovered_option = -1;
-            if (x > player_menu_x + 12 && x < player_menu_x + 92)
+            if (player_menu_y + 13 < y && player_menu_y + 131 > y)
             {
-                if (player_menu_y + 13 < y && player_menu_y + 131 > y)
-                {
-                    // The options are rows of equal height from the menu's top
-                    player_menu_hovered_option = (y - (player_menu_y + 17)) / 15;
-                    MainForm->redraw_needed = true;
-                }
+                // The options are rows of equal height from the menu's top
+                player_menu_hovered_option = (y - (player_menu_y + 17)) / 15;
+                MainForm->redraw_needed = true;
             }
         }
     }
@@ -1336,10 +1335,10 @@ void GameController::ShowInputFormRows(int first_row)
     MainForm->edits->SetCaseMode(EditId_FormFourthRow, form_row_case_modes[first_row + 3]);
     MainForm->edits->SetCaseMode(EditId_FormFifthRow, form_row_case_modes[first_row + 4]);
     MainForm->edits->SetPasswordMode(EditId_FormFirstRow, form_row_password_flags[first_row]);
-    MainForm->edits->SetPasswordMode(EditId_FormSecondRow, form_row_password_flags[first_row + 1]);
-    MainForm->edits->SetPasswordMode(EditId_FormThirdRow, form_row_password_flags[first_row + 2]);
-    MainForm->edits->SetPasswordMode(EditId_FormFourthRow, form_row_password_flags[first_row + 3]);
-    MainForm->edits->SetPasswordMode(EditId_FormFifthRow, form_row_password_flags[first_row + 4]);
+    MainForm->edits->SetPasswordMode(EditId_FormSecondRow, second_row_password_flags[first_row]);
+    MainForm->edits->SetPasswordMode(EditId_FormThirdRow, third_row_password_flags[first_row]);
+    MainForm->edits->SetPasswordMode(EditId_FormFourthRow, fourth_row_password_flags[first_row]);
+    MainForm->edits->SetPasswordMode(EditId_FormFifthRow, fifth_row_password_flags[first_row]);
 }
 
 // Stores the texts of the five edits back into the rows on screen.
@@ -1368,8 +1367,9 @@ void GameController::InputFormScrollUp()
     if (form_row_count > 5 && form_top_row > 0)
     {
         SaveInputFormRows();
-        ShowInputFormRows(--form_top_row);
-        double scroll_fraction = (double)form_top_row / (double)(form_row_count - 5);
+        form_top_row--;
+        ShowInputFormRows(form_top_row);
+        double scroll_fraction = (double)form_top_row / (form_row_count - 5);
         double thumb_pos = INPUT_FORM_THUMB_TRAVEL * scroll_fraction;
         form_thumb_offset = thumb_pos;
         MainForm->redraw_needed = true;
@@ -1382,8 +1382,9 @@ void GameController::InputFormScrollDown()
     if (form_row_count - 5 > form_top_row)
     {
         SaveInputFormRows();
-        ShowInputFormRows(++form_top_row);
-        double scroll_fraction = (double)form_top_row / (double)(form_row_count - 5);
+        form_top_row++;
+        ShowInputFormRows(form_top_row);
+        double scroll_fraction = (double)form_top_row / (form_row_count - 5);
         double thumb_pos = INPUT_FORM_THUMB_TRAVEL * scroll_fraction;
         form_thumb_offset = thumb_pos;
         MainForm->redraw_needed = true;
@@ -1393,9 +1394,7 @@ void GameController::InputFormScrollDown()
 // Sets the form's top row from the grabbed thumb's place on its track.
 void GameController::InputFormDragThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_row;
-    int unused_int;
+    int new_top_row;
     if (form_thumb_grabbed)
     {
         int thumb_offset = y - form_thumb_grab_offset - form_y;
@@ -1405,9 +1404,9 @@ void GameController::InputFormDragThumb(int y)
             thumb_offset = 60;
         if (form_row_count > 5)
         {
-            thumb_fraction = thumb_offset / 60.0;
-            scaled_row = (form_row_count - 5.0) * thumb_fraction;
-            int new_top_row = scaled_row;
+            double thumb_fraction = thumb_offset / 60.0;
+            double scaled_row = (form_row_count - 5.0) * thumb_fraction;
+            new_top_row = scaled_row;
             if (new_top_row != form_top_row)
             {
                 SaveInputFormRows();
@@ -1481,6 +1480,7 @@ bool GameController::TryOpenJukebox(int x, int y, int tile_spec)
 // Asks to open the chest at the tile; a locked chest needs its key in the inventory, else the key's name shows.
 bool GameController::TryOpenChest(int x, int y, int tile_spec)
 {
+    int key_id;
     bool handled = false;
     if (tile_spec == TileSpec_Chest)
     {
@@ -1488,7 +1488,7 @@ bool GameController::TryOpenChest(int x, int y, int tile_spec)
         TPoint pos;
         pos.x = x;
         pos.y = y;
-        int key_id = MainForm->map->GetChestKey(x, y);
+        key_id = MainForm->map->GetChestKey(x, y);
         if (key_id > 0)
         {
             if (MainForm->animation->interface_controller->inventory->HasKey(key_id))
@@ -1551,15 +1551,15 @@ void GameController::Tick()
 {
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
-        this->idle_ticks++;
+        idle_ticks++;
         // Idle in the game: an emote now and then, later two warnings, then the logout
-        if (this->idle_ticks >= 2500)
+        if (idle_ticks >= 2500)
         {
-            if (!(idle_ticks % 250))
+            if (idle_ticks % 250 == 0)
                 PlayEmote(Emote_Moon);
             if (idle_ticks >= 15000)
             {
-                if (!(idle_ticks % 500))
+                if (idle_ticks % 500 == 0)
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
                         MainForm->strings->GetText(GameText_YouHaveBeenIdle));
                 if (idle_ticks % 500 == 30)
@@ -1576,32 +1576,23 @@ void GameController::Tick()
     }
     if (spot_countdown > 0)
     {
-        int countdown = --spot_countdown;
+        spot_countdown--;
         // While the player stays on the spot: a sound and a warning at each of these counts, then the
         // connection closes
-        if (countdown == 80 || countdown == 70 || countdown == 60 || countdown == 50 || countdown == 40)
+        if ((spot_countdown == 80 || spot_countdown == 70 || spot_countdown == 60 || spot_countdown == 50 ||
+            spot_countdown == 40) && MainForm->players->GetX(MainForm->net_client->GetPlayerId()) == spot_x &&
+            MainForm->players->GetY(MainForm->net_client->GetPlayerId()) == spot_y)
         {
-            if (MainForm->players->GetX(MainForm->net_client->GetPlayerId()) == spot_x)
-            {
-                if (MainForm->players->GetY(MainForm->net_client->GetPlayerId()) == spot_y)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_Countdown);
-                    if (spot_countdown == 70)
-                        MainForm->gfx->sprites->ShowSpeechBalloon(MainForm->strings->GetText(GameText_MoveAwayFromPlace),
-                            MainForm->net_client->GetPlayerId(), 0);
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                        MainForm->strings->GetText(GameText_DoNotBlockArena));
-                }
-            }
+            MainForm->sfx->PlaySfx(SfxSound_Countdown);
+            if (spot_countdown == 70)
+                MainForm->gfx->sprites->ShowSpeechBalloon(MainForm->strings->GetText(GameText_MoveAwayFromPlace),
+                    MainForm->net_client->GetPlayerId(), 0);
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                MainForm->strings->GetText(GameText_DoNotBlockArena));
         }
-        if (spot_countdown == 30)
-        {
-            if (MainForm->players->GetX(MainForm->net_client->GetPlayerId()) == spot_x)
-            {
-                if (MainForm->players->GetY(MainForm->net_client->GetPlayerId()) == spot_y)
-                    MainForm->client->Close();
-            }
-        }
+        if (spot_countdown == 30 && MainForm->players->GetX(MainForm->net_client->GetPlayerId()) == spot_x &&
+            MainForm->players->GetY(MainForm->net_client->GetPlayerId()) == spot_y)
+            ((TAbstractSocket *)MainForm->client)->Close();
     }
     // Walk notes the player in the way; the same one blocking for long enough is walked through
     if (blocking_player_id > -1)
@@ -1612,27 +1603,19 @@ void GameController::Tick()
             if (blocked_ticks == 4)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                     MainForm->strings->GetText(GameText_KeepMovingIntoPlayer));
-            if (blocked_ticks > 42 && !MainForm->map->IsActionBlocked() && !MainForm->animation->IsWalkingBlocked())
+            if (blocked_ticks > 42 && !MainForm->map->IsActionBlocked() && !MainForm->animation->IsWalkingBlocked() &&
+                !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
+                !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()))
             {
-                if (!MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()))
-                {
-                    if (!MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()))
-                    {
-                        if (!MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()))
-                        {
-                            if (!MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()))
-                            {
-                                MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
-                                MainForm->map->StartScroll(blocked_direction);
-                                MainForm->net_client->sender->SendWalkGhost(blocked_direction, blocked_x, blocked_y,
-                                    last_blocking_player_id);
-                                MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), blocked_x, blocked_y,
-                                    blocked_direction);
-                                blocked_ticks = 0;
-                            }
-                        }
-                    }
-                }
+                MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
+                MainForm->map->StartScroll(blocked_direction);
+                MainForm->net_client->sender->SendWalkGhost(blocked_direction, blocked_x, blocked_y,
+                    last_blocking_player_id);
+                MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), blocked_x, blocked_y,
+                    blocked_direction);
+                blocked_ticks = 0;
             }
         }
         else
@@ -1680,7 +1663,7 @@ int GameController::GetExperienceForLevel(int level)
 {
     int experience = 0;
     if (level > 0)
-        experience = level * 1.1 * (level * 1.1) * (level * 1.1) * 100.0;
+        experience = (int)(level * 1.1 * (level * 1.1) * (level * 1.1) * 100.0);
     return experience;
 }
 

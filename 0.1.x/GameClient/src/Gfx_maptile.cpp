@@ -3,12 +3,8 @@
 
 #include "Gfx_maptile.h"
 #include "Gfx_tile.h"
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+#include "Gfx_mapobject.h"
+
 #pragma package(smart_init)
 
 TileWrapper::TileWrapper(int requested_id)
@@ -17,6 +13,8 @@ TileWrapper::TileWrapper(int requested_id)
     is_loaded = false;
     was_used = false;
     idle_ticks = 0;
+    fetched = false;
+    unfetched_frames = 0;
 }
 
 TileWrapper::~TileWrapper()
@@ -25,12 +23,11 @@ TileWrapper::~TileWrapper()
 
 void TileWrapper::CreateResource()
 {
-    if (!is_loaded)
+    if (!was_used)
+    {
         resource = new TileResource();
+        was_used = true;
+    }
 }
 
-void TileWrapper::FreeResource()
-{
-    if (is_loaded)
-        delete resource;
-}
+DEFINE_FREE_RESOURCE(TileWrapper)

@@ -3,6 +3,38 @@
 
 #include <Classes.hpp>
 #include <ScktComp.hpp>
+#include <deque.h>
+#include <queue.h>
+#include <stack.h>
+#include <string>
+
+struct PacketOperator;
+struct PacketProcessor;
+
+#define ACCOUNT_CONFIRM_EDIT_Y 171
+#define ACCOUNT_EDIT10_Y 362
+#define ACCOUNT_EDIT8_Y 260
+#define ACCOUNT_EDIT9_Y 311
+#define ACCOUNT_FORM_EDIT_X 358
+#define ACCOUNT_NAME_EDIT_Y 69
+#define ACCOUNT_PASSWORD_EDIT_Y 120
+#define FILE_SYSTEM_NAME_BUFFER_SIZE 1000
+#define GRID_LOGIN_NAME_EDIT_Y 353
+#define LOGIN_EDIT_X 402
+#define LOGIN_NAME_EDIT_Y 315
+#define LOGIN_PASSWORD_EDIT_Y 351
+#define NUMBER_ENCODING_BASE 253
+#define VOLUME_NAME_BUFFER_SIZE 1000
+
+enum AdminLevel
+{
+    AdminLevel_Player = 0,
+    AdminLevel_Spy = 1,
+    AdminLevel_LightGuide = 2,
+    AdminLevel_Guardian = 3,
+    AdminLevel_GameMaster = 4,
+    AdminLevel_HighGameMaster = 5
+};
 
 enum PacketAction
 {
@@ -38,15 +70,15 @@ enum PacketAction
     AC_TARGET = 31,
     AC_GROUP = 33,
     AC_TALK = 34,
-    AC_SWAP = 35,
-    AC_LOGINGET = 200,
-    AC_CONFIG = 220,
     AC_SYN1 = 240,
     AC_SYN2 = 241,
     AC_SYN3 = 242,
     AC_SYN4 = 243,
     AC_SYN5 = 244,
-    AC_ERROR = 250
+    AC_ERROR = 250,
+    AC_SWAP = 35,
+    AC_LOGINGET = 200,
+    AC_CONFIG = 220
 };
 
 enum PacketFamily
@@ -102,23 +134,6 @@ enum PacketFamily
     OP_BOSS = 52,
     OP_CAPTCHA = 249
 };
-#define ACCOUNT_CONFIRM_EDIT_Y 171
-#define ACCOUNT_EDIT10_Y 362
-#define ACCOUNT_EDIT8_Y 260
-#define ACCOUNT_EDIT9_Y 311
-#define ACCOUNT_FORM_EDIT_X 358
-#define ACCOUNT_NAME_EDIT_Y 69
-#define ACCOUNT_PASSWORD_EDIT_Y 120
-#define FILE_SYSTEM_NAME_BUFFER_SIZE 1000
-#define GRID_LOGIN_NAME_EDIT_Y 353
-#define LOGIN_EDIT_X 402
-#define LOGIN_NAME_EDIT_Y 315
-#define LOGIN_PASSWORD_EDIT_Y 351
-#define NUMBER_ENCODING_BASE 253
-#define VOLUME_NAME_BUFFER_SIZE 1000
-
-struct PacketOperator;
-struct PacketProcessor;
 
 // The connection to the game server: packet framing, the protocol's number encoding and byte scrambling, the chat
 // word filter, and the distance tests the map draw and sound use.
@@ -169,21 +184,21 @@ struct Client
     void SetPlayerId(int new_player_id);
     int GetPlayerId();
     bool HandleRawPacket(String frame);
-    void ReceiveData(Scktcomp::TCustomWinSocket *socket, String text);
+    void ReceiveData(TCustomWinSocket *socket, String text);
     bool IsWithinReach(int from_x, int from_y, int to_x, int to_y);
     bool IsInSoundRange(int from_x, int from_y, int to_x, int to_y);
     bool IsWallInDrawRange(int from_x, int from_y, int to_x, int to_y);
     bool IsObjectInDrawRange(int from_x, int from_y, int to_x, int to_y);
     bool IsTallObjectInDrawRange(int from_x, int from_y, int to_x, int to_y);
     bool IsInDrawRange(int from_x, int from_y, int to_x, int to_y);
-    bool IsAdjacent(int from_x, int from_y, int to_x, int to_y);
+    char GetAdjacentDirection(int from_x, int from_y, int to_x, int to_y);
     unsigned int DecodeLength(String encoded);
-    String EncodeNumber(unsigned int value, int min_length);
-    unsigned int DecodeNumber(String encoded);
+    String EncodeNumber(unsigned int value, int width);
+    int DecodeNumber(String encoded);
     int HashChallenge(int sent_challenge);
     String EncryptPacket(int key, String packet);
     String ScrambleBytes(int divisor, char *data_begin, char *data_end);
-    String UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned char *data_end);
+    String UnscrambleBytes(int divisor, char *data_begin, char *data_end);
     String DeobfuscateString(String text);
     String FlipHighBits(String text);
     bool SendPacket(int action, int family, String data);

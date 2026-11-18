@@ -8,8 +8,8 @@ struct SoundMapper
 
     SoundMapper();
     ~SoundMapper();
-    void PlayWeaponSound(int weapon);
-    void PlayEffectSound(int effect_id);
+    void PlayWeaponSound(int weapon, int volume);
+    void PlayEffectSound(int effect_id, int volume);
 };
 
 #endif

@@ -6,10 +6,9 @@
 #include "Ctrl_menu.h"
 #include "Gfx_game.h"
 #include "Gfx_interface.h"
-#include <TDx_Draw_Library_Install.H>
 #include <stdlib.h>
+
 #pragma package(smart_init)
-#define MENU_BUTTON_PITCH 40
 
 MenuGraphics::MenuGraphics()
 {
@@ -171,7 +170,7 @@ MenuGraphics::MenuGraphics()
 }
 
 // One key of the soft keypad sheet, by column and row, with a one-pixel gap between keys.
-Windows::TRect MenuGraphics::GetKeyRect(int column, int row)
+TRect MenuGraphics::GetKeyRect(int column, int row)
 {
     TRect key_rect;
     key_rect.left = 21 * column + column;
@@ -185,7 +184,7 @@ Windows::TRect MenuGraphics::GetKeyRect(int column, int row)
 DEFINE_GET_SCROLL_ICON_RECT(MenuGraphics)
 
 // One main menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetMainMenuButtonRect(int button, int state)
+TRect MenuGraphics::GetMainMenuButtonRect(int button, int state)
 {
     TRect main_menu_button_rect;
     main_menu_button_rect.left = 180 * state;
@@ -196,7 +195,7 @@ Windows::TRect MenuGraphics::GetMainMenuButtonRect(int button, int state)
 }
 
 // One wide menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetWideButtonRect(int button, int state)
+TRect MenuGraphics::GetWideButtonRect(int button, int state)
 {
     TRect wide_button_rect;
     wide_button_rect.left = 120 * state;
@@ -207,7 +206,7 @@ Windows::TRect MenuGraphics::GetWideButtonRect(int button, int state)
 }
 
 // One small menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetSmallButtonRect(int button, int state)
+TRect MenuGraphics::GetSmallButtonRect(int button, int state)
 {
     TRect small_button_rect;
     small_button_rect.left = BUTTON_COLUMN_PITCH * state;
@@ -735,7 +734,8 @@ void MenuGraphics::DrawLoginText()
     if (MainForm->animation->menu->password != "")
     {
         String masked_password = MainForm->animation->menu->password;
-        password_length = MainForm->animation->menu->password.Length();
+        String *password_text = &MainForm->animation->menu->password;
+        password_length = password_text->Length();
         for (int i = 1; i <= password_length; i++)
             masked_password[i] = '*';
         MainForm->text_canvas->TextOut(450, 305, masked_password);
@@ -754,7 +754,7 @@ void MenuGraphics::DrawCharacterSlotText()
     MainForm->text_canvas->Font->Size = 8;
     if (MainForm->players->GetCount() >= 1)
     {
-        for (i = 0; i < (int)MainForm->players->GetCount(); i++)
+        for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
         {
             Player handle = MainForm->players->GetPlayer(i);
             if (!handle.draw_group)
@@ -783,30 +783,23 @@ void MenuGraphics::DrawCharacterSlotText()
 // Draws the visible lines of the menu text window, from its scroll offset.
 void MenuGraphics::DrawListBoxText()
 {
-    int first_index;
-    int entry_count;
-    int row;
-    int i;
-    int text_x;
-    int text_y;
     MainForm->draw_canvas->Brush->Color = clWhite;
     MainForm->draw_canvas->Brush->Style = bsClear;
     MainForm->draw_canvas->Font->Color = clBlack;
     MainForm->draw_canvas->Font->Name = "MS Sans Serif";
     MainForm->draw_canvas->Font->Size = 7;
     MainForm->draw_canvas->Font->Color = (TColor)0xC8C8C8;
-    MenuController *menu = MainForm->animation->menu;
-    first_index = menu->GetScrollOffset();
-    entry_count = MainForm->animation->menu->text_lines->Count;
-    row = 0;
-    for (i = first_index; i < entry_count && i < first_index + 7; i++)
+    int first_index = MainForm->animation->menu->GetScrollOffset();
+    int entry_count = MainForm->animation->menu->text_lines->Count;
+    int row = 0;
+    for (int i = first_index; i < entry_count && i < first_index + 7; i++)
     {
         String entry = MainForm->animation->menu->text_lines->Strings[i];
         if (entry.Length() > 0)
         {
             MainForm->draw_canvas->Font->Color = (TColor)0xC8C8C8;
-            text_x = MainForm->animation->menu->text_window_x + 30;
-            text_y = MainForm->animation->menu->text_window_y + 16 * row + 70;
+            int text_x = MainForm->animation->menu->text_window_x + 30;
+            int text_y = MainForm->animation->menu->text_window_y + 16 * row + 70;
             MainForm->draw_canvas->TextOut(text_x, text_y, entry);
         }
         row++;
@@ -817,19 +810,16 @@ void MenuGraphics::DrawListBoxText()
 // A first line too wide for the box is wrapped at spaces into the lines below it.
 void MenuGraphics::DrawMessageBoxText()
 {
-    int wrap_width;
-    int text_x;
-    int line_index;
+    int break_at;
     int line_start;
     int line_end;
-    int i;
     MainForm->draw_canvas->Brush->Color = clWhite;
     MainForm->draw_canvas->Brush->Style = bsClear;
     MainForm->draw_canvas->Font->Color = (TColor)0xC8F0F0;
     MainForm->draw_canvas->Font->Name = "MS Sans Serif";
     MainForm->draw_canvas->Font->Size = 10;
-    wrap_width = 250;
-    text_x = 20;
+    int wrap_width = 250;
+    int text_x = 20;
     // A box with an image keeps the text clear of it, narrower.
     if (MainForm->animation->menu->message_shows_image)
     {
@@ -841,32 +831,33 @@ void MenuGraphics::DrawMessageBoxText()
         String message = MainForm->animation->menu->message_lines[0];
         line_start = 1;
         line_end = 1;
-        line_index = 0;
+        int line_index = 0;
         do
         {
             if (MainForm->draw_canvas->TextWidth(message.SubString(line_start, line_end)) >= wrap_width ||
                 line_end == message.Length())
             {
                 char seeking_break = true;
-                for (i = line_end; i >= 1 && seeking_break; i--)
+                for (break_at = line_end; break_at >= 1 && seeking_break; break_at--)
                 {
-                    if (message[i] != ' ')
+                    if (message[break_at] == ' ' || break_at == message.Length())
                     {
-                        if (i != message.Length())
-                            continue;
+                        if (line_index <= MESSAGE_BOX_LINE_COUNT &&
+                            message.SubString(line_start, break_at).Length() >= 1)
+                        {
+                            if (message.SubString(line_start, break_at)[1] == ' ')
+                                MainForm->animation->menu->message_lines[line_index] =
+                                    message.SubString(line_start + 1, break_at);
+                            else
+                                MainForm->animation->menu->message_lines[line_index] =
+                                    message.SubString(line_start, break_at);
+                        }
+                        seeking_break = false;
+                        line_start = break_at;
+                        line_end = break_at;
+                        line_end++;
+                        line_index++;
                     }
-                    if (line_index <= MESSAGE_BOX_LINE_COUNT && message.SubString(line_start, i).Length() >= 1)
-                    {
-                        if (message.SubString(line_start, i)[1] == ' ')
-                            MainForm->animation->menu->message_lines[line_index] = message.SubString(line_start + 1, i);
-                        else
-                            MainForm->animation->menu->message_lines[line_index] = message.SubString(line_start, i);
-                    }
-                    seeking_break = false;
-                    line_start = i;
-                    line_end = i;
-                    line_end++;
-                    line_index++;
                 }
             }
             else
@@ -916,10 +907,9 @@ void MenuGraphics::DrawListBoxControls()
 // Draws the menu message box buttons, the progress bar of a progress box, and the image of a box that has one.
 void MenuGraphics::DrawMessageBoxControls()
 {
-    int ok_button;
     TRect bar_rect;
     TRect fill_rect;
-    ok_button = 4;
+    int ok_button = 4;
     // A confirm box has a second button beside the first.
     if (MainForm->animation->menu->message_kind == MessageBoxKind_Confirm)
         ok_button = 1;
@@ -959,19 +949,13 @@ void MenuGraphics::DrawMessageBoxControls()
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->message_shows_image)
-    {
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 16,
             MainForm->animation->menu->message_y + 56, key_sheet, &message_icon_rect, DDBLTFAST_WAIT);
-        return;
-    }
 }
 
 // Draws the create-character choices (gender, hair style, hair colour, skin) with their arrows, and the form buttons.
 void MenuGraphics::DrawCreateCharacterControls()
 {
-    int hair_style;
-    int hair_color;
-    int skin;
     TRect icon_left;
     TRect arrow_rect;
     TRect arrow_pressed_rect;
@@ -979,9 +963,9 @@ void MenuGraphics::DrawCreateCharacterControls()
     if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
     {
         int gender = MainForm->animation->menu->new_gender;
-        hair_style = MainForm->animation->menu->new_hair_style;
-        hair_color = MainForm->animation->menu->new_hair_color;
-        skin = MainForm->animation->menu->new_skin;
+        int hair_style = MainForm->animation->menu->new_hair_style;
+        int hair_color = MainForm->animation->menu->new_hair_color;
+        int skin = MainForm->animation->menu->new_skin;
         icon_left.left = 23 * gender;
         icon_left.right = 23 * gender + 22;
         icon_left.top = 38;
@@ -1119,12 +1103,11 @@ void MenuGraphics::DrawKeyHighlights()
     int key_x = 0;
     if (MainForm->animation->menu->cursor_blink > 4)
     {
-        key_x = 22 * MainForm->animation->menu->grid_column + 294;
-        key_y = 20 * MainForm->animation->menu->grid_row + 250;
-        key_column = MainForm->animation->menu->grid_column;
-        key_row = MainForm->animation->menu->grid_row;
-        MainForm->OffscreenSurface->BltFast(key_x, key_y, this->key_sheet, &GetKeyRect(key_column, key_row),
-            DDBLTFAST_WAIT);
+        int key_x = 22 * MainForm->animation->menu->grid_column + 294;
+        int key_y = 20 * MainForm->animation->menu->grid_row + 250;
+        int key_column = MainForm->animation->menu->grid_column;
+        int key_row = MainForm->animation->menu->grid_row;
+        MainForm->OffscreenSurface->BltFast(key_x, key_y, key_sheet, &GetKeyRect(key_column, key_row), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->up_key_lit)
         MainForm->OffscreenSurface->BltFast(464, 334, key_sheet, &up_key_rect, DDBLTFAST_WAIT);
@@ -1139,10 +1122,7 @@ void MenuGraphics::DrawKeyHighlights()
     if (MainForm->animation->menu->space_key_lit)
         MainForm->OffscreenSurface->BltFast(514, 334, key_sheet, &upper_wide_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->delete_key_lit)
-    {
         MainForm->OffscreenSurface->BltFast(548, 283, key_sheet, &small_key_rect, DDBLTFAST_WAIT);
-        return;
-    }
 }
 
 // Draws the two buttons of the login screen.
@@ -1243,7 +1223,7 @@ void MenuGraphics::DrawCharacterSelect()
     else
         MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(3, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-    for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
+    for (i = 0; i < (int)MainForm->players->GetCount(); i++)
     {
         Player handle = MainForm->players->GetPlayer(i);
         if (!handle.draw_group)

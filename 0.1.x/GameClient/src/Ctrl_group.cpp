@@ -4,9 +4,8 @@
 #include "Ctrl_group.h"
 #include "Tmainform.h"
 #include "Ctrl_chat.h"
-#pragma package(smart_init)
 
-#define GROUP_VISIBLE_ROWS 7
+#pragma package(smart_init)
 
 GroupController::GroupController()
 {
@@ -94,8 +93,6 @@ bool GroupController::IsInviteCoolingDown()
 // Empties the group and scrolls back to the top.
 void GroupController::Clear()
 {
-    int unused_int;
-    int second_unused_int;
     members.clear();
     is_leader = 0;
     scroll_up_hovered = false;
@@ -200,28 +197,24 @@ void GroupController::Tick()
     if (list_request_cooldown > 0)
         list_request_cooldown--;
     if (scroll_repeat_delay > 0)
-        scroll_repeat_delay--;
-    else
     {
-        if (scroll_up_held)
-            ScrollUp();
-        if (scroll_down_held)
-            ScrollDown();
+        scroll_repeat_delay--;
+        return;
     }
+    if (scroll_up_held)
+        ScrollUp();
+    if (scroll_down_held)
+        ScrollDown();
 }
 
 // Scrolls the members up one row and moves the scroll thumb to match.
 void GroupController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
-    int unused_int;
-    int second_unused_int;
     if ((int)members.size() > GROUP_VISIBLE_ROWS && top_row > 0)
     {
         top_row--;
-        scroll_fraction = (double)top_row / (double)(members.size() - 7);
-        thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_row / (members.size() - 7);
+        double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
         list_dirty = true;
@@ -231,15 +224,11 @@ void GroupController::ScrollUp()
 // Scrolls the members down one row and moves the scroll thumb to match.
 void GroupController::ScrollDown()
 {
-    double scroll_fraction;
-    double thumb_pos;
-    int unused_int;
-    int second_unused_int;
     if ((int)members.size() - 7 > top_row)
     {
         top_row++;
-        scroll_fraction = (double)top_row / (double)(members.size() - 7);
-        thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_row / (members.size() - 7);
+        double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
         list_dirty = true;
@@ -249,10 +238,7 @@ void GroupController::ScrollDown()
 // Follows a grabbed scroll thumb, kept on its track, and picks the top row from its position.
 void GroupController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_row;
-    int unused_int;
-    int second_unused_int;
+    int new_top_row;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -262,9 +248,9 @@ void GroupController::DragScrollThumb(int y)
             thumb_offset = 50;
         if (members.size() > GROUP_VISIBLE_ROWS)
         {
-            thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
-            scaled_row = (members.size() - 7.0) * thumb_fraction;
-            int new_top_row = scaled_row;
+            double thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
+            double scaled_row = (members.size() - 7.0) * thumb_fraction;
+            new_top_row = scaled_row;
             if (new_top_row != top_row)
                 top_row = new_top_row;
         }
@@ -274,8 +260,8 @@ void GroupController::DragScrollThumb(int y)
     }
 }
 
-// A click in the member column on a member the own character may remove asks the server to take it out; also
-// the scroll bar.
+// A click in the member column on a member the own character may remove asks the server to take it out; a click on
+// the scroll bar grabs its thumb or starts scrolling.
 void GroupController::MouseDown(int x, int y)
 {
     if (x >= 440 && x <= 520)
@@ -283,6 +269,7 @@ void GroupController::MouseDown(int x, int y)
         int row = -1;
         if (y >= 350 && y <= 428)
             row = top_row + (y - 350) / 14;
+        // A click by a removable member's name removes them from the group.
         if (row >= 0 && (int)members.size() > row && members[row].removable)
         {
             MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
@@ -323,7 +310,8 @@ void GroupController::UpdateMemberHover(int x, int y)
         hovered_row = top_row + (y - 350) / 14;
     for (vector<GroupMember>::iterator it = members.begin(); it != members.end(); it++)
     {
-        if (hovered_row == ++index)
+        index++;
+        if (index == hovered_row)
         {
             if (!it->is_hovered)
             {
@@ -343,10 +331,9 @@ void GroupController::UpdateMemberHover(int x, int y)
 void GroupController::UpdateScrollHover(int x, int y)
 {
     char changed = false;
+    DragScrollThumb(y);
     if (x >= 569 && x <= 585)
     {
-        if (y >= 365 && y <= 432)
-            DragScrollThumb(y);
         if (y >= 350 && y <= 365)
         {
             if (!scroll_up_hovered)

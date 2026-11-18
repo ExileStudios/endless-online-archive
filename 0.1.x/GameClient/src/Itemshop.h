@@ -7,7 +7,7 @@ struct ShopItem
     int item_id;
     int price;
     int max_amount;
-    bool unused_flag;
+    char unused_flag;
 
     ShopItem(int id);
     ~ShopItem();

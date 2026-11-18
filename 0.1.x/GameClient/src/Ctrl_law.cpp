@@ -6,6 +6,11 @@
 #include "Ctrl_guild.h"
 #include "Ctrl_game.h"
 #include "Ctrl_memo.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_trade.h"
+
 #pragma package(smart_init)
 
 LawController::LawController()
@@ -185,8 +190,7 @@ void LawController::MouseMove(int x, int y)
             window_y = 19;
         MainForm->redraw_needed = true;
     }
-    if (!(y <= this->window_y + 43 || y >= this->window_y + 243 || x <= this->window_x + 17 ||
-        x >= this->window_x + 252 || this->is_dragging))
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         if (!page)
         {
@@ -221,8 +225,7 @@ void LawController::MouseMove(int x, int y)
     }
     if (!page)
     {
-        if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -238,8 +241,7 @@ void LawController::MouseMove(int x, int y)
     }
     else
     {
-        if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 144 && x <= window_x + 234 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!close_hovered)
             {
@@ -252,8 +254,7 @@ void LawController::MouseMove(int x, int y)
             close_hovered = false;
             MainForm->redraw_needed = true;
         }
-        if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
-            y > this->window_y + 279))
+        if (x >= window_x + 48 && x <= window_x + 138 && y >= window_y + 253 && y <= window_y + 279)
         {
             if (!back_hovered)
             {

@@ -7,6 +7,7 @@
 #include "Ctrl_interface.h"
 #include "Ctrl_menu.h"
 #include "Ctrl_status.h"
+
 #pragma package(smart_init)
 
 PacketOperator::PacketOperator()
@@ -35,22 +36,22 @@ void PacketOperator::SendFindPlayer(String name)
 void PacketOperator::SendAccountCreate(String account_name, String password, String real_name, String location,
     String email)
 {
-    DWORD nSize;
-    DWORD VolumeSerialNumber;
-    DWORD MaximumComponentLength;
-    DWORD FileSystemFlags;
-    char Buffer[16];
-    char VolumeNameBuffer[VOLUME_NAME_BUFFER_SIZE];
-    char FileSystemNameBuffer[FILE_SYSTEM_NAME_BUFFER_SIZE];
+    unsigned long n_size;
+    unsigned long volume_serial_number;
+    unsigned long maximum_component_length;
+    unsigned long file_system_flags;
+    char buffer[16];
+    char volume_name_buffer[VOLUME_NAME_BUFFER_SIZE];
+    char file_system_name_buffer[FILE_SYSTEM_NAME_BUFFER_SIZE];
     if (MainForm->net_client->GetSessionId() >= 1)
     {
-        nSize = 16;
-        Buffer[0] = 0;
-        GetComputerNameA(Buffer, &nSize);
-        String computer_name = Buffer;
-        GetVolumeInformationA("c:\\", VolumeNameBuffer, 1000, &VolumeSerialNumber, &MaximumComponentLength,
-            &FileSystemFlags, FileSystemNameBuffer, 1000);
-        String serial_text = VolumeSerialNumber;
+        n_size = 16;
+        buffer[0] = 0;
+        GetComputerNameA(buffer, &n_size);
+        String computer_name = buffer;
+        GetVolumeInformationA("c:\\", volume_name_buffer, 1000, &volume_serial_number, &maximum_component_length,
+            &file_system_flags, file_system_name_buffer, 1000);
+        String serial_text = volume_serial_number;
         // Each is cut to 32 characters.
         if (computer_name.Length() >= 33)
             computer_name = computer_name.SubString(1, 32);
@@ -117,8 +118,7 @@ void PacketOperator::ConfirmCharacterDelete()
 }
 
 // Sends the new character: gender, hair style, hair color and skin, then the name.
-void PacketOperator::SendCharacterCreate(String name, unsigned int gender, unsigned int hair_style,
-    unsigned int hair_color, unsigned int skin)
+void PacketOperator::SendCharacterCreate(String name, int gender, int hair_style, int hair_color, int skin)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
     packet = packet + MainForm->net_client->EncodeNumber(gender, 2);
@@ -161,7 +161,7 @@ void PacketOperator::SendGlobalChatOpen()
 }
 
 // A step through the player who has blocked the way for a while: the direction, the action tick, then the tile.
-void PacketOperator::SendWalkGhost(unsigned int direction, unsigned int x, unsigned int y, int blocking_player_id)
+void PacketOperator::SendWalkGhost(int direction, int x, int y, int blocking_player_id)
 {
     MainForm->net_client->CommitActionTime();
     String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
@@ -173,7 +173,7 @@ void PacketOperator::SendWalkGhost(unsigned int direction, unsigned int x, unsig
 }
 
 // A step while walking through walls, which only admins of level 3 and up can turn on.
-void PacketOperator::SendWalkNoWall(unsigned int direction, unsigned int x, unsigned int y)
+void PacketOperator::SendWalkNoWall(int direction, int x, int y)
 {
     MainForm->net_client->CommitActionTime();
     String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
@@ -185,7 +185,7 @@ void PacketOperator::SendWalkNoWall(unsigned int direction, unsigned int x, unsi
 }
 
 // A step: the direction, the action tick, then the tile the player walks to.
-void PacketOperator::SendWalk(unsigned int direction, unsigned int x, unsigned int y)
+void PacketOperator::SendWalk(int direction, int x, int y)
 {
     MainForm->net_client->CommitActionTime();
     String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
@@ -345,7 +345,7 @@ void PacketOperator::SendSpellCastGroup(int spell_id)
 }
 
 // Casts a spell on a player; the first byte says what the target is: 1 = a player, 2 = an npc.
-void PacketOperator::SendSpellCastOnPlayer(unsigned int spell_id, unsigned int player_id)
+void PacketOperator::SendSpellCastOnPlayer(int spell_id, int player_id)
 {
     TTimeStamp now;
     now = DateTimeToTimeStamp(Now());
@@ -361,7 +361,7 @@ void PacketOperator::SendSpellCastOnPlayer(unsigned int spell_id, unsigned int p
 }
 
 // Casts a spell on an npc, with target kind 2.
-void PacketOperator::SendSpellCastOnNpc(unsigned int spell_id, unsigned int npc_index)
+void PacketOperator::SendSpellCastOnNpc(int spell_id, int npc_index)
 {
     TTimeStamp now;
     now = DateTimeToTimeStamp(Now());
@@ -423,7 +423,7 @@ void PacketOperator::SendChairStand()
 // Asks the server to send the map's players, npcs and items again.
 void PacketOperator::RequestRefresh()
 {
-    String packet = String(ByteToChar(TOKEN_BREAK_BYTE));
+    String packet = ByteToChar(TOKEN_BREAK_BYTE);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_REFRESH, packet);
 }
@@ -465,7 +465,7 @@ void PacketOperator::SendUnequipItem(int item_id, int sub_slot)
 // Asks for the list of players online, for the player list.
 void PacketOperator::RequestOnlinePlayers()
 {
-    String packet = String(ByteToChar(TOKEN_BREAK_BYTE));
+    String packet = ByteToChar(TOKEN_BREAK_BYTE);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAYERS, packet);
 }
@@ -473,7 +473,7 @@ void PacketOperator::RequestOnlinePlayers()
 // Asks for the names of players online, for the friend list.
 void PacketOperator::RequestOnlineNames()
 {
-    String packet = String(ByteToChar(TOKEN_BREAK_BYTE));
+    String packet = ByteToChar(TOKEN_BREAK_BYTE);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_LIST, OP_PLAYERS, packet);
 }
@@ -519,7 +519,7 @@ void PacketOperator::ConfirmInnSleep(int session_value)
 }
 
 // Answers the three questions of the inn's citizenship form, each after a byte of 255.
-void PacketOperator::SendCitizenshipAnswers(unsigned int session_value, String answer_first, String answer_second,
+void PacketOperator::SendCitizenshipAnswers(int session_value, String answer_first, String answer_second,
     String answer_third)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
@@ -614,7 +614,7 @@ void PacketOperator::RequestQuestDialog(int npc_index, int quest_id)
 }
 
 // Answers a quest dialog with OK.
-void PacketOperator::SendQuestDialogOk(unsigned int dialog_echo_a, unsigned int quest_id, unsigned int dialog_echo_b)
+void PacketOperator::SendQuestDialogOk(int dialog_echo_a, int quest_id, int dialog_echo_b)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
     packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_a, 2);
@@ -627,8 +627,7 @@ void PacketOperator::SendQuestDialogOk(unsigned int dialog_echo_a, unsigned int 
 }
 
 // Answers a quest dialog with the link the player clicked; the values come back as the dialog sent them.
-void PacketOperator::SendQuestDialogLink(unsigned int dialog_echo_a, unsigned int quest_id, unsigned int dialog_echo_b,
-    unsigned int link_id)
+void PacketOperator::SendQuestDialogLink(int dialog_echo_a, int quest_id, int dialog_echo_b, int link_id)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
     packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_a, 2);
@@ -681,7 +680,7 @@ void PacketOperator::RequestLawOpen(int npc_index)
 }
 
 // The first request of the law window: kind 1, session_value, then the text typed in, of 4 letters or more.
-void PacketOperator::SendLawMenuOption1Request(unsigned int session_value, String name)
+void PacketOperator::SendLawMenuOption1Request(int session_value, String name)
 {
     String packet = MainForm->net_client->EncodeNumber(1, 1);
     packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
@@ -692,7 +691,7 @@ void PacketOperator::SendLawMenuOption1Request(unsigned int session_value, Strin
 }
 
 // The second request of the law window: kind 2, session_value, then the text typed in, of 4 letters or more.
-void PacketOperator::SendLawMenuOption2Request(unsigned int session_value, String name)
+void PacketOperator::SendLawMenuOption2Request(int session_value, String name)
 {
     String packet = MainForm->net_client->EncodeNumber(2, 1);
     packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
@@ -727,7 +726,7 @@ void PacketOperator::DisbandGuild(int session_value)
 }
 
 // The first step of making a guild: the tag and the name. SendGuildCreate is the last, with the description.
-void PacketOperator::RequestGuildCreate(unsigned int session_value, String tag, String guild_name)
+void PacketOperator::RequestGuildCreate(int session_value, String tag, String guild_name)
 {
     String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -758,7 +757,7 @@ void PacketOperator::RequestGuildMemberList(int session_value, String guild_name
 }
 
 // Creates a guild: the tag, the name with a capital first letter, and the description.
-void PacketOperator::SendGuildCreate(unsigned int session_value, String tag, String guild_name, String description)
+void PacketOperator::SendGuildCreate(int session_value, String tag, String guild_name, String description)
 {
     String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -831,7 +830,8 @@ void PacketOperator::SetGuildMemberRank(int session_value, String member_name, i
 }
 
 // Sends the nine guild rank names, each ended by a byte of 255; SetGuildDescription uses the same request with kind 1.
-void PacketOperator::SetGuildRankNames(unsigned int session_value, String rank_name_first, String rank_name_second, String rank_name_third, String rank_name_fourth, String rank_name_fifth, String rank_name_sixth,
+void PacketOperator::SetGuildRankNames(int session_value, String rank_name_first, String rank_name_second,
+    String rank_name_third, String rank_name_fourth, String rank_name_fifth, String rank_name_sixth,
     String rank_name_seventh, String rank_name_eighth, String rank_name_ninth)
 {
     String packet = MainForm->net_client->EncodeNumber(session_value, 4);
@@ -868,7 +868,7 @@ void PacketOperator::SetGuildDescription(int session_value, String description)
 }
 
 // Asks to join a guild with the two lines of the join form, the tag first.
-void PacketOperator::RequestGuildJoin(unsigned int session_value, String guild_tag, String recruiter_name)
+void PacketOperator::RequestGuildJoin(int session_value, String guild_tag, String recruiter_name)
 {
     String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -907,7 +907,7 @@ void PacketOperator::SendBoardDeletePost(int board_id, int post_id)
 }
 
 // Posts on a message board: the subject and the text, each ended by a byte of 255.
-void PacketOperator::SendBoardPost(unsigned int board_id, String subject, String body)
+void PacketOperator::SendBoardPost(int board_id, String subject, String body)
 {
     String packet = MainForm->net_client->EncodeNumber(board_id, 2);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -981,20 +981,20 @@ void PacketOperator::RequestJukeboxOpen(TPoint position)
 }
 
 // Asks the jukebox at a tile to play a song.
-void PacketOperator::SendJukeboxRequest(Windows::TPoint position, int song_id)
+void PacketOperator::SendJukeboxRequest(TPoint x, int y)
 {
-    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(song_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(x.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(x.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PLAY, OP_MUSIC, packet);
 }
 
 // Opens the door at a tile.
-void PacketOperator::SendOpenDoor(int x, int y)
+void PacketOperator::SendOpenDoor(int instrument_id, int note_id)
 {
-    String packet = MainForm->net_client->EncodeNumber(x, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
+    String packet = MainForm->net_client->EncodeNumber(instrument_id, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(note_id, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_DOOR, packet);
 }
@@ -1009,7 +1009,7 @@ void PacketOperator::SendPlayInstrument(int instrument_id, int note_id)
 }
 
 // Drops an item on a tile, or where the player stands when x or y is below 0.
-void PacketOperator::SendDropItem(unsigned int item_id, signed int amount, signed int x, signed int y)
+void PacketOperator::SendDropItem(int item_id, int amount, int x, int y)
 {
     char result = 1;
     if (item_id == ItemId_Gold && MainForm->animation->interface_controller->gold_drop_warning_pending)
@@ -1090,13 +1090,10 @@ void PacketOperator::SendConnectionPong()
 // Asks for the next needed part of the map or a data file; with none left, loads the files and enters the game.
 void PacketOperator::RequestGameData()
 {
-    int action;
-    int family;
-    char request_built;
-    action = AC_UPDATE;
-    family = OP_PLAY;
+    int action = AC_UPDATE;
+    int family = OP_PLAY;
     String packet;
-    request_built = false;
+    char request_built = false;
     // The first byte says what is asked for:
     // 1 = the map
     // 2 = an item file part
@@ -1154,16 +1151,16 @@ void PacketOperator::RequestGameData()
 }
 
 // Opens the chest at a tile.
-void PacketOperator::RequestChestOpen(Windows::TPoint position)
+void PacketOperator::RequestChestOpen(TPoint player_id)
 {
-    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    String packet = MainForm->net_client->EncodeNumber(player_id.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id.y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_CHEST, packet);
 }
 
 // Puts an amount of an item in the chest at a tile.
-void PacketOperator::SendChestAddItem(Windows::TPoint position, unsigned int item_id, unsigned int amount)
+void PacketOperator::SendChestAddItem(TPoint position, int item_id, int amount)
 {
     String packet = MainForm->net_client->EncodeNumber(position.x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
@@ -1174,20 +1171,20 @@ void PacketOperator::SendChestAddItem(Windows::TPoint position, unsigned int ite
 }
 
 // Takes an item out of the chest at a tile.
-void PacketOperator::SendChestTakeItem(Windows::TPoint position, int item_id)
+void PacketOperator::SendChestTakeItem(TPoint item_id, int amount)
 {
-    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(item_id.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_CHEST, packet);
 }
 
 // Opens the locker at a tile.
-void PacketOperator::RequestLockerOpen(Windows::TPoint position)
+void PacketOperator::RequestLockerOpen(TPoint item_id)
 {
-    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
-    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    String packet = MainForm->net_client->EncodeNumber(item_id.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id.y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_LOCKER, packet);
 }
@@ -1199,7 +1196,7 @@ void PacketOperator::SendBuyLockerUpgrade()
 }
 
 // Puts an amount of an item in the locker at a tile.
-void PacketOperator::SendLockerAddItem(Windows::TPoint position, unsigned int item_id, unsigned int amount)
+void PacketOperator::SendLockerAddItem(TPoint position, int item_id, int amount)
 {
     String packet = MainForm->net_client->EncodeNumber(position.x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);

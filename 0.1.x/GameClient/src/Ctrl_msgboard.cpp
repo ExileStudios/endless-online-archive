@@ -1,15 +1,13 @@
 #include <vcl.h>
 #pragma hdrstop
 
+#include "Ctrl_msgboard.h"
 #include "Tmainform.h"
 #include "Ctrl_guild.h"
 #include "Packetoperations.h"
 #include "Ctrl_quests.h"
-#pragma package(smart_init)
 
-#define FIRST_LOCAL_POST_ID 50000
-#define MSGBOARD_VISIBLE_POSTS 12
-#define MSGBOARD_THUMB_TRAVEL 122.0
+#pragma package(smart_init)
 
 MsgBoardController::MsgBoardController()
 {
@@ -86,11 +84,20 @@ void MsgBoardController::Open(int new_board_id)
     MainForm->redraw_needed = true;
 }
 
-// Hides the board and frees its graphics.
+// Goes back to the list from any other view; from the list, closes the board and frees its pictures.
 void MsgBoardController::Close()
 {
-    MainForm->gfx->FreeMsgBoardGraphics();
-    is_visible = false;
+    if (view_mode > 0)
+    {
+        ResetScroll();
+        view_mode = 0;
+        HidePostEdits();
+    }
+    else
+    {
+        MainForm->gfx->FreeMsgBoardGraphics();
+        is_visible = false;
+    }
     MainForm->redraw_needed = true;
 }
 
@@ -127,14 +134,14 @@ void MsgBoardController::ClearPosts()
 // Stores a post's body from the server, censored, and shows it when that post is open.
 void MsgBoardController::SetPostBody(String reply_data)
 {
+    vector<Msg>::iterator it;
     if (reply_data.Length() > 1)
     {
-        String post_id_text = MainForm->net_client->DecodeNumber(reply_data.SubString(1, 2));
+        String post_id_text((unsigned int)MainForm->net_client->DecodeNumber(reply_data.SubString(1, 2)));
         reply_data.Delete(1, 2);
         String body = MainForm->net_client->CensorText(reply_data);
         if (body == "")
             body = "****";
-        vector<Msg>::iterator it;
         for (it = posts.begin(); it != posts.end(); it++)
         {
             if (IntToStr(it->post_id) == post_id_text)
@@ -231,7 +238,7 @@ void MsgBoardController::DeletePost(int post_id)
 // Opens a post in the edits, read-only; its body is asked for when it has not come yet.
 void MsgBoardController::ReadPost(int index)
 {
-    if (posts.size() > (unsigned int)index)
+    if (posts.size() > index)
     {
         CreatePostEdits();
         MainForm->edits->SetEditable(POST_SUBJECT_EDIT, false);
@@ -257,7 +264,6 @@ void MsgBoardController::ReadPost(int index)
 // click starts moving the window.
 void MsgBoardController::MouseDown(int x, int y, int button)
 {
-    int unused_int;
     char handled = false;
     if (button == 0 || button == 1)
     {
@@ -266,7 +272,7 @@ void MsgBoardController::MouseDown(int x, int y, int button)
             int row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
             if (!view_mode)
             {
-                if (posts.size() <= (unsigned int)row)
+                if (posts.size() <= row)
                     row = -1;
                 if (row >= 0)
                 {
@@ -338,11 +344,11 @@ void MsgBoardController::MouseDown(int x, int y, int button)
     }
     if (!handled)
     {
-        if (!this->is_dragging)
+        if (!is_dragging)
         {
-            this->is_dragging = true;
-            this->drag_offset_x = x - this->window_x;
-            this->drag_offset_y = y - this->window_y;
+            is_dragging = true;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
         }
     }
 }
@@ -372,8 +378,11 @@ void MsgBoardController::MouseMove(int x, int y)
         int row = (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
         if (row > 11)
             row = -1;
-        if (!view_mode && posts.size() <= (unsigned int)row)
-            row = -1;
+        if (!view_mode)
+        {
+            if (posts.size() <= row)
+                row = -1;
+        }
         if (view_mode)
             row = -1;
         if (row != hovered_row)
@@ -382,13 +391,10 @@ void MsgBoardController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (hovered_row >= 0)
-        {
-            hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (x >= window_x + 284 && x <= window_x + 374 && y >= window_y + 253 && y <= window_y + 279)
     {
@@ -398,13 +404,10 @@ void MsgBoardController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (action_button_hovered)
     {
-        if (action_button_hovered)
-        {
-            action_button_hovered = false;
-            MainForm->redraw_needed = true;
-        }
+        action_button_hovered = false;
+        MainForm->redraw_needed = true;
     }
     if (x >= window_x + 380 && x <= window_x + 470 && y >= window_y + 253 && y <= window_y + 279)
     {
@@ -414,13 +417,10 @@ void MsgBoardController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (close_hovered)
     {
-        if (close_hovered)
-        {
-            close_hovered = false;
-            MainForm->redraw_needed = true;
-        }
+        close_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
@@ -463,8 +463,11 @@ void MsgBoardController::UpdateScrollHover(int x, int y)
     }
     else
     {
-        if (x >= window_x + 449 && x <= window_x + 464 && (y >= window_y + 88 && y <= window_y + 229))
-            DragScrollThumb(y);
+        if (x >= window_x + 449 && x <= window_x + 464)
+        {
+            if (y >= window_y + 88 && y <= window_y + 229)
+                DragScrollThumb(y);
+        }
         if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 73 && y <= window_y + 89)
         {
             if (!scroll_up_hovered)
@@ -497,30 +500,24 @@ void MsgBoardController::UpdateScrollHover(int x, int y)
 // Follows a grabbed scroll thumb: it scrolls the open post's body, or picks the top row of the post list.
 void MsgBoardController::DragScrollThumb(int y)
 {
-    int line_count;
-    double body_thumb_fraction;
-    double body_scaled_line;
-    double list_thumb_fraction;
-    double list_scaled_row;
-    int body_thumb_offset = 0;
-    int visible_lines = 0;
+    int list_thumb_offset;
     int body_top_line;
-    int list_thumb_offset = 0;
+    int list_top_row;
     if (view_mode && thumb_grabbed)
     {
-        body_thumb_offset = y - thumb_grab_offset - window_y;
+        int body_thumb_offset = y - thumb_grab_offset - window_y;
         if (body_thumb_offset < 0)
             body_thumb_offset = 0;
         if (body_thumb_offset > 122)
             body_thumb_offset = 122;
-        visible_lines = MainForm->edits->GetVisibleLineCount(POST_MESSAGE_EDIT);
-        line_count = MainForm->edits->GetLineCount(POST_MESSAGE_EDIT);
+        int visible_lines = MainForm->edits->GetVisibleLineCount(POST_MESSAGE_EDIT);
+        int line_count = MainForm->edits->GetLineCount(POST_MESSAGE_EDIT);
         MainForm->edits->GetFirstVisibleLine(POST_MESSAGE_EDIT);
         MainForm->edits->GetScrollOffset(POST_MESSAGE_EDIT);
         if (visible_lines < line_count)
         {
-            body_thumb_fraction = body_thumb_offset / 122.0;
-            body_scaled_line = ((double)line_count - (double)visible_lines) * body_thumb_fraction;
+            double body_thumb_fraction = body_thumb_offset / 122.0;
+            double body_scaled_line = ((double)line_count - visible_lines) * body_thumb_fraction;
             body_top_line = body_scaled_line;
             if (body_top_line != top_line)
             {
@@ -541,9 +538,9 @@ void MsgBoardController::DragScrollThumb(int y)
             list_thumb_offset = 152;
         if (posts.size() > MSGBOARD_VISIBLE_POSTS)
         {
-            list_thumb_fraction = list_thumb_offset / NPC_THUMB_TRAVEL;
-            list_scaled_row = (posts.size() - 12.0) * list_thumb_fraction;
-            int list_top_row = list_scaled_row;
+            double list_thumb_fraction = list_thumb_offset / NPC_THUMB_TRAVEL;
+            double list_scaled_row = (posts.size() - 12.0) * list_thumb_fraction;
+            list_top_row = list_scaled_row;
             if (list_top_row != top_line)
                 top_line = list_top_row;
         }
@@ -569,7 +566,7 @@ void MsgBoardController::ScrollUp()
             if (scroll_offset > line_count - visible_lines)
                 scroll_offset = line_count - visible_lines;
             top_line = line_count - visible_lines - scroll_offset;
-            double body_scroll_fraction = (double)top_line / (double)(line_count - visible_lines);
+            double body_scroll_fraction = (double)top_line / (line_count - visible_lines);
             double body_thumb_pos = MSGBOARD_THUMB_TRAVEL * body_scroll_fraction;
             scroll_thumb_offset = body_thumb_pos;
             scroll_changed = true;
@@ -581,7 +578,7 @@ void MsgBoardController::ScrollUp()
         if ((int)posts.size() > MSGBOARD_VISIBLE_POSTS && top_line > 0)
         {
             top_line--;
-            double list_scroll_fraction = (double)top_line / (double)(posts.size() - 12);
+            double list_scroll_fraction = (double)top_line / (posts.size() - 12);
             double list_thumb_pos = NPC_THUMB_TRAVEL * list_scroll_fraction;
             scroll_thumb_offset = list_thumb_pos;
             scroll_changed = true;
@@ -606,7 +603,7 @@ void MsgBoardController::ScrollDown()
             if (scroll_offset > line_count - visible_lines)
                 scroll_offset = line_count - visible_lines;
             top_line = line_count - visible_lines - scroll_offset;
-            double body_scroll_fraction = (double)top_line / (double)(line_count - visible_lines);
+            double body_scroll_fraction = (double)top_line / (line_count - visible_lines);
             double body_thumb_pos = MSGBOARD_THUMB_TRAVEL * body_scroll_fraction;
             scroll_thumb_offset = body_thumb_pos;
             scroll_changed = true;
@@ -618,7 +615,7 @@ void MsgBoardController::ScrollDown()
         if ((int)posts.size() - 12 > top_line)
         {
             top_line++;
-            double list_scroll_fraction = (double)top_line / (double)(posts.size() - 12);
+            double list_scroll_fraction = (double)top_line / (posts.size() - 12);
             double list_thumb_pos = NPC_THUMB_TRAVEL * list_scroll_fraction;
             scroll_thumb_offset = list_thumb_pos;
             scroll_changed = true;

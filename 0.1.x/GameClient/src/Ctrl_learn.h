@@ -7,7 +7,10 @@ enum SkillListMode
 };
 
 #include <Classes.hpp>
+#include <new>
 #include <vector.h>
+
+struct Tooltip;
 
 #include "Learnitem.h"
 
@@ -29,6 +32,7 @@ struct LearnController
     vector<LearnItem> unused_items;
     char close_hovered;
     char back_hovered;
+    Tooltip *tooltip;
     char is_visible;
     int hovered_row;
     int window_x;

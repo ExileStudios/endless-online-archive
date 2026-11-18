@@ -1,6 +1,8 @@
 #ifndef Sys_itemH
 #define Sys_itemH
 
+#define MAP_ITEM_REMOVAL_TICKS 6
+
 // An item lying on the map: uid, record id, tile and amount, and the owner who holds it while protection_ticks runs.
 struct MapItem
 {

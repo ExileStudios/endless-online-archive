@@ -1,11 +1,12 @@
 #ifndef Sys_npcsH
 #define Sys_npcsH
 
+#include <new>
 #include <vector.h>
 
 #include "Sys_npc.h"
+
 #define MAX_NPC_GRAPHICS 240
-#define RESOURCES_PER_GRAPHIC 40
 
 struct FrameOffset
 {
@@ -22,7 +23,6 @@ struct Npcs
     short head_heights[MAX_NPC_GRAPHICS];
     char hover_label_shown;
     char list_changed;
-    char unused_bytes[6];
     vector<Npc> npcs;
     int current_index;
     int mouse_x;

@@ -3,15 +3,9 @@
 
 #include "Classvalues.h"
 #include "Packetcontrols.h"
-#include <fstream.h>
 #include <io.h>
 #include <stdio.h>
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+
 #pragma package(smart_init)
 
 ClassValues::ClassValues()
@@ -33,13 +27,13 @@ ClassValues::~ClassValues()
 // With more than 250 classes the last part file is read too; the values are kept only when its header matches.
 void ClassValues::ReadHeader()
 {
-    String file_text;
+    int file_handle;
+    int file_size;
+    char *buffer;
     int first_checksum_high;
     int first_checksum_low;
-    int file_handle;
-    DWORD file_size;
-    char *buffer;
     int total_records;
+    String file_text;
     String file_name = file_prefix + "001.ecf";
     try
     {
@@ -123,15 +117,13 @@ void ClassValues::ReadHeader()
 // Reads every class part file into the list, once until the files change.
 void ClassValues::Load()
 {
-    int file_number;
-    int loaded_count;
-    int record_total;
-    int hFile;
+    int file_size;
+    char *buffer;
     if (!is_loaded)
     {
-        file_number = 1;
-        loaded_count = 0;
-        record_total = 1;
+        int file_number = 1;
+        int loaded_count = 0;
+        int record_total = 1;
         do
         {
             String file_text;
@@ -140,16 +132,15 @@ void ClassValues::Load()
                 file_path = file_path + "00" + IntToStr(file_number) + ".ecf";
             else
                 file_path = file_path + "0" + IntToStr(file_number) + ".ecf";
+            int h_file;
             try
             {
-                DWORD file_size;
-                char *buffer;
-                hFile = FileOpen(file_path.c_str(), fmOpenRead);
-                file_size = FileSeek(hFile, 0, 2);
-                FileSeek(hFile, 0, 0);
+                h_file = FileOpen(file_path.c_str(), fmOpenRead);
+                file_size = FileSeek(h_file, 0, 2);
+                FileSeek(h_file, 0, 0);
                 buffer = new char[file_size + 1];
-                FileRead(hFile, buffer, file_size);
-                FileClose(hFile);
+                FileRead(h_file, buffer, file_size);
+                FileClose(h_file);
                 file_text = buffer;
                 file_text.SetLength(file_size);
                 delete[] buffer;
@@ -182,7 +173,7 @@ void ClassValues::Load()
             }
             catch (...)
             {
-                FileClose(hFile);
+                FileClose(h_file);
                 is_loaded = false;
             }
             file_number++;
@@ -194,13 +185,13 @@ void ClassValues::Load()
 // Writes one part of the class file as the server sent it.
 void ClassValues::SaveFilePart(int part_number, String data)
 {
-    String lpFileName = file_prefix;
+    String lp_file_name = file_prefix;
     if (part_number < 10)
-        lpFileName = lpFileName + "00" + IntToStr(part_number) + ".ecf";
+        lp_file_name = lp_file_name + "00" + IntToStr(part_number) + ".ecf";
     else
-        lpFileName = lpFileName + "0" + IntToStr(part_number) + ".ecf";
-    std::ofstream handle;
-    handle.open(lpFileName.c_str(), std::ios::binary);
+        lp_file_name = lp_file_name + "0" + IntToStr(part_number) + ".ecf";
+    basic_ofstream<char, char_traits<char> > handle;
+    handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << data.c_str();
     handle.close();
 }
@@ -209,18 +200,18 @@ void ClassValues::SaveFilePart(int part_number, String data)
 void ClassValues::DeleteFiles()
 {
     char file_found = true;
-    String lpFileName;
+    String lp_file_name;
     try
     {
         for (int i = 1; i <= 100 && file_found; i++)
         {
-            lpFileName = file_prefix;
+            lp_file_name = file_prefix;
             if (i < 10)
-                lpFileName = lpFileName + "00" + IntToStr(i) + ".ecf";
+                lp_file_name = lp_file_name + "00" + IntToStr(i) + ".ecf";
             else
-                lpFileName = lpFileName + "0" + IntToStr(i) + ".ecf";
-            if (!access(lpFileName.c_str(), 0))
-                remove(lpFileName.c_str());
+                lp_file_name = lp_file_name + "0" + IntToStr(i) + ".ecf";
+            if (!access(lp_file_name.c_str(), 0))
+                remove(lp_file_name.c_str());
             else
                 file_found = false;
         }
@@ -230,7 +221,7 @@ void ClassValues::DeleteFiles()
     }
 }
 
-void ClassValues::AddClass(int class_id, int parent_class_id, String name, short stat_group,
+void ClassValues::AddClass(int class_id, int parent_class_id, String name, int stat_group,
     short strength, short intelligence, short wisdom,
     short agility, short constitution, short charisma)
 {
@@ -268,11 +259,10 @@ bool ClassValues::IsDescendantOf(int class_id, int ancestor_id)
 {
     if (!ancestor_id)
         return true;
-    while (class_id > 0)
+    for (; class_id > 0; class_id = records[class_id - 1].parent_class_id)
     {
         if (class_id == ancestor_id)
             return true;
-        class_id = records[class_id - 1].parent_class_id;
     }
     return false;
 }

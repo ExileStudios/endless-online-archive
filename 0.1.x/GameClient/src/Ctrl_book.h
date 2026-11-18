@@ -3,6 +3,8 @@
 
 #include <Classes.hpp>
 
+#define BOOK_THUMB_TRAVEL 188.0
+
 // The book window: a player's info lines and class with a scrolling list of entries.
 struct BookController
 {
@@ -40,7 +42,8 @@ struct BookController
     BookController();
     ~BookController();
     void Open(int frame_row, String name_text, String home_text, String partner_text, String title_text,
-        String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level);
+    String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level);
+    void Close();
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
     void DragScrollThumb(int y);

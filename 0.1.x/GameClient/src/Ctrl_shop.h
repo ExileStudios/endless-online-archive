@@ -7,10 +7,15 @@ enum ShopList
     ShopList_Sell = 2
 };
 
+#include <new>
 #include <vector.h>
+
+struct Tooltip;
 
 #include "Itemcraft.h"
 #include "Itemshop.h"
+
+#define SHOP_VISIBLE_ROWS 5
 
 enum ShopPage
 {
@@ -31,6 +36,7 @@ struct ShopController
     vector<CraftItem> craft_items;
     char close_hovered;
     char back_hovered;
+    Tooltip *tooltip;
     char is_visible;
     int hovered_row;
     int window_x;

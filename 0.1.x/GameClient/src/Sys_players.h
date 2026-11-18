@@ -12,7 +12,13 @@ enum LabelColor
     LabelColor_Cream = 6
 };
 
+#include <new>
 #include <vector.h>
+
+#include "Sys_player.h"
+
+#define HEALTH_BAR_SCALE 0.36
+#define MIN_PAPERDOLL_RESOURCE 101
 
 enum PlayerId
 {
@@ -25,14 +31,11 @@ enum PlayerId
     PlayerId_Preview = 999999
 };
 
-#include "Sys_player.h"
-
 // The players on the map (and the preview and character-slot players), with their animations and frame cells.
 struct Players
 {
     char hover_label_shown;
     char list_changed;
-    char unused_bytes[6];
     vector<Player> players;
     int current_index;
     bool gender_one_libraries_loaded;
@@ -140,6 +143,7 @@ struct Players
     void StartSitOnChair(int player_id, int x, int y, int direction);
     char IsSittingOnFloor(int player_id);
     char IsSittingOnChair(int player_id);
+    int GetDistanceVolume(int player_id);
     Player GetPlayerById(int player_id);
     Player GetPlayer(int index);
     void Clear();

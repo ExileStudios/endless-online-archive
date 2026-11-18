@@ -3,9 +3,10 @@
 
 #include "Ctrl_credits.h"
 #include "Tmainform.h"
+
 #pragma package(smart_init)
 
-// Loads the credits; when the file fails its check, a short built-in list is shown instead.
+// Fills the credits with the built-in list of names and their styles, ready to scroll up from the bottom.
 CreditsController::CreditsController()
 {
     data_file_size = 0;
@@ -21,19 +22,47 @@ CreditsController::CreditsController()
         credit_texts->Clear();
         credit_styles->Clear();
         credit_texts->Add("Endless Online");
-        credit_styles->Add("head");
-        credit_texts->Add("Programming");
-        credit_styles->Add("title");
-        credit_texts->Add("Vult-r");
-        credit_styles->Add("name");
-        credit_texts->Add("Artwork");
-        credit_styles->Add("title");
-        credit_texts->Add("Teror");
-        credit_styles->Add("name");
-        credit_texts->Add("Tester");
-        credit_styles->Add("title");
-        credit_texts->Add("Aengie");
-        credit_styles->Add("name");
+        credit_styles->Add("h");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("h;^<"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("[rY3XI"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("b-^(Y-l"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("i6W-0"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("l-X4lL"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("j6Z*`"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("-(-"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("Z0l7."));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("Y-^/]*Z"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("h6f1h^"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("h1d>%"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("T%S6$"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("[0[:y"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("[0U:{"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("^+ ,b1l7Y"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("k0k/^7z"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("]0e, nC0_ [*^&"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("^+ ;_>"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("X0T g0 3a>"));
+        credit_styles->Add("n");
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("oqo"));
+        credit_styles->Add("n");
     }
     is_running = false;
     top_y = 50;
@@ -60,19 +89,19 @@ CreditsController::~CreditsController()
 // It also counts the letters a, e and o of the file for VerifyCredits.
 void CreditsController::LoadCredits()
 {
-    String file_text;
-    int hFile;
     int file_size;
     char *buffer;
-    TStringList *lines = new Classes::TStringList();
+    int h_file;
+    String file_text;
+    TStringList *lines = new TStringList();
     try
     {
-        hFile = FileOpen(MainForm->strings->GetDataFilePath(DataFile_Credits), fmOpenRead);
-        file_size = FileSeek(hFile, 0, 2);
-        FileSeek(hFile, 0, 0);
+        h_file = FileOpen(MainForm->strings->GetDataFilePath(DataFile_Credits), fmOpenRead);
+        file_size = FileSeek(h_file, 0, 2);
+        FileSeek(h_file, 0, 0);
         buffer = new char[file_size + 1];
-        FileRead(hFile, buffer, file_size);
-        FileClose(hFile);
+        FileRead(h_file, buffer, file_size);
+        FileClose(h_file);
         data_file_size = file_size;
         file_text = buffer;
         file_text.SetLength(file_size);
@@ -80,7 +109,7 @@ void CreditsController::LoadCredits()
     }
     catch (...)
     {
-        FileClose(hFile);
+        FileClose(h_file);
     }
     try
     {
@@ -96,16 +125,14 @@ void CreditsController::LoadCredits()
                     vowel_count++;
                 if (file_text[i] == '\n' || i == file_text.Length())
                 {
-                    if (i == file_text.Length())
-                    {
-                        if ((unsigned char)file_text[i] != 10 && (unsigned char)file_text[i] != 13)
-                            line = line + file_text[i];
-                    }
+                    if (i == file_text.Length() && (unsigned char)file_text[i] != '\n' &&
+                        (unsigned char)file_text[i] != '\r')
+                        line = line + file_text[i];
                     lines->Add(line);
                     line_start = i + 1;
                     break;
                 }
-                if ((unsigned char)file_text[i] != 10 && (unsigned char)file_text[i] != 13)
+                if ((unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
                     line = line + file_text[i];
             }
         } while (file_text.Length() >= line_start);
@@ -116,7 +143,7 @@ void CreditsController::LoadCredits()
     try
     {
         credit_texts->Add(lines->Strings[0]);
-        credit_styles->Add("head");
+        credit_styles->Add("h");
         char next_is_title = false;
         for (int j = 1; j < lines->Count; j++)
         {
@@ -126,9 +153,9 @@ void CreditsController::LoadCredits()
             {
                 credit_texts->Add(lines->Strings[j]);
                 if (next_is_title)
-                    credit_styles->Add("title");
+                    credit_styles->Add("t");
                 else
-                    credit_styles->Add("name");
+                    credit_styles->Add("n");
                 next_is_title = false;
             }
         }
@@ -145,29 +172,27 @@ void CreditsController::LoadCredits()
 // field 4 = file size x 21
 bool CreditsController::VerifyCredits()
 {
-    bool valid;
-    int hFile;
-    DWORD file_size;
+    int position;
     char *buffer;
-    int colon_count;
-    int i;
+    bool valid;
+    int h_file;
     valid = true;
     String file_text;
     try
     {
-        hFile = FileOpen(MainForm->strings->GetDataFilePath(DataFile_CreditsCheck), fmOpenRead);
-        file_size = FileSeek(hFile, 0, 2);
-        FileSeek(hFile, 0, 0);
-        buffer = new char[file_size + 1];
-        FileRead(hFile, buffer, file_size);
-        FileClose(hFile);
+        h_file = FileOpen(MainForm->strings->GetDataFilePath(DataFile_CreditsCheck), fmOpenRead);
+        position = FileSeek(h_file, 0, 2);
+        FileSeek(h_file, 0, 0);
+        buffer = new char[position + 1];
+        FileRead(h_file, buffer, position);
+        FileClose(h_file);
         file_text = buffer;
-        file_text.SetLength(file_size);
+        file_text.SetLength(position);
         delete[] buffer;
     }
     catch (...)
     {
-        FileClose(hFile);
+        FileClose(h_file);
     }
     if (file_text.Length() <= 14)
         valid = false;
@@ -181,24 +206,24 @@ bool CreditsController::VerifyCredits()
     String size_check_code = "";
     if (valid)
     {
-        colon_count = 0;
-        for (i = 11; i <= file_text.Length(); i++)
+        int colon_count = 0;
+        position = 11;
+        while (position <= file_text.Length())
         {
-            if (file_text[i] == '}')
+            if (file_text[position] == '}' || file_text[position] == '\n')
                 break;
-            if (file_text[i] == '\n')
-                break;
-            if (file_text[i] == ':')
+            if (file_text[position] == ':')
                 colon_count++;
             else
             {
                 if (!colon_count)
-                    size_code = size_code + file_text[i];
+                    size_code = size_code + (char)file_text[position];
                 if (colon_count == 2)
-                    vowel_code = vowel_code + file_text[i];
+                    vowel_code = vowel_code + (char)file_text[position];
                 if (colon_count == 3)
-                    size_check_code = size_check_code + file_text[i];
+                    size_check_code = size_check_code + (char)file_text[position];
             }
+            position++;
         }
         if (colon_count != 3)
             valid = false;
@@ -207,7 +232,7 @@ bool CreditsController::VerifyCredits()
     {
         try
         {
-            if ((StrToInt(size_code) + 11) / 3013 != data_file_size)
+            if ((StrToInt(size_code) + 11) / 2003 != data_file_size)
                 valid = false;
             if (StrToInt(vowel_code) != vowel_count)
                 valid = false;

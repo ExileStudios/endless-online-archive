@@ -7,9 +7,8 @@
 #include "Ctrl_interface.h"
 #include "Ctrl_social.h"
 #include "Ctrl_status.h"
-#pragma package(smart_init)
 
-#define PLAYERLIST_VISIBLE_NAMES 7
+#pragma package(smart_init)
 
 PlayerlistController::PlayerlistController()
 {
@@ -104,14 +103,14 @@ void PlayerlistController::ApplyFilter()
     all_second_texts->Sort();
     all_guild_tags->Sort();
     all_class_names->Sort();
-    for (i = 0; i < all_names->Count; i++)
+    for (int i = 0; i < all_names->Count; i++)
     {
         String entry_value = "";
         String name = all_names->Strings[i];
-        prefix_length = name.Length() + 1;
-        social_match = false;
-        icon_match = false;
-        same_guild = false;
+        int prefix_length = name.Length() + 1;
+        char social_match = false;
+        char icon_match = false;
+        char same_guild = false;
         if (filter_mode == PlayerFilter_Friends && MainForm->animation->social->IsFriend(name))
             social_match = true;
         // This filter keeps players with certain icons
@@ -142,7 +141,7 @@ void PlayerlistController::ApplyFilter()
             if (guild_tag == own_guild_tag)
                 same_guild = true;
         }
-        if ((filter_mode == PlayerFilter_All) || social_match || icon_match || same_guild)
+        if (filter_mode == PlayerFilter_All || social_match || icon_match || same_guild)
         {
             shown_record_values->Add(all_record_values->Strings[i]);
             shown_icon_types->Add(all_icon_types->Strings[i]);
@@ -152,11 +151,11 @@ void PlayerlistController::ApplyFilter()
             shown_class_names->Add(all_class_names->Strings[i]);
         }
     }
-    for (j = 0; j < shown_names->Count; j++)
+    for (int j = 0; j < shown_names->Count; j++)
     {
         String entry = "";
         String shown_name = shown_names->Strings[j];
-        shown_prefix_length = shown_name.Length() + 1;
+        int shown_prefix_length = shown_name.Length() + 1;
         entry = shown_record_values->Strings[j];
         entry.Delete(1, shown_prefix_length);
         shown_record_values->Strings[j] = entry;
@@ -183,15 +182,15 @@ void PlayerlistController::AddPlayer(String record_value, int icon_type, String 
     all_icon_types->Add(name + " " + IntToStr(icon_type));
     all_names->Add(Capitalize(name));
     if (second_text.Length() >= 1)
-        this->all_second_texts->Add(name + " " + Capitalize(second_text));
+        all_second_texts->Add(name + " " + Capitalize(second_text));
     else
         all_second_texts->Add(name + " -");
     if (guild_tag.Length() >= 1)
-        this->all_guild_tags->Add(name + " " + Capitalize(guild_tag));
+        all_guild_tags->Add(name + " " + Capitalize(guild_tag));
     else
         all_guild_tags->Add(name + " -");
     if (class_name.Length() >= 1)
-        this->all_class_names->Add(name + " " + Capitalize(class_name));
+        all_class_names->Add(name + " " + Capitalize(class_name));
     else
         all_class_names->Add(name + " -");
 }
@@ -226,7 +225,7 @@ void PlayerlistController::ScrollUp()
     if (shown_names->Count > PLAYERLIST_VISIBLE_NAMES && top_line > 0)
     {
         top_line--;
-        double scroll_fraction = (double)top_line / (double)(shown_names->Count - 7);
+        double scroll_fraction = (double)top_line / (shown_names->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -240,7 +239,7 @@ void PlayerlistController::ScrollDown()
     if (shown_names->Count - 7 > top_line)
     {
         top_line++;
-        double scroll_fraction = (double)top_line / (double)(shown_names->Count - 7);
+        double scroll_fraction = (double)top_line / (shown_names->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         scroll_dirty = true;
@@ -251,9 +250,7 @@ void PlayerlistController::ScrollDown()
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line from its position.
 void PlayerlistController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -263,9 +260,9 @@ void PlayerlistController::DragScrollThumb(int y)
             thumb_offset = 50;
         if (shown_names->Count > PLAYERLIST_VISIBLE_NAMES)
         {
-            thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
-            scaled_line = (shown_names->Count - 7.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / PANEL_THUMB_TRAVEL;
+            double scaled_line = (shown_names->Count - 7.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }
@@ -279,7 +276,7 @@ void PlayerlistController::DragScrollThumb(int y)
 // the next filter; also the scroll bar.
 void PlayerlistController::MouseDown(int x, int y, int button)
 {
-    if (button == 1)
+    if ((button == 1))
     {
         if (x >= 127 && x <= 560 && y >= 347 && y <= 444)
         {

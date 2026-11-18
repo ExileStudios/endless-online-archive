@@ -1,7 +1,6 @@
 #ifndef Sys_magicmapH
 #define Sys_magicmapH
 
-// stored as the loaded value - 1 (PacketProcessor::DispatchPacket passes attack_spell_graphic - 1)
 enum SpellEffect
 {
     SpellEffect_None = 0,

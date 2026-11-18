@@ -4,7 +4,7 @@
 #include "Gfx_musician.h"
 #include "Tmainform.h"
 #include "Gfx_bank.h"
-#include <TDx_Draw_Library_Install.H>
+
 #pragma package(smart_init)
 
 MusicianGraphics::MusicianGraphics()
@@ -33,7 +33,7 @@ MusicianGraphics::~MusicianGraphics()
 }
 
 // One cell of the musician cell sheet, by column and row.
-Windows::TRect MusicianGraphics::GetCellRect(int column, int row)
+TRect MusicianGraphics::GetCellRect(int column, int row)
 {
     TRect cell_rect;
     cell_rect.top = 20 * row;
@@ -53,11 +53,11 @@ GraphicSize MusicianGraphics::LoadCellSheet(HMODULE library, int resource_id)
 {
     GraphicSize size;
     HDC dc;
-    HDC CompatibleDC;
+    HDC compatible_dc;
     size.width = -1;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id);
+    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
     surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
     surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
@@ -94,13 +94,13 @@ GraphicSize MusicianGraphics::LoadCellSheet(HMODULE library, int resource_id)
     }
     else
     {
-        CompatibleDC = CreateCompatibleDC(0);
-        SelectObject(CompatibleDC, MainForm->resource_bitmap->Handle);
+        compatible_dc = CreateCompatibleDC(0);
+        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
         if (cell_sheet_surface->GetDC(&dc))
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
+                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -110,7 +110,7 @@ GraphicSize MusicianGraphics::LoadCellSheet(HMODULE library, int resource_id)
             }
             cell_sheet_surface->ReleaseDC(dc);
         }
-        DeleteDC(CompatibleDC);
+        DeleteDC(compatible_dc);
     }
     return size;
 }

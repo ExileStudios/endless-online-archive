@@ -1,6 +1,9 @@
 #ifndef Ctrl_statusH
 #define Ctrl_statusH
 
+#define GUILD_RANK_LOWEST 9
+#define MAX_LEVEL 240
+
 // The own character's numbers: health, mana, stamina, weight, level and experience, stat and skill points, the
 // guild tag, and the experience totals the stats window shows.
 struct StatusController

@@ -3,8 +3,8 @@
 
 #include "Ctrl_book.h"
 #include "Tmainform.h"
+
 #pragma package(smart_init)
-#define BOOK_THUMB_TRAVEL 188.0
 
 BookController::BookController()
 {
@@ -49,6 +49,12 @@ void BookController::Open(int frame_row, String name_text, String home_text, Str
     // A text shorter than four characters is not shown
     if (partner_name.Length() < 4)
         partner_name = "";
+}
+
+void BookController::Close()
+{
+    is_visible = false;
+    MainForm->redraw_needed = true;
 }
 
 // A click on the scroll bar, or anywhere else in the window to start moving it.
@@ -152,9 +158,7 @@ void BookController::MouseMove(int x, int y)
 // Follows a grabbed scroll thumb, kept on its track, and picks the top line from its position.
 void BookController::DragScrollThumb(int y)
 {
-    double thumb_fraction;
-    double scaled_line;
-    int unused_int;
+    int new_top_line;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -165,9 +169,9 @@ void BookController::DragScrollThumb(int y)
         int line_count = lines->Count;
         if (line_count > 14)
         {
-            thumb_fraction = thumb_offset / 188.0;
-            scaled_line = (line_count - 14.0) * thumb_fraction;
-            int new_top_line = scaled_line;
+            double thumb_fraction = thumb_offset / 188.0;
+            double scaled_line = (line_count - 14.0) * thumb_fraction;
+            new_top_line = scaled_line;
             if (new_top_line != top_line)
                 top_line = new_top_line;
         }
@@ -179,14 +183,12 @@ void BookController::DragScrollThumb(int y)
 // Scrolls the entries up one line and moves the scroll thumb to match.
 void BookController::ScrollUp()
 {
-    double scroll_fraction;
-    double thumb_pos;
     int line_count = lines->Count;
     if (line_count > 14 && top_line > 0)
     {
         top_line--;
-        scroll_fraction = (double)top_line / (double)(line_count - 14);
-        thumb_pos = BOOK_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (line_count - 14);
+        double thumb_pos = BOOK_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         MainForm->redraw_needed = true;
     }
@@ -201,8 +203,8 @@ void BookController::ScrollDown()
     if (result - 14 > top_line)
     {
         top_line++;
-        scroll_fraction = (double)top_line / (double)(result - 14);
-        thumb_pos = BOOK_THUMB_TRAVEL * scroll_fraction;
+        double scroll_fraction = (double)top_line / (result - 14);
+        double thumb_pos = BOOK_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
         MainForm->redraw_needed = true;
     }

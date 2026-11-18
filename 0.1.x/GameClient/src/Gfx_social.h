@@ -1,17 +1,18 @@
 #ifndef Gfx_socialH
 #define Gfx_socialH
 
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The background surface of the friends and ignore window, drawn opaque.
 struct SocialGraphics
 {
     TDx_DrawSurface *surface;
-    Windows::TRect surface_rect;
+    TRect surface_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;

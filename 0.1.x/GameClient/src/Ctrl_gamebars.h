@@ -1,6 +1,9 @@
 #ifndef Ctrl_gamebarsH
 #define Ctrl_gamebarsH
 
+#define BAR_FULL_SEGMENTS 20
+#define PERCENT_SCALE 100.0
+
 // The strip at the top of the game screen: the stats and quest buttons and four bars.
 // The health, mana, stamina and experience bars have 20 segments of 5 percent each.
 struct GameBars
@@ -22,6 +25,13 @@ struct GameBars
 
     GameBars();
     ~GameBars();
+    void ShowAllTexts();
+    void ToggleHealthText(bool force, bool play_sound);
+    void ToggleManaText(bool force, bool play_sound);
+    void ToggleStaminaText(bool force, bool play_sound);
+    void ToggleExperienceText(bool force, bool play_sound);
+    void RequestQuestProgress(char play_sound);
+    void OpenStats(bool play_sound);
     void MouseDown(int x, int y, int button);
     void Tick();
     void SetHealthBar(int health, int max_health);

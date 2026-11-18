@@ -2,7 +2,14 @@
 #define Ctrl_chatH
 
 #include <Classes.hpp>
-#define MAX_WRAP_PIECES 10
+
+#define CHAT_COLOR_DEFAULT 0
+#define CHAT_COLOR_PRIVATE 1
+#define CHAT_COLOR_SYSTEM 2
+#define CHAT_COLOR_WARNING 3
+#define CHAT_COLOR_ADMIN 5
+#define MAX_CHAT_LINES 300
+#define MAX_SYSTEM_LINES 100
 
 enum ChatIcon
 {
@@ -27,7 +34,6 @@ enum ChatIcon
     ChatIcon_HelpRequest = 22,
     ChatIcon_SystemNotice = 23
 };
-#define PANEL_THUMB_TRAVEL 50.0
 
 // The chat panel: six tabs (two private, local, global, group, system), each with its lines, colors and scrolling.
 struct ChatController
@@ -50,8 +56,11 @@ struct ChatController
     TStringList *group_colors;
     TStringList *group_icons;
     TStringList *group_senders;
-    TStringList *private_lines[3];
-    TStringList *private_colors[2];
+    TStringList *private_lines[1];
+    TStringList *private_tab_lines[1];
+    TStringList *last_private_tab_lines[1];
+    TStringList *private_colors[1];
+    TStringList *last_private_colors[1];
     TStringList *private_indents[2];
     char tab_has_unread[6];
     bool global_chat_open;
@@ -90,6 +99,10 @@ struct ChatController
     void AddGroupMessage(int icon, int color, String sender, String text, bool silent);
     void AddGlobalMessage(int icon, int color, String sender, String text, bool silent, bool skip_duplicates);
     void OnMouseClick(int mouse_x, int mouse_y, int button);
+    void ShowLocalTab();
+    void ShowGlobalTab();
+    void ShowGroupTab();
+    void ShowSystemTab();
     void StopScrolling();
     void OnMouseMove(int mouse_x, int mouse_y);
     void UpdateScrollbarHover(int mouse_x, int mouse_y);

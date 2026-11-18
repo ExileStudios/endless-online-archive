@@ -3,22 +3,20 @@
 
 #include "Gfx_useritem.h"
 #include "Gfx_subitem.h"
-#include <TDx_Input_Library_Install.H>
-#include <TDx_Sound_Library_Install.H>
-#include <list.h>
-#include <stack.h>
-#include <queue.h>
-#include <DBTables.hpp>
+#include "Gfx_mapobject.h"
+
 #pragma package(smart_init)
 
 SubItemWrapper::SubItemWrapper(int requested_id)
 {
     graphic_id = requested_id;
-    is_loaded = false;
-    was_used = false;
     width = 0;
     height = 0;
+    is_loaded = false;
+    was_used = false;
     idle_ticks = 0;
+    fetched = false;
+    unfetched_frames = 0;
 }
 
 SubItemWrapper::~SubItemWrapper()
@@ -27,12 +25,11 @@ SubItemWrapper::~SubItemWrapper()
 
 void SubItemWrapper::CreateResource()
 {
-    if (!is_loaded)
+    if (!was_used)
+    {
         resource = new SubItemResource();
+        was_used = true;
+    }
 }
 
-void SubItemWrapper::FreeResource()
-{
-    if (is_loaded)
-        delete resource;
-}
+DEFINE_FREE_RESOURCE(SubItemWrapper)

@@ -1,17 +1,18 @@
 #ifndef Gfx_statsH
 #define Gfx_statsH
 
-struct GraphicSize;
-class TDDColorKey;
-class TDDSCaps;
-class TDDSurfaceDesc;
-class TDx_DrawSurface;
+#include <TDDColorKey.H>
+#include <TDDSCaps.H>
+#include <TDDSurfaceDesc.H>
+#include <TDx_DrawSurface.H>
+
+#include "Gfx_bank.h"
 
 // The background surface of the character stats window, drawn opaque.
 struct StatGraphics
 {
     TDx_DrawSurface *surface;
-    Windows::TRect surface_rect;
+    TRect surface_rect;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;

@@ -1,6 +1,7 @@
 #ifndef Gfx_mapiconsH
 #define Gfx_mapiconsH
 
+#include <new>
 #include <vector.h>
 
 #include "Gfx_mapicon.h"
@@ -11,11 +12,10 @@ struct IconGraphics
     vector<IconWrapper> entries;
     int last_index;
     int pending_count;
-    int queue_drained;
+    bool queue_drained;
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char unused_bytes[6];
 
     IconGraphics(char preload);
     ~IconGraphics();
