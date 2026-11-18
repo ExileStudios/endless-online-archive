@@ -334,7 +334,7 @@ void __fastcall TForm1::Label38Click(System::TObject *Sender)
     String url = "http://www.endless-online.com";
     try
     {
-        ShellExecuteA(Handle, "open", url.c_str(), 0, 0, 10);
+        ShellExecuteA(Handle, "open", url.c_str(), 0, 0, SW_SHOWDEFAULT);
     }
     catch (...)
     {

@@ -6,7 +6,7 @@ and what it does instead, so the comments in `src/` can stay about what the code
 
 ## Values read from setup.ini come back upper case and without spaces, and are saved back that way
 
-`Configuration.cpp`, `Config::LoadConfig` (`0x004055fc`)
+`Configuration.cpp`, `Config::LoadConfig`
 
 ```cpp
                     ini_lines->Add(raw_line);
@@ -43,7 +43,7 @@ and what it does instead, so the comments in `src/` can stay about what the code
 
 ## Saving a setting whose line is missing from setup.ini writes nothing for it
 
-`Configuration.cpp`, `Config::SetValue` (`0x00408030`)
+`Configuration.cpp`, `Config::SetValue`
 
 ```cpp
             if (line[j] == '=')

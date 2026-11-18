@@ -142,7 +142,7 @@ public:
         __fastcall TForm1(TComponent *Owner);
         String enabled_text;
         String disabled_text;
-        char pad_0x418[4];
+        char unused_bytes[4];
         Config *config;
 };
 

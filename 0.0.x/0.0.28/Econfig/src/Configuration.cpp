@@ -34,7 +34,7 @@ Config::Config()
     show_baloons = true;
     show_shadows = true;
     log_file = "chatlog.txt";
-    LoadConfig();
+    LoadSettings();
     loaded_music = music;
     loaded_sound = sound;
     String exe_dir = Application->ExeName;
@@ -67,7 +67,7 @@ Config::~Config()
 }
 
 // Reads config/setup.ini: each line is kept as it is, and again in upper case without its spaces.
-void Config::LoadConfig()
+void Config::LoadSettings()
 {
     String file_text;
     int file_handle;
@@ -77,7 +77,7 @@ void Config::LoadConfig()
     {
         DWORD file_size;
         char *buffer;
-        file_handle = FileOpen("./config/setup.ini", 0);
+        file_handle = FileOpen("./config/setup.ini", fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -104,8 +104,8 @@ void Config::LoadConfig()
             {
                 if (file_text[i] == '\n' || file_text.Length() == i)
                 {
-                    if (file_text.Length() == i && (unsigned char)file_text[i] != 10 &&
-                        (unsigned char)file_text[i] != 13)
+                    if (file_text.Length() == i && (unsigned char)file_text[i] != '\n' &&
+                        (unsigned char)file_text[i] != '\r')
                     {
                         raw_line = raw_line + file_text[i];
                         key_line = key_line + file_text[i];
@@ -115,9 +115,9 @@ void Config::LoadConfig()
                     line_start = i + 1;
                     break;
                 }
-                if (file_text[i] != ' ' && (unsigned char)file_text[i] != 10 && (unsigned char)file_text[i] != 13)
+                if (file_text[i] != ' ' && (unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
                     key_line = key_line + file_text[i];
-                if ((unsigned char)file_text[i] != 10 && (unsigned char)file_text[i] != 13)
+                if ((unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
                     raw_line = raw_line + file_text[i];
             }
         } while (file_text.Length() >= line_start);

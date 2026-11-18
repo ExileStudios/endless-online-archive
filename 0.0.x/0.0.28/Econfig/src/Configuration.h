@@ -46,13 +46,13 @@ struct Config
     char loaded_sound;
     String host;
     String port;
-    String field_0x2c;
+    String unused_text;
     TStringList *ini_lines;
     TStringList *ini_keys;
 
     Config();
     ~Config();
-    void LoadConfig();
+    void LoadSettings();
     void SetValue(String name, String value);
     void SaveConfig();
     bool GetFullscreen();

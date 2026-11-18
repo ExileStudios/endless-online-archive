@@ -31,7 +31,7 @@ __published:
 private:
 public:
         __fastcall TForm2(TComponent *Owner);
-        char pad_0x2ec[4];
+        char unused_bytes[4];
 };
 
 extern PACKAGE TForm2 *Form2;
