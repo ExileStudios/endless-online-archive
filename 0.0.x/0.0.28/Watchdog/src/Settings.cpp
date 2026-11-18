@@ -17,9 +17,9 @@ Settings::Settings()
     max_players = 100;
     max_connections = 100;
     max_clones = 2;
-    watchdog = 1;
-    generator = 0;
-    downtime_log = 0;
+    watchdog = true;
+    generator = false;
+    downtime_log = false;
     watch_interval = 10;
     generator_interval = 5;
     watch_app = "gameserver.exe";

@@ -60,8 +60,8 @@ bool Class::ReadIniBool(String key, bool default_value) \
             { \
                 char before_eq; \
                 String line = ini_lines->Strings[i]; \
-                before_eq = 1; \
-                char skip_leading = 1; \
+                before_eq = true; \
+                char skip_leading = true; \
                 String ini_name = ""; \
                 String value = ""; \
                 if (line.Length() >= 1) \
@@ -69,7 +69,7 @@ bool Class::ReadIniBool(String key, bool default_value) \
                     for (int j = 1; j <= line.Length(); j++) \
                     { \
                         if (line[j] == '=') \
-                            before_eq = 0; \
+                            before_eq = false; \
                         if (before_eq) \
                         { \
                             if (line[j] != ' ' && line[j] != '=') \
@@ -79,7 +79,7 @@ bool Class::ReadIniBool(String key, bool default_value) \
                         { \
                             if (line[j] != ' ' && line[j] != '=') \
                             { \
-                                skip_leading = 0; \
+                                skip_leading = false; \
                                 value = value + line[j]; \
                             } \
                         } \
@@ -91,9 +91,9 @@ bool Class::ReadIniBool(String key, bool default_value) \
                         if (value.Length() >= 1) \
                         { \
                             if (LowerCase(value) == "on" || LowerCase(value) == "1") \
-                                result = 1; \
+                                result = true; \
                             else \
-                                result = 0; \
+                                result = false; \
                         } \
                         break; \
                     } \
@@ -122,8 +122,8 @@ String Class::ReadIniString(String key, String default_value) \
             { \
                 char before_eq; \
                 String line = ini_lines->Strings[i]; \
-                before_eq = 1; \
-                char skip_leading = 1; \
+                before_eq = true; \
+                char skip_leading = true; \
                 String ini_name = ""; \
                 String value = ""; \
                 if (line.Length() >= 1) \
@@ -131,7 +131,7 @@ String Class::ReadIniString(String key, String default_value) \
                     for (int j = 1; j <= line.Length(); j++) \
                     { \
                         if (line[j] == '=') \
-                            before_eq = 0; \
+                            before_eq = false; \
                         if (before_eq) \
                         { \
                             if (line[j] != ' ' && line[j] != '=') \
@@ -141,7 +141,7 @@ String Class::ReadIniString(String key, String default_value) \
                         { \
                             if (line[j] != ' ' && line[j] != '=') \
                             { \
-                                skip_leading = 0; \
+                                skip_leading = false; \
                                 value = value + line[j]; \
                             } \
                         } \
@@ -177,7 +177,7 @@ int Class::ReadIniInt(String key, int default_value) \
             for (int i = 0; i < ini_lines->Count; i++) \
             { \
                 String line = ini_lines->Strings[i]; \
-                char before_eq = 1; \
+                char before_eq = true; \
                 String ini_name = ""; \
                 String value = ""; \
                 if (line.Length() >= 1) \
@@ -185,7 +185,7 @@ int Class::ReadIniInt(String key, int default_value) \
                     for (int j = 1; j <= line.Length(); j++) \
                     { \
                         if (line[j] == '=') \
-                            before_eq = 0; \
+                            before_eq = false; \
                         if (line[j] != ' ' && line[j] != '=') \
                         { \
                             if (before_eq) \

@@ -21,20 +21,20 @@ Client::Client()
     server_encryption_multiple = 0;
     sequence_start = 0;
     player_id = 0;
-    unused_value100 = 0;
+    session_id = 0;
     out_of_date = false;
     initialized = false;
-    unused_flag2 = false;
-    unused_flag3 = false;
-    unused_byte4 = false;
-    unused_flag5 = false;
-    unused_mode = 1;
-    unused_value24 = 0;
-    unused_byte28 = false;
-    unused_byte20 = false;
+    is_banned = false;
+    account_reply_disconnect = false;
+    login_retry_pending = false;
+    is_permanent_ban = false;
+    ban_minutes = 1;
+    login_failure_count = 0;
+    version_rejected = false;
+    unused_flag = false;
     time_offset = -1;
     date_offset = -1;
-    unused_value104 = 0;
+    admin_level = 0;
 }
 
 Client::~Client()
@@ -42,7 +42,7 @@ Client::~Client()
 }
 
 // Sends the init packet that opens the connection to the game server.
-void Client::SendInit()
+void Client::SendInitRequest()
 {
     try
     {
@@ -61,23 +61,23 @@ void Client::SendInit()
         GetVolumeInformationA("c:\\", VolumeNameBuffer, 1000, &VolumeSerialNumber, &MaximumComponentLength,
             &FileSystemFlags, FileSystemNameBuffer, 1000);
         // the drive serial goes along as the hdid, 32 digits at most
-        String hdid = VolumeSerialNumber;
-        if (hdid.Length() > 32)
-            hdid = hdid.SubString(1, 32);
+        String serial_text = VolumeSerialNumber;
+        if (serial_text.Length() > 32)
+            serial_text = serial_text.SubString(1, 32);
         // the init header is 255,255
-        char init_family = -1;
-        char init_action = init_family;
+        char init_marker = -1;
+        char marker_char = init_marker;
         challenge = random(1000000);
         String init_packet = "";
-        init_packet = init_packet + (char)init_action;
-        init_packet = init_packet + (char)init_action;
+        init_packet = init_packet + marker_char;
+        init_packet = init_packet + marker_char;
         init_packet = init_packet + EncodeNumber(challenge, 3);
         init_packet = init_packet + EncodeNumber(MainForm->version_major, 1);
         init_packet = init_packet + EncodeNumber(MainForm->version_minor, 1);
         init_packet = init_packet + EncodeNumber(MainForm->version_patch, 1);
         init_packet = init_packet + EncodeNumber(112, 1);
-        init_packet = init_packet + EncodeNumber(hdid.Length(), 1);
-        init_packet = init_packet + hdid;
+        init_packet = init_packet + EncodeNumber(serial_text.Length(), 1);
+        init_packet = init_packet + serial_text;
         // every packet starts with its length in two bytes
         init_packet = EncodeNumber(init_packet.Length(), 2) + init_packet;
         sequence_counter = 0;
@@ -96,7 +96,7 @@ void Client::SetPlayerID(int id)
 // Reads the server's answer to the init packet; true when the packet was an init reply ( it starts 255,255 ).
 bool Client::HandleInit(String data)
 {
-    bool is_init = 0;
+    bool is_init = false;
     if (data.Length() >= 2)
     {
         try
@@ -105,7 +105,7 @@ bool Client::HandleInit(String data)
             {
                 if (DecodeByte((unsigned char)data[2]) == InitReply_RawPacket)
                 {
-                    is_init = 1;
+                    is_init = true;
                     if (data.Length() == 3)
                     {
                         if (DecodeByte((unsigned char)data[3]) == InitReply_OutOfDate)
@@ -243,8 +243,8 @@ String Client::EncodeNumber(unsigned int value, int width)
     if (result.Length() < width)
     {
         char pad = -2;
-        int pad_count = width - result.Length();
-        for (int i = 0; i < pad_count; i++)
+        int missing = width - result.Length();
+        for (int i = 0; i < missing; i++)
             result.Insert(pad, result.Length() + 1);
     }
     return result;
@@ -259,7 +259,7 @@ String Client::EncodePacket(int multiple, String data)
     String encoded = "";
     std::string handle(data.c_str());
     encoded = EncodeInterleave(multiple, handle.begin(), handle.end());
-    encoded = FlipMSB(encoded);
+    encoded = FlipHighBits(encoded);
     return encoded;
 }
 
@@ -267,9 +267,9 @@ String Client::EncodePacket(int multiple, String data)
 String Client::DecodePacket(int multiple, String data)
 {
     String decoded = "";
-    data = FlipMSB(data);
+    data = FlipHighBits(data);
     std::string handle(data.c_str());
-    decoded = DecodeDeinterleave(multiple, handle.begin(), handle.end());
+    decoded = UnscrambleBytes(multiple, handle.begin(), handle.end());
     return decoded;
 }
 
@@ -326,7 +326,7 @@ String Client::EncodeInterleave(int multiple, char *begin, char *end)
 }
 
 // Undoes EncodeInterleave: unweaves the bytes, then turns the runs the multiple divides back around.
-String Client::DecodeDeinterleave(int multiple, char *begin, char *end)
+String Client::UnscrambleBytes(int multiple, char *begin, char *end)
 {
     int divisor;
     String result = "";
@@ -335,18 +335,18 @@ String Client::DecodeDeinterleave(int multiple, char *begin, char *end)
     {
         std::stack<char > pending;
         std::queue<char > woven;
-        char toggle = 1;
+        char to_first_list = true;
         for (; begin != end; begin++)
         {
-            if (toggle)
+            if (to_first_list)
             {
                 woven.push(*begin);
-                toggle = 0;
+                to_first_list = false;
             }
             else
             {
                 pending.push(*begin);
-                toggle = 1;
+                to_first_list = true;
             }
         }
         while (!pending.empty())
@@ -357,12 +357,12 @@ String Client::DecodeDeinterleave(int multiple, char *begin, char *end)
         pending.empty();
         while (!woven.empty())
         {
-            char next_char = woven.front();
+            char current_char = woven.front();
             woven.pop();
-            unsigned char raw = next_char;
-            int raw_value = raw;
-            if (!(raw_value % divisor))
-                pending.push(next_char);
+            unsigned char raw = current_char;
+            int current_char_int = raw;
+            if (!(current_char_int % divisor))
+                pending.push(current_char);
             else
             {
                 while (!pending.empty())
@@ -370,7 +370,7 @@ String Client::DecodeDeinterleave(int multiple, char *begin, char *end)
                     result.Insert((char)pending.top(), result.Length() + 1);
                     pending.pop();
                 }
-                result.Insert((char)next_char, result.Length() + 1);
+                result.Insert(current_char, result.Length() + 1);
             }
         }
         while (!pending.empty())
@@ -387,7 +387,7 @@ String Client::DecodeDeinterleave(int multiple, char *begin, char *end)
 }
 
 // Flips the top bit of every byte; a 128 stays as it is.
-String Client::FlipMSB(String data)
+String Client::FlipHighBits(String data)
 {
     if (data.Length() >= 1)
     {
@@ -506,22 +506,22 @@ String Client::BuildPacket(int multiple, int action, int family, String data)
         char family_byte;
         char action_code = action;
         char family_code = family;
-        char valid = 1;
+        char valid = true;
         if (action_code != 0)
             action_byte = action_code;
         else
-            valid = 0;
+            valid = false;
         if (family_code != 0)
             family_byte = family_code;
         else
-            valid = 0;
+            valid = false;
         // .. an action or a family of 0 builds nothing
         if (valid)
         {
             String header = "";
             String payload = "";
-            header = header + (char)action_byte;
-            header = header + (char)family_byte;
+            header = header + action_byte;
+            header = header + family_byte;
             payload = data;
             packet = packet + header;
             // the sequence byte counts 0 to 9 on top of sequence_start

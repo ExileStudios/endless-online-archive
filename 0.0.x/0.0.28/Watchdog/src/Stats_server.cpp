@@ -28,10 +28,10 @@ ServerStats::ServerStats(SerialKey *serial, Settings *server_settings, SettingsH
     version = version + IntToStr(MainForm->version_patch);
     template_lines = new TStringList();
     page_lines = new TStringList();
-    has_template = 0;
+    has_template = false;
     if (!access("./templates/server.eht", 0))
     {
-        has_template = 1;
+        has_template = true;
         template_lines->LoadFromFile("./templates/server.eht");
     }
     CheckConnectionLoad();
@@ -82,8 +82,8 @@ void ServerStats::FillTemplateLine(int line_index)
     int tag_start;
     int tag_length;
     int i;
-    in_tag = 0;
-    changed = 0;
+    in_tag = false;
+    changed = false;
     tag_start = 0;
     tag_length = 0;
     String line = page_lines->Strings[line_index];
@@ -93,7 +93,7 @@ void ServerStats::FillTemplateLine(int line_index)
         {
             if (line[i] == '{')
             {
-                in_tag = 1;
+                in_tag = true;
                 tag_length = 1;
                 tag_start = i;
             }
@@ -145,8 +145,8 @@ void ServerStats::FillTemplateLine(int line_index)
                 }
                 // after each tag the line is read again from the start
                 i = 1;
-                in_tag = 0;
-                changed = 1;
+                in_tag = false;
+                changed = true;
                 tag_start = 0;
                 tag_length = 0;
             }

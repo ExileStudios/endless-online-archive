@@ -17,10 +17,10 @@ SerialKey::SerialKey()
 {
     counter = 10;
     ini_lines = new TStringList();
-    SetIniPath(DecodeString(ENC_SERIAL_INI_PATH));
-    key_base = ReadKey(DecodeString(ENC_KEY_NAME), key_base);
-    unlock_code = ReadKey(DecodeString(ENC_KEY_MKEY), unlock_code);
-    serial_code = ReadKey(DecodeString(ENC_KEY_SKEY), serial_code);
+    SetIniPath(DeobfuscateString(ENC_SERIAL_INI_PATH));
+    key_base = ReadKey(DeobfuscateString(ENC_KEY_NAME), key_base);
+    unlock_code = ReadKey(DeobfuscateString(ENC_KEY_MKEY), unlock_code);
+    serial_code = ReadKey(DeobfuscateString(ENC_KEY_SKEY), serial_code);
     CloseIni();
     Validate();
 }
@@ -43,8 +43,8 @@ String SerialKey::ReadKey(String key, String default_value)
             {
                 char before_eq;
                 String line = ini_lines->Strings[i];
-                before_eq = 1;
-                char skip_leading = 1;
+                before_eq = true;
+                char skip_leading = true;
                 String ini_name = "";
                 String value = "";
                 if (line.Length() >= 1)
@@ -52,7 +52,7 @@ String SerialKey::ReadKey(String key, String default_value)
                     for (int j = 1; j <= line.Length(); j++)
                     {
                         if (line[j] == '=')
-                            before_eq = 0;
+                            before_eq = false;
                         if (before_eq)
                         {
                             if (line[j] != ' ' && line[j] != '=')
@@ -62,7 +62,7 @@ String SerialKey::ReadKey(String key, String default_value)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                             {
-                                skip_leading = 0;
+                                skip_leading = false;
                                 value = value + line[j];
                             }
                         }
@@ -98,7 +98,7 @@ char SerialKey::IsValid()
 // The skey of a valid licence, or "not licenced".
 String SerialKey::GetDisplayCode()
 {
-    String result = DecodeString(ENC_NOT_LICENCED);
+    String result = DeobfuscateString(ENC_NOT_LICENCED);
     if (serial_code.Length() >= 1 && valid)
         result = serial_code;
     return result;
@@ -107,8 +107,8 @@ String SerialKey::GetDisplayCode()
 // Checks the licence in two steps: the skey must fit the name, then the mkey must fit this PC's drive serial.
 void SerialKey::Validate()
 {
-    char stage1_passed = 0;
-    valid = 0;
+    char serial_valid = false;
+    valid = false;
     int group_sum1 = 400;
     int group_sum2 = 410;
     int group_sum3 = 413;
@@ -128,10 +128,10 @@ void SerialKey::Validate()
         String serial_group2 = serial_code.SubString(9, 3);
         String serial_group3 = serial_code.SubString(13, 3);
         if (expected1 == serial_group1 && expected2 == serial_group2 && expected3 == serial_group3)
-            stage1_passed = 1;
+            serial_valid = true;
     }
     // .. step 2: the mkey belongs to one PC
-    if (stage1_passed)
+    if (serial_valid)
     {
         DWORD name_size = 16;
         DWORD VolumeSerialNumber;
@@ -174,25 +174,25 @@ void SerialKey::Validate()
             String unlock_group2 = unlock_code.SubString(9, 3);
             String unlock_group3 = unlock_code.SubString(13, 3);
             if (expected1 == unlock_group1 && expected2 == unlock_group2 && expected3 == unlock_group3)
-                valid = 1;
+                valid = true;
         }
     }
 }
 
 // Decodes a hidden string: reversed, then each character mirrored inside its range ( 34..125, or 34..79 and 80..125 ).
-String SerialKey::DecodeString(String src)
+String SerialKey::DeobfuscateString(String src)
 {
     int parity;
     int i;
-    String rev = "";
+    String reversed = "";
     String result = "";
     parity = (src.Length() + 1) % 2;
     for (i = src.Length(); i >= 1; i--)
-        rev = rev + src[i];
+        reversed = reversed + src[i];
     for (int j = 1; j <= src.Length(); j++)
     {
-        char ch = rev[j];
-        unsigned char byte_value = ch;
+        char raw_char = reversed[j];
+        unsigned char byte_value = raw_char;
         int code = byte_value;
         if (j % 2 == parity)
         {
@@ -200,33 +200,33 @@ String SerialKey::DecodeString(String src)
             {
                 code = 125 - code + 34;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             else
-                result = result + String(rev[j]);
+                result = result + String(reversed[j]);
         }
         else
         {
-            char done = 0;
+            char done = false;
             if (code >= 34 && code <= 79)
             {
-                done = 1;
+                done = true;
                 code = 79 - code + 34;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             if (code >= 80 && code <= 125)
             {
-                done = 1;
+                done = true;
                 code = 125 - code + 80;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             if (!done)
-                result = result + String(rev[j]);
+                result = result + String(reversed[j]);
         }
     }
     return result;

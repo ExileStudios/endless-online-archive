@@ -35,7 +35,7 @@ struct SerialKey
     char IsValid();
     String GetDisplayCode();
     void Validate();
-    String DecodeString(String src);
+    String DeobfuscateString(String src);
     void SetCounter(int value);
 };
 
@@ -44,9 +44,9 @@ struct SerialKey
 #define DEFINE_IS_LIST_MARKER(Class) \
 bool Class::IsListMarker(String line, int which) \
 { \
-    bool found = 0; \
-    char in_tag = 0; \
-    char changed = 0; \
+    bool found = false; \
+    char in_tag = false; \
+    char changed = false; \
     int tag_start = 0; \
     int tag_length = 0; \
     for (int i = 1; i <= line.Length(); i++) \
@@ -55,7 +55,7 @@ bool Class::IsListMarker(String line, int which) \
         { \
             if (line[i] == '{') \
             { \
-                in_tag = 1; \
+                in_tag = true; \
                 tag_length = 1; \
                 tag_start = i; \
             } \
@@ -69,12 +69,12 @@ bool Class::IsListMarker(String line, int which) \
                 if (!which) \
                 { \
                     if (tag == "{BEGIN_LIST}") \
-                        found = 1; \
+                        found = true; \
                 } \
                 if (which == 1) \
                 { \
                     if (tag == "{END_LIST}") \
-                        found = 1; \
+                        found = true; \
                 } \
             } \
         } \

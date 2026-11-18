@@ -32,16 +32,16 @@ PlayerStats::PlayerStats(SerialKey *serial, Settings *server_settings, SettingsH
     player_count = 0;
     template_lines = new TStringList();
     page_lines = new TStringList();
-    has_template = 0;
+    has_template = false;
     if (!access("./templates/playerlist.eht", 0))
     {
-        has_template = 1;
+        has_template = true;
         template_lines->LoadFromFile("./templates/playerlist.eht");
     }
     if (has_template)
     {
-        list_found = 0;
-        begin_found = 0;
+        list_found = false;
+        begin_found = false;
         for (int i = 0; template_lines->Count > i && !list_found; i++)
         {
             if (!begin_found)
@@ -49,7 +49,7 @@ PlayerStats::PlayerStats(SerialKey *serial, Settings *server_settings, SettingsH
                 if (IsListMarker(template_lines->Strings[i], 0))
                 {
                     list_begin = i;
-                    begin_found = 1;
+                    begin_found = true;
                 }
             }
             else
@@ -57,7 +57,7 @@ PlayerStats::PlayerStats(SerialKey *serial, Settings *server_settings, SettingsH
                 if (IsListMarker(template_lines->Strings[i], 1))
                 {
                     list_end = i;
-                    list_found = 1;
+                    list_found = true;
                 }
             }
         }
@@ -169,8 +169,8 @@ String PlayerStats::FillListLine(char by_name, String template_line)
     int tag_start;
     int tag_length;
     String line = template_line;
-    in_tag = 0;
-    changed = 0;
+    in_tag = false;
+    changed = false;
     tag_start = 0;
     tag_length = 0;
     for (int i = 1; i <= line.Length(); i++)
@@ -179,7 +179,7 @@ String PlayerStats::FillListLine(char by_name, String template_line)
         {
             if (line[i] == '{')
             {
-                in_tag = 1;
+                in_tag = true;
                 tag_length = 1;
                 tag_start = i;
             }
@@ -273,7 +273,7 @@ String PlayerStats::FillListLine(char by_name, String template_line)
                     }
                 }
                 i = line.Length();
-                in_tag = 1;
+                in_tag = true;
             }
         }
     }
@@ -302,8 +302,8 @@ void PlayerStats::BuildPage(char by_name)
                 list_index++;
             } while (list_index < player_count);
         }
-        char in_tag = 0;
-        char changed = 0;
+        char in_tag = false;
+        char changed = false;
         int tag_start = 0;
         int tag_length = 0;
         String line = template_lines->Strings[i];
@@ -313,7 +313,7 @@ void PlayerStats::BuildPage(char by_name)
             {
                 if (line[k] == '{')
                 {
-                    in_tag = 1;
+                    in_tag = true;
                     tag_length = 1;
                     tag_start = k;
                 }
@@ -329,7 +329,7 @@ void PlayerStats::BuildPage(char by_name)
                         line.Insert(IntToStr(player_count), tag_start);
                     if (tag == "{GENDATE}")
                         line.Insert(DateToStr(Date()) + " " + TimeToStr(Time()), tag_start);
-                    changed = 1;
+                    changed = true;
                 }
             }
         }

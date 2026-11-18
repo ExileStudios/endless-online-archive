@@ -60,7 +60,7 @@ __published:
 private:
 public:
         __fastcall TMainForm(TComponent *owner);
-        char pad_0x304[4];
+        char unused_bytes[4];
         TIcon *tray_icon;
         Settings *settings;
         SettingsHTM *html_settings;
@@ -78,11 +78,11 @@ public:
         int version_major;
         int version_minor;
         int version_patch;
-        char pad_0x34c[4];
+        char second_unused_bytes[4];
 
         void __fastcall TrayIconMessage(TMessage &Msg);
-        static void __fastcall AddTrayIcon(TMainForm *self);
-        static void __fastcall RemoveTrayIcon(TMainForm *self);
+        void __fastcall AddTrayIcon();
+        void __fastcall RemoveTrayIcon();
         void __fastcall AppMinimize(TObject *Sender);
         void __fastcall AppRestore(TObject *Sender);
         void WriteLog(String message);

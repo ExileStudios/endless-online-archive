@@ -20,7 +20,7 @@ struct PacketProcessor;
 // Reads the game server's packets into the pages' lists and counts.
 struct PacketProcessor
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     PacketProcessor();
     ~PacketProcessor();

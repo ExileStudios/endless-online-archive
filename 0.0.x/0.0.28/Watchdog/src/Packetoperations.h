@@ -19,7 +19,7 @@ struct PacketOperator;
 
 struct PacketOperator
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     PacketOperator();
     ~PacketOperator();

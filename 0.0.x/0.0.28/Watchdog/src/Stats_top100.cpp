@@ -26,16 +26,16 @@ Top100Stats::Top100Stats(SerialKey *serial, Settings *server_settings, SettingsH
     player_count = 0;
     template_lines = new TStringList();
     page_lines = new TStringList();
-    has_template = 0;
+    has_template = false;
     if (!access("./templates/top100.eht", 0))
     {
-        has_template = 1;
+        has_template = true;
         template_lines->LoadFromFile("./templates/top100.eht");
     }
     if (has_template)
     {
-        list_found = 0;
-        begin_found = 0;
+        list_found = false;
+        begin_found = false;
         for (int i = 0; template_lines->Count > i && !list_found; i++)
         {
             if (!begin_found)
@@ -43,7 +43,7 @@ Top100Stats::Top100Stats(SerialKey *serial, Settings *server_settings, SettingsH
                 if (IsListMarker(template_lines->Strings[i], 0))
                 {
                     list_begin = i;
-                    begin_found = 1;
+                    begin_found = true;
                 }
             }
             else
@@ -51,7 +51,7 @@ Top100Stats::Top100Stats(SerialKey *serial, Settings *server_settings, SettingsH
                 if (IsListMarker(template_lines->Strings[i], 1))
                 {
                     list_end = i;
-                    list_found = 1;
+                    list_found = true;
                 }
             }
         }
@@ -135,8 +135,8 @@ void Top100Stats::BuildPage()
                 list_index++;
             } while (list_index < player_count);
         }
-        char in_tag = 0;
-        char changed = 0;
+        char in_tag = false;
+        char changed = false;
         int tag_start = 0;
         int tag_length = 0;
         String line = template_lines->Strings[i];
@@ -146,7 +146,7 @@ void Top100Stats::BuildPage()
             {
                 if (line[k] == '{')
                 {
-                    in_tag = 1;
+                    in_tag = true;
                     tag_length = 1;
                     tag_start = k;
                 }
@@ -162,7 +162,7 @@ void Top100Stats::BuildPage()
                         line.Insert(IntToStr(player_count), tag_start);
                     if (tag == "{GENDATE}")
                         line.Insert(DateToStr(Date()) + " " + TimeToStr(Time()), tag_start);
-                    changed = 1;
+                    changed = true;
                 }
             }
         }
@@ -184,8 +184,8 @@ String Top100Stats::FillListLine(String template_line)
     int tag_length;
     int i;
     String line = template_line;
-    in_tag = 0;
-    changed = 0;
+    in_tag = false;
+    changed = false;
     tag_start = 0;
     tag_length = 0;
     for (i = 1; i <= line.Length(); i++)
@@ -194,7 +194,7 @@ String Top100Stats::FillListLine(String template_line)
         {
             if (line[i] == '{')
             {
-                in_tag = 1;
+                in_tag = true;
                 tag_length = 1;
                 tag_start = i;
             }
@@ -225,7 +225,7 @@ String Top100Stats::FillListLine(String template_line)
                     }
                 }
                 i = line.Length();
-                in_tag = 1;
+                in_tag = true;
             }
         }
     }

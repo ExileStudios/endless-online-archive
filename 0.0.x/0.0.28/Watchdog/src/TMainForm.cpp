@@ -21,7 +21,7 @@
 #pragma resource "*.dfm"
 TMainForm *MainForm;
 
-char *g_47447C = "endless advanced watchdog";
+char *tray_tip_text = "endless advanced watchdog";
 
 // Version 0.0.28: creates the settings, the licence and the pages, connects to the game server and adds the tray icon.
 __fastcall TMainForm::TMainForm(Classes::TComponent *owner)
@@ -43,7 +43,7 @@ __fastcall TMainForm::TMainForm(Classes::TComponent *owner)
     restart_counter = 0;
     generator_counter = 0;
     tray_icon = new TIcon();
-    tray_icon->Handle = (HICON)LoadImageA(HInstance, "TRAYICON", 1, 0, 0, 0);
+    tray_icon->Handle = (HICON)LoadImageA(HInstance, "TRAYICON", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
     if (serial_key->IsValid())
         serial_key->SetCounter(100);
     if (settings->GetWatchdog())
@@ -54,7 +54,7 @@ __fastcall TMainForm::TMainForm(Classes::TComponent *owner)
         logdowntime1->Checked = true;
     client->Port = settings->GetPort();
     client->Active = true;
-    AddTrayIcon(this);
+    AddTrayIcon();
     Application->OnMinimize = AppMinimize;
     Application->OnRestore = AppRestore;
 }
@@ -65,40 +65,40 @@ void __fastcall TMainForm::TrayIconMessage(TMessage &Msg)
     POINT Point;
     switch (Msg.LParam)
     {
-        case 517:  // WM_RBUTTONUP: the tray menu
+        case WM_RBUTTONUP:  // the tray menu
             GetCursorPos(&Point);
             SetForegroundWindow(Handle);
             trayermenu->Popup(Point.x, Point.y);
-            PostMessageA(Handle, 0, 0, 0);
+            PostMessageA(Handle, WM_NULL, 0, 0);
             break;
-        case 515:  // WM_LBUTTONDBLCLK: the window comes back
+        case WM_LBUTTONDBLCLK:  // the window comes back
             Application->Restore();
             break;
     }
 }
 
 // Puts the Watchdog's icon in the tray.
-void __fastcall TMainForm::AddTrayIcon(TMainForm *self)
+void __fastcall TMainForm::AddTrayIcon()
 {
     NOTIFYICONDATAA icon_data;
     icon_data.cbSize = 488;
     icon_data.uID = 1006;
-    icon_data.hWnd = self->Handle;
-    icon_data.uFlags = 7;  // NIF_MESSAGE, NIF_ICON and NIF_TIP
-    icon_data.uCallbackMessage = 2025;  // WM_USER + 1001, see TrayIconMessage
-    lstrcpyA(icon_data.szTip, g_47447C);
-    icon_data.hIcon = self->tray_icon->Handle;
-    Shell_NotifyIconA(0, &icon_data);
+    icon_data.hWnd = Handle;
+    icon_data.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+    icon_data.uCallbackMessage = WM_USER + 1001;  // see TrayIconMessage
+    lstrcpyA(icon_data.szTip, tray_tip_text);
+    icon_data.hIcon = tray_icon->Handle;
+    Shell_NotifyIconA(NIM_ADD, &icon_data);
 }
 
-void __fastcall TMainForm::RemoveTrayIcon(TMainForm *self)
+void __fastcall TMainForm::RemoveTrayIcon()
 {
     NOTIFYICONDATAA icon_data;
     icon_data.cbSize = 488;
     icon_data.uID = 1006;
-    icon_data.hWnd = self->Handle;
-    icon_data.hIcon = self->tray_icon->Handle;
-    Shell_NotifyIconA(2, &icon_data);
+    icon_data.hWnd = Handle;
+    icon_data.hIcon = tray_icon->Handle;
+    Shell_NotifyIconA(NIM_DELETE, &icon_data);
 }
 
 // Minimized, the Watchdog hides; only the tray icon stays.
@@ -124,7 +124,7 @@ void __fastcall TMainForm::FormClose(System::TObject *Sender, Forms::TCloseActio
 
 void __fastcall TMainForm::exitwatchdog1Click(System::TObject *Sender)
 {
-    RemoveTrayIcon(this);
+    RemoveTrayIcon();
     Application->Terminate();
 }
 
@@ -178,7 +178,7 @@ void __fastcall TMainForm::watchtimerTimer(System::TObject *Sender)
                 {
                     try
                     {
-                        spawnl(1, settings->GetWatchApp().c_str(), settings->GetWatchApp().c_str(), 0);  // P_NOWAIT
+                        spawnl(P_NOWAIT, settings->GetWatchApp().c_str(), settings->GetWatchApp().c_str(), 0);
                     }
                     catch (...)
                     {
@@ -257,7 +257,7 @@ void __fastcall TMainForm::clientError(System::TObject *Sender, Scktcomp::TCusto
 // Starts the init handshake as soon as the socket connects.
 void __fastcall TMainForm::clientConnect(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket)
 {
-    packet_controls->SendInit();
+    packet_controls->SendInitRequest();
 }
 
 void __fastcall TMainForm::clientRead(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket)

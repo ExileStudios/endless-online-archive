@@ -6,8 +6,8 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## Only the first tag on each line of a page template's list block is filled in
 
-`Stats_guilds.cpp`, `GuildStats::FillListLine` (`0x0041221c`); `Stats_players.cpp`, `PlayerStats::FillListLine`
-(`0x0040f574`); `Stats_top100.cpp`, `Top100Stats::FillListLine` (`0x00411670`)
+`Stats_guilds.cpp`, `GuildStats::FillListLine`; `Stats_players.cpp`, `PlayerStats::FillListLine`; `Stats_top100.cpp`,
+`Top100Stats::FillListLine`
 
 ```cpp
                 String tag = line.SubString(tag_start, tag_length);
@@ -41,7 +41,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## A function of the server page tests the connection count and changes nothing
 
-`Stats_server.cpp`, `ServerStats::CheckConnectionLoad` (`0x00403e24`)
+`Stats_server.cpp`, `ServerStats::CheckConnectionLoad`
 
 ```cpp
     if (connections > max_connections / 2)
@@ -65,8 +65,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## Small ones with no effect
 
-- **`Client::SendPacket` returns false whether or not it sent the packet.** `Packetcontrols.cpp`, `Client::SendPacket`
-  (`0x0040dcf4`).
+- **`Client::SendPacket` returns false whether or not it sent the packet.** `Packetcontrols.cpp`, `Client::SendPacket`.
   - Code: `int result = 0; result = 0; return result;`
   - What it does: `result` starts at 0, and the only other assignment, in the `catch`, is also 0, so `return result;`
     gives false.
@@ -75,7 +74,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
     `PacketOperator::RequestOnlineList`, `PacketOperator::SendPing`. Reachable with the shipped code: reachable. Every
     send goes through it.
   - What you see: None. Each of the six calls stands as a statement, so no caller reads the answer.
-- **The licence check reads the PC's name and does not use it.** `Serial.cpp`, `SerialKey::Validate` (`0x00406acc`).
+- **The licence check reads the PC's name and does not use it.** `Serial.cpp`, `SerialKey::Validate`.
   - Code: `GetComputerNameA(computer_name, &name_size); String computer_name_text = computer_name;`
   - What it does: `GetComputerNameA` fills `computer_name`, which is copied into `computer_name_text`. No later line
     reads `computer_name_text`: the search finds only the line that sets it.
@@ -83,7 +82,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
     `\bcomputer_name_text\b` finds 1 line(s). Reachable with the shipped code: reachable. Every start runs it.
   - What you see: None. The check uses the drive serial (`GetVolumeInformationA`) and the key.
 - **The packet decoder asks whether a stack is empty and drops the answer.** `Packetcontrols.cpp`,
-  `Client::DecodeDeinterleave` (`0x0040d698`).
+  `Client::DecodeDeinterleave`.
   - Code: `pending.empty();`
   - What it does: `pending.empty();` comes right after `while (!pending.empty())`, the loop that empties `pending`. It
     only returns true, and nothing uses the answer.
