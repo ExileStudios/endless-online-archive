@@ -155,6 +155,8 @@ struct PacketOperator
     void AcceptTrade(int player_id);
     void AcceptPartyInvite(int player_id);
     void SendPingRequest();
+    void SendCaptchaAnswer(int unused, String answer);
+    void RequestNewCaptcha(int captcha_id);
     char ByteToChar(unsigned char value);
 };
 

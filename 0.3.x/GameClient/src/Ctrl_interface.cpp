@@ -48,6 +48,7 @@
 #include "Gfx_mapnpcs.h"
 #include "Ctrl_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -182,6 +183,7 @@ void InterfaceController::Logout()
     MainForm->animation->learn->is_visible = false;
     MainForm->animation->trade->is_visible = false;
     MainForm->animation->chest->is_visible = false;
+    MainForm->animation->captcha->is_visible = false;
     MainForm->animation->visual_doc->is_visible = false;
     MainForm->animation->hotkeys->is_visible = false;
     MainForm->animation->paperdoll->is_visible = false;

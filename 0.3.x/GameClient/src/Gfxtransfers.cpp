@@ -154,6 +154,23 @@ bool GfxTransfers::DrawAt(TDx_DrawSurface *surface, int x, int y)
     return true;
 }
 
+// Sets a pixel of the loaded bitmap, through the DC or the canvas as the options say.
+void GfxTransfers::PutPixel(int x, int y, unsigned char red, char green, unsigned char blue)
+{
+    if (is_loaded && bitmap->Width > 0)
+    {
+        if (MainForm->config->GetUseBitBltDraw())
+            SetPixel(dc, x, y,
+                (unsigned int)(red | ((unsigned short)(unsigned char)green << 8) | (blue << 16)));
+        else
+        {
+            canvas->Handle = dc;
+            canvas->Pixels[x][y] = (TColor)(red | ((unsigned short)(unsigned char)green << 8) | (blue << 16));
+            canvas->Handle = 0;
+        }
+    }
+}
+
 // Creates the surface at the size as a plain offscreen one in system memory, destroying an earlier one.
 void GfxTransfers::CreateSurface(TDx_DrawSurface *surface, TDDSurfaceDesc *desc, int surface_width, int surface_height)
 {

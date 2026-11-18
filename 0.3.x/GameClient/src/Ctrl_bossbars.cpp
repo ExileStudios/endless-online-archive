@@ -63,6 +63,7 @@ void BossBars::ShowHealth(int npc_index, int npc_id, int percent, char was_hit)
         if (bar->npc_index == npc_index)
         {
             ApplyHealth(bar, percent, was_hit);
+            bar->has_health = true;
             return;
         }
     }

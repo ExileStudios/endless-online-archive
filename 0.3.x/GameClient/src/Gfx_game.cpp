@@ -54,6 +54,7 @@
 #include "Ctrl_crafter.h"
 #include "Gfx_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -67,6 +68,7 @@ GameGraphics::GameGraphics()
     text_box_surface = new TDx_DrawSurface(NULL);
     input_box_surface = new TDx_DrawSurface(NULL);
     list_box_surface = new TDx_DrawSurface(NULL);
+    captcha_surface = new TDx_DrawSurface(NULL);
     visual_doc_surface = new TDx_DrawSurface(NULL);
     paperdoll_surface = new TDx_DrawSurface(NULL);
     spare_surface = new TDx_DrawSurface(NULL);
@@ -99,6 +101,10 @@ GameGraphics::GameGraphics()
     surface_desc->Height = 137;
     extra_surface->GetSurfaceDesc(surface_desc);
     extra_surface->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 225;
+    surface_desc->Height = 185;
+    captcha_surface->GetSurfaceDesc(surface_desc);
+    captcha_surface->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 420;
     surface_desc->Height = 290;
     visual_doc_surface->GetSurfaceDesc(surface_desc);
@@ -215,6 +221,10 @@ GameGraphics::GameGraphics()
     visual_doc_rect.left = 0;
     visual_doc_rect.right = 405;
     visual_doc_rect.bottom = 290;
+    captcha_rect.top = 0;
+    captcha_rect.left = 0;
+    captcha_rect.right = 225;
+    captcha_rect.bottom = 185;
 }
 
 // The input form body for a row count: with fewer than five rows the body is cut shorter by one row height each.
@@ -274,6 +284,7 @@ GameGraphics::~GameGraphics()
     paperdoll_surface->Destroy();
     spare_surface->Destroy();
     book_surface->Destroy();
+    captcha_surface->Destroy();
     visual_doc_surface->Destroy();
     input_box_surface->Destroy();
     list_box_surface->Destroy();
@@ -284,6 +295,7 @@ GameGraphics::~GameGraphics()
     delete paperdoll_surface;
     delete spare_surface;
     delete book_surface;
+    delete captcha_surface;
     delete visual_doc_surface;
     delete input_box_surface;
     delete list_box_surface;
@@ -2578,8 +2590,8 @@ void GameGraphics::DrawMemoButtons()
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
-// Draws the law window's close button, with a back button off its menu page, each lit while the mouse is on it.
-void GameGraphics::DrawLawButtons()
+// Draws the inn window's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawInnButtons()
 {
     if (!MainForm->animation->inn->page)
     {
@@ -2613,8 +2625,8 @@ void GameGraphics::DrawLawButtons()
     }
 }
 
-// Draws the skill master's close button, with a back button off its menu page, each lit while the mouse is on it.
-void GameGraphics::DrawLearnButtons()
+// Draws the law window's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawLawButtons()
 {
     if (!MainForm->animation->law->page)
     {
@@ -2648,8 +2660,8 @@ void GameGraphics::DrawLearnButtons()
     }
 }
 
-// Draws the inn window's close button on the first page, or close and back on the others, lit under the mouse.
-void GameGraphics::DrawInnButtons()
+// Draws the skill master's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawLearnButtons()
 {
     if (MainForm->animation->learn->page == LearnPage_Menu)
     {
@@ -2912,6 +2924,11 @@ char GameGraphics::LoadPopupMenu(int library, int resource_id)
     return loaded;
 }
 
+void GameGraphics::LoadCaptchaBackground(int library, int resource_id)
+{
+    LoadSurface(captcha_surface, library, resource_id);
+}
+
 void GameGraphics::LoadVisualDocBackground(int library, int resource_id)
 {
     LoadSurface(visual_doc_surface, library, resource_id);
@@ -2973,6 +2990,54 @@ void GameGraphics::DrawVisualDocButtons()
         MainForm->OffscreenSurface->BltFast(MainForm->animation->visual_doc->window_x + 159,
             MainForm->animation->visual_doc->window_y + 255, button_sheet, &GetButtonRect(4, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+void GameGraphics::DrawCaptchaWindow()
+{
+    MainForm->OffscreenSurface->BltFast(MainForm->animation->captcha->window_x, MainForm->animation->captcha->window_y,
+        captcha_surface, &captcha_rect, DDBLTFAST_WAIT);
+}
+
+void GameGraphics::DrawCaptchaButtons()
+{
+    if (MainForm->animation->captcha->ok_hovered)
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->captcha->window_x + 116,
+            MainForm->animation->captcha->window_y + 144, button_sheet, &GetButtonRect(4, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->captcha->window_x + 116,
+            MainForm->animation->captcha->window_y + 144, button_sheet, &GetButtonRect(4, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+// Draws the captcha window's title, its reward in experience and the answer label, and while the music is paused
+// a line kept scrambled in the program.
+void GameGraphics::DrawCaptchaText()
+{
+    int half_width;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->DrawString((short)MainForm->animation->captcha->window_x + 20,
+        (short)MainForm->animation->captcha->window_y + 9, "Captcha Reward");
+    MainForm->fonts->color = MainForm->themes->color_popup;
+    String line = "Solve the next captcha to earn a reward!";
+    half_width = (short)MainForm->fonts->TextWidth(line) / 2;
+    MainForm->fonts->DrawString((short)MainForm->animation->captcha->window_x + 112 - (short)half_width,
+        (short)MainForm->animation->captcha->window_y + 34, line);
+    line = "Reward: " + IntToStr(MainForm->animation->captcha->reward) + " exp";
+    half_width = (short)MainForm->fonts->TextWidth(line) / 2;
+    MainForm->fonts->DrawString((short)MainForm->animation->captcha->window_x + 112 - (short)half_width,
+        (short)MainForm->animation->captcha->window_y + 48, line);
+    MainForm->fonts->DrawString((short)MainForm->animation->captcha->window_x + 22,
+        (short)MainForm->animation->captcha->window_y + 119, "Answer:");
+    if (MainForm->animation->captcha->music_paused)
+    {
+        MainForm->fonts->DarkenColor();
+        MainForm->fonts->DrawString((short)MainForm->animation->captcha->window_x + 32,
+            (short)MainForm->animation->captcha->window_y + 84,
+            MainForm->net_client->DeobfuscateString("h3d9 l@+l; +]*[-^< e 7j>h-k T+d-X<h,"));
+    }
 }
 
 // Draws the input form's title, caption and five row labels from the top row, and its boxes' text while a message

@@ -1324,6 +1324,22 @@ void PacketOperator::SendPingRequest()
         MainForm->net_client->SendPacket(AC_SYN1, OP_SYSTEM, packet);
 }
 
+// Sends the captcha answer; one not five letters long is left out.
+void PacketOperator::SendCaptchaAnswer(int unused, String answer)
+{
+    String packet = MainForm->net_client->EncodeNumber(2, 2);
+    if (answer.Length() == 5)
+        packet = packet + answer;
+    MainForm->net_client->SendPacket(AC_RESULT, OP_CAPTCHA, packet);
+}
+
+// Asks for a new captcha.
+void PacketOperator::RequestNewCaptcha(int captcha_id)
+{
+    String packet = MainForm->net_client->EncodeNumber(captcha_id, 2);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_CAPTCHA, packet);
+}
+
 char PacketOperator::ByteToChar(unsigned char value)
 {
     return value;

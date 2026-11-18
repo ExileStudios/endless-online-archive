@@ -49,6 +49,7 @@
 #include "Ctrl_hotkeys.h"
 #include "Gfx_mapnpcs.h"
 #include "Ctrl_crafter.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -653,6 +654,34 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     }
                 }
             }
+        }
+    }
+    // The captcha: opened with its id, reward and text, answered, then closed with the new experience.
+    if (family == OP_CAPTCHA)
+    {
+        if (action == AC_OPEN)
+        {
+            int captcha_id = DecodeNumber(packet.SubString(1, 2));
+            int captcha_reward = DecodeNumber(packet.SubString(3, 4));
+            String captcha_text(DecodeNumber(packet.SubString(7, 5)));
+            if (captcha_text.Length() != 5)
+                captcha_text = "";
+            MainForm->animation->captcha->Open(captcha_id, captcha_text, captcha_reward);
+        }
+        if (action == AC_UPDATE)
+        {
+            int answer_id = DecodeNumber(packet.SubString(1, 2));
+            String answer_text(DecodeNumber(packet.SubString(3, 5)));
+            MainForm->animation->captcha->SetAnswer(answer_id, answer_text);
+        }
+        if (action == AC_CLOSE)
+        {
+            MainForm->animation->interface_controller->status->SetExperience(DecodeNumber(packet.SubString(1, 4)));
+            MainForm->sfx->PlaySfx(SfxSound_Accept);
+            String reward_text = IntToStr(MainForm->animation->captcha->reward);
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                "You earned " + reward_text + " exp for solving the captcha challenge.");
+            MainForm->animation->captcha->Close();
         }
     }
     if (family == OP_BOOK && action == AC_RESULT && !MainForm->animation->book->is_visible)

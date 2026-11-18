@@ -56,12 +56,15 @@ TRect VisualDocController::GetArrowRect(int arrow, int dimmed)
 // Counts down the four timers while the window is shown.
 void VisualDocController::Tick()
 {
-    for (int i = 0; i < 4; i++)
+    if (is_visible)
     {
-        if (arrow_blink[i] > 0)
+        for (int i = 0; i < 4; i++)
         {
-            arrow_blink[i]--;
-            MainForm->redraw_needed = true;
+            if (arrow_blink[i] > 0)
+            {
+                arrow_blink[i]--;
+                MainForm->redraw_needed = true;
+            }
         }
     }
 }

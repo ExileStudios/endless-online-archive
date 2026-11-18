@@ -28,6 +28,7 @@ struct GfxTransfers
     void EndDraw(TDx_DrawSurface *surface);
     void Draw(TDx_DrawSurface *surface);
     bool DrawAt(TDx_DrawSurface *surface, int x, int y);
+    void PutPixel(int x, int y, unsigned char red, char green, unsigned char blue);
     void CreateSurface(TDx_DrawSurface *surface, TDDSurfaceDesc *desc, int surface_width, int surface_height);
 };
 

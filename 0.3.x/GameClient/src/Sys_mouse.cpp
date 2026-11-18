@@ -59,6 +59,7 @@
 #include "Gfx_mapnpcs.h"
 #include "Ctrl_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -94,19 +95,19 @@ void Mouser::HandleMove()
             MainForm->animation->game->MouseMove(x, y);
             if (MainForm->animation->game->message_visible || MainForm->animation->game->large_box_visible ||
                 MainForm->animation->game->input_box_visible || MainForm->animation->game->form_visible ||
-                MainForm->animation->visual_doc->is_visible || MainForm->animation->hotkeys->is_visible ||
-                MainForm->animation->paperdoll->is_visible || MainForm->animation->book->is_visible ||
-                MainForm->animation->trade->is_visible || MainForm->animation->bank->is_visible ||
-                MainForm->animation->jukebox->is_visible || MainForm->animation->musician->is_visible ||
-                MainForm->animation->barber->is_visible || MainForm->animation->learn->is_visible ||
-                MainForm->animation->crafter->is_visible || MainForm->animation->shop->is_visible ||
-                MainForm->animation->stat->is_visible || MainForm->animation->guild->is_visible ||
-                MainForm->animation->memo->is_visible || MainForm->animation->dialog->is_visible ||
-                MainForm->animation->report->is_visible || MainForm->animation->law->is_visible ||
-                MainForm->animation->inn->is_visible || MainForm->animation->locker->is_visible ||
-                MainForm->animation->chest->is_visible || MainForm->animation->social->is_open ||
-                MainForm->animation->message_board->is_visible || MainForm->animation->quests->is_visible ||
-                MainForm->animation->game->amount_box_visible)
+                MainForm->animation->captcha->is_visible || MainForm->animation->visual_doc->is_visible ||
+                MainForm->animation->hotkeys->is_visible || MainForm->animation->paperdoll->is_visible ||
+                MainForm->animation->book->is_visible || MainForm->animation->trade->is_visible ||
+                MainForm->animation->bank->is_visible || MainForm->animation->jukebox->is_visible ||
+                MainForm->animation->musician->is_visible || MainForm->animation->barber->is_visible ||
+                MainForm->animation->learn->is_visible || MainForm->animation->crafter->is_visible ||
+                MainForm->animation->shop->is_visible || MainForm->animation->stat->is_visible ||
+                MainForm->animation->guild->is_visible || MainForm->animation->memo->is_visible ||
+                MainForm->animation->dialog->is_visible || MainForm->animation->report->is_visible ||
+                MainForm->animation->law->is_visible || MainForm->animation->inn->is_visible ||
+                MainForm->animation->locker->is_visible || MainForm->animation->chest->is_visible ||
+                MainForm->animation->social->is_open || MainForm->animation->message_board->is_visible ||
+                MainForm->animation->quests->is_visible || MainForm->animation->game->amount_box_visible)
             {
                 char window_handled = false;
                 if (MainForm->animation->game->message_visible)
@@ -308,6 +309,11 @@ void Mouser::HandleMove()
                 {
                     window_handled = true;
                     MainForm->animation->trade->MouseMove(x, y);
+                }
+                if (MainForm->animation->captcha->is_visible && !window_handled)
+                {
+                    window_handled = true;
+                    MainForm->animation->captcha->MouseMove(x, y);
                 }
                 if (MainForm->animation->visual_doc->is_visible && !window_handled)
                 {
@@ -769,7 +775,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
             MainForm->animation->memo->is_visible || MainForm->animation->dialog->is_visible ||
             MainForm->animation->report->is_visible || MainForm->animation->law->is_visible ||
             MainForm->animation->inn->is_visible || MainForm->animation->book->is_visible ||
-            MainForm->animation->visual_doc->is_visible ||
+            MainForm->animation->visual_doc->is_visible || MainForm->animation->captcha->is_visible ||
             (MainForm->animation->hotkeys->is_visible &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging) ||
@@ -1846,6 +1852,11 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->edits->caret_enabled = true;
                     MainForm->redraw_needed = true;
                 }
+            }
+            if (MainForm->animation->captcha->is_visible && !handled)
+            {
+                handled = true;
+                MainForm->animation->captcha->MouseDown(click_x, click_y, button);
             }
             if (MainForm->animation->trade->is_visible && !handled)
             {
@@ -5071,6 +5082,7 @@ void Mouser::HandleMouseUp()
         MainForm->animation->interface_controller->inventory->MouseUp();
         MainForm->animation->interface_controller->spells->MouseUp();
         MainForm->animation->interface_controller->skills->MouseUp();
+        MainForm->animation->captcha->MouseUp();
         MainForm->animation->visual_doc->MouseUp();
         MainForm->animation->hotkeys->MouseUp();
         MainForm->animation->paperdoll->MouseUp();

@@ -103,6 +103,7 @@ struct BankGraphics;
 struct BarberGraphics;
 struct BlendGraphics;
 struct BlendWrapper;
+struct CaptchaGraphics;
 struct ChestGraphics;
 struct CrafterGraphics;
 struct DialogGraphics;
@@ -162,6 +163,7 @@ struct GfxController
     StatGraphics *stat;
     MsgBoardGraphics *message_board;
     VisualDocGraphics *visual_doc;
+    CaptchaGraphics *captcha;
     SpriteGlobalGraphics *sprites;
     NpcGlobalGraphics *npcs;
     NpcGraphics *npc_cache;
@@ -191,6 +193,7 @@ struct GfxController
     bool stat_created;
     bool message_board_created;
     bool visual_doc_created;
+    bool captcha_created;
     int side_artwork_id;
 
     GfxController(char preload_tiles, char preload_map_graphics);
@@ -210,6 +213,7 @@ struct GfxController
     void CreateMusicianGraphics();
     void CreateBarberGraphics();
     void CreateVisualDocGraphics();
+    void CreateCaptchaGraphics();
     void FreeTradeGraphics();
     void FreeDialogGraphics();
     void FreeCrafterGraphics();
@@ -222,6 +226,7 @@ struct GfxController
     void FreeMusicianGraphics();
     void FreeBarberGraphics();
     void FreeVisualDocGraphics();
+    void FreeCaptchaGraphics();
     void CreateChestGraphics();
     void FreeChestGraphics();
     void CreateHoverLabel(int text_width, int height, int label_style, int element, String text);
@@ -241,6 +246,7 @@ struct GfxController
     void LoadMusicianGraphics();
     void LoadBarberGraphics();
     TPoint LoadVisualDocGraphics(int resource_id);
+    char LoadCaptchaGraphics();
     void LoadChestGraphics();
     void LoadMenuGraphics(char single_panel);
     void LoadGameGraphics();

@@ -42,6 +42,7 @@
 #include "Ctrl_hotkeys.h"
 #include "Ctrl_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -954,7 +955,11 @@ bool KeyBoard::HandleEditKeys()
             {
                 MainForm->edits->TypeLineBreak();
                 if (!MainForm->edits->IsFocused(EditId_Chat))
+                {
+                    if (MainForm->edits->IsFocused(EditId_Captcha))
+                        MainForm->animation->captcha->Submit();
                     MainForm->animation->StartChatDelay();
+                }
                 else if (MainForm->edits->GetText(EditId_Chat).Length() > 0)
                 {
                     if (MainForm->animation->IsChatAllowed())
@@ -1032,6 +1037,9 @@ bool KeyBoard::HandleEditKeys()
                                     CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
                                     location_text, true);
                             }
+                            if (MainForm->edits->GetText(EditId_Chat) ==
+                                MainForm->net_client->DeobfuscateString("l7j+]>j;l=N"))
+                                MainForm->animation->captcha->Show(1, 0);
                             if (MainForm->edits->GetText(EditId_Chat) ==
                                 MainForm->net_client->DeobfuscateString("f1d/N"))
                             {
@@ -2502,6 +2510,8 @@ bool KeyBoard::IsAnyWindowOpen()
     if (MainForm->animation->game->input_box_visible)
         return true;
     if (MainForm->animation->game->form_visible)
+        return true;
+    if (MainForm->animation->captcha->is_visible)
         return true;
     if (MainForm->animation->visual_doc->is_visible)
         return true;

@@ -160,7 +160,7 @@ void Tooltip::ShowItemCount(int item_id, int count)
     else if (type == EifItemType_SkillBook)
         lines[line_count] += "skill book";
     else if (type == EifItemType_VisualDocument)
-        lines[line_count] += "reserved";
+        lines[line_count] += "visual document";
     else if (type == EifItemType_Key)
         lines[line_count] += "key";
     else if (type == EifItemType_Armor)

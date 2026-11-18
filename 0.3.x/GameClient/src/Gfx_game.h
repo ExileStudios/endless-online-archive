@@ -30,6 +30,7 @@ struct GameGraphics
     TDx_DrawSurface *list_box_surface;
     TDx_DrawSurface *extra_surface;
     TDx_DrawSurface *button_sheet;
+    TDx_DrawSurface *captcha_surface;
     TDx_DrawSurface *visual_doc_surface;
     TDx_DrawSurface *paperdoll_surface;
     TDx_DrawSurface *spare_surface;
@@ -46,6 +47,7 @@ struct GameGraphics
     TRect hotkeys_rect;
     TRect book_rect;
     TRect list_scrollbar_rect;
+    TRect captcha_rect;
     TRect visual_doc_rect;
     TRect amount_box_rect;
     TRect junk_title_rect;
@@ -136,6 +138,7 @@ struct GameGraphics
     char LoadSurface(TDx_DrawSurface *surface, int library, int resource_id);
     char LoadButtonSheet(int library, int resource_id);
     char LoadPopupMenu(int library, int resource_id);
+    void LoadCaptchaBackground(int library, int resource_id);
     void LoadVisualDocBackground(int library, int resource_id);
     void LoadListBoxBackground(int library, int resource_id);
     void LoadInputBoxBackground(int library, int resource_id);
@@ -170,6 +173,9 @@ struct GameGraphics
     void LoadSpareSurface2(int library, int resource_id);
     void DrawVisualDocWindow();
     void DrawVisualDocButtons();
+    void DrawCaptchaWindow();
+    void DrawCaptchaButtons();
+    void DrawCaptchaText();
 };
 
 #endif

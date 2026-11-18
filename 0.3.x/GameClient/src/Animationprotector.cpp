@@ -37,6 +37,7 @@
 #include "Ctrl_notification.h"
 #include "Ctrl_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 
@@ -86,6 +87,7 @@ AnimationController::AnimationController(char show_intro)
     interface_controller = new InterfaceController();
     game = new GameController();
     paperdoll = new PaperdollController();
+    captcha = new CaptchaController();
     visual_doc = new VisualDocController();
     hotkeys = new HotkeysController();
     book = new BookController();

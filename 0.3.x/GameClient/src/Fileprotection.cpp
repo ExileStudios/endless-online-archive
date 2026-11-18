@@ -39,7 +39,7 @@ void FileController::BuildFileList()
     file_kinds->Add("D");
     file_sizes->Add("");
     // Then 13 data files, 25 graphics files and 41 music files, and the first sound of each kind.
-    for (data_number = DataFile_Credits; data_number <= DataFile_PortugueseUiTexts; data_number++)
+    for (data_number = DataFile_Credits; data_number <= DataFile_Captcha; data_number++)
     {
         file_names->Add(GetDataFilePath(data_number));
         file_kinds->Add("D");

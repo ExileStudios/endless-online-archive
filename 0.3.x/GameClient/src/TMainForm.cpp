@@ -79,6 +79,7 @@
 #include <multimon.h>
 #include "Ctrl_crafter.h"
 #include "Ctrl_visualdoc.h"
+#include "Ctrl_captcha.h"
 
 #pragma package(smart_init)
 #pragma link "TDx_Draw"
@@ -183,7 +184,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     version_major = 0;
     version_minor = 3;
     version_build = 29;
-    version_letter = 'G';
+    version_letter = 'H';
     min_theme_version_major = 0;
     min_theme_version_minor = 3;
     files = new FileController();
@@ -1342,6 +1343,8 @@ void __fastcall TMainForm::HandleMMTimerEvent()
         map_items->UpdateHoverLabel();
         map->Animate();
         mouse->HandleMove();
+        if (animation->captcha)
+            animation->captcha->Update();
         if (animation->visual_doc)
             animation->visual_doc->Tick();
         if (animation->jukebox)
@@ -2565,7 +2568,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
     if (animation->inn->is_visible)
     {
         gfx->game->DrawInnWindow();
-        gfx->game->DrawLawButtons();
+        gfx->game->DrawInnButtons();
         if (fonts->BeginOffscreenIf(1))
         {
             try
@@ -2581,7 +2584,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
     if (animation->law->is_visible)
     {
         gfx->game->DrawLawWindow();
-        gfx->game->DrawLearnButtons();
+        gfx->game->DrawLawButtons();
         if (fonts->BeginOffscreenIf(1))
         {
             try
@@ -2661,7 +2664,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
     if (animation->learn->is_visible)
     {
         gfx->game->DrawLearnWindow();
-        gfx->game->DrawInnButtons();
+        gfx->game->DrawLearnButtons();
         animation->learn->tooltip->DrawFrame();
         if (fonts->BeginOffscreenIf(1))
         {
@@ -2745,6 +2748,24 @@ void TMainForm::RenderGame_ViewPort_Frame()
             {
             }
             fonts->End();
+        }
+    }
+    if (animation->captcha->is_visible)
+    {
+        gfx->game->DrawCaptchaWindow();
+        animation->captcha->Draw();
+        gfx->game->DrawCaptchaButtons();
+        if (fonts->BeginOffscreenIf(1))
+        {
+            try
+            {
+                gfx->game->DrawCaptchaText();
+            }
+            catch (Exception &)
+            {
+            }
+            fonts->End();
+            edit_canvas->DrawEditBoxes(EditGroup_InputForm);
         }
     }
     if (animation->visual_doc->is_visible)

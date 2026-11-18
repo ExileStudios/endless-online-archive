@@ -7,6 +7,7 @@ struct BankController;
 struct BarberController;
 struct BookController;
 struct BossBars;
+struct CaptchaController;
 struct ChestController;
 struct CrafterController;
 struct CreditsController;
@@ -85,6 +86,7 @@ struct AnimationController
     MenuController *menu;
     CreditsController *credits;
     GameController *game;
+    CaptchaController *captcha;
     VisualDocController *visual_doc;
     PaperdollController *paperdoll;
     HotkeysController *hotkeys;
