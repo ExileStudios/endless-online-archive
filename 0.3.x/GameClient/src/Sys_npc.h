@@ -1,0 +1,91 @@
+#ifndef Sys_npcH
+#define Sys_npcH
+
+struct Balloon;
+struct NpcResources;
+
+// One npc on the map: record id, graphic, position and the state of each animation, with a queue of balloons.
+struct Npc
+{
+    int index;
+    int bar_index;
+    int npc_id;
+    int graphic;
+    unsigned char idle_frame;
+    char dying;
+    char killed_by_hit;
+    short death_timer;
+    char out_of_view;
+    int out_of_view_timer;
+    char graphics_pending;
+    char reload_requested;
+    int load_stage;
+    unsigned char load_failures;
+    char label_shown;
+    String name;
+    int hidden;
+    char redraw;
+    char walk_start;
+    char walking;
+    int walk_direction;
+    int walk_frame;
+    char attack_start;
+    char attacking;
+    int attack_direction;
+    int attack_frame;
+    char alt_attack_start;
+    char alt_attacking;
+    int alt_attack_direction;
+    int alt_attack_frame;
+    char effect_start;
+    char effect_running;
+    int effect_id;
+    int effect_frame;
+    int effect_last_frame;
+    int effect_loops_left;
+    char effect_base_layer;
+    char effect_blend_layer;
+    char effect_solid_layer;
+    int walk_target_x;
+    int walk_target_y;
+    int walk_facing;
+    int walk_target_direction;
+    int x;
+    int y;
+    int direction;
+    char health_bar_shown;
+    char health_bar_start;
+    int health_bar_timer;
+    int health_bar_width;
+    char damage_shown;
+    char damage_start;
+    int damage_digits;
+    int damage_timer;
+    int damage_amount;
+    char damage_heal;
+    int frame_width;
+    int frame_height;
+    short balloon_timer;
+    short balloon_height;
+    short balloon_width;
+    char balloon_shown;
+    NpcResources *resources;
+    Balloon *balloon;
+    String queued_balloon_lines[6][5];
+    int queued_balloon_widths[5];
+    int queued_balloon_heights[5];
+    int queued_balloon_tinted[5];
+    int queued_balloon_count;
+
+    Npc(int map_index);
+    Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing);
+    ~Npc();
+    void CreateResources();
+    TPoint GetAnimatedPosition(int screen_x, int screen_y);
+    void ShowBalloon(String *lines, int width, int height, int tinted);
+    void DrawBalloon();
+    void CloseBalloon();
+    void FreeResources();
+};
+
+#endif
