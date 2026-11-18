@@ -53,6 +53,7 @@
 #include "Gfx_global_sprites.h"
 #include "Ctrl_crafter.h"
 #include "Gfx_crafter.h"
+#include "Ctrl_visualdoc.h"
 
 #pragma package(smart_init)
 
@@ -66,6 +67,7 @@ GameGraphics::GameGraphics()
     text_box_surface = new TDx_DrawSurface(NULL);
     input_box_surface = new TDx_DrawSurface(NULL);
     list_box_surface = new TDx_DrawSurface(NULL);
+    visual_doc_surface = new TDx_DrawSurface(NULL);
     paperdoll_surface = new TDx_DrawSurface(NULL);
     spare_surface = new TDx_DrawSurface(NULL);
     book_surface = new TDx_DrawSurface(NULL);
@@ -97,6 +99,10 @@ GameGraphics::GameGraphics()
     surface_desc->Height = 137;
     extra_surface->GetSurfaceDesc(surface_desc);
     extra_surface->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 420;
+    surface_desc->Height = 290;
+    visual_doc_surface->GetSurfaceDesc(surface_desc);
+    visual_doc_surface->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 405;
     surface_desc->Height = 580;
     paperdoll_surface->GetSurfaceDesc(surface_desc);
@@ -205,6 +211,10 @@ GameGraphics::GameGraphics()
     hotkeys_rect.left = 0;
     hotkeys_rect.right = 455;
     hotkeys_rect.bottom = 170;
+    visual_doc_rect.top = 0;
+    visual_doc_rect.left = 0;
+    visual_doc_rect.right = 405;
+    visual_doc_rect.bottom = 290;
 }
 
 // The input form body for a row count: with fewer than five rows the body is cut shorter by one row height each.
@@ -264,6 +274,7 @@ GameGraphics::~GameGraphics()
     paperdoll_surface->Destroy();
     spare_surface->Destroy();
     book_surface->Destroy();
+    visual_doc_surface->Destroy();
     input_box_surface->Destroy();
     list_box_surface->Destroy();
     delete button_sheet;
@@ -273,6 +284,7 @@ GameGraphics::~GameGraphics()
     delete paperdoll_surface;
     delete spare_surface;
     delete book_surface;
+    delete visual_doc_surface;
     delete input_box_surface;
     delete list_box_surface;
     black_fill_fx->Clear();
@@ -2566,8 +2578,8 @@ void GameGraphics::DrawMemoButtons()
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
-// Draws the skill master's close button, with a back button off its menu page, each lit while the mouse is on it.
-void GameGraphics::DrawLearnButtons()
+// Draws the law window's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawLawButtons()
 {
     if (!MainForm->animation->inn->page)
     {
@@ -2601,8 +2613,8 @@ void GameGraphics::DrawLearnButtons()
     }
 }
 
-// Draws the inn window's close button on the first page, or close and back on the others, lit under the mouse.
-void GameGraphics::DrawInnButtons()
+// Draws the skill master's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawLearnButtons()
 {
     if (!MainForm->animation->law->page)
     {
@@ -2636,8 +2648,8 @@ void GameGraphics::DrawInnButtons()
     }
 }
 
-// Draws the law window's close button on the first page, or close and back on the others, lit under the mouse.
-void GameGraphics::DrawLawButtons()
+// Draws the inn window's close button on the first page, or close and back on the others, lit under the mouse.
+void GameGraphics::DrawInnButtons()
 {
     if (MainForm->animation->learn->page == LearnPage_Menu)
     {
@@ -2900,6 +2912,11 @@ char GameGraphics::LoadPopupMenu(int library, int resource_id)
     return loaded;
 }
 
+void GameGraphics::LoadVisualDocBackground(int library, int resource_id)
+{
+    LoadSurface(visual_doc_surface, library, resource_id);
+}
+
 // Draws the input form background bitmap onto its surface.
 void GameGraphics::LoadListBoxBackground(int library, int resource_id)
 {
@@ -2938,6 +2955,24 @@ char GameGraphics::LoadSpareSurface(int library, int resource_id)
 void GameGraphics::LoadSpareSurface2(int library, int resource_id)
 {
     LoadSurface(book_surface, library, resource_id);
+}
+
+void GameGraphics::DrawVisualDocWindow()
+{
+    MainForm->OffscreenSurface->BltFast(MainForm->animation->visual_doc->window_x,
+        MainForm->animation->visual_doc->window_y, visual_doc_surface, &visual_doc_rect, DDBLTFAST_WAIT);
+}
+
+void GameGraphics::DrawVisualDocButtons()
+{
+    if (MainForm->animation->visual_doc->close_hovered)
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->visual_doc->window_x + 159,
+            MainForm->animation->visual_doc->window_y + 255, button_sheet, &GetButtonRect(4, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->visual_doc->window_x + 159,
+            MainForm->animation->visual_doc->window_y + 255, button_sheet, &GetButtonRect(4, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the input form's title, caption and five row labels from the top row, and its boxes' text while a message

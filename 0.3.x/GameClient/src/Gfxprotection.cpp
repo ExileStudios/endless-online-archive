@@ -34,6 +34,7 @@
 #include "Gfx_global_sprites.h"
 #include "Gfx_mapnpcs.h"
 #include "Gfx_crafter.h"
+#include "Gfx_visualdoc.h"
 
 #pragma package(smart_init)
 
@@ -53,6 +54,7 @@ GfxController::GfxController(char preload_tiles, char preload_map_graphics)
     items = new ItemGraphics(preload_map_graphics);
     effects = new EffectGraphics(preload_map_graphics);
     icons = new IconGraphics(preload_map_graphics);
+    visual_doc_created = false;
     menu_created = false;
     game_created = false;
     hover_label_created = false;
@@ -85,6 +87,7 @@ GfxController::~GfxController()
     FreeBarberGraphics();
     FreeChestGraphics();
     FreeSocialGraphics();
+    FreeVisualDocGraphics();
     if (sprites)
         delete sprites;
     if (npcs)
@@ -211,6 +214,13 @@ void GfxController::CreateBarberGraphics()
     barber_created = true;
 }
 
+void GfxController::CreateVisualDocGraphics()
+{
+    if (!visual_doc_created)
+        visual_doc = new VisualDocGraphics();
+    visual_doc_created = true;
+}
+
 void GfxController::FreeTradeGraphics()
 {
     if (trade_created)
@@ -286,6 +296,13 @@ void GfxController::FreeBarberGraphics()
     if (barber_created)
         delete barber;
     barber_created = false;
+}
+
+void GfxController::FreeVisualDocGraphics()
+{
+    if (visual_doc_created)
+        delete visual_doc;
+    visual_doc_created = false;
 }
 
 void GfxController::CreateChestGraphics()
@@ -490,6 +507,22 @@ void GfxController::LoadBarberGraphics()
     }
 }
 
+// Loads the picture document from its library; its size, or an x of -1 when it cannot be loaded.
+TPoint GfxController::LoadVisualDocGraphics(int resource_id)
+{
+    TPoint size;
+    size.x = -1;
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_VisualDocuments);
+    if (library)
+    {
+        int library_copy = library;
+        if (visual_doc_created)
+            size = visual_doc->LoadSurface(library_copy, resource_id);
+    }
+    MainForm->gfx_vault->CloseLibrary(GfxLibrary_VisualDocuments);
+    return size;
+}
+
 // Loads the chest window background and the item slot frame into the chest graphics.
 void GfxController::LoadChestGraphics()
 {
@@ -600,6 +633,7 @@ void GfxController::LoadGameGraphics()
         game->LoadPaperdollBackground(interface_library_copy, InterfaceBitmap_PaperdollBackground);
         game->LoadInputBoxBackground(interface_library_copy, InterfaceBitmap_InputBoxBackground);
         game->LoadListBoxBackground(interface_library_copy, InterfaceBitmap_ListBoxBackground);
+        game->LoadVisualDocBackground(interface_library_copy, InterfaceBitmap_VisualDocBackground);
         game->LoadSpareSurface2(interface_library_copy, InterfaceBitmap_BookBackground);
         if (!game->LoadSpareSurface(interface_library_copy, InterfaceBitmap_SpareSurface))
             MainForm->animation->menu->loading_tip =

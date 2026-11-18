@@ -567,7 +567,6 @@ enum SfxSound
     SfxSound_LevelUp = 60,
     SfxSound_LowHealth = 61,
     SfxSound_Death = 62,
-    SfxSound_ItemDocument = 63,
     SfxSound_ItemBook = 64,
     SfxSound_Exhausted = 65,
     SfxSound_TitleGranted = 66,

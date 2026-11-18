@@ -3,12 +3,12 @@
 
 struct GfxVault
 {
-    String file_names[26];
-    void *libraries[26];
-    char keep_open[26];
-    char is_open[26];
-    short idle_ticks[26];
-    int unused_values[26];
+    String file_names[28];
+    void *libraries[28];
+    char keep_open[28];
+    char is_open[28];
+    short idle_ticks[28];
+    int unused_values[28];
 
     GfxVault();
     ~GfxVault();

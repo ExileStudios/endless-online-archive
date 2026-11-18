@@ -41,6 +41,7 @@
 #include "Pathfinder.h"
 #include "Ctrl_hotkeys.h"
 #include "Ctrl_crafter.h"
+#include "Ctrl_visualdoc.h"
 
 #pragma package(smart_init)
 
@@ -2501,6 +2502,8 @@ bool KeyBoard::IsAnyWindowOpen()
     if (MainForm->animation->game->input_box_visible)
         return true;
     if (MainForm->animation->game->form_visible)
+        return true;
+    if (MainForm->animation->visual_doc->is_visible)
         return true;
     if (MainForm->animation->hotkeys->is_visible)
         return true;

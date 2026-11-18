@@ -14,6 +14,7 @@
 #include "Gfx_mapitems.h"
 #include "Ctrl_notification.h"
 #include "Ctrl_spells.h"
+#include "Ctrl_visualdoc.h"
 
 #pragma package(smart_init)
 
@@ -187,6 +188,12 @@ int InventoryController::UseItem(int item_id, int category)
         MainForm->sfx->PlaySfx(SfxSound_Denied);
         return -404;
     }
+    // A visual document opens in its window.
+    if (item->type == EifItemType_VisualDocument)
+    {
+        MainForm->animation->visual_doc->Open(item->spec_value);
+        return FinishUse(item->type);
+    }
     // A title certificate asks for the title in an input box.
     if (item->type == EifItemType_TitleCertificate)
     {
@@ -213,7 +220,6 @@ int InventoryController::UseItem(int item_id, int category)
         MainForm->animation->notification->NotifyWithStatus(NotifyKind_Item, item->item_id, NotifyStatus_Ready);
         return FinishUse(item->type);
     }
-    // A visual document opens in its window.
     if (item->type == EifItemType_VisualDocument)
         return FinishUse(item->type);
     // A hair tool is refused when the hair style is already the one it gives.
@@ -292,25 +298,20 @@ int InventoryController::UseItem(int item_id, int category)
             SuppressHoverMessage();
             return RefuseUse(-10, 55);
         }
-        if (item->type == EifItemType_Teleport)
+        // A teleport is refused on a map that forbids it, or while actions are blocked.
+        if (item->type == EifItemType_Teleport && MainForm->map->item_use_restricted)
         {
-            if (MainForm->map->item_use_restricted)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(category,
-                    MainForm->strings->GetText(GameText_NothingHappened));
-                MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
-                return FinishUse(-20);
-            }
+            MainForm->animation->interface_controller->ShowStatusMessage(category,
+                MainForm->strings->GetText(GameText_NothingHappened));
+            MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
+            return FinishUse(-20);
         }
-        if (item->type == EifItemType_Teleport)
+        if (item->type == EifItemType_Teleport && MainForm->map->IsActionBlocked())
         {
-            if (MainForm->map->IsActionBlocked())
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(category,
-                    MainForm->strings->GetText(GameText_NothingHappened));
-                MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
-                return FinishUse(-20);
-            }
+            MainForm->animation->interface_controller->ShowStatusMessage(category,
+                MainForm->strings->GetText(GameText_NothingHappened));
+            MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
+            return FinishUse(-20);
         }
         MainForm->animation->notification->NotifyWithStatus(NotifyKind_Item, item->item_id, NotifyStatus_Ready);
         MainForm->net_client->sender->SendUseItem(item_id);
@@ -658,7 +659,7 @@ void InventoryController::PlayUseSound(int item_type)
     }
     if (item_type == EifItemType_VisualDocument)
     {
-        MainForm->sfx->PlaySfx(SfxSound_ItemDocument);
+        MainForm->sfx->PlaySfx(SfxSound_ItemBelt);
         return;
     }
     if (item_type == EifItemType_Weapon)

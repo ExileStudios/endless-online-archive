@@ -358,7 +358,7 @@ void FFileLog::Open(String path)
         if (mouse_y > window_y + 43 && mouse_y < window_y + 243 && window_x + 17 < mouse_x && window_x + 252 > mouse_x)
         {
             is_dragging_window = false;
-            int row = scroll_offset + (mouse_y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+            int row = (mouse_y - window_y - 47) / 16 + scroll_offset;
             if (!list_kind)
             {
                 if (friend_names->Count <= row)
@@ -1411,11 +1411,11 @@ void GameController::StartSpotCountdown(int x, int y)
   - When it happens: Every bitmap load of the map lists, the npc sheets, the effects and the window graphics runs the
     test. The search for
     `(\b|->)(surface|background_surface|parts_surface|cell_sheet_surface|front_sheet|back_sheet|front_mirrored|back_mirrored|layer[012]_surface) =[^=]`
-    finds 42 line(s). The search for
+    finds 43 line(s). The search for
     `(\b|->)(surface|background_surface|parts_surface|cell_sheet_surface|front_sheet|back_sheet|front_mirrored|back_mirrored|layer[012]_surface) = (?!new TDx_DrawSurface\(NULL\);)`
     finds 5 line(s). Reachable with the shipped code: never reached. The search for any store to the surface members the
     loaders pass (`surface`, `background_surface`, `parts_surface`, `cell_sheet_surface`, the four npc sheets and the
-    three effect layers) finds 42 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 5: two of
+    three effect layers) finds 43 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 5: two of
     the font's own `surface`, which no loader passes, and the three lines of `EffectResource::LoadSurfaces` that pick
     one of the effect's layer surfaces into a local.
   - What you see: None visible: no surface is restored here, lost or not.
@@ -1662,6 +1662,23 @@ void GameController::StartSpotCountdown(int x, int y)
     leaves through the guild window.
   - What you see: The leave request reaches the server without the guild tag. What the server makes of that the client
     does not show; the client has already cleared its own guild details.
+- **A visual document wider than its window opens at its left edge, while a tall one opens at its middle.**
+  `Ctrl_visualdoc.cpp`, `VisualDocController::Open`.
+  - Code:
+    `if (image_width <= view_width) { scroll_x = (view_width - image_width) / 2; scrolls_x = false; } else { scroll_x += (view_width - view_width) / 2; scrolls_x = true; else { scroll_y += (image_height - view_height) / 2; scrolls_y = true;`
+  - What it does: Step by step: - `scroll_x` and `scroll_y` are set to 0. - A picture narrower than the view is centred
+    by `(view_width - image_width) / 2`, drawn at that offset. - A wider one adds `(view_width - view_width) / 2`, which
+    is always 0, so `scroll_x` stays 0, the left edge. - A taller one adds `(image_height - view_height) / 2`, so the
+    view starts halfway down. - `VisualDocController::Draw` reads `scroll_x` and `scroll_y` as the picture's first shown
+    column and row.
+  - When it happens: `InventoryController::UseItem` opens the window for an item of type 8, with the item's spec value
+    as the document. The searches below find the one width step, the one height step, and no width step of the height
+    form. Called from `InventoryController::UseItem`. The search for `\(view_width - view_width\) / 2` finds 1 line(s).
+    The search for `\(image_height - view_height\) / 2` finds 1 line(s). The search for
+    `\(image_width - view_width\) / 2` finds 0 line(s). Reachable with the shipped code: reachable. Any player who uses
+    a document item whose picture is wider than the window.
+  - What you see: A wide document opens showing its left part, while a tall one opens halfway down; the player scrolls
+    right by hand to reach the middle.
 - **The world load's give-up step waits for a count of 150 that never comes: the count goes back to 0 at 12.**
   `Animationprotector.cpp`, `AnimationController::UpdateIntroAndDelays`.
   - Code:

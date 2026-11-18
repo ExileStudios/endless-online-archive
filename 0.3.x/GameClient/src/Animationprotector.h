@@ -35,6 +35,7 @@ struct ShopController;
 struct SocialController;
 struct StatController;
 struct TradeController;
+struct VisualDocController;
 
 #include "Itemcraft.h"
 #include "Sys_msg.h"
@@ -84,6 +85,7 @@ struct AnimationController
     MenuController *menu;
     CreditsController *credits;
     GameController *game;
+    VisualDocController *visual_doc;
     PaperdollController *paperdoll;
     HotkeysController *hotkeys;
     BookController *book;

@@ -8,7 +8,7 @@
 
 GfxVault::GfxVault()
 {
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 28; i++)
     {
         file_names[i] = "";
         is_open[i] = false;
@@ -85,7 +85,7 @@ int GfxVault::GetLibrary(int file_number)
 // Counts down each open library's idle time, closing it when that runs out.
 void GfxVault::AgeLibraries()
 {
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 28; i++)
     {
         if (is_open[i] && idle_ticks[i] > 0 && !keep_open[i])
         {
@@ -108,6 +108,6 @@ void GfxVault::CloseLibrary(int file_number)
 // Closes all 28 libraries.
 void GfxVault::CloseAllLibraries()
 {
-    for (int i = 0; i < 26; i++)
+    for (int i = 0; i < 28; i++)
         CloseLibrary(i);
 }

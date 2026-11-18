@@ -129,7 +129,9 @@ struct SpriteGlobalGraphics;
 struct StatGraphics;
 struct TileGraphics;
 struct TopGraphics;
+struct TopWrapper;
 struct TradeGraphics;
+struct VisualDocGraphics;
 struct WallGraphics;
 struct WallWrapper;
 
@@ -159,6 +161,7 @@ struct GfxController
     SocialGraphics *social;
     StatGraphics *stat;
     MsgBoardGraphics *message_board;
+    VisualDocGraphics *visual_doc;
     SpriteGlobalGraphics *sprites;
     NpcGlobalGraphics *npcs;
     NpcGraphics *npc_cache;
@@ -187,6 +190,7 @@ struct GfxController
     bool social_created;
     bool stat_created;
     bool message_board_created;
+    bool visual_doc_created;
     int side_artwork_id;
 
     GfxController(char preload_tiles, char preload_map_graphics);
@@ -205,6 +209,7 @@ struct GfxController
     void CreateJukeboxGraphics();
     void CreateMusicianGraphics();
     void CreateBarberGraphics();
+    void CreateVisualDocGraphics();
     void FreeTradeGraphics();
     void FreeDialogGraphics();
     void FreeCrafterGraphics();
@@ -216,6 +221,7 @@ struct GfxController
     void FreeJukeboxGraphics();
     void FreeMusicianGraphics();
     void FreeBarberGraphics();
+    void FreeVisualDocGraphics();
     void CreateChestGraphics();
     void FreeChestGraphics();
     void CreateHoverLabel(int text_width, int height, int label_style, int element, String text);
@@ -234,6 +240,7 @@ struct GfxController
     void LoadJukeboxGraphics();
     void LoadMusicianGraphics();
     void LoadBarberGraphics();
+    TPoint LoadVisualDocGraphics(int resource_id);
     void LoadChestGraphics();
     void LoadMenuGraphics(char single_panel);
     void LoadGameGraphics();

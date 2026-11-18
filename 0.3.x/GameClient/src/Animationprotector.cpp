@@ -36,6 +36,7 @@
 #include "Ctrl_hotkeys.h"
 #include "Ctrl_notification.h"
 #include "Ctrl_crafter.h"
+#include "Ctrl_visualdoc.h"
 
 #pragma package(smart_init)
 
@@ -85,6 +86,7 @@ AnimationController::AnimationController(char show_intro)
     interface_controller = new InterfaceController();
     game = new GameController();
     paperdoll = new PaperdollController();
+    visual_doc = new VisualDocController();
     hotkeys = new HotkeysController();
     book = new BookController();
     trade = new TradeController();
@@ -453,6 +455,11 @@ void AnimationController::CloseTopWindow()
         MainForm->edits->FocusEdit(EditId_Chat);
         MainForm->edits->caret_enabled = true;
         MainForm->redraw_needed = true;
+        return;
+    }
+    if (visual_doc->is_visible)
+    {
+        visual_doc->Close();
         return;
     }
     if (hotkeys->is_visible)

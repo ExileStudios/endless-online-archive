@@ -92,6 +92,8 @@ USEUNIT("Npcdrop.cpp");
 USEUNIT("Ctrl_crafter.cpp");
 USEUNIT("Gfx_crafter.cpp");
 USEUNIT("Filethemes.cpp");
+USEUNIT("Ctrl_visualdoc.cpp");
+USEUNIT("Gfx_visualdoc.cpp");
 #define Library
 
 // To add a file to the library use the Project menu 'Add to Project'.
