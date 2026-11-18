@@ -17,7 +17,7 @@ GroupMember::GroupMember(int id, String member_name, int member_level, int leade
     level = member_level;
     is_leader = leader_flag;
     health_percent = initial_health_percent;
-    removable = 0;
+    removable = false;
     is_hovered = false;
 }
 

@@ -55,13 +55,13 @@ ExtBlts::ExtBlts(TDx_DrawSurface *surface)
 // Packs 8-bit red, green and blue into one pixel of the display format.
 unsigned int ExtBlts::MakeColor(unsigned int red, unsigned int green, unsigned int blue)
 {
-    unsigned int part1 = red * (1 << red_bits);
-    unsigned int part2 = green * (1 << green_bits);
-    unsigned int part3 = blue * (1 << blue_bits);
-    part1 = part1 >> 8 << red_shift;
-    part2 = part2 >> 8 << green_shift;
-    part3 = part3 >> 8 << blue_shift;
-    return part1 | part2 | part3;
+    unsigned int red_part = red * (1 << red_bits);
+    unsigned int green_part = green * (1 << green_bits);
+    unsigned int blue_part = blue * (1 << blue_bits);
+    red_part = red_part >> 8 << red_shift;
+    green_part = green_part >> 8 << green_shift;
+    blue_part = blue_part >> 8 << blue_shift;
+    return red_part | green_part | blue_part;
 }
 
 // The position of the lowest set bit of a colour mask, and the run of set bits from there.
@@ -133,8 +133,8 @@ int ExtBlts::AlphaBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface, TDx
     dest_rect.bottom = dest_y + rows_left;
     source_surface->GetSurfaceDesc(source_desc);
     dest_surface->GetSurfaceDesc(dest_desc);
-    dest_surface->Lock(&dest_rect, dest_desc, 1);
-    source_surface->Lock(source_rect, source_desc, 1);
+    dest_surface->Lock(&dest_rect, dest_desc, DDLOCK_WAIT);
+    source_surface->Lock(source_rect, source_desc, DDLOCK_WAIT);
     try
     {
         if (pixel_format == 555)
@@ -435,8 +435,8 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
     TRect dest_rect;
     unsigned int *dest;
     unsigned int *source;
-    unsigned int source_pair_555;
-    unsigned int dest_pair_555;
+    unsigned int rgb555_source_pair;
+    unsigned int rgb555_dest_pair;
     source_desc = new TDDSurfaceDesc(NULL);
     dest_desc = new TDDSurfaceDesc(NULL);
     result = 0;
@@ -446,8 +446,8 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
     dest_rect.top = dest_y;
     dest_rect.right = width + dest_x;
     dest_rect.bottom = rows_left + dest_y;
-    dest_surface->Lock(&dest_rect, dest_desc, 1);
-    source_surface->Lock(source_rect, source_desc, 1);
+    dest_surface->Lock(&dest_rect, dest_desc, DDLOCK_WAIT);
+    source_surface->Lock(source_rect, source_desc, DDLOCK_WAIT);
     try
     {
         if (pixel_format == 555)
@@ -471,26 +471,27 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
                 columns_left = width;
                 while (columns_left-- > 0)
                 {
-                    source_pair_555 = *source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *dest;
-                        if (!(source_pair_555 >> 16))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF0000;
-                        if (!(source_pair_555 & 0xFFFF))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF;
-                        *dest = ((dest_pair_555 & 0x7BDE7BDE) >> 1) + ((source_pair_555 & 0x7BDE7BDE) >> 1);
+                        rgb555_dest_pair = *dest;
+                        if (!(rgb555_source_pair >> 16))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF0000;
+                        if (!(rgb555_source_pair & 0xFFFF))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF;
+                        *dest = ((rgb555_dest_pair & 0x7BDE7BDE) >> 1) + ((rgb555_source_pair & 0x7BDE7BDE) >> 1);
                     }
                     dest++;
                     source++;
                 }
                 if (odd_width)
                 {
-                    source_pair_555 = *(unsigned short *)source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *(unsigned short *)source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *(unsigned short *)dest;
-                        *(unsigned short *)dest = ((dest_pair_555 & 0x7BDE) >> 1) + ((source_pair_555 & 0x7BDE) >> 1);
+                        rgb555_dest_pair = *(unsigned short *)dest;
+                        *(unsigned short *)dest =
+                            ((rgb555_dest_pair & 0x7BDE) >> 1) + ((rgb555_source_pair & 0x7BDE) >> 1);
                     }
                     dest = (unsigned int *)((char *)dest + 2);
                     source = (unsigned int *)((char *)source + 2);
@@ -520,26 +521,27 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
                 columns_left = width;
                 while (columns_left-- > 0)
                 {
-                    source_pair_555 = *source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *dest;
-                        if (!(source_pair_555 >> 16))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF0000;
-                        if (!(source_pair_555 & 0xFFFF))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF;
-                        *dest = ((dest_pair_555 & 0xF7DEF7DE) >> 1) + ((source_pair_555 & 0xF7DEF7DE) >> 1);
+                        rgb555_dest_pair = *dest;
+                        if (!(rgb555_source_pair >> 16))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF0000;
+                        if (!(rgb555_source_pair & 0xFFFF))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF;
+                        *dest = ((rgb555_dest_pair & 0xF7DEF7DE) >> 1) + ((rgb555_source_pair & 0xF7DEF7DE) >> 1);
                     }
                     dest++;
                     source++;
                 }
                 if (odd_width)
                 {
-                    source_pair_555 = *(unsigned short *)source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *(unsigned short *)source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *(unsigned short *)dest;
-                        *(unsigned short *)dest = ((dest_pair_555 & 0xF7DE) >> 1) + ((source_pair_555 & 0xF7DE) >> 1);
+                        rgb555_dest_pair = *(unsigned short *)dest;
+                        *(unsigned short *)dest =
+                            ((rgb555_dest_pair & 0xF7DE) >> 1) + ((rgb555_source_pair & 0xF7DE) >> 1);
                     }
                     dest = (unsigned int *)((char *)dest + 2);
                     source = (unsigned int *)((char *)source + 2);
@@ -576,27 +578,28 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
                 columns_left = width;
                 while (columns_left-- > 0)
                 {
-                    source_pair_555 = *source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *dest;
-                        if (!(source_pair_555 >> 16))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF0000;
-                        if (!(source_pair_555 & 0xFFFF))
-                            source_pair_555 |= dest_pair_555 & 0xFFFF;
-                        *dest = ((packed_half_mask & dest_pair_555) >> 1) + ((packed_half_mask & source_pair_555) >> 1);
+                        rgb555_dest_pair = *dest;
+                        if (!(rgb555_source_pair >> 16))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF0000;
+                        if (!(rgb555_source_pair & 0xFFFF))
+                            rgb555_source_pair |= rgb555_dest_pair & 0xFFFF;
+                        *dest = ((packed_half_mask & rgb555_dest_pair) >> 1)
+                            + ((packed_half_mask & rgb555_source_pair) >> 1);
                     }
                     dest++;
                     source++;
                 }
                 if (odd_width)
                 {
-                    source_pair_555 = *(unsigned short *)source;
-                    if (source_pair_555)
+                    rgb555_source_pair = *(unsigned short *)source;
+                    if (rgb555_source_pair)
                     {
-                        dest_pair_555 = *(unsigned short *)dest;
-                        *(unsigned short *)dest = ((half_mask & dest_pair_555) >> 1) +
-                            ((half_mask & source_pair_555) >> 1);
+                        rgb555_dest_pair = *(unsigned short *)dest;
+                        *(unsigned short *)dest = ((half_mask & rgb555_dest_pair) >> 1) +
+                            ((half_mask & rgb555_source_pair) >> 1);
                     }
                     dest = (unsigned int *)((char *)dest + 2);
                     source = (unsigned int *)((char *)source + 2);
@@ -616,13 +619,13 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
                 columns_left = width;
                 while (columns_left-- > 0)
                 {
-                    source_pair_555 = *source;
-                    if ((source_pair_555 & 0xFFFFFF) != 0)
+                    rgb555_source_pair = *source;
+                    if ((rgb555_source_pair & 0xFFFFFF) != 0)
                     {
-                        dest_pair_555 = ((*dest & 0xFEFEFE) >> 1) + ((source_pair_555 & 0xFEFEFE) >> 1);
-                        *(unsigned short *)dest = dest_pair_555;
+                        rgb555_dest_pair = ((*dest & 0xFEFEFE) >> 1) + ((rgb555_source_pair & 0xFEFEFE) >> 1);
+                        *(unsigned short *)dest = rgb555_dest_pair;
                         dest = (unsigned int *)((unsigned char *)dest + 2);
-                        *(unsigned char *)dest = dest_pair_555 >> 16;
+                        *(unsigned char *)dest = rgb555_dest_pair >> 16;
                         dest = (unsigned int *)((unsigned char *)dest + 1);
                     }
                     else
@@ -644,11 +647,11 @@ int ExtBlts::HalfBlendBlt(int dest_x, int dest_y, TDx_DrawSurface *dest_surface,
                 columns_left = width;
                 while (columns_left-- > 0)
                 {
-                    source_pair_555 = *source;
-                    if ((source_pair_555 & 0xFFFFFF) != 0)
+                    rgb555_source_pair = *source;
+                    if ((rgb555_source_pair & 0xFFFFFF) != 0)
                     {
-                        dest_pair_555 = *dest;
-                        *dest = ((dest_pair_555 & 0xFEFEFE) >> 1) + ((source_pair_555 & 0xFEFEFE) >> 1);
+                        rgb555_dest_pair = *dest;
+                        *dest = ((rgb555_dest_pair & 0xFEFEFE) >> 1) + ((rgb555_source_pair & 0xFEFEFE) >> 1);
                     }
                     dest++;
                     source++;

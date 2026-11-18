@@ -20,8 +20,8 @@ struct TileResource
     TileResource();
     ~TileResource();
     GraphicSize LoadSurface(int library, int resource_id);
+    Windows::TRect GetFrameRect(int frame);
 };
 
-Windows::TRect Gfx_tile_GetFrameRect(TileResource *self, int frame);
 
 #endif

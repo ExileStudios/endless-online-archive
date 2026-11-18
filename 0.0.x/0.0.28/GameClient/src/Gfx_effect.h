@@ -25,8 +25,8 @@ struct EffectResource
     EffectResource();
     ~EffectResource();
     GraphicSize LoadSurfaces(int library, int base_resource_id);
+    Windows::TRect GetFrameRect(int frame);
 };
 
-Windows::TRect Gfx_effect_GetFrameRect(EffectResource *self, int frame);
 
 #endif

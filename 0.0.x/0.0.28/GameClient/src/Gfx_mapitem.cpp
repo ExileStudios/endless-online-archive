@@ -17,8 +17,8 @@ ItemWrapper::ItemWrapper()
 ItemWrapper::ItemWrapper(int requested_id)
 {
     graphic_id = requested_id;
-    is_loaded = 0;
-    was_used = 0;
+    is_loaded = false;
+    was_used = false;
     width = 0;
     height = 0;
     idle_ticks = 0;

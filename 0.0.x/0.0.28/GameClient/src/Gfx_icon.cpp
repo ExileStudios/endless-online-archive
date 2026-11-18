@@ -35,7 +35,7 @@ IconResource::~IconResource()
 }
 
 // One of the two frames of a spell icon sheet; any other frame number gives the first.
-Windows::TRect Gfx_icon_GetFrameRect(IconResource *self, int frame)
+Windows::TRect IconResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
     if (frame < 0 || frame > 1)
@@ -58,9 +58,9 @@ GraphicSize IconResource::LoadSurface(int library, int resource_id)
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
     MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = MainForm->resource_bitmap->Width;
     surface_desc->Height = MainForm->resource_bitmap->Height;
     if (!surface)
@@ -100,7 +100,7 @@ GraphicSize IconResource::LoadSurface(int library, int resource_id)
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376);
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -114,6 +114,6 @@ GraphicSize IconResource::LoadSurface(int library, int resource_id)
     }
     // The colour key makes black see-through on the spell icon.
     if (size.width > 0)
-        surface->SetColorKey(8, color_key);
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     return size;
 }

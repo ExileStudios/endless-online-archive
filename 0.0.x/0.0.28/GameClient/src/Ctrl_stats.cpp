@@ -9,7 +9,7 @@ StatController::StatController()
 {
     window_x = 15;
     window_y = 53;
-    is_visible = 0;
+    is_visible = false;
 }
 
 StatController::~StatController()
@@ -21,14 +21,14 @@ void StatController::Open()
 {
     MainForm->gfx->CreateStatGraphics();
     MainForm->gfx->LoadStatGraphics();
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void StatController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     MainForm->gfx->FreeStatGraphics();
     MainForm->redraw_needed = true;
 }
@@ -38,7 +38,7 @@ void StatController::MouseDown(int x, int y, int button)
 {
     if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 250 && !is_dragging)
     {
-        is_dragging = 1;
+        is_dragging = true;
         drag_offset_x = x - window_x;
         drag_offset_y = y - window_y;
     }
@@ -65,13 +65,13 @@ void StatController::MouseMove(int x, int y)
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (close_hovered)
     {
-        close_hovered = 0;
+        close_hovered = false;
         MainForm->redraw_needed = true;
     }
 }
@@ -79,5 +79,5 @@ void StatController::MouseMove(int x, int y)
 // Ends moving the window.
 void StatController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }

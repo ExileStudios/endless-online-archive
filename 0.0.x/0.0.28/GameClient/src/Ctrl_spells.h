@@ -30,7 +30,7 @@ struct SpellController
     char has_hover;
     char hover_alt_frame;
     int hover_text_width;
-    char pad_0x80[4];
+    char unused_bytes[4];
     bool awaiting_target;
     String selected_spell_name;
     int selected_spell_id;
@@ -46,7 +46,7 @@ struct SpellController
     int drag_x;
     int drag_y;
     int drag_icon;
-    char pad_0xc0[4];
+    char second_unused_bytes[4];
     int drag_spell_id;
     char is_dragging;
     char drag_started;
@@ -63,7 +63,7 @@ struct SpellController
     int cast_target_id;
     int cast_ticks_left;
     bool is_casting;
-    char pad_0xf5[23];
+    char third_unused_bytes[23];
     char selection_dirty;
     char is_dirty;
     char drag_dirty;

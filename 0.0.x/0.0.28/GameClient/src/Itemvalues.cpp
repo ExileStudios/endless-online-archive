@@ -19,9 +19,9 @@
 ItemValues::ItemValues()
 {
     file_prefix = "./pub/dat";
-    unread_int_at_64 = -1;
-    is_downloading = 0;
-    is_loaded = 0;
+    unused_value = -1;
+    is_downloading = false;
+    is_loaded = false;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
@@ -45,7 +45,7 @@ void ItemValues::ReadHeader()
     String file_name = file_prefix + "001.eif";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), 0);
+        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -78,7 +78,7 @@ void ItemValues::ReadHeader()
             file_name = file_name + "0" + IntToStr(last_file_number) + ".eif";
         try
         {
-            file_handle = FileOpen(file_name.c_str(), 0);
+            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
             file_size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             buffer = new char[file_size + 1];
@@ -159,7 +159,7 @@ void ItemValues::Load()
             {
                 DWORD file_size;
                 char *buffer;
-                hFile = FileOpen(file_name.c_str(), 0);
+                hFile = FileOpen(file_name.c_str(), fmOpenRead);
                 file_size = FileSeek(hFile, 0, 2);
                 FileSeek(hFile, 0, 0);
                 buffer = new char[file_size + 1];
@@ -231,18 +231,18 @@ void ItemValues::Load()
             catch (...)
             {
                 FileClose(hFile);
-                is_loaded = 0;
+                is_loaded = false;
             }
             file_number++;
         } while (loaded_count < record_total);
-        is_loaded = 1;
+        is_loaded = true;
     }
 }
 
 // Deletes the item part files from 001 up to the first one missing, 100 at most.
 void ItemValues::DeleteFiles()
 {
-    char file_found = 1;
+    char file_found = true;
     String lpFileName;
     try
     {
@@ -256,7 +256,7 @@ void ItemValues::DeleteFiles()
             if (!access(lpFileName.c_str(), 0))
                 remove(lpFileName.c_str());
             else
-                file_found = 0;
+                file_found = false;
         }
     }
     catch (...)
@@ -264,11 +264,11 @@ void ItemValues::DeleteFiles()
     }
 }
 
-void ItemValues::AddItem(int item_id, String name, short graphic, short type, short subtype, short special, short item_record_word_at_6, short item_record_word_at_8, short item_record_word_at_10,
-    short item_record_word_at_12, short item_record_word_at_14, short item_record_word_at_16, short item_record_word_at_18, short item_record_byte_at_20, short item_record_byte_at_21, short item_record_byte_at_22, short item_record_byte_at_23, short item_record_byte_at_24, short item_record_byte_at_25,
-    short item_record_byte_at_26, short item_record_byte_at_27, short item_record_byte_at_28, short item_record_byte_at_29, short item_record_byte_at_30, short item_record_byte_at_31, short item_record_byte_at_32, int spec_value, short gender, short item_record_byte_at_37,
-    short required_level, short required_class, short required_str, short required_int, short required_wis, short required_agi, short required_con, short required_cha, short item_record_byte_at_54, short item_record_byte_at_55,
-    short weight, short item_record_byte_at_57, short size)
+void ItemValues::AddItem(int item_id, String name, short graphic, short type, short subtype, short special, short hp, short tp, short min_damage,
+    short max_damage, short accuracy, short evade, short armor, short return_damage, short bonus_str, short bonus_int, short bonus_wis, short bonus_agi, short bonus_con,
+    short bonus_cha, short light_resist, short dark_resist, short earth_resist, short air_resist, short water_resist, short fire_resist, int spec_value, short gender, short spec3,
+    short required_level, short required_class, short required_str, short required_int, short required_wis, short required_agi, short required_con, short required_cha, short element, short element_power,
+    short weight, short spare_byte, short size)
 {
     ItemValue handle(item_id);
     handle.name = name;
@@ -276,29 +276,29 @@ void ItemValues::AddItem(int item_id, String name, short graphic, short type, sh
     handle.type = type;
     handle.subtype = subtype;
     handle.special = special;
-    handle.item_record_word_at_6 = item_record_word_at_6;
-    handle.item_record_word_at_8 = item_record_word_at_8;
-    handle.item_record_word_at_10 = item_record_word_at_10;
-    handle.item_record_word_at_12 = item_record_word_at_12;
-    handle.item_record_word_at_14 = item_record_word_at_14;
-    handle.item_record_word_at_16 = item_record_word_at_16;
-    handle.item_record_word_at_18 = item_record_word_at_18;
-    handle.item_record_byte_at_20 = item_record_byte_at_20;
-    handle.item_record_byte_at_21 = item_record_byte_at_21;
-    handle.item_record_byte_at_22 = item_record_byte_at_22;
-    handle.item_record_byte_at_23 = item_record_byte_at_23;
-    handle.item_record_byte_at_24 = item_record_byte_at_24;
-    handle.item_record_byte_at_25 = item_record_byte_at_25;
-    handle.item_record_byte_at_26 = item_record_byte_at_26;
-    handle.item_record_byte_at_27 = item_record_byte_at_27;
-    handle.item_record_byte_at_28 = item_record_byte_at_28;
-    handle.item_record_byte_at_29 = item_record_byte_at_29;
-    handle.item_record_byte_at_30 = item_record_byte_at_30;
-    handle.item_record_byte_at_31 = item_record_byte_at_31;
-    handle.item_record_byte_at_32 = item_record_byte_at_32;
+    handle.hp = hp;
+    handle.tp = tp;
+    handle.min_damage = min_damage;
+    handle.max_damage = max_damage;
+    handle.accuracy = accuracy;
+    handle.evade = evade;
+    handle.armor = armor;
+    handle.return_damage = return_damage;
+    handle.bonus_str = bonus_str;
+    handle.bonus_int = bonus_int;
+    handle.bonus_wis = bonus_wis;
+    handle.bonus_agi = bonus_agi;
+    handle.bonus_con = bonus_con;
+    handle.bonus_cha = bonus_cha;
+    handle.light_resist = light_resist;
+    handle.dark_resist = dark_resist;
+    handle.earth_resist = earth_resist;
+    handle.air_resist = air_resist;
+    handle.water_resist = water_resist;
+    handle.fire_resist = fire_resist;
     handle.spec_value = spec_value;
     handle.gender = gender;
-    handle.item_record_byte_at_37 = item_record_byte_at_37;
+    handle.spec3 = spec3;
     handle.required_level = required_level;
     handle.required_class = required_class;
     handle.required_str = required_str;
@@ -308,10 +308,10 @@ void ItemValues::AddItem(int item_id, String name, short graphic, short type, sh
     handle.required_con = required_con;
     handle.required_cha = required_cha;
     handle.size = size;
-    handle.item_record_byte_at_57 = item_record_byte_at_57;
+    handle.spare_byte = spare_byte;
     handle.weight = weight;
-    handle.item_record_byte_at_54 = item_record_byte_at_54;
-    handle.item_record_byte_at_55 = item_record_byte_at_55;
+    handle.element = element;
+    handle.element_power = element_power;
     records.insert(records.end(), handle);
 }
 
@@ -411,7 +411,7 @@ String ItemValues::GetKeyName(int key_id)
     String name;
     for (vector<ItemValue>::iterator it = records.begin(); it != records.end(); it++)
     {
-        if (it->type == 9 && key_id == it->spec_value)
+        if (it->type == EifItemType_Key && key_id == it->spec_value)
         {
             name = it->name;
             break;

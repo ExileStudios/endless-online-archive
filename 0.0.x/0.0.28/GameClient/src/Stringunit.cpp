@@ -2,6 +2,7 @@
 #pragma hdrstop
 
 #include "Stringunit.h"
+#include "Datafile.h"
 #include <TDx_Input_Library_Install.H>
 #include <TDx_Sound_Library_Install.H>
 #include <list.h>
@@ -44,21 +45,21 @@ void StringContainer::SetLanguage(int new_language)
     if (dialog_texts_loaded)
     {
         dialog_texts->Clear();
-        dialog_texts->LoadFromFile(GetDataFilePath(2 * new_language + 5));
+        dialog_texts->LoadFromFile(GetDataFilePath(2 * new_language + DataFile_EnglishDialogTexts));
         for (int i = 0; i < dialog_texts->Count; i++)
         {
             std::string line_bytes = dialog_texts->Strings[i].c_str();
-            dialog_texts->Strings[i] = UnscrambleString(this, 7, line_bytes.begin(), line_bytes.end());
+            dialog_texts->Strings[i] = UnscrambleString(7, line_bytes.begin(), line_bytes.end());
         }
     }
     if (ui_texts_loaded)
     {
         ui_texts->Clear();
-        ui_texts->LoadFromFile(GetDataFilePath(2 * new_language + 6));
+        ui_texts->LoadFromFile(GetDataFilePath(2 * new_language + DataFile_EnglishUiTexts));
         for (int j = 0; j < ui_texts->Count; j++)
         {
             std::string second_line_bytes = ui_texts->Strings[j].c_str();
-            ui_texts->Strings[j] = UnscrambleString(this, 7, second_line_bytes.begin(), second_line_bytes.end());
+            ui_texts->Strings[j] = UnscrambleString(7, second_line_bytes.begin(), second_line_bytes.end());
         }
     }
 }
@@ -71,11 +72,11 @@ String StringContainer::GetDialogText(int dialog_id, bool want_body)
         dialog_texts_loaded = true;
         TStringList *new_list = new Classes::TStringList();
         dialog_texts = new_list;
-        new_list->LoadFromFile(GetDataFilePath(2 * language + 5));
+        new_list->LoadFromFile(GetDataFilePath(2 * language + DataFile_EnglishDialogTexts));
         for (int i = 0; i < dialog_texts->Count; i++)
         {
             std::string line_bytes = dialog_texts->Strings[i].c_str();
-            dialog_texts->Strings[i] = UnscrambleString(this, 7, line_bytes.begin(), line_bytes.end());
+            dialog_texts->Strings[i] = UnscrambleString(7, line_bytes.begin(), line_bytes.end());
         }
     }
     int line_index = 2 * dialog_id - 2;
@@ -90,13 +91,13 @@ String StringContainer::GetText(int text_id)
     if (!ui_texts_loaded)
     {
         ui_texts_loaded = true;
-        TStringList *new_list = new Classes::TStringList();
+        TStringList *new_list = new TStringList();
         ui_texts = new_list;
-        new_list->LoadFromFile(GetDataFilePath(2 * language + 6));
+        new_list->LoadFromFile(GetDataFilePath(2 * language + DataFile_EnglishUiTexts));
         for (int i = 0; i < ui_texts->Count; i++)
         {
             std::string line_bytes = ui_texts->Strings[i].c_str();
-            ui_texts->Strings[i] = UnscrambleString(this, 7, line_bytes.begin(), line_bytes.end());
+            ui_texts->Strings[i] = UnscrambleString(7, line_bytes.begin(), line_bytes.end());
         }
     }
     return ui_texts->Strings[text_id - 1];
@@ -108,13 +109,13 @@ String StringContainer::GetSongName(int song_id)
     if (!song_names_loaded)
     {
         song_names_loaded = true;
-        TStringList *new_list = new Classes::TStringList();
+        TStringList *new_list = new TStringList();
         song_names = new_list;
-        new_list->LoadFromFile(GetDataFilePath(4));
+        new_list->LoadFromFile(GetDataFilePath(DataFile_SongNames));
         for (int i = 0; i < song_names->Count; i++)
         {
             std::string line_bytes = song_names->Strings[i].c_str();
-            song_names->Strings[i] = UnscrambleString(this, 7, line_bytes.begin(), line_bytes.end());
+            song_names->Strings[i] = UnscrambleString(7, line_bytes.begin(), line_bytes.end());
         }
     }
     return song_names->Strings[song_id - 1];
@@ -124,10 +125,10 @@ String StringContainer::GetSongName(int song_id)
 String StringContainer::GetGfxPath(int file_number)
 {
     std::string scrambled_name = ".f!ggef.xx!fg";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
-    if (file_number <= SfxSound_TalkTell)
+    if (file_number <= 9)
         file_name.Insert("0", 10);
     if (file_number <= 99)
         file_name.Insert("0", 10);
@@ -137,13 +138,12 @@ String StringContainer::GetGfxPath(int file_number)
 // The sound file of one note of an instrument, sfx\guiNNN.wav or sfx\harNNN.wav.
 String StringContainer::GetInstrumentNotePath(int instrument_id, int note_id)
 {
-    std::string scrambled_name = "";
+    string scrambled_name = "";
     if (instrument_id == 50)
         scrambled_name = ".v!aswf.xi!ug";
     if (instrument_id == 49)
         scrambled_name = ".v!aswf.xr!ah";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(note_id), 10);
     if (note_id <= 9)
         file_name.Insert("0", 10);
@@ -156,10 +156,10 @@ String StringContainer::GetInstrumentNotePath(int instrument_id, int note_id)
 String StringContainer::GetSoundPath(int file_number)
 {
     std::string scrambled_name = ".v!aswf.xx!fs";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
-    if (file_number <= SfxSound_TalkTell)
+    if (file_number <= 9)
         file_name.Insert("0", 10);
     if (file_number <= 99)
         file_name.Insert("0", 10);
@@ -170,8 +170,8 @@ String StringContainer::GetSoundPath(int file_number)
 String StringContainer::GetMusicPath(int file_number)
 {
     std::string scrambled_name = ".d!immf.xx!fm";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
     if (file_number <= 9)
         file_name.Insert("0", 10);
@@ -184,8 +184,8 @@ String StringContainer::GetMusicPath(int file_number)
 String StringContainer::GetJukeboxMusicPath(int file_number)
 {
     std::string scrambled_name = ".d!ijmb.oxxo!bj";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 12);
     if (file_number <= 9)
         file_name.Insert("0", 12);
@@ -198,8 +198,8 @@ String StringContainer::GetJukeboxMusicPath(int file_number)
 String StringContainer::GetDataFilePath(int file_number)
 {
     std::string scrambled_name = ".f!ddea.ttaa!d";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 11);
     if (file_number <= 9)
         file_name.Insert("0", 11);
@@ -209,7 +209,7 @@ String StringContainer::GetDataFilePath(int file_number)
 }
 
 // The file names are kept with ! for each path separator; this puts the backslashes back.
-String StringContainer::RestorePathSeparators(StringContainer *self, String path)
+String StringContainer::RestorePathSeparators(String path)
 {
     int position = path.Length();
     for (; position > 0; position--)
@@ -226,7 +226,7 @@ String StringContainer::RestorePathSeparators(StringContainer *self, String path
 // Undoes the scrambling of the text files and the file names.
 // The first, third, fifth bytes and on come first, then the others from last to first.
 // Then each run of bytes that the divisor divides is reversed where it stands.
-String StringContainer::UnscrambleString(StringContainer *self, int divisor, unsigned char *data_begin,
+String StringContainer::UnscrambleString(int divisor, unsigned char *data_begin,
     unsigned char *data_end)
 {
     int divisor_copy;
@@ -237,18 +237,18 @@ String StringContainer::UnscrambleString(StringContainer *self, int divisor, uns
     {
         std::stack<char > char_stack;
         std::queue<char > byte_queue;
-        to_first_list = 1;
+        to_first_list = true;
         while (data_begin != data_end)
         {
             if (to_first_list)
             {
                 byte_queue.push(*(char *)data_begin);
-                to_first_list = 0;
+                to_first_list = false;
             }
             else
             {
                 char_stack.push(*(char *)data_begin);
-                to_first_list = 1;
+                to_first_list = true;
             }
             data_begin++;
         }

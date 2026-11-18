@@ -38,6 +38,9 @@ enum PacketAction
     AC_TARGET = 31,
     AC_GROUP = 33,
     AC_TALK = 34,
+    AC_SWAP = 35,
+    AC_LOGINGET = 200,
+    AC_CONFIG = 220,
     AC_SYN1 = 240,
     AC_SYN2 = 241,
     AC_SYN3 = 242,
@@ -95,7 +98,9 @@ enum PacketFamily
     OP_ADMIN = 48,
     OP_INN = 49,
     OP_QUEST = 50,
-    OP_BOOK = 51
+    OP_BOOK = 51,
+    OP_BOSS = 52,
+    OP_CAPTCHA = 249
 };
 #define ACCOUNT_CONFIRM_EDIT_Y 171
 #define ACCOUNT_EDIT10_Y 362
@@ -126,9 +131,9 @@ struct Client
     bool login_retry_pending;
     bool is_permanent_ban;
     int ban_minutes;
-    int unread_int_at_12;
-    int unread_int_at_16;
-    bool unread_flag_at_20;
+    int time_offset;
+    int date_offset;
+    bool unused_flag;
     int login_failure_count;
     bool version_rejected;
     int server_challenge_hash;
@@ -143,8 +148,8 @@ struct Client
     int token_length;
     char token_separator;
     TStringList *word_filter;
-    String unused_text_at_80;
-    char pad_0x54[12];
+    String unused_text;
+    char unused_bytes[12];
     int sequence_start;
     int sequence_counter;
     int receive_key;
@@ -153,7 +158,7 @@ struct Client
     int session_id;
     int admin_level;
     TStringList *spare_string_list;
-    String unused_text_at_128;
+    String second_unused_text;
 
     Client();
     ~Client();
@@ -173,20 +178,20 @@ struct Client
     bool IsInDrawRange(int from_x, int from_y, int to_x, int to_y);
     bool IsAdjacent(int from_x, int from_y, int to_x, int to_y);
     unsigned int DecodeLength(String encoded);
-    static String EncodeNumber(Client *self, unsigned int value, int min_length);
+    String EncodeNumber(unsigned int value, int min_length);
     unsigned int DecodeNumber(String encoded);
     int HashChallenge(int sent_challenge);
     String EncryptPacket(int key, String packet);
-    static String ScrambleBytes(Client *self, int divisor, char *data_begin, char *data_end);
-    static String UnscrambleBytes(Client *self, int divisor, unsigned char *data_begin, unsigned char *data_end);
-    static String DeobfuscateString(Client *self, String text);
-    static String FlipHighBits(Client *self, String text);
+    String ScrambleBytes(int divisor, char *data_begin, char *data_end);
+    String UnscrambleBytes(int divisor, unsigned char *data_begin, unsigned char *data_end);
+    String DeobfuscateString(String text);
+    String FlipHighBits(String text);
     bool SendPacket(int action, int family, String data);
     void ShowPendingScreen();
     void HandleDisconnect();
-    static String MakeDrunkText(Client *self, String text);
-    static String Capitalize(Client *self, String text);
-    static String CensorText(Client *self, String text);
+    String MakeDrunkText(String text);
+    String Capitalize(String text);
+    String CensorText(String text);
     void BeginTokens(String text, char separator);
     String RemainingTokens();
     String NextToken();
@@ -194,7 +199,7 @@ struct Client
     void SetSequenceStart(int new_sequence_start);
     void SetSessionId(int new_session_id);
     int GetSessionId();
-    static String BuildPacket(Client *self, int key, int action, int family, String data);
+    String BuildPacket(int key, int action, int family, String data);
     int ByteValue(unsigned char ch);
     char CanAct();
     void CommitActionTime();

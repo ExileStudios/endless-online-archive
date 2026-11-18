@@ -10,27 +10,24 @@
 
 MemoController::MemoController()
 {
-    int new_list;
-    int new_list_2;
-    int new_list_3;
     lines = new TStringList();
     line_values = new TStringList();
     item_entries = new TStringList();
     window_x = 49;
     window_y = 15;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_line = -1;
-    is_visible = 0;
-    close_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    is_visible = false;
+    close_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 MemoController::~MemoController()
@@ -56,8 +53,8 @@ void MemoController::AddItemList(String item_data, int record_size, int amount_s
     {
         int hash_pos = item_entries->Strings[j].Pos("#");
         String item_name = item_entries->Strings[j].SubString(1, hash_pos - 1);
-        String amount_text = item_entries->Strings[j].SubString(hash_pos + 1,
-            item_entries->Strings[j].Length() - hash_pos);
+        String amount_text =
+            item_entries->Strings[j].SubString(hash_pos + 1, item_entries->Strings[j].Length() - hash_pos);
         AddText(item_name, amount_text, false);
     }
 }
@@ -66,51 +63,51 @@ void MemoController::AddItemList(String item_data, int record_size, int amount_s
 // base stats and the other numbers, in groups split by blank lines.
 void MemoController::AddCharacterStats(String stats_data)
 {
-    int level = MainForm->net_client->DecodeNumber(stats_data.SubString(1, 4));
-    int label_340_bracket = MainForm->net_client->DecodeNumber(stats_data.SubString(5, 1));
+    int experience = MainForm->net_client->DecodeNumber(stats_data.SubString(1, 4));
+    int character_level = MainForm->net_client->DecodeNumber(stats_data.SubString(5, 1));
     int map_id = MainForm->net_client->DecodeNumber(stats_data.SubString(6, 2));
     int map_x = MainForm->net_client->DecodeNumber(stats_data.SubString(8, 2));
     int map_y = MainForm->net_client->DecodeNumber(stats_data.SubString(10, 2));
-    int label_356_current = MainForm->net_client->DecodeNumber(stats_data.SubString(12, 2));
-    int label_356_max = MainForm->net_client->DecodeNumber(stats_data.SubString(14, 2));
-    int label_357_current = MainForm->net_client->DecodeNumber(stats_data.SubString(16, 2));
-    int label_357_max = MainForm->net_client->DecodeNumber(stats_data.SubString(18, 2));
+    int hitpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(12, 2));
+    int max_hitpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(14, 2));
+    int techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(16, 2));
+    int max_techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(18, 2));
     int str_value = MainForm->net_client->DecodeNumber(stats_data.SubString(20, 2));
     int int_value = MainForm->net_client->DecodeNumber(stats_data.SubString(22, 2));
     int wis_value = MainForm->net_client->DecodeNumber(stats_data.SubString(24, 2));
     int agi_value = MainForm->net_client->DecodeNumber(stats_data.SubString(26, 2));
     int con_value = MainForm->net_client->DecodeNumber(stats_data.SubString(28, 2));
     int cha_value = MainForm->net_client->DecodeNumber(stats_data.SubString(30, 2));
-    int label_413_to = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
-    int label_413_from = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
-    int label_414_value = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
-    int label_416_value = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
-    int label_415_value = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
-    int label_418_value = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
-    int label_419_value = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
-    int label_420_value = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
-    int label_421_value = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
-    int label_422_value = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
-    int label_423_value = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
-    int label_417_current = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 1));
-    int label_417_max = MainForm->net_client->DecodeNumber(stats_data.SubString(55, 1));
-    AddText(MainForm->strings->GetText(GameText_Level), IntToStr(level) + " [" + IntToStr(label_340_bracket) + "]",
+    int damage_max = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
+    int damage_min = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
+    int hitrate = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
+    int dodge = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
+    int armor = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
+    int light_element = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
+    int dark_element = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
+    int fire_element = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
+    int water_element = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
+    int earth_element = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
+    int wind_element = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
+    int weight = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 1));
+    int max_weight = MainForm->net_client->DecodeNumber(stats_data.SubString(55, 1));
+    AddText(MainForm->strings->GetText(GameText_Level), IntToStr(experience) + " [" + IntToStr(character_level) + "]",
         false);
-    AddText(MainForm->strings->GetText(GameText_Location), MapController::ReadMapName(MainForm->map, map_id), false);
+    AddText(MainForm->strings->GetText(GameText_Location), MainForm->map->ReadMapName(map_id), false);
     AddText(MainForm->strings->GetText(GameText_Coordinates), IntToStr(map_x) + "," + IntToStr(map_y), false);
     AddText(" ", "", false);
-    AddText(MainForm->strings->GetText(GameText_Hitpoints), IntToStr(label_356_current) + "/" + IntToStr(label_356_max),
+    AddText(MainForm->strings->GetText(GameText_Hitpoints), IntToStr(hitpoints) + "/" + IntToStr(max_hitpoints),
         false);
-    AddText(MainForm->strings->GetText(GameText_Techpoints), IntToStr(label_357_current) + "/" +
-        IntToStr(label_357_max), false);
-    AddText(MainForm->strings->GetText(GameText_Weight), IntToStr(label_417_current) + "/" + IntToStr(label_417_max),
+    AddText(MainForm->strings->GetText(GameText_Techpoints), IntToStr(techpoints) + "/" + IntToStr(max_techpoints),
+        false);
+    AddText(MainForm->strings->GetText(GameText_Weight), IntToStr(weight) + "/" + IntToStr(max_weight),
         false);
     AddText(" ", "", false);
-    AddText(MainForm->strings->GetText(GameText_Damage), IntToStr(label_413_from) + "-" + IntToStr(label_413_to),
+    AddText(MainForm->strings->GetText(GameText_Damage), IntToStr(damage_min) + "-" + IntToStr(damage_max),
         false);
-    AddText(MainForm->strings->GetText(GameText_Hitrate), IntToStr(label_414_value), false);
-    AddText(MainForm->strings->GetText(GameText_Armor), IntToStr(label_415_value), false);
-    AddText(MainForm->strings->GetText(GameText_Dodge), IntToStr(label_416_value), false);
+    AddText(MainForm->strings->GetText(GameText_Hitrate), IntToStr(hitrate), false);
+    AddText(MainForm->strings->GetText(GameText_Armor), IntToStr(armor), false);
+    AddText(MainForm->strings->GetText(GameText_Dodge), IntToStr(dodge), false);
     AddText(" ", "", false);
     AddText(MainForm->strings->GetText(GameText_Strength), IntToStr(str_value), false);
     AddText(MainForm->strings->GetText(GameText_Intelligence), IntToStr(int_value), false);
@@ -119,12 +116,12 @@ void MemoController::AddCharacterStats(String stats_data)
     AddText(MainForm->strings->GetText(GameText_Constitution), IntToStr(con_value), false);
     AddText(MainForm->strings->GetText(GameText_Charisma), IntToStr(cha_value), false);
     AddText(" ", "", false);
-    AddText(MainForm->strings->GetText(GameText_LightEle), IntToStr(label_418_value), false);
-    AddText(MainForm->strings->GetText(GameText_DarkEle), IntToStr(label_419_value), false);
-    AddText(MainForm->strings->GetText(GameText_FireEle), IntToStr(label_420_value), false);
-    AddText(MainForm->strings->GetText(GameText_WaterEle), IntToStr(label_421_value), false);
-    AddText(MainForm->strings->GetText(GameText_EarthEle), IntToStr(label_422_value), false);
-    AddText(MainForm->strings->GetText(GameText_WindEle), IntToStr(label_423_value), false);
+    AddText(MainForm->strings->GetText(GameText_LightEle), IntToStr(light_element), false);
+    AddText(MainForm->strings->GetText(GameText_DarkEle), IntToStr(dark_element), false);
+    AddText(MainForm->strings->GetText(GameText_FireEle), IntToStr(fire_element), false);
+    AddText(MainForm->strings->GetText(GameText_WaterEle), IntToStr(water_element), false);
+    AddText(MainForm->strings->GetText(GameText_EarthEle), IntToStr(earth_element), false);
+    AddText(MainForm->strings->GetText(GameText_WindEle), IntToStr(wind_element), false);
 }
 
 // Adds a text with its right-hand value, wrapped to the page width; each wrapped line repeats the value.
@@ -151,21 +148,22 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
                 }
                 else
                 {
-                    char split_done = 0;
+                    char split_done = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            lines->Add(fitted_text);
-                            line_values->Add(right_text);
-                            text.Delete(1, fitted_text.Length());
-                            split_done = 1;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                lines->Add(fitted_text);
+                                line_values->Add(right_text);
+                                text.Delete(1, fitted_text.Length());
+                                split_done = true;
+                                break;
+                            }
+                            fitted_text = prefix;
                         }
-                        fitted_text = prefix;
                     }
                     if (!split_done)
                     {
@@ -193,12 +191,12 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
 // Shows the memo window with the title and an empty page, closing other npc windows.
 void MemoController::Open(String window_title)
 {
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->learn->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     lines->Clear();
@@ -206,14 +204,14 @@ void MemoController::Open(String window_title)
     top_line = 0;
     scroll_thumb_offset = 0;
     title = window_title;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void MemoController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
 }
@@ -238,26 +236,26 @@ void MemoController::MouseDown(int x, int y, int button)
     {
         if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
     {
-        scroll_up_held = 1;
+        scroll_up_held = true;
         scroll_repeat_delay = 4;
         ScrollUp();
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243)
     {
-        scroll_down_held = 1;
+        scroll_down_held = true;
         scroll_repeat_delay = 4;
         ScrollDown();
     }
     if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 290 && !thumb_grabbed)
     {
-        is_dragging = 1;
+        is_dragging = true;
         drag_offset_x = x - window_x;
         drag_offset_y = y - window_y;
     }
@@ -279,8 +277,8 @@ DEFINE_MEMO_SCROLL_DOWN(MemoController)
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void MemoController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }

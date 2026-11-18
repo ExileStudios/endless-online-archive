@@ -23,8 +23,8 @@ InventoryController::InventoryController()
     hover_row = -1;
     hover_message_delay = -1;
     drop_blocked = false;
-    has_hover = 0;
-    is_dragging = 0;
+    has_hover = false;
+    is_dragging = false;
     dragging_from_paperdoll = false;
     input_enabled = true;
 }
@@ -44,7 +44,7 @@ void InventoryController::Tick()
     {
         drag_delay_ticks++;
         if (drag_delay_ticks > 1)
-            drag_started = 1;
+            drag_started = true;
     }
 }
 
@@ -67,13 +67,13 @@ void InventoryController::Clear()
 // True when one more of the item would fit; the items are put back as they were.
 char InventoryController::TestAddItem(int item_id)
 {
-    char fits = 1;
+    char fits = true;
     input_enabled = false;
     trial_backup.clear();
     for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
         trial_backup.insert(trial_backup.end(), *it);
     if (!AddItem(item_id, 1))
-        fits = 0;
+        fits = false;
     if (trial_backup.size() > 0)
     {
         items.clear();
@@ -90,12 +90,12 @@ char InventoryController::TestAddItem(int item_id)
 char InventoryController::CanFitTradeItems()
 {
     char fits;
-    volatile char __hole1;
-    volatile char __hole2;
-    volatile char __hole3;
+    volatile char unused_byte;
+    volatile char second_unused_byte;
+    volatile char third_unused_byte;
     int j = 0;
     int k = 0;
-    fits = 1;
+    fits = true;
     input_enabled = false;
     trial_backup.clear();
     for (vector<InventoryItem>::iterator i = items.begin(); i != items.end(); i++)
@@ -107,7 +107,7 @@ char InventoryController::CanFitTradeItems()
         if (!AddItem(MainForm->animation->trade->partner_items[k].item_id,
             MainForm->animation->trade->partner_items[k].amount))
         {
-            fits = 0;
+            fits = false;
             break;
         }
     }
@@ -124,22 +124,22 @@ char InventoryController::CanFitTradeItems()
 
 bool InventoryController::TestAndClearHoverDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (hover_dirty)
     {
         hover_dirty = false;
-        was_dirty = 1;
+        was_dirty = true;
     }
     return was_dirty;
 }
 
 bool InventoryController::TestAndClearItemsDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (items_dirty)
     {
         items_dirty = false;
-        was_dirty = 1;
+        was_dirty = true;
     }
     return was_dirty;
 }
@@ -158,43 +158,40 @@ void InventoryController::MarkItemsDirty()
 
 void InventoryController::MarkDragDirty()
 {
-    drag_dirty = 1;
+    drag_dirty = true;
 }
 
 // Uses an item from the inventory: the use request for the usable types, the equip request for equipment.
 // Equipment must suit the class, level and stats; a paired type goes to its second slot when the first is taken.
 void InventoryController::UseItem(int item_id)
 {
-    char blocked;
-    int item_type = 0;
-    item_type = MainForm->item_values->GetType(item_id);
+    int item_type = MainForm->item_values->GetType(item_id);
     // This type asks for confirmation before anything is sent
     if (item_type == EifItemType_CureCurse)
     {
         pending_use_item_id = item_id;
-        MainForm->animation->game->ShowMessageBox(3, ConfirmAction_UseItem,
+        MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_UseItem,
             MainForm->strings->GetDialogText(DialogText_RemoveCurse, false),
             MainForm->strings->GetDialogText(DialogText_RemoveCurse, true));
         MainForm->edits->caret_enabled = false;
     }
-    if (item_type == EifItemType_EffectPotion)
+    if (item_type == EifItemType_EffectPotion &&
+        !MainForm->players->IsEffectPlaying(MainForm->net_client->GetPlayerId()))
+        MainForm->net_client->sender->SendUseItem(item_id);
+    if (item_type == EifItemType_Heal || item_type == EifItemType_Teleport || item_type == EifItemType_ExpReward ||
+        item_type == EifItemType_Alcohol || item_type == EifItemType_HairDye)
     {
-        if (!MainForm->players->IsEffectPlaying(MainForm->net_client->GetPlayerId()))
-            MainForm->net_client->sender->SendUseItem(item_id);
-    }
-    if (item_type == EifItemType_Heal || item_type == EifItemType_Teleport || item_type == EifItemType_ExpReward || item_type == EifItemType_Alcohol || item_type == EifItemType_HairDye)
-    {
-        blocked = 0;
+        char blocked = false;
         if (item_type == EifItemType_Teleport && MainForm->map->item_use_restricted)
         {
-            blocked = 1;
+            blocked = true;
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                 MainForm->strings->GetText(GameText_NothingHappened));
             MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
         }
         if (item_type == EifItemType_Teleport && MainForm->map->IsActionBlocked())
         {
-            blocked = 1;
+            blocked = true;
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                 MainForm->strings->GetText(GameText_NothingHappened));
             MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
@@ -253,7 +250,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Weapon)
         {
             if (MainForm->animation->paperdoll->equipped_weapon <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -264,7 +261,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Shield)
         {
             if (MainForm->animation->paperdoll->equipped_shield <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -278,7 +275,7 @@ void InventoryController::UseItem(int item_id)
             {
                 if (MainForm->item_values->GetGender(item_id) ==
                     MainForm->players->GetGender(MainForm->net_client->GetPlayerId()))
-                    MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                    MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
                 else
                 {
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -296,7 +293,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Hat)
         {
             if (MainForm->animation->paperdoll->equipped_head <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -307,7 +304,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Boots)
         {
             if (MainForm->animation->paperdoll->equipped_boots <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -318,7 +315,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Gloves)
         {
             if (MainForm->animation->paperdoll->equipped_gloves <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -328,8 +325,8 @@ void InventoryController::UseItem(int item_id)
         }
         if (item_type == EifItemType_Accessory)
         {
-            if (MainForm->animation->paperdoll->equipped_type16 <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+            if (MainForm->animation->paperdoll->equipped_accessory <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -340,7 +337,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Belt)
         {
             if (MainForm->animation->paperdoll->equipped_belt <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -351,7 +348,7 @@ void InventoryController::UseItem(int item_id)
         if (item_type == EifItemType_Necklace)
         {
             if (MainForm->animation->paperdoll->equipped_necklace <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -361,10 +358,10 @@ void InventoryController::UseItem(int item_id)
         }
         if (item_type == EifItemType_Ring)
         {
-            if (MainForm->animation->paperdoll->equipped_type19_left <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
-            else if (MainForm->animation->paperdoll->equipped_type19_right <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 1);
+            if (MainForm->animation->paperdoll->equipped_ring1 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
+            else if (MainForm->animation->paperdoll->equipped_ring2 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_Second);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -374,10 +371,10 @@ void InventoryController::UseItem(int item_id)
         }
         if (item_type == EifItemType_Armlet)
         {
-            if (MainForm->animation->paperdoll->equipped_type20_left <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
-            else if (MainForm->animation->paperdoll->equipped_type20_right <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 1);
+            if (MainForm->animation->paperdoll->equipped_armlet1 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
+            else if (MainForm->animation->paperdoll->equipped_armlet2 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_Second);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -387,10 +384,10 @@ void InventoryController::UseItem(int item_id)
         }
         if (item_type == EifItemType_Bracer)
         {
-            if (MainForm->animation->paperdoll->equipped_type21_left <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 0);
-            else if (MainForm->animation->paperdoll->equipped_type21_right <= 0)
-                MainForm->net_client->sender->SendEquipItem(item_id, 1);
+            if (MainForm->animation->paperdoll->equipped_bracer1 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
+            else if (MainForm->animation->paperdoll->equipped_bracer2 <= 0)
+                MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_Second);
             else
             {
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -484,7 +481,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                     item_extra_cols = 0;
                     item_extra_rows = item_size;
                 }
-                uncounted = 1;
+                uncounted = true;
                 for (j = 0; j <= drag_extra_cols; j++)
                 {
                     for (k = 0; k <= drag_extra_rows; k++)
@@ -493,7 +490,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                             k + row <= i->grid_y + item_extra_rows && i->is_visible && uncounted)
                         {
                             overlap_count++;
-                            uncounted = 0;
+                            uncounted = false;
                         }
                     }
                 }
@@ -508,13 +505,13 @@ void InventoryController::UpdateItemHover(int x, int y)
             hover_col_end = col + drag_extra_cols;
             hover_row_end = row + drag_extra_rows;
             hover_text_width = 0;
-            has_hover = 1;
+            has_hover = true;
             hover_dirty = true;
             items_dirty = true;
         }
         else
         {
-            found = 0;
+            found = false;
             for (vector<InventoryItem>::iterator m = items.begin(); m != items.end(); m++)
             {
                 result = MainForm->item_values->GetSize(m->item_id);
@@ -531,7 +528,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                 if (col >= m->grid_x && col <= extra_cols + m->grid_x && m->grid_y <= row &&
                     m->grid_y + extra_rows >= row && m->is_visible)
                 {
-                    found = 1;
+                    found = true;
                     if (hover_col != m->grid_x || hover_row != m->grid_y)
                     {
                         hover_item_size = result;
@@ -543,12 +540,12 @@ void InventoryController::UpdateItemHover(int x, int y)
                         if (m->amount > 1)
                         {
                             // Gold shows its amount first, other stacks show it after the name
-                            if (m->item_id == 1)
+                            if (m->item_id == ItemId_Gold)
                                 hover_text = IntToStr(m->amount) + " " + MainForm->item_values->GetName(m->item_id);
                             else
                                 hover_text = MainForm->item_values->GetName(m->item_id) + " x" + IntToStr(m->amount);
                         }
-                        else if (m->item_id == 1)
+                        else if (m->item_id == ItemId_Gold)
                             hover_text = IntToStr(m->amount) + " " + MainForm->item_values->GetName(m->item_id);
                         else
                             hover_text = MainForm->item_values->GetName(m->item_id);
@@ -557,7 +554,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                                 hover_text);
                         hover_item_special = MainForm->item_values->GetSpecial(m->item_id);
                         drop_blocked = false;
-                        has_hover = 1;
+                        has_hover = true;
                         hover_dirty = true;
                         items_dirty = true;
                         hover_text_width = 0;
@@ -590,7 +587,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                     hover_text = "";
                 }
                 drop_blocked = false;
-                has_hover = 0;
+                has_hover = false;
             }
         }
     }
@@ -606,7 +603,7 @@ void InventoryController::UpdateItemHover(int x, int y)
             hover_text = "";
         }
         drop_blocked = false;
-        has_hover = 0;
+        has_hover = false;
     }
 }
 
@@ -616,13 +613,13 @@ void InventoryController::MouseDown(int x, int y, int button)
 {
     if (!dragging_from_paperdoll)
     {
-        char can_click = 1;
+        char can_click = true;
         if (y >= 338 && y <= 358 && x >= 486 && x <= 575 && !MainForm->animation->paperdoll->is_visible)
         {
             if (MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
             {
-                can_click = 0;
-                MainForm->sfx->PlaySfx(2);
+                can_click = false;
+                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                 MainForm->net_client->sender->RequestPaperdoll(MainForm->net_client->GetPlayerId());
             }
         }
@@ -631,19 +628,19 @@ void InventoryController::MouseDown(int x, int y, int button)
             // The drop button: a stack asks for the amount first
             if (is_dragging && x >= 492 && x <= 530 && y >= 398 && y <= 436)
             {
-                char can_drop = 1;
+                char can_drop = true;
                 if (MainForm->item_values->GetSpecial(drag_item_id) == ItemSpecial_Bound)
                 {
-                    can_drop = 0;
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                    can_drop = false;
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetDialogText(DialogText_LoreItem, false),
                         MainForm->strings->GetDialogText(DialogText_LoreItem, true));
                     MainForm->edits->caret_enabled = false;
                 }
                 if (can_drop && MainForm->map->GetMapId() == MainForm->animation->game->restricted_map_id)
                 {
-                    can_drop = 0;
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                    can_drop = false;
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetText(GameText_Warning),
                         MainForm->strings->GetText(GameText_YouCannotDropItems));
                     MainForm->edits->caret_enabled = false;
@@ -652,11 +649,11 @@ void InventoryController::MouseDown(int x, int y, int button)
                 {
                     if (GetItemAmount(drag_item_id) < 2)
                     {
-                        if (drag_item_id == 1)
+                        if (drag_item_id == ItemId_Gold)
                         {
                             if (!GetItemAmount(drag_item_id))
                             {
-                                String gold_name = MainForm->item_values->GetName(1);
+                                String gold_name = MainForm->item_values->GetName(ItemId_Gold);
                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                                     MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + gold_name);
                             }
@@ -684,11 +681,11 @@ void InventoryController::MouseDown(int x, int y, int button)
             {
                 if (GetItemAmount(drag_item_id) < 2)
                 {
-                    if (drag_item_id == 1)
+                    if (drag_item_id == ItemId_Gold)
                     {
                         if (!GetItemAmount(drag_item_id))
                         {
-                            String junk_gold_name = MainForm->item_values->GetName(1);
+                            String junk_gold_name = MainForm->item_values->GetName(ItemId_Gold);
                             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                                 MainForm->strings->GetText(GameText_YouHaveNoMore) + " " + junk_gold_name);
                         }
@@ -715,7 +712,7 @@ void InventoryController::MouseDown(int x, int y, int button)
         {
             if (can_click)
             {
-                char cancel_drag = 0;
+                char cancel_drag = false;
                 int col = (x - 114) / INVENTORY_CELL_SIZE;
                 int row = (y - 339) / INVENTORY_CELL_SIZE;
                 if (!button)
@@ -725,7 +722,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                         if (MainForm->animation->game->amount_box_visible)
                         {
                             MainForm->animation->game->amount_box_visible = false;
-                            MainForm->edits->RemoveEdit(13);
+                            MainForm->edits->RemoveEdit(EditId_Amount);
                             MainForm->edits->FocusEdit(EditId_Chat);
                         }
                         if (this->is_dragging)
@@ -779,7 +776,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                                         item_extra_cols = 0;
                                         item_extra_rows = placed_item_size;
                                     }
-                                    char not_counted = 1;
+                                    char not_counted = true;
                                     for (int j = 0; j <= drag_extra_cols; j++)
                                     {
                                         for (int k = 0; k <= drag_extra_rows; k++)
@@ -790,7 +787,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                                             {
                                                 overlap_count++;
                                                 overlapped_item_id = it->item_id;
-                                                not_counted = 0;
+                                                not_counted = false;
                                             }
                                         }
                                     }
@@ -798,7 +795,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                                 if (!overlap_count)
                                 {
                                     vector<InventoryItem>::iterator it;
-                                    MainForm->sfx->PlaySfx(21);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPlace);
                                     this->layout_backup.clear();
                                     for (it = this->items.begin(); it != this->items.end(); it++)
                                     {
@@ -806,15 +803,15 @@ void InventoryController::MouseDown(int x, int y, int button)
                                         {
                                             it->grid_x = col;
                                             it->grid_y = row;
-                                            it->is_placed = 1;
-                                            it->is_visible = 1;
+                                            it->is_placed = true;
+                                            it->is_visible = true;
                                             this->RecordLayoutChange(this->drag_item_id, col, row);
                                             break;
                                         }
                                     }
                                     this->SaveLayoutChanges();
-                                    this->is_dragging = 0;
-                                    this->drag_started = 0;
+                                    this->is_dragging = false;
+                                    this->drag_started = false;
                                     this->drag_delay_ticks = DRAG_DELAY_IDLE;
                                     this->hover_col = -1;
                                     this->hover_row = -1;
@@ -847,7 +844,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                                     int picked_col;
                                     int picked_row;
                                     vector<InventoryItem>::iterator it;
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     held_item_id = this->drag_item_id;
                                     for (it = this->items.begin(); it != this->items.end(); it++)
                                     {
@@ -863,7 +860,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                                             picked_item_id = overlapped_item_id;
                                             picked_col = it->grid_x;
                                             picked_row = it->grid_y;
-                                            it->is_visible = 0;
+                                            it->is_visible = false;
                                         }
                                         if (it->item_id == held_item_id)
                                         {
@@ -872,13 +869,13 @@ void InventoryController::MouseDown(int x, int y, int button)
                                             dropped_item_id = held_item_id;
                                             dropped_col = col;
                                             dropped_row = row;
-                                            it->is_placed = 1;
-                                            it->is_visible = 1;
+                                            it->is_placed = true;
+                                            it->is_visible = true;
                                         }
                                     }
                                     this->RecordLayoutChange(dropped_item_id, dropped_col, dropped_row);
                                     this->RecordLayoutChange(picked_item_id, picked_col, picked_row);
-                                    this->drag_started = 0;
+                                    this->drag_started = false;
                                     this->drag_delay_ticks = DRAG_DELAY_IDLE;
                                     this->items_dirty = true;
                                     this->hover_dirty = true;
@@ -911,19 +908,19 @@ void InventoryController::MouseDown(int x, int y, int button)
                                 if (col >= it->grid_x && col <= it->grid_x + picked_extra_cols && it->grid_y <= row &&
                                     it->grid_y + picked_extra_rows >= row)
                                 {
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     this->RecordLayoutChange(it->item_id, it->grid_x, it->grid_y);
                                     this->hover_item_size = picked_item_size;
                                     this->hover_item_id = it->item_id;
-                                    this->is_dragging = 1;
-                                    this->drag_started = 0;
+                                    this->is_dragging = true;
+                                    this->drag_started = false;
                                     this->drag_delay_ticks = 0;
                                     this->drag_x = x;
                                     this->drag_y = y;
                                     this->drag_item_size = picked_item_size;
                                     this->drag_item_id = it->item_id;
                                     this->drag_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
-                                    it->is_visible = 0;
+                                    it->is_visible = false;
                                     this->items_dirty = true;
                                     this->hover_dirty = true;
                                     MainForm->dragging = true;
@@ -932,10 +929,10 @@ void InventoryController::MouseDown(int x, int y, int button)
                         }
                     }
                     else
-                        cancel_drag = 1;
+                        cancel_drag = true;
                 }
                 else
-                    cancel_drag = 1;
+                    cancel_drag = true;
                 if (cancel_drag && is_dragging)
                 {
                     CancelDrag();
@@ -956,7 +953,7 @@ void InventoryController::MouseDown(int x, int y, int button)
                 {
                     if (MainForm->item_values->GetSpecial(drag_item_id) == ItemSpecial_Cursed)
                     {
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_CursedItem, false),
                             MainForm->strings->GetDialogText(DialogText_CursedItem, true));
                         MainForm->edits->caret_enabled = false;
@@ -990,30 +987,30 @@ void InventoryController::MouseDown(int x, int y, int button)
             if (item_type == EifItemType_Gloves)
                 MainForm->animation->paperdoll->gloves_graphic = paperdoll_slot_graphic;
             if (item_type == EifItemType_Accessory)
-                MainForm->animation->paperdoll->type16_graphic = paperdoll_slot_graphic;
+                MainForm->animation->paperdoll->accessory_graphic = paperdoll_slot_graphic;
             if (item_type == EifItemType_Belt)
                 MainForm->animation->paperdoll->belt_graphic = paperdoll_slot_graphic;
             if (item_type == EifItemType_Necklace)
                 MainForm->animation->paperdoll->necklace_graphic = paperdoll_slot_graphic;
             if (item_type == EifItemType_Ring)
             {
-                if (!MainForm->animation->paperdoll->type19_right_graphic)
-                    MainForm->animation->paperdoll->type19_right_graphic = paperdoll_slot_graphic;
+                if (!MainForm->animation->paperdoll->ring2_graphic)
+                    MainForm->animation->paperdoll->ring2_graphic = paperdoll_slot_graphic;
                 else
-                    MainForm->animation->paperdoll->type19_left_graphic = paperdoll_slot_graphic;
+                    MainForm->animation->paperdoll->ring1_graphic = paperdoll_slot_graphic;
             }
             if (item_type == EifItemType_Armlet)
             {
-                if (!MainForm->animation->paperdoll->type20_right_graphic)
-                    MainForm->animation->paperdoll->type20_right_graphic = paperdoll_slot_graphic;
+                if (!MainForm->animation->paperdoll->armlet2_graphic)
+                    MainForm->animation->paperdoll->armlet2_graphic = paperdoll_slot_graphic;
                 else
-                    MainForm->animation->paperdoll->type20_left_graphic = paperdoll_slot_graphic;
+                    MainForm->animation->paperdoll->armlet1_graphic = paperdoll_slot_graphic;
             }
             if (item_type == EifItemType_Bracer)
-                if (!MainForm->animation->paperdoll->type21_right_graphic)
-                    MainForm->animation->paperdoll->type21_right_graphic = paperdoll_slot_graphic;
+                if (!MainForm->animation->paperdoll->bracer2_graphic)
+                    MainForm->animation->paperdoll->bracer2_graphic = paperdoll_slot_graphic;
                 else
-                    MainForm->animation->paperdoll->type21_right_graphic = paperdoll_slot_graphic;
+                    MainForm->animation->paperdoll->bracer2_graphic = paperdoll_slot_graphic;
             MainForm->redraw_needed = true;
             dragging_from_paperdoll = false;
             CancelDrag();
@@ -1025,8 +1022,8 @@ void InventoryController::MouseDown(int x, int y, int button)
 // Ends a drag and puts the items back where they were when it began.
 void InventoryController::CancelDrag()
 {
-    is_dragging = 0;
-    drag_started = 0;
+    is_dragging = false;
+    drag_started = false;
     drag_delay_ticks = 0;
     RevertDragLayout();
     hover_col = -1;
@@ -1068,7 +1065,7 @@ void InventoryController::RevertDragLayout()
         layout_backup.clear();
         input_enabled = true;
     }
-    MainForm->sfx->PlaySfx(21);
+    MainForm->sfx->PlaySfx(SfxSound_ItemPlace);
 }
 
 // Releasing the button after a drag has started places the item where the mouse is.
@@ -1078,19 +1075,19 @@ void InventoryController::MouseUp()
     {
         MouseDown(last_mouse_x, last_mouse_y, 0);
         drag_delay_ticks = DRAG_DELAY_IDLE;
-        drag_started = 0;
+        drag_started = false;
     }
     else
     {
         drag_delay_ticks = DRAG_DELAY_IDLE;
-        drag_started = 0;
+        drag_started = false;
     }
 }
 
 // Tracks the hover over the paperdoll, drop and junk buttons, naming each in the status bar; true on a change.
 bool InventoryController::UpdateButtonHover(int x, int y)
 {
-    bool result = 0;
+    bool result = false;
     if (y >= 338 && y <= 358 && !MainForm->animation->paperdoll->is_visible && !dragging_from_paperdoll)
     {
         if (x >= 486 && x <= 575)
@@ -1100,19 +1097,19 @@ bool InventoryController::UpdateButtonHover(int x, int y)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
                     MainForm->strings->GetText(GameText_ClickHereToShow));
                 paperdoll_button_hovered = true;
-                result = 1;
+                result = true;
             }
         }
         else if (paperdoll_button_hovered)
         {
             paperdoll_button_hovered = false;
-            result = 1;
+            result = true;
         }
     }
     else if (paperdoll_button_hovered)
     {
         paperdoll_button_hovered = false;
-        result = 1;
+        result = true;
     }
     if (y >= 398 && y <= 438 && !dragging_from_paperdoll)
     {
@@ -1123,13 +1120,13 @@ bool InventoryController::UpdateButtonHover(int x, int y)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
                     MainForm->strings->GetText(GameText_DragItemToThis));
                 left_button_hovered = true;
-                result = 1;
+                result = true;
             }
         }
         else if (left_button_hovered)
         {
             left_button_hovered = false;
-            result = 1;
+            result = true;
         }
         if (x >= 533 && x <= 571)
         {
@@ -1138,19 +1135,19 @@ bool InventoryController::UpdateButtonHover(int x, int y)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
                     MainForm->strings->GetText(GameText_DragItemToThisButton));
                 right_button_hovered = true;
-                result = 1;
+                result = true;
             }
         }
         else if (right_button_hovered)
         {
             right_button_hovered = false;
-            result = 1;
+            result = true;
         }
     }
     else if (left_button_hovered || right_button_hovered)
     {
         left_button_hovered = false;
-        result = 1;
+        result = true;
         right_button_hovered = false;
     }
     if (result)
@@ -1194,7 +1191,7 @@ void InventoryController::SaveLayout()
                     break;
                 }
             }
-            MainForm->registry->WriteSlotValue(1, 14 * i + j, slot_item_id);
+            MainForm->registry->WriteSlotValue(LayoutKey_Inventory, 14 * i + j, slot_item_id);
         }
     }
 }
@@ -1204,19 +1201,19 @@ void InventoryController::SaveLayout()
 void InventoryController::SaveLayoutChanges()
 {
     char first;
-    volatile char __hole1;
-    volatile char __hole2;
-    volatile char __hole3;
+    volatile char unused_byte;
+    volatile char second_unused_byte;
+    volatile char third_unused_byte;
     int slot;
     int change = 0;
     if (!changes_overflowed)
     {
-        first = 1;
+        first = true;
         change = 0;
         while (change < change_count)
         {
             int slot_value = 0;
-            char should_write = 1;
+            char should_write = true;
             slot = change_cols[change] + 14 * change_rows[change];
             if (!first)
             {
@@ -1224,14 +1221,14 @@ void InventoryController::SaveLayoutChanges()
                 {
                     if (change_cols[change] == change_cols[change - 1] &&
                         change_rows[change] == change_rows[change - 1])
-                        should_write = 0;
+                        should_write = false;
                 }
                 else
                     slot_value = change_item_ids[change];
             }
-            first = 0;
+            first = false;
             if (should_write)
-                MainForm->registry->WriteSlotValue(1, slot, slot_value);
+                MainForm->registry->WriteSlotValue(LayoutKey_Inventory, slot, slot_value);
             change++;
         }
     }
@@ -1245,13 +1242,13 @@ char InventoryController::HasKey(int key_id)
 {
     char found;
     int item_id;
-    found = 0;
+    found = false;
     for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
     {
         item_id = it->item_id;
         if (MainForm->item_values->GetType(item_id) == 9 && MainForm->item_values->GetSpecValue(item_id) == key_id)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -1275,12 +1272,12 @@ char InventoryController::HasRoomForItem(int item_id)
     int n;
     int ii;
     vector<InventoryItem>::iterator it;
-    has_room = 0;
+    has_room = false;
     for (it = items.begin(); it != items.end(); it++)
     {
         if (item_id == it->item_id)
         {
-            has_room = 1;
+            has_room = true;
             break;
         }
     }
@@ -1316,23 +1313,23 @@ char InventoryController::HasRoomForItem(int item_id)
                         other_extra_cols = 0;
                         other_extra_rows = other_size;
                     }
-                    uncounted = 1;
+                    uncounted = true;
                     for (n = 0; n <= extra_cols; n++)
                     {
                         for (ii = 0; ii <= extra_rows; ii++)
                         {
-                            if (k + n >= it->grid_x && k + n <= it->grid_x + other_extra_cols && ii + j >= it->grid_y &&
-                                ii + j <= it->grid_y + other_extra_rows && uncounted)
+                            if (k + n >= it->grid_x && k + n <= it->grid_x + other_extra_cols && j + ii >= it->grid_y &&
+                                j + ii <= it->grid_y + other_extra_rows && uncounted)
                             {
                                 overlap_count++;
-                                uncounted = 0;
+                                uncounted = false;
                             }
                         }
                     }
                 }
                 if (!overlap_count)
                 {
-                    has_room = 1;
+                    has_room = true;
                     break;
                 }
             }
@@ -1355,14 +1352,14 @@ bool InventoryController::AddItem(int item_id, int amount)
     int other_extra_cols;
     int other_extra_rows;
     char uncounted;
-    char stacked = 0;
+    char stacked = false;
     int item_size;
     int k = 0;
     int other_size;
     int n;
     int ii;
-    placed = 1;
-    stacked = 0;
+    placed = true;
+    stacked = false;
     for (vector<InventoryItem>::iterator i = items.begin(); i != items.end(); i++)
     {
         if (i->item_id == item_id)
@@ -1370,13 +1367,13 @@ bool InventoryController::AddItem(int item_id, int amount)
             i->amount += amount;
             items_dirty = true;
             hover_dirty = true;
-            stacked = 1;
+            stacked = true;
             break;
         }
     }
     if (!stacked)
     {
-        placed = 0;
+        placed = false;
         item_size = MainForm->item_values->GetSize(item_id);
         if (item_size > 3)
         {
@@ -1406,7 +1403,7 @@ bool InventoryController::AddItem(int item_id, int amount)
                         other_extra_cols = 0;
                         other_extra_rows = other_size;
                     }
-                    uncounted = 1;
+                    uncounted = true;
                     for (n = 0; n <= extra_cols; n++)
                     {
                         for (ii = 0; ii <= extra_rows; ii++)
@@ -1415,7 +1412,7 @@ bool InventoryController::AddItem(int item_id, int amount)
                                 ii + j <= m->grid_y + other_extra_rows && uncounted)
                             {
                                 overlap_count++;
-                                uncounted = 0;
+                                uncounted = false;
                             }
                         }
                     }
@@ -1424,7 +1421,7 @@ bool InventoryController::AddItem(int item_id, int amount)
                 {
                     free_col = k;
                     free_row = j;
-                    placed = 1;
+                    placed = true;
                 }
             }
         }
@@ -1436,7 +1433,7 @@ bool InventoryController::AddItem(int item_id, int amount)
             handle.amount = amount;
             items.insert(items.end(), handle);
             int value = 14 * free_row + free_col;
-            MainForm->registry->WriteSlotValue(1, value, item_id);
+            MainForm->registry->WriteSlotValue(LayoutKey_Inventory, value, item_id);
             hover_dirty = true;
             items_dirty = true;
         }
@@ -1454,7 +1451,7 @@ char InventoryController::RemoveItem(int item_id, int amount)
         if (item_id == it->item_id)
         {
             it->amount -= amount;
-            if (it->item_id == 1)
+            if (it->item_id == ItemId_Gold)
             {
                 if (it->amount <= 0)
                     it->amount = 0;
@@ -1462,7 +1459,7 @@ char InventoryController::RemoveItem(int item_id, int amount)
             else if (it->amount <= 0)
             {
                 int slot = 14 * it->grid_y + it->grid_x;
-                MainForm->registry->WriteSlotValue(1, slot, 0);
+                MainForm->registry->WriteSlotValue(LayoutKey_Inventory, slot, 0);
                 items.erase(it);
             }
             hover_dirty = true;
@@ -1478,7 +1475,8 @@ int InventoryController::GetTotalWeight()
 {
     unsigned int items_weight = 0;
     for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
-        items_weight += it->amount * MainForm->item_values->GetWeight(it->item_id);
+        items_weight += MainForm->item_values->GetWeight(it->item_id) * (int)it->amount;
+    // Then every worn item.
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_head);
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_necklace);
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_armor);
@@ -1487,13 +1485,13 @@ int InventoryController::GetTotalWeight()
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_belt);
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_gloves);
     items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_boots);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type19_left);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type19_right);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type20_left);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type20_right);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type21_left);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type21_right);
-    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_type16);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_ring1);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_ring2);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_armlet1);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_armlet2);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_bracer1);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_bracer2);
+    items_weight += MainForm->item_values->GetWeight(MainForm->animation->paperdoll->equipped_accessory);
     return items_weight;
 }
 
@@ -1505,7 +1503,7 @@ void InventoryController::SetItemAmount(int item_id, int amount)
         if (item_id == it->item_id)
         {
             it->amount = amount;
-            if (it->item_id == 1)
+            if (it->item_id == ItemId_Gold)
             {
                 if (it->amount <= 0)
                     it->amount = 0;
@@ -1513,7 +1511,7 @@ void InventoryController::SetItemAmount(int item_id, int amount)
             else if (it->amount <= 0)
             {
                 int slot = 14 * it->grid_y + it->grid_x;
-                MainForm->registry->WriteSlotValue(1, slot, 0);
+                MainForm->registry->WriteSlotValue(LayoutKey_Inventory, slot, 0);
                 items.erase(it);
             }
             hover_dirty = true;
@@ -1531,7 +1529,7 @@ void InventoryController::AddLoadedItem(int item_id, int amount)
 {
     InventoryItem handle(item_id);
     handle.amount = amount;
-    handle.is_placed = 0;
+    handle.is_placed = false;
     loaded_items.insert(loaded_items.end(), handle);
 }
 
@@ -1541,7 +1539,7 @@ void InventoryController::PlaceLoadedItems()
     saved_slots.clear();
     for (int i = 0; i < 56; i++)
     {
-        int slot_item_id = MainForm->registry->ReadSlotValue(1, i);
+        int slot_item_id = MainForm->registry->ReadSlotValue(LayoutKey_Inventory, i);
         if (slot_item_id > 0)
         {
             int cell_col = i % 14;
@@ -1555,18 +1553,19 @@ void InventoryController::PlaceLoadedItems()
     vector<InventoryItem>::iterator it;
     for (it = loaded_items.begin(); it != loaded_items.end(); it++)
     {
-        char matched = 0;
-        for (vector<InventoryItem>::iterator it2 = saved_slots.begin(); it2 != saved_slots.end() && !matched; it2++)
+        char matched = false;
+        for (vector<InventoryItem>::iterator saved_slot = saved_slots.begin();
+            saved_slot != saved_slots.end() && !matched; saved_slot++)
         {
-            if (it2->item_id != it->item_id)
+            if (saved_slot->item_id != it->item_id)
                 continue;
-            if (it2->item_id == 1)
+            if (saved_slot->item_id == ItemId_Gold)
                 MainForm->animation->interface_controller->status->gold = it->amount;
-            it->is_placed = 1;
-            matched = 1;
+            it->is_placed = true;
+            matched = true;
             InventoryItem placed_item(it->item_id);
-            placed_item.grid_x = it2->grid_x;
-            placed_item.grid_y = it2->grid_y;
+            placed_item.grid_x = saved_slot->grid_x;
+            placed_item.grid_y = saved_slot->grid_y;
             placed_item.amount = it->amount;
             items.insert(items.end(), placed_item);
             int restored_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
@@ -1579,7 +1578,7 @@ void InventoryController::PlaceLoadedItems()
             continue;
         if (!AddItem(it->item_id, it->amount))
             continue;
-        it->is_placed = 1;
+        it->is_placed = true;
         int pending_graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
         MainForm->gfx->items->RequestSubItemGraphic(pending_graphic);
     }
@@ -1596,7 +1595,7 @@ void InventoryController::PlaceRemainingItems()
             continue;
         if (AddItem(it->item_id, it->amount))
         {
-            it->is_placed = 1;
+            it->is_placed = true;
             int graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
             MainForm->gfx->items->RequestSubItemGraphic(graphic);
         }

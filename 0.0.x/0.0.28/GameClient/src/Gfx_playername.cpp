@@ -24,14 +24,14 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, unsigned int label_heigh
     surface_rect.top = 0;
     surface_rect.right = label_width + 8;
     surface_rect.bottom = label_height;
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = label_width + 8;
     surface_desc->Height = label_height;
     surface->GetSurfaceDesc(surface_desc);
     surface->Create(surface_desc, MainForm->Dx_Draw1);
-    surface->Blt(&surface_rect, 0, 0, 16778240, fill_fx);
+    surface->Blt(&surface_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
     if (surface->GetDC(&dc))
     {
         try
@@ -44,39 +44,39 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, unsigned int label_heigh
                 MainForm->draw_canvas->Pen->Color = clWhite;
                 MainForm->draw_canvas->Font->Color = clWhite;
             }
-            if (color_index == 1)
+            if (color_index == LabelColor_Gray)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xB9B9B9;
                 MainForm->draw_canvas->Font->Color = (TColor)0xB9B9B9;
             }
-            if (color_index == 2)
+            if (color_index == LabelColor_Silver)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xE1E1E1;
                 MainForm->draw_canvas->Font->Color = (TColor)0xE1E1E1;
             }
-            if (color_index == 3)
+            if (color_index == LabelColor_LightBlue)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
                 MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
             }
-            if (color_index == 4)
+            if (color_index == LabelColor_Violet)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
                 MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
             }
-            if (color_index == 5)
+            if (color_index == LabelColor_Gold)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xA5F0FF;
                 MainForm->draw_canvas->Font->Color = (TColor)0xA5F0FF;
             }
-            if (color_index == 6)
+            if (color_index == LabelColor_Cream)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xD2FAFA;
                 MainForm->draw_canvas->Font->Color = (TColor)0xD2FAFA;
             }
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
-            MainForm->draw_canvas->TextOut(1, 0, Client::Capitalize(MainForm->net_client, name));
+            MainForm->draw_canvas->TextOut(1, 0, MainForm->net_client->Capitalize(name));
             MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
@@ -84,7 +84,7 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, unsigned int label_heigh
         }
         surface->ReleaseDC(dc);
     }
-    surface->SetColorKey(8, color_key);
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 PlayerNameGraphics::~PlayerNameGraphics()

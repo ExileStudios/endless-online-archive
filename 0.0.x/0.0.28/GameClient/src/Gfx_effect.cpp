@@ -36,28 +36,28 @@ EffectResource::~EffectResource()
 }
 
 // One frame of an effect: the sheet cut into the effect's frame count, or the whole of a narrow sheet.
-Windows::TRect Gfx_effect_GetFrameRect(EffectResource *self, int frame)
+Windows::TRect EffectResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
     int right;
-    EffectResource *self_copy_3 = self;
-    EffectResource *self_copy_2 = self;
-    EffectResource *self_copy = self;
-    right = self->sheet_width;
+    EffectResource *third_self_copy = this;
+    EffectResource *second_self_copy = this;
+    EffectResource *self_copy = this;
+    right = sheet_width;
     if (right > 80)
     {
-        right = right / self->frame_count;
+        right = right / frame_count;
         frame_rect.left = right * frame;
         frame_rect.top = 0;
         frame_rect.right = right * frame + right;
-        frame_rect.bottom = self->sheet_height;
+        frame_rect.bottom = sheet_height;
     }
     else
     {
         frame_rect.left = 0;
         frame_rect.top = 0;
         frame_rect.right = right;
-        frame_rect.bottom = self->sheet_height;
+        frame_rect.bottom = sheet_height;
     }
     for (;;)
         return frame_rect;
@@ -86,9 +86,9 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
             MainForm->resource_bitmap->Width = 0;
             MainForm->resource_bitmap->Height = 0;
             MainForm->resource_bitmap->LoadFromResourceID(library, base_resource_id + layer);
-            surface_desc->Flags = 6;
+            surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
             surface_desc->SCaps = surface_caps;
-            surface_desc->SCaps->Caps = 2112;
+            surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
             surface_desc->Width = MainForm->resource_bitmap->Width;
             surface_desc->Height = MainForm->resource_bitmap->Height;
             if (!layer)
@@ -186,7 +186,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, 13369376);
+                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -200,7 +200,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, 13369376);
+                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -214,7 +214,7 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
                 {
                     try
                     {
-                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, 13369376);
+                        BitBlt(dc, 0, 0, size.width * frame_count, size.height, CompatibleDC, 0, 0, SRCCOPY);
                     }
                     catch (...)
                     {
@@ -229,11 +229,11 @@ GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
             if (size.width > 0)
             {
                 if (!layer)
-                    layer0_surface->SetColorKey(8, color_key);
+                    layer0_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
                 if (layer == 1)
-                    layer1_surface->SetColorKey(8, color_key);
+                    layer1_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
                 if (layer == 2)
-                    layer2_surface->SetColorKey(8, color_key);
+                    layer2_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
             }
         }
         layer++;

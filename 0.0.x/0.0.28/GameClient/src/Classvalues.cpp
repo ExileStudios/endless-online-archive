@@ -17,9 +17,9 @@
 ClassValues::ClassValues()
 {
     file_prefix = "./pub/dat";
-    unread_int_at_64 = -1;
-    is_loaded = 0;
-    unread_int_at_64 = -1;
+    unused_value = -1;
+    is_loaded = false;
+    unused_value = -1;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
@@ -43,7 +43,7 @@ void ClassValues::ReadHeader()
     String file_name = file_prefix + "001.ecf";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), 0);
+        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -76,7 +76,7 @@ void ClassValues::ReadHeader()
             file_name = file_name + "0" + IntToStr(last_file_number) + ".ecf";
         try
         {
-            file_handle = FileOpen(file_name.c_str(), 0);
+            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
             file_size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             buffer = new char[file_size + 1];
@@ -144,7 +144,7 @@ void ClassValues::Load()
             {
                 DWORD file_size;
                 char *buffer;
-                hFile = FileOpen(file_path.c_str(), 0);
+                hFile = FileOpen(file_path.c_str(), fmOpenRead);
                 file_size = FileSeek(hFile, 0, 2);
                 FileSeek(hFile, 0, 0);
                 buffer = new char[file_size + 1];
@@ -183,11 +183,11 @@ void ClassValues::Load()
             catch (...)
             {
                 FileClose(hFile);
-                is_loaded = 0;
+                is_loaded = false;
             }
             file_number++;
         } while (loaded_count < record_total);
-        is_loaded = 1;
+        is_loaded = true;
     }
 }
 
@@ -208,7 +208,7 @@ void ClassValues::SaveFilePart(int part_number, String data)
 // Deletes the class part files from 001 up to the first one missing, 100 at most.
 void ClassValues::DeleteFiles()
 {
-    char file_found = 1;
+    char file_found = true;
     String lpFileName;
     try
     {
@@ -222,7 +222,7 @@ void ClassValues::DeleteFiles()
             if (!access(lpFileName.c_str(), 0))
                 remove(lpFileName.c_str());
             else
-                file_found = 0;
+                file_found = false;
         }
     }
     catch (...)
@@ -230,20 +230,20 @@ void ClassValues::DeleteFiles()
     }
 }
 
-void ClassValues::AddClass(int class_id, int parent_class_id, String name, short class_record_byte_at_3,
-    short class_record_word_at_4, short class_record_word_at_6, short class_record_word_at_8,
-    short class_record_word_at_10, short class_record_word_at_12, short class_record_word_at_14)
+void ClassValues::AddClass(int class_id, int parent_class_id, String name, short stat_group,
+    short strength, short intelligence, short wisdom,
+    short agility, short constitution, short charisma)
 {
     ClassValue handle(class_id);
     handle.name = name;
     handle.parent_class_id = parent_class_id;
-    handle.class_record_byte_at_3 = class_record_byte_at_3;
-    handle.class_record_word_at_4 = class_record_word_at_4;
-    handle.class_record_word_at_6 = class_record_word_at_6;
-    handle.class_record_word_at_8 = class_record_word_at_8;
-    handle.class_record_word_at_10 = class_record_word_at_10;
-    handle.class_record_word_at_12 = class_record_word_at_12;
-    handle.class_record_word_at_14 = class_record_word_at_14;
+    handle.stat_group = stat_group;
+    handle.strength = strength;
+    handle.intelligence = intelligence;
+    handle.wisdom = wisdom;
+    handle.agility = agility;
+    handle.constitution = constitution;
+    handle.charisma = charisma;
     records.insert(records.end(), handle);
 }
 

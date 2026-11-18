@@ -12,7 +12,7 @@
 MenuController::MenuController()
 {
     is_loading_world = false;
-    is_entering_game = 0;
+    is_entering_game = false;
     request_delay_ticks = 0;
     create_account_enabled = false;
     login_enabled = false;
@@ -20,7 +20,7 @@ MenuController::MenuController()
     create_character_enabled = false;
     character_select_cooldown = 0;
     connect_for_create_account = 0;
-    connect_for_login = 0;
+    connect_for_login = false;
     create_account_button_hover = false;
     play_button_hover = false;
     credits_button_hover = false;
@@ -49,8 +49,8 @@ MenuController::MenuController()
     form_cancel_button_hover = false;
     login_ok_button_hover = false;
     login_cancel_button_hover = false;
-    unread_flag_at_48 = false;
-    unread_int_at_52 = 0;
+    unused_flag = false;
+    unused_value = 0;
     is_message_open = false;
     message_x = DEFAULT_MESSAGE_BOX_X;
     message_y = DEFAULT_MESSAGE_BOX_Y;
@@ -61,24 +61,24 @@ MenuController::MenuController()
     text_scrollbar_position = 0;
     text_window_x = 140;
     text_window_y = 110;
-    scrolling_up = 0;
-    scrolling_down = 0;
+    scrolling_up = false;
+    scrolling_down = false;
     is_form_open = false;
     form_x = DEFAULT_FORM_X;
     form_y = DEFAULT_FORM_Y;
     text_lines = new TStringList();
-    is_dragging_window = 0;
-    is_dragging_thumb = 0;
+    is_dragging_window = false;
+    is_dragging_thumb = false;
     new_gender = 0;
     new_hair_style = 1;
     new_hair_color = 0;
     new_skin = 0;
-    map_needed = 0;
-    item_file_needed = 0;
+    map_needed = false;
+    item_file_needed = false;
     reserved_file_needed = 0;
-    class_file_needed = 0;
-    npc_file_needed = 0;
-    skill_file_needed = 0;
+    class_file_needed = false;
+    npc_file_needed = false;
+    skill_file_needed = false;
     up_key_lit = false;
     down_key_lit = false;
     left_key_lit = false;
@@ -120,7 +120,7 @@ void MenuController::OnTimer()
 void MenuController::OpenFormWindow(int kind)
 {
     is_form_open = true;
-    is_dragging_window = 0;
+    is_dragging_window = false;
     form_kind = kind;
     change_password_button_hover = false;
     new_character_button_hover = false;
@@ -139,7 +139,7 @@ void MenuController::OpenTextWindow()
     text_scroll_offset = 0;
     text_scrollbar_position = 0;
     is_text_window_open = true;
-    is_dragging_window = 0;
+    is_dragging_window = false;
     form_ok_button_hover = false;
     form_cancel_button_hover = false;
     gender_arrow_hover = false;
@@ -188,20 +188,21 @@ void MenuController::AddWrappedText(String text, bool add_blank_line)
                 }
                 else
                 {
-                    char line_cut = 0;
+                    char line_cut = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->draw_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            text_lines->Add(fitting_part);
-                            text.Delete(1, fitting_part.Length());
-                            line_cut = 1;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->draw_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                text_lines->Add(fitting_part);
+                                text.Delete(1, fitting_part.Length());
+                                line_cut = true;
+                                break;
+                            }
+                            fitting_part = prefix;
                         }
-                        fitting_part = prefix;
                     }
                     if (!line_cut)
                     {
@@ -236,7 +237,7 @@ void MenuController::ShowMessageBox(int kind, String title, String text)
 {
     is_message_open = true;
     message_shows_image = false;
-    is_dragging_window = 0;
+    is_dragging_window = false;
     message_lines[0] = text;
     message_lines[1] = "";
     message_kind = kind;
@@ -283,13 +284,13 @@ void MenuController::StartRequestDelay()
 // True once, 24 calls after StartRequestDelay; the loading screen then asks for the next game data.
 bool MenuController::IsRequestDelayDone()
 {
-    bool is_done = 0;
+    bool is_done = false;
     if (request_delay_ticks > 0)
     {
         request_delay_ticks++;
         if (request_delay_ticks > 24)
         {
-            is_done = 1;
+            is_done = true;
             request_delay_ticks = 0;
         }
     }
@@ -367,7 +368,7 @@ void MenuController::OnMouseDown(int mouse_x, int mouse_y)
             if (mouse_y >= text_window_y + text_scrollbar_position + 81 &&
                 mouse_y <= text_window_y + text_scrollbar_position + 96)
             {
-                is_dragging_thumb = 1;
+                is_dragging_thumb = true;
                 thumb_grab_offset = mouse_y - text_scrollbar_position - text_window_y;
                 DragScrollbar(mouse_y);
             }
@@ -375,7 +376,7 @@ void MenuController::OnMouseDown(int mouse_x, int mouse_y)
     }
     if (is_form_open && mouse_x >= form_x && mouse_x <= form_x + 360 && mouse_y >= form_y && mouse_y <= form_y + 240)
     {
-        is_dragging_window = 1;
+        is_dragging_window = true;
         dragged_window = DraggedWindow_Form;
         drag_offset_x = mouse_x - form_x;
         drag_offset_y = mouse_y - form_y;
@@ -386,20 +387,20 @@ void MenuController::OnMouseDown(int mouse_x, int mouse_y)
         if (mouse_x >= text_window_x + 320 && mouse_x <= text_window_x + 335 && mouse_y >= text_window_y + 66 &&
             mouse_y <= text_window_y + 81)
         {
-            scrolling_up = 1;
+            scrolling_up = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (mouse_x >= text_window_x + 320 && mouse_x <= text_window_x + 335 && mouse_y >= text_window_y + 170 &&
             mouse_y <= text_window_y + 185)
         {
-            scrolling_down = 1;
+            scrolling_down = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
         if (!is_dragging_thumb)
         {
-            is_dragging_window = 1;
+            is_dragging_window = true;
             dragged_window = DraggedWindow_TextWindow;
             drag_offset_x = mouse_x - text_window_x;
             drag_offset_y = mouse_y - text_window_y;
@@ -408,7 +409,7 @@ void MenuController::OnMouseDown(int mouse_x, int mouse_y)
     if (is_message_open && mouse_x >= message_x && mouse_x <= message_x + 290 && mouse_y >= message_y &&
         mouse_y <= message_y + 157)
     {
-        is_dragging_window = 1;
+        is_dragging_window = true;
         dragged_window = DraggedWindow_MessageBox;
         drag_offset_x = mouse_x - message_x;
         drag_offset_y = mouse_y - message_y;
@@ -494,7 +495,7 @@ void MenuController::DragScrollbar(int mouse_y)
 {
     double thumb_ratio;
     double scaled_offset;
-    int __slot1;
+    int unused_int;
     if (is_dragging_thumb)
     {
         int thumb_position = mouse_y - thumb_grab_offset - text_window_y;
@@ -650,12 +651,12 @@ void MenuController::AddSelectedLetter()
     letter_delay_ticks = 4;
     if (!(password.Length() % 2))
     {
-        MainForm->sfx->PlaySfx(3);
+        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
         grid_column = random(4) + 1;
         grid_row = random(4) + 1;
     }
     else
-        MainForm->sfx->PlaySfx(2);
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
 }
 
 void MenuController::AddSpace()
@@ -663,7 +664,6 @@ void MenuController::AddSpace()
     if (password.Length() > GRID_PASSWORD_LIMIT)
         return;
     password = password + " ";
-    return;
 }
 
 void MenuController::DeleteLastLetter()
@@ -675,8 +675,8 @@ void MenuController::DeleteLastLetter()
 // Ends every drag and arrow scroll when the button is let go.
 void MenuController::StopDragging()
 {
-    scrolling_up = 0;
-    scrolling_down = 0;
-    is_dragging_thumb = 0;
-    is_dragging_window = 0;
+    scrolling_up = false;
+    scrolling_down = false;
+    is_dragging_thumb = false;
+    is_dragging_window = false;
 }

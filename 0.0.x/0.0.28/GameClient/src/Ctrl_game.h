@@ -1,10 +1,27 @@
 #ifndef Ctrl_gameH
 #define Ctrl_gameH
 
+enum Emote
+{
+    Emote_Happy = 1,
+    Emote_Depressed = 2,
+    Emote_Sad = 3,
+    Emote_Angry = 4,
+    Emote_Confused = 5,
+    Emote_Surprised = 6,
+    Emote_Hearts = 7,
+    Emote_Moon = 8,
+    Emote_Suicidal = 9,
+    Emote_Embarrassed = 10,
+    Emote_Drunk = 11,
+    Emote_Playful = 14
+};
+
 enum AmountBoxKind
 {
     AmountBoxKind_DropItem = 1,
     AmountBoxKind_JunkItem = 2,
+    AmountBoxKind_Amount = 3,
     AmountBoxKind_TradeAddItem = 4,
     AmountBoxKind_ChestAddItem = 5,
     AmountBoxKind_BankDeposit = 6,
@@ -42,7 +59,9 @@ enum ConfirmAction
     ConfirmAction_LearnSkill = 22,
     ConfirmAction_SkillReset = 23,
     ConfirmAction_InnSleep = 24,
-    ConfirmAction_BuyLockerUpgrade = 25
+    ConfirmAction_BuyLockerUpgrade = 25,
+    ConfirmAction_DestroyItem = 26,
+    ConfirmAction_CraftItem = 27
 };
 
 enum FormKind
@@ -67,7 +86,8 @@ enum InputBoxKind
     InputBoxKind_LawOption2 = 8,
     InputBoxKind_FindSkill = 9,
     InputBoxKind_HelpQuestion = 10,
-    InputBoxKind_InnAnswer = 11
+    InputBoxKind_InnAnswer = 11,
+    InputBoxKind_ChooseTitle = 12
 };
 
 enum LargeBoxKind
@@ -82,6 +102,8 @@ enum LargeBoxKind
 
 enum DialogButtons
 {
+    DialogButtons_Default = 0,
+    DialogButtons_Ok = 1,
     DialogButtons_Cancel = 2,
     DialogButtons_OkCancel = 3
 };
@@ -223,8 +245,7 @@ struct GameController
     void OpenAmountBox(int kind, int max_amount, int item_id, int reserved);
     void MouseDown(int x, int y);
     void MouseMove(int x, int y);
-    void AddInputFormRow(String label, String text, short char_filter, short max_length, short case_mode,
-        char password);
+    void AddInputFormRow(String label, String text, short char_filter, short max_length, short case_mode, char password);
     void ShowInputFormRows(int first_row);
     void SaveInputFormRows();
     int GetInputFormThumbOffset();

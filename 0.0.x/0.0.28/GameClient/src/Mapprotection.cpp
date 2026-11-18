@@ -61,7 +61,7 @@ void MapController::AdvanceTileFrame()
 }
 
 // The map's name from its file, cut at the first 0xFF filler; empty when the file is not a map.
-String MapController::ReadMapName(MapController *self, int map_number)
+String MapController::ReadMapName(int map_number)
 {
     int file;
     int size;
@@ -75,19 +75,19 @@ String MapController::ReadMapName(MapController *self, int map_number)
             data.Insert("0", 0);
         data.Insert("./maps/", 0);
         data.Insert(".emf", data.Length() + 1);
-        file = FileOpen(data.c_str(), 0);
+        file = FileOpen(data.c_str(), fmOpenRead);
         size = FileSeek(file, 0, 2);
         FileSeek(file, 0, 0);
         buffer = new char[size + 1];
         FileRead(file, buffer, size);
         FileClose(file);
         data = buffer;
-        self->file_size = size;
+        file_size = size;
         data.SetLength(size);
         delete[] buffer;
         if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
             return "";
-        String header = Client::DeobfuscateString(MainForm->net_client, data.SubString(8, 24));
+        String header = MainForm->net_client->DeobfuscateString(data.SubString(8, 24));
         map_name = header.SubString(1, 16);
         for (int i = 1; i <= map_name.Length(); i++)
         {
@@ -118,7 +118,7 @@ void MapController::ReadMapChecksum(int map_number)
             data.Insert("0", 0);
         data.Insert("./maps/", 0);
         data.Insert(".emf", data.Length() + 1);
-        file = FileOpen(data.c_str(), 0);
+        file = FileOpen(data.c_str(), fmOpenRead);
         size = FileSeek(file, 0, 2);
         FileSeek(file, 0, 0);
         FileHandle = new char[size + 1];
@@ -181,7 +181,7 @@ void MapController::LoadMap(int map_number)
         int row_count;
         data.Insert("./maps/", 0);
         data.Insert(".emf", data.Length() + 1);
-        hFile = FileOpen(data.c_str(), 0);
+        hFile = FileOpen(data.c_str(), fmOpenRead);
         nNumberOfBytesToRead = FileSeek(hFile, 0, 2);
         FileSeek(hFile, 0, 0);
         FileHandle = new char[nNumberOfBytesToRead + 1];
@@ -192,7 +192,7 @@ void MapController::LoadMap(int map_number)
         delete[] FileHandle;
         if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
             return;
-        String header = Client::DeobfuscateString(MainForm->net_client, data.SubString(8, 24));
+        String header = MainForm->net_client->DeobfuscateString(data.SubString(8, 24));
         name = header.SubString(1, 16);
         map_type = MainForm->net_client->DecodeNumber(data.SubString(32, 1));
         map_attribute = MainForm->net_client->DecodeNumber(data.SubString(33, 1));
@@ -266,25 +266,27 @@ void MapController::LoadMap(int map_number)
                 int spec = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
                 if (!spec)
                 {
-                    blocked[spec_x][spec_y] = 1; has_tile_spec[spec_x][spec_y] = 0;
+                    blocked[spec_x][spec_y] = true; has_tile_spec[spec_x][spec_y] = false;
                 }
                 // A spec is stored one lower than in the file.
                 if (spec > 0 && spec <= 16)
                 {
-                    objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = 1;
+                    objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = true;
                     SetTileSpec(spec_x, spec_y, spec - 1);
                     if (spec == 8)
                         AddDoor(spec_x, spec_y, 0);
                 }
                 if (spec == 18)
                 {
-                    blocked[spec_x][spec_y] = 1; has_tile_spec[spec_x][spec_y] = 0; minimap_mask[spec_x][spec_y] = 1;
+                    blocked[spec_x][spec_y] = true;
+                    has_tile_spec[spec_x][spec_y] = false;
+                    minimap_mask[spec_x][spec_y] = 1;
                 }
                 if (spec == 19)
                     minimap_mask[spec_x][spec_y] = 2;
                 if (spec > 19 && spec <= 28)
                 {
-                    objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = 1;
+                    objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = true;
                     SetTileSpec(spec_x, spec_y, spec - 1);
                 }
                 if (spec >= 29 && spec <= 36)
@@ -305,14 +307,14 @@ void MapController::LoadMap(int map_number)
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 // A warp record: x, map, destination x and y, level, door.
                 int warp_door = MainForm->net_client->DecodeNumber(data.SubString(7, 2));
-                blocked[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = 0;
+                blocked[spec_x][spec_y] = false; has_tile_spec[spec_x][spec_y] = false;
                 AddWarp(spec_x, spec_y, MainForm->net_client->DecodeNumber(data.SubString(2, 2)),
                     MainForm->net_client->DecodeNumber(data.SubString(6, 1)),
                     MainForm->net_client->DecodeNumber(data.SubString(4, 1)),
                     MainForm->net_client->DecodeNumber(data.SubString(5, 1)));
                 if (warp_door > 0)
                 {
-                    has_tile_spec[spec_x][spec_y] = 1;
+                    has_tile_spec[spec_x][spec_y] = true;
                     if (warp_door == 1)
                         AddDoor(spec_x, spec_y, 0);
                     else
@@ -325,12 +327,12 @@ void MapController::LoadMap(int map_number)
         // Each tile layer: y and a count, then x and a two-byte graphic.
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i1 = 0; i1 < count; i1++)
+        for (int ground_row = 0; ground_row < count; ground_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i2 = 0; i2 < row_count; i2++)
+            for (int ground_column = 0; ground_column < row_count; ground_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 ground_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -339,12 +341,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i3 = 0; i3 < count; i3++)
+        for (int object_row = 0; object_row < count; object_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i4 = 0; i4 < row_count; i4++)
+            for (int object_column = 0; object_column < row_count; object_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 objects[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -353,12 +355,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i5 = 0; i5 < count; i5++)
+        for (int mask_row = 0; mask_row < count; mask_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i6 = 0; i6 < row_count; i6++)
+            for (int mask_column = 0; mask_column < row_count; mask_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 masks[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -367,12 +369,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i7 = 0; i7 < count; i7++)
+        for (int wall_row = 0; wall_row < count; wall_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i8 = 0; i8 < row_count; i8++)
+            for (int wall_column = 0; wall_column < row_count; wall_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 walls[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -381,12 +383,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i9 = 0; i9 < count; i9++)
+        for (int next_row_wall_row = 0; next_row_wall_row < count; next_row_wall_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i10 = 0; i10 < row_count; i10++)
+            for (int next_row_wall_column = 0; next_row_wall_column < row_count; next_row_wall_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 walls_next_row[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -395,12 +397,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i11 = 0; i11 < count; i11++)
+        for (int top_row = 0; top_row < count; top_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i12 = 0; i12 < row_count; i12++)
+            for (int top_column = 0; top_column < row_count; top_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 top_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -409,12 +411,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i13 = 0; i13 < count; i13++)
+        for (int overlay_row = 0; overlay_row < count; overlay_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i14 = 0; i14 < row_count; i14++)
+            for (int overlay_column = 0; overlay_column < row_count; overlay_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 overlay_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -423,12 +425,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i15 = 0; i15 < count; i15++)
+        for (int blend_row = 0; blend_row < count; blend_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i16 = 0; i16 < row_count; i16++)
+            for (int blend_column = 0; blend_column < row_count; blend_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 blend_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -437,12 +439,12 @@ void MapController::LoadMap(int map_number)
         }
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
-        for (int i17 = 0; i17 < count; i17++)
+        for (int top_mask_row = 0; top_mask_row < count; top_mask_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int i18 = 0; i18 < row_count; i18++)
+            for (int top_mask_column = 0; top_mask_column < row_count; top_mask_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 top_masks[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -454,13 +456,13 @@ void MapController::LoadMap(int map_number)
         {
             count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
             data.Delete(1, 1);
-            for (int i19 = 0; i19 < count; i19++)
+            for (int sign_index = 0; sign_index < count; sign_index++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 spec_y = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
                 int sign_length = MainForm->net_client->DecodeNumber(data.SubString(3, 2));
                 data.Delete(1, 4);
-                String sign_text = Client::DeobfuscateString(MainForm->net_client, data.SubString(1, sign_length));
+                String sign_text = MainForm->net_client->DeobfuscateString(data.SubString(1, sign_length));
                 data.Delete(1, sign_length);
                 AddSign(spec_x, spec_y, sign_text);
             }
@@ -480,7 +482,8 @@ void MapController::LoadMap(int map_number)
                 playing_music_id = music_id;
             }
             // Modes 2 and 5 play only into silence.
-            if ((music_mode == MusicMode_OnceIfSilent || music_mode == MusicMode_LoopIfSilent) && !MainForm->sfx->IsMusicPlaying())
+            if ((music_mode == MusicMode_OnceIfSilent || music_mode == MusicMode_LoopIfSilent) &&
+                !MainForm->sfx->IsMusicPlaying())
             {
                 MainForm->sfx->QueueMusic(music_id);
                 playing_music_id = music_id;
@@ -506,30 +509,30 @@ void MapController::LoadMap(int map_number)
 // Whether the tile is inside the map and is blocked or holds a tile spec.
 bool MapController::IsWallOrSpecTile(int x, int y)
 {
-    bool solid = 0;
+    bool solid = false;
     if (x >= 0 && y >= 0 && x <= width && y <= height && (blocked[x][y] || has_tile_spec[x][y]))
-        solid = 1;
+        solid = true;
     return solid;
 }
 
 // Whether the tile can not be walked on; a spec tile is open only when its spec is an open door or 11.
 char MapController::IsBlocked(int x, int y)
 {
-    char tile_blocked = 0;
+    char tile_blocked = false;
     if (x >= 0 && y >= 0 && x <= width && y <= height)
     {
         if (blocked[x][y])
-            tile_blocked = 1;
+            tile_blocked = true;
         if (has_tile_spec[x][y])
         {
-            tile_blocked = 1;
+            tile_blocked = true;
             for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
             {
                 if (x == it->x && y == it->y)
                 {
                     if (it->spec == TileSpec_OpenDoor || it->spec == TileSpec_Passable)
                     {
-                        tile_blocked = 0;
+                        tile_blocked = false;
                         break;
                     }
                     break;
@@ -543,13 +546,13 @@ char MapController::IsBlocked(int x, int y)
 // Sets the key of the chest on the tile, adding the chest when there is none.
 void MapController::SetChestKey(int x, int y, int key)
 {
-    char found = 0;
+    char found = false;
     for (vector<MapObject>::iterator it = chest_keys.begin(); it != chest_keys.end(); it++)
     {
         if (x == it->x && y == it->y)
         {
             it->spec = key;
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -564,16 +567,14 @@ void MapController::SetChestKey(int x, int y, int key)
 // The open graphic is the one after the closed graphic, on the wall layer the door is drawn on.
 void MapController::OpenDoor(int x, int y)
 {
-    char door_found;
-    int closed_graphic;
+    char door_found = false;
     vector<MapDoor>::iterator it;
-    door_found = 0;
     for (it = doors.begin(); it != doors.end(); it++)
     {
         if (it->x == x && it->y == y && !it->open)
         {
-            door_found = 1;
-            closed_graphic = 0;
+            int closed_graphic = 0;
+            door_found = true;
             if (walls[x][y] > 0)
             {
                 closed_graphic = walls[x][y];
@@ -592,7 +593,7 @@ void MapController::OpenDoor(int x, int y)
                 }
             }
             it->close_timer = 24;
-            it->open = 1;
+            it->open = true;
             if (it->closed_graphic <= 0)
                 it->closed_graphic = closed_graphic;
             break;
@@ -615,14 +616,14 @@ void MapController::OpenDoor(int x, int y)
 // Adds a door on the tile, or sets the key of the door already there.
 void MapController::AddDoor(int x, int y, int key)
 {
-    char found = 0;
+    char found = false;
     for (vector<MapDoor>::iterator it = doors.begin(); it != doors.end(); it++)
     {
         if (x == it->x && y == it->y)
         {
             if (key > 0)
                 it->key = key;
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -668,11 +669,11 @@ void MapController::StopWarpTimeout()
 
 void MapController::ClearTileObjects()
 {
-    int __slot1;
-    int __slot2;
-    int __slot3;
-    int __slot4;
-    int __slot5;
+    int unused_int;
+    int second_unused_int;
+    int third_unused_int;
+    int fourth_unused_int;
+    int fifth_unused_int;
     tile_specs.clear();
     chest_keys.clear();
     doors.clear();
@@ -685,11 +686,11 @@ void MapController::ClearSigns()
 
 // The text of the sign under the screen point, or empty.
 // Tiles lie on a diamond grid: a step in x moves right and down, a step in y moves left and down.
-String MapController::FindSignTextAt(MapController *self, int x, int y)
+String MapController::FindSignTextAt(int x, int y)
 {
     int screen_y;
     String text = "";
-    for (vector<MapSign>::iterator it = self->signs.begin(); it != self->signs.end(); it++)
+    for (vector<MapSign>::iterator it = signs.begin(); it != signs.end(); it++)
     {
         int screen_x = TILE_HALF_WIDTH * it->x - TILE_HALF_WIDTH * it->y + MainForm->map->GetScrollOffsetX() + 310;
         screen_y = TILE_HALF_HEIGHT * it->x + TILE_HALF_HEIGHT * it->y + MainForm->map->GetScrollOffsetY() + 102;
@@ -703,14 +704,14 @@ String MapController::FindSignTextAt(MapController *self, int x, int y)
 }
 
 // The tile of the locker under the screen point, or -1, -1.
-Windows::TPoint MapController::FindLockerAt(MapController *self, int x, int y)
+Windows::TPoint MapController::FindLockerAt(int x, int y)
 {
     TPoint tile;
     int screen_x;
     int screen_y;
     tile.x = -1;
     tile.y = -1;
-    for (vector<MapObject>::iterator it = self->tile_specs.begin(); it != self->tile_specs.end(); it++)
+    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
         if (it->spec != TileSpec_Locker)
             continue;
@@ -727,14 +728,14 @@ Windows::TPoint MapController::FindLockerAt(MapController *self, int x, int y)
 }
 
 // The tile of the chest under the screen point, or -1, -1.
-Windows::TPoint MapController::FindChestAt(MapController *self, int x, int y)
+Windows::TPoint MapController::FindChestAt(int x, int y)
 {
     TPoint tile;
     int screen_x;
     int screen_y;
     tile.x = -1;
     tile.y = -1;
-    for (vector<MapObject>::iterator it = self->tile_specs.begin(); it != self->tile_specs.end(); it++)
+    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
         if (it->spec != TileSpec_Chest)
             continue;
@@ -751,7 +752,7 @@ Windows::TPoint MapController::FindChestAt(MapController *self, int x, int y)
 }
 
 // The tile of the board under the screen point, or -1, -1.
-Windows::TPoint MapController::FindBoardAt(MapController *self, int x, int y)
+Windows::TPoint MapController::FindBoardAt(int x, int y)
 {
     TPoint tile;
     unsigned short spec;
@@ -759,7 +760,7 @@ Windows::TPoint MapController::FindBoardAt(MapController *self, int x, int y)
     int screen_y;
     tile.x = -1;
     tile.y = -1;
-    for (vector<MapObject>::iterator it = self->tile_specs.begin(); it != self->tile_specs.end(); it++)
+    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
         spec = it->spec;
         if (spec >= 19 && spec <= 26)
@@ -778,14 +779,14 @@ Windows::TPoint MapController::FindBoardAt(MapController *self, int x, int y)
 }
 
 // The tile of the jukebox under the screen point, or -1, -1.
-Windows::TPoint MapController::FindJukeboxAt(MapController *self, int x, int y)
+Windows::TPoint MapController::FindJukeboxAt(int x, int y)
 {
     TPoint tile;
     int screen_x;
     int screen_y;
     tile.x = -1;
     tile.y = -1;
-    for (vector<MapObject>::iterator it = self->tile_specs.begin(); it != self->tile_specs.end(); it++)
+    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
         if (it->spec != TileSpec_Jukebox)
             continue;
@@ -802,14 +803,14 @@ Windows::TPoint MapController::FindJukeboxAt(MapController *self, int x, int y)
 }
 
 // The tile of the closed door under the screen point, or -1, -1.
-Windows::TPoint MapController::FindDoorAt(MapController *self, int x, int y)
+Windows::TPoint MapController::FindDoorAt(int x, int y)
 {
     TPoint tile;
     int screen_x;
     int screen_y;
     tile.x = -1;
     tile.y = -1;
-    for (vector<MapObject>::iterator it = self->tile_specs.begin(); it != self->tile_specs.end(); it++)
+    for (vector<MapObject>::iterator it = tile_specs.begin(); it != tile_specs.end(); it++)
     {
         if (it->spec != TileSpec_Door)
             continue;
@@ -895,7 +896,7 @@ int MapController::GetDoorKey(int x, int y)
 char MapController::IsNearTrap()
 {
     char is_near;
-    int __slot1;
+    int unused_int;
     int dx;
     int dy;
     is_near = 0;
@@ -1028,6 +1029,7 @@ void MapController::Animate()
     int player_y;
     int nearest;
     int dx;
+    MapObject *spec_it;
     int dy;
     int door_graphic;
     if (path_marker_shown)
@@ -1038,7 +1040,7 @@ void MapController::Animate()
             path_marker_shown = false;
     }
     if (action_block_tick)
-        action_block_tick = 0;
+        action_block_tick = false;
     else
         action_blocked = false;
     if (ambient_sound > 0)
@@ -1081,16 +1083,16 @@ void MapController::Animate()
                 else if (walls_next_row[door_x][door_y] > 0)
                     walls_next_row[door_x][door_y] = door_graphic;
             }
-            for (vector<MapObject>::iterator it2 = tile_specs.begin(); it2 != tile_specs.end(); it2++)
+            for (vector<MapObject>::iterator tile_spec = tile_specs.begin(); tile_spec != tile_specs.end(); tile_spec++)
             {
-                if (door_x == it2->x && it2->y == door_y && it2->spec == TileSpec_OpenDoor)
-                    it2->spec = TileSpec_Door;
+                if (door_x == tile_spec->x && tile_spec->y == door_y && tile_spec->spec == TileSpec_OpenDoor)
+                    tile_spec->spec = TileSpec_Door;
             }
             if (MainForm->net_client->IsInSoundRange(door_x, door_y, MainForm->map->GetCenterX(),
                 MainForm->map->GetCenterY()))
-                MainForm->sfx->PlaySfx(23);
+                MainForm->sfx->PlaySfx(SfxSound_DoorClose);
             it->closed_graphic = 0;
-            it->open = 0;
+            it->open = false;
             MainForm->redraw_needed = true;
             break;
         }
@@ -1110,12 +1112,12 @@ void MapController::Animate()
         if (!warp_timeout)
         {
             warp_timeout--;
-            if (warp_timeout_action == 1)
+            if (warp_timeout_action == WarpTimeoutAction_AcceptWarp)
                 AcceptPendingWarp();
-            if (warp_timeout_action == 2)
+            if (warp_timeout_action == WarpTimeoutAction_ConfirmWarp)
             {
-                String request = Client::EncodeNumber(MainForm->net_client, map_id, 2);
-                request = request + Client::EncodeNumber(MainForm->net_client, warp_session_id, 2);
+                String request = MainForm->net_client->EncodeNumber(map_id, 2);
+                request = request + MainForm->net_client->EncodeNumber(warp_session_id, 2);
                 MainForm->net_client->SendPacket(AC_CONFIRM, OP_MAP, request);
             }
         }
@@ -1191,7 +1193,7 @@ void MapController::AcceptPendingWarp()
         int warp_type = MainForm->net_client->DecodeNumber(map_data.SubString(1, 1));
         if (warp_type == 1)
         {
-            SetWarpTimeoutAction(1);
+            SetWarpTimeoutAction(WarpTimeoutAction_AcceptWarp);
             int warp_map_id = MainForm->net_client->DecodeNumber(map_data.SubString(2, 2));
             int session_id = MainForm->net_client->DecodeNumber(map_data.SubString(4, 2));
             map_id = warp_map_id;
@@ -1199,14 +1201,14 @@ void MapController::AcceptPendingWarp()
             map_data = "";
             warp_pending = true;
             FreezePlayer();
-            String accept_data = Client::EncodeNumber(MainForm->net_client, warp_map_id, 2);
-            accept_data = accept_data + Client::EncodeNumber(MainForm->net_client, session_id, 2);
+            String accept_data = MainForm->net_client->EncodeNumber(warp_map_id, 2);
+            accept_data = accept_data + MainForm->net_client->EncodeNumber(session_id, 2);
             if (warp_map_id > 0)
                 MainForm->net_client->SendPacket(AC_CONFIRM, OP_MAP, accept_data);
         }
         if (warp_type == 2)
         {
-            SetWarpTimeoutAction(1);
+            SetWarpTimeoutAction(WarpTimeoutAction_AcceptWarp);
             int new_map_id = MainForm->net_client->DecodeNumber(map_data.SubString(2, 2));
             int server_checksum_high = MainForm->net_client->DecodeNumber(map_data.SubString(4, 2));
             int server_checksum_low = MainForm->net_client->DecodeNumber(map_data.SubString(6, 2));
@@ -1222,8 +1224,8 @@ void MapController::AcceptPendingWarp()
             {
                 warp_pending = true;
                 FreezePlayer();
-                String map_accept_data = Client::EncodeNumber(MainForm->net_client, new_map_id, 2);
-                map_accept_data = map_accept_data + Client::EncodeNumber(MainForm->net_client, new_session_id, 2);
+                String map_accept_data = MainForm->net_client->EncodeNumber(new_map_id, 2);
+                map_accept_data = map_accept_data + MainForm->net_client->EncodeNumber(new_session_id, 2);
                 if (new_map_id > 0)
                     MainForm->net_client->SendPacket(AC_CONFIRM, OP_MAP, map_accept_data);
             }
@@ -1257,9 +1259,18 @@ void MapController::ClearMap()
     {
         for (int j = 0; j <= 249; j++)
         {
-            ground_tiles[i][j] = 0; walls[i][j] = 0; walls_next_row[i][j] = 0; objects[i][j] = 0; masks[i][j] = 0;
-            top_tiles[i][j] = 0; overlay_tiles[i][j] = 0; blend_tiles[i][j] = 0; top_masks[i][j] = 0; blocked[i][j] = 0;
-            has_tile_spec[i][j] = 0; minimap_mask[i][j] = 0;
+            ground_tiles[i][j] = 0;
+            walls[i][j] = 0;
+            walls_next_row[i][j] = 0;
+            objects[i][j] = 0;
+            masks[i][j] = 0;
+            top_tiles[i][j] = 0;
+            overlay_tiles[i][j] = 0;
+            blend_tiles[i][j] = 0;
+            top_masks[i][j] = 0;
+            blocked[i][j] = false;
+            has_tile_spec[i][j] = false;
+            minimap_mask[i][j] = 0;
         }
     }
     ClearTileObjects();
@@ -1345,9 +1356,9 @@ bool MapController::IsMinimapDisabled()
 
 bool MapController::IsWarpDelayed()
 {
-    bool delayed = 0;
+    bool delayed = false;
     if (warp_delay > 0)
-        delayed = 1;
+        delayed = true;
     return delayed;
 }
 
@@ -1377,7 +1388,7 @@ bool MapController::IsCursorUpdatePending()
 void MapController::BlockActionsBriefly()
 {
     action_blocked = true;
-    action_block_tick = 1;
+    action_block_tick = true;
 }
 
 void MapController::FreezePlayer()

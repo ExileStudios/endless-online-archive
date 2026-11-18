@@ -13,16 +13,16 @@
 struct ClassValues
 {
     unsigned char is_downloading;
-    unsigned char unread_flag_at_1;
+    unsigned char download_requested;
     int expected_part_count;
     int received_part_count;
     char is_loaded;
     int checksum_high;
     int checksum_low;
     int record_count;
-    char pad_0x1c[4];
+    char unused_bytes[4];
     vector<ClassValue> records;
-    int unread_int_at_64;
+    int unused_value;
     String file_prefix;
 
     ClassValues();
@@ -31,9 +31,9 @@ struct ClassValues
     void Load();
     void SaveFilePart(int part_number, String data);
     void DeleteFiles();
-    void AddClass(int class_id, int parent_class_id, String name, short class_record_byte_at_3,
-        short class_record_word_at_4, short class_record_word_at_6, short class_record_word_at_8,
-        short class_record_word_at_10, short class_record_word_at_12, short class_record_word_at_14);
+    void AddClass(int class_id, int parent_class_id, String name, short stat_group,
+        short strength, short intelligence, short wisdom,
+        short agility, short constitution, short charisma);
     void Clear();
     String GetName(int class_id);
     bool IsDescendantOf(int class_id, int ancestor_id);
@@ -109,16 +109,16 @@ unsigned int Class::DecodeNumber(String encoded) \
 
 // Empties the list.
 // Shared body: a class defines its Clear with DEFINE_CLEAR(TheClass); each class has its own Count, records,
-// unread_int_at_64.
+// unused_value.
 #define DEFINE_CLEAR(Class) \
 void Class::Clear() \
 { \
-    int __slot1; \
-    int __slot2; \
+    int unused_int; \
+    int second_unused_int; \
     if (Count() >= 1) \
     { \
         records.clear(); \
-        unread_int_at_64 = -1; \
+        unused_value = -1; \
     } \
 }
 

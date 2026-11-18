@@ -23,8 +23,8 @@ struct WallResource
     WallResource();
     ~WallResource();
     GraphicSize LoadSurface(int library, int resource_id);
+    Windows::TRect GetFrameRect(int frame);
 };
 
-Windows::TRect Gfx_wall_GetFrameRect(WallResource *self, int frame);
 
 #endif

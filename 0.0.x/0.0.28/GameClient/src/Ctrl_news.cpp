@@ -10,18 +10,16 @@
 
 NewslistController::NewslistController()
 {
-    int new_list;
-    int new_list_2;
     lines = new TStringList();
     line_markers = new TStringList();
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_dirty = 0;
-    text_dirty = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_dirty = false;
+    text_dirty = false;
     top_line = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
     scroll_hint_active = false;
 }
 
@@ -33,17 +31,17 @@ NewslistController::~NewslistController()
 
 int NewslistController::GetLineCount()
 {
-    return lines->Count;
+    lines->Count;
 }
 
 // Empties the news and resets the scroll bar.
 void NewslistController::Clear()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
     scroll_hint_active = false;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
     top_line = 0;
     scroll_thumb_offset = 0;
     lines->Clear();
@@ -67,7 +65,7 @@ void NewslistController::MouseDown(int x, int y)
     {
         if (y >= scroll_thumb_offset + 366 && y <= scroll_thumb_offset + 381)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             scroll_hint_active = false;
             scroll_hint_frame = 0;
             thumb_grab_offset = y - scroll_thumb_offset;
@@ -75,7 +73,7 @@ void NewslistController::MouseDown(int x, int y)
         }
         if (y >= 350 && y <= 365)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_hint_active = false;
             scroll_hint_frame = 0;
             scroll_repeat_delay = 4;
@@ -83,7 +81,7 @@ void NewslistController::MouseDown(int x, int y)
         }
         if (y >= 432 && y <= 447)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_hint_active = false;
             scroll_hint_frame = 0;
             scroll_repeat_delay = 4;
@@ -127,7 +125,7 @@ void NewslistController::AddNewsItem(String text)
                             continue;
                         piece_count++;
                         piece_start = next_start;
-                        char searching = 1;
+                        char searching = true;
                         for (j = next_start; j <= text.Length() && searching; j++)
                         {
                             int piece_indent = 0;
@@ -145,13 +143,13 @@ void NewslistController::AddNewsItem(String text)
                                 {
                                     wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
                                     next_start = j + 1;
-                                    searching = 0;
+                                    searching = false;
                                 }
                                 else
                                 {
                                     wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
                                     next_start = j + 1;
-                                    searching = 0;
+                                    searching = false;
                                 }
                             }
                         }
@@ -178,7 +176,7 @@ void NewslistController::AddNewsItem(String text)
             }
             MainForm->OffscreenSurface->ReleaseDC(dc);
         }
-        text_dirty = 1;
+        text_dirty = true;
     }
 }
 
@@ -190,7 +188,7 @@ void NewslistController::Tick()
         scroll_hint_frame++;
         if (scroll_hint_frame > 3)
             scroll_hint_frame = -1;
-        scroll_dirty = 1;
+        scroll_dirty = true;
     }
     if (scroll_repeat_delay > 0)
         scroll_repeat_delay--;
@@ -212,8 +210,8 @@ void NewslistController::ScrollUp()
         double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        text_dirty = 1;
+        scroll_dirty = true;
+        text_dirty = true;
     }
 }
 
@@ -226,8 +224,8 @@ void NewslistController::ScrollDown()
         double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        text_dirty = 1;
+        scroll_dirty = true;
+        text_dirty = true;
     }
 }
 
@@ -236,7 +234,7 @@ void NewslistController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -253,17 +251,17 @@ void NewslistController::DragScrollThumb(int y)
                 top_line = new_top_line;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_dirty = 1;
-        text_dirty = 1;
+        scroll_dirty = true;
+        text_dirty = true;
     }
 }
 
 // Lets go of the thumb and the held arrows.
 void NewslistController::MouseUp()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 void NewslistController::MouseMove(int x, int y)
@@ -280,18 +278,18 @@ DEFINE_TEST_AND_CLEAR_SCROLL_DIRTY(NewslistController)
 // Tells whether the news text needs drawing again, and clears the flag.
 bool NewslistController::TestAndClearTextDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (text_dirty)
     {
-        text_dirty = 0;
-        was_dirty = 1;
+        text_dirty = false;
+        was_dirty = true;
     }
     return was_dirty;
 }
 
 void NewslistController::MarkTextDirty()
 {
-    text_dirty = 1;
+    text_dirty = true;
 }
 
 // Starts blinking the down arrow when the news is longer than the panel.
@@ -309,8 +307,8 @@ void NewslistController::StartScrollHint()
 // Whether the blinking hint is lit in this frame.
 bool NewslistController::IsScrollHintVisible()
 {
-    bool visible = 0;
+    bool visible = false;
     if (scroll_hint_frame > 1)
-        visible = 1;
+        visible = true;
     return visible;
 }

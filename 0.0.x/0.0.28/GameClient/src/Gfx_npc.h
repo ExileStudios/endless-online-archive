@@ -31,8 +31,8 @@ struct NpcResources
     int GetFrameHeight();
     void LoadFrontFrame(int frame, int library, int resource_id);
     void LoadBackFrame(int frame, int library, int resource_id);
+    Windows::TRect GetFrameRect(int frame);
 };
 
-Windows::TRect Gfx_npc_GetFrameRect(NpcResources *self, int frame);
 
 #endif

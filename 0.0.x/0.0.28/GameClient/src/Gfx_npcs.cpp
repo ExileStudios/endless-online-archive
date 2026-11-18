@@ -14,9 +14,9 @@ NpcGraphics::NpcGraphics()
     blt_fx = new TDDBltFX(NULL);
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 250;
     surface_desc->Height = 250;
     translucent_buffer->GetSurfaceDesc(surface_desc);
@@ -41,10 +41,10 @@ NpcGraphics::~NpcGraphics()
 
 // Draws one npc on its tile: the frame of its current action, then its health bar and damage number.
 // Frames of an npc sheet:
-//   0-1  standing (the idle animation flips between them)
-//   2-5  walking, one per walk step
-//   6-7  attacking
-//   8    the second animation
+// 0-1  standing (the idle animation flips between them)
+// 2-5  walking, one per walk step
+// 6-7  attacking
+// 8    the second animation
 void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
 {
     int attack_frame;
@@ -71,15 +71,15 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
             if (npc.direction >= FacingDirection_Up)
             {
                 blt_fx->FX = 2;
-                is_mirrored = 1;
+                is_mirrored = true;
             }
             else
             {
                 blt_fx->FX = 0;
-                is_mirrored = 0;
+                is_mirrored = false;
             }
-            char no_state_drawn = 1;
-            char state_expired = 0;
+            char no_state_drawn = true;
+            char state_expired = false;
             dest_rect.left = screen_x - npc.resources->frame_width / 2;
             dest_rect.right = dest_rect.left + npc.resources->frame_width;
             dest_rect.top = screen_y - npc.resources->frame_height;
@@ -99,7 +99,7 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
             }
             if (npc.attacking && no_state_drawn)
             {
-                no_state_drawn = 0;
+                no_state_drawn = false;
                 if (npc.attack_frame <= 3)
                 {
                     attack_frame = npc.attack_frame + 6;
@@ -130,11 +130,11 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
                         }
                     }
                     if (npc.direction == FacingDirection_Down || npc.direction == FacingDirection_Right)
-                        BlitFrame(dest_rect, npc.resources->front_sheet,
-                            Gfx_npc_GetFrameRect(npc.resources, attack_frame), true);
+                        BlitFrame(dest_rect, npc.resources->front_sheet, npc.resources->GetFrameRect(attack_frame),
+                            true);
                     else
-                        BlitFrame(dest_rect, npc.resources->back_sheet,
-                            Gfx_npc_GetFrameRect(npc.resources, attack_frame), true);
+                        BlitFrame(dest_rect, npc.resources->back_sheet, npc.resources->GetFrameRect(attack_frame),
+                            true);
                     if (draw_alpha)
                         DrawTranslucentBuffer(dest_rect);
                     if (npc.health_bar_shown)
@@ -203,39 +203,39 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
                                     MainForm->gfx->game->BlitClipped(attack_damage_x - 13 - 8 * npc.damage_digits / 2 +
                                         8 * i, attack_damage_y + 2 * npc.damage_timer - 87,
                                         MainForm->gfx->interface_graphics->hud_sheet,
-                                        Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 0,
-                                        attack_digit));
+                                        Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                        DamageDigitStyle_Damage, attack_digit));
                                 else
                                     MainForm->gfx->game->BlitClipped(attack_damage_x - 13 - 8 * npc.damage_digits / 2 +
                                         8 * i, attack_damage_y + 2 * npc.damage_timer - 87,
                                         MainForm->gfx->interface_graphics->hud_sheet,
-                                        Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 1,
-                                        attack_digit));
+                                        Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                        DamageDigitStyle_Heal, attack_digit));
                             }
                         }
                     }
                 }
                 else
-                    state_expired = 1;
+                    state_expired = true;
             }
             if (npc.alt_attacking && no_state_drawn)
             {
-                no_state_drawn = 0;
+                no_state_drawn = false;
                 if (npc.alt_attack_frame <= 2)
                 {
                     if (npc.direction == FacingDirection_Down || npc.direction == FacingDirection_Right)
-                        BlitFrame(dest_rect, npc.resources->front_sheet, Gfx_npc_GetFrameRect(npc.resources, 8), true);
+                        BlitFrame(dest_rect, npc.resources->front_sheet, npc.resources->GetFrameRect(8), true);
                     else
-                        BlitFrame(dest_rect, npc.resources->back_sheet, Gfx_npc_GetFrameRect(npc.resources, 8), true);
+                        BlitFrame(dest_rect, npc.resources->back_sheet, npc.resources->GetFrameRect(8), true);
                     if (draw_alpha)
                         DrawTranslucentBuffer(dest_rect);
                 }
                 else
-                    state_expired = 1;
+                    state_expired = true;
             }
             if (npc.walking && no_state_drawn)
             {
-                no_state_drawn = 0;
+                no_state_drawn = false;
                 // Walking: the frame starts back along the walk direction.
                 // Each walk step brings it closer to the tile.
                 if (npc.walk_direction == FacingDirection_Left)
@@ -267,11 +267,11 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
                     dest_rect.bottom -= 16 - (4 * npc.walk_frame + 4);
                 }
                 if (npc.direction == FacingDirection_Down || npc.direction == FacingDirection_Right)
-                    BlitFrame(dest_rect, npc.resources->front_sheet,
-                        Gfx_npc_GetFrameRect(npc.resources, npc.walk_frame + 2), true);
+                    BlitFrame(dest_rect, npc.resources->front_sheet, npc.resources->GetFrameRect(npc.walk_frame + 2),
+                        true);
                 else
-                    BlitFrame(dest_rect, npc.resources->back_sheet,
-                        Gfx_npc_GetFrameRect(npc.resources, npc.walk_frame + 2), true);
+                    BlitFrame(dest_rect, npc.resources->back_sheet, npc.resources->GetFrameRect(npc.walk_frame + 2),
+                        true);
                 if (npc.health_bar_shown)
                 {
                     int walk_bar_y;
@@ -358,14 +358,14 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
                                 MainForm->gfx->game->BlitClipped(walk_damage_x - 13 - 8 * npc.damage_digits / 2 + 8 * j,
                                     walk_damage_y + 2 * npc.damage_timer - 87,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 0,
-                                    walk_digit));
+                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                    DamageDigitStyle_Damage, walk_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(walk_damage_x - 13 - 8 * npc.damage_digits / 2 + 8 * j,
                                     walk_damage_y + 2 * npc.damage_timer - 87,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 1,
-                                    walk_digit));
+                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                    DamageDigitStyle_Heal, walk_digit));
                         }
                     }
                 }
@@ -374,14 +374,14 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
             }
             if (no_state_drawn || state_expired)
             {
-                int v51b = 0;
+                int stand_frame = 0;
                 // The idle counter shows the second stand frame on its last two steps.
                 if (npc.idle_frame > 1)
-                    v51b = 1;
+                    stand_frame = 1;
                 if (npc.direction == FacingDirection_Down || npc.direction == FacingDirection_Right)
-                    BlitFrame(dest_rect, npc.resources->front_sheet, Gfx_npc_GetFrameRect(npc.resources, v51b), true);
+                    BlitFrame(dest_rect, npc.resources->front_sheet, npc.resources->GetFrameRect(stand_frame), true);
                 else
-                    BlitFrame(dest_rect, npc.resources->back_sheet, Gfx_npc_GetFrameRect(npc.resources, v51b), true);
+                    BlitFrame(dest_rect, npc.resources->back_sheet, npc.resources->GetFrameRect(stand_frame), true);
                 if (npc.health_bar_shown)
                 {
                     int stand_bar_y = screen_y - MainForm->npcs->head_heights[npc.graphic - 1];
@@ -425,14 +425,14 @@ void NpcGraphics::DrawNpc(Npc npc, int draw_alpha, int x_offset)
                                 MainForm->gfx->game->BlitClipped(screen_x - 13 - 8 * npc.damage_digits / 2 + 8 * k,
                                     stand_damage_y + 2 * npc.damage_timer - 87,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 0,
-                                    stand_digit));
+                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                    DamageDigitStyle_Damage, stand_digit));
                             else
                                 MainForm->gfx->game->BlitClipped(screen_x - 13 - 8 * npc.damage_digits / 2 + 8 * k,
                                     stand_damage_y + 2 * npc.damage_timer - 87,
                                     MainForm->gfx->interface_graphics->hud_sheet,
-                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics, 1,
-                                    stand_digit));
+                                    Gfx_interface_GetDamageDigitRect((int)MainForm->gfx->interface_graphics,
+                                    DamageDigitStyle_Heal, stand_digit));
                         }
                     }
                 }
@@ -464,13 +464,13 @@ void NpcGraphics::BlitFrame(Windows::TRect screen_rect, TDx_DrawSurface *sheet, 
         result = 0;
     if (result)
     {
-        TRect clipped_dest = ClipToView(this, screen_rect);
+        TRect clipped_dest = ClipToView(screen_rect);
         screen_rect = clipped_dest;
         if (is_translucent)
         {
             TRect buffer_rect;
             TRect buffer_source_rect;
-            TRect clipped_source = GetClippedSourceRect(this, source_rect);
+            TRect clipped_source = GetClippedSourceRect(source_rect);
             buffer_source_rect = clipped_source;
             buffer_width = buffer_source_rect.right - buffer_source_rect.left;
             buffer_height = buffer_source_rect.bottom - buffer_source_rect.top;
@@ -482,19 +482,21 @@ void NpcGraphics::BlitFrame(Windows::TRect screen_rect, TDx_DrawSurface *sheet, 
             buffer_rect.bottom = buffer_height;
             buffer_rect.left = 0;
             buffer_rect.top = 0;
-            translucent_buffer->Blt(&buffer_rect, sheet, &buffer_source_rect, 16779264, blt_fx);
+            translucent_buffer->Blt(&buffer_rect, sheet, &buffer_source_rect, DDBLT_DDFX | DDBLT_WAIT, blt_fx);
         }
         else
         {
             if (keyed)
             {
-                TRect keyed_source_rect = GetClippedSourceRect(this, source_rect);
-                MainForm->OffscreenSurface->Blt(&screen_rect, sheet, &keyed_source_rect, 16812032, blt_fx);
+                TRect keyed_source_rect = GetClippedSourceRect(source_rect);
+                MainForm->OffscreenSurface->Blt(&screen_rect, sheet, &keyed_source_rect,
+                    DDBLT_DDFX | DDBLT_KEYSRC | DDBLT_WAIT, blt_fx);
             }
             else
             {
-                TRect plain_source_rect = GetClippedSourceRect(this, source_rect);
-                MainForm->OffscreenSurface->Blt(&screen_rect, sheet, &plain_source_rect, 16779264, blt_fx);
+                TRect plain_source_rect = GetClippedSourceRect(source_rect);
+                MainForm->OffscreenSurface->Blt(&screen_rect, sheet, &plain_source_rect, DDBLT_DDFX | DDBLT_WAIT,
+                    blt_fx);
             }
         }
     }
@@ -520,7 +522,7 @@ void NpcGraphics::DrawTranslucentBuffer(Windows::TRect screen_rect)
     {
         if (is_translucent)
         {
-            TRect clipped_dest = ClipToView(this, screen_rect);
+            TRect clipped_dest = ClipToView(screen_rect);
             screen_rect = clipped_dest;
             Windows::TRect buffer_rect;
             buffer_rect.left = 0;
@@ -574,7 +576,7 @@ void NpcGraphics::ShowSpeechBalloon(String text, int npc_index, int style)
                         continue;
                     int line_start;
                     line_start = next_line_start;
-                    char seeking_break = 1;
+                    char seeking_break = true;
                     for (int j = next_line_start; j <= text.Length() && seeking_break; j++)
                     {
                         // A line breaks at a space once it is near the wrap width.
@@ -595,7 +597,7 @@ void NpcGraphics::ShowSpeechBalloon(String text, int npc_index, int style)
                             balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1);
                             text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
                             next_line_start = j + 1;
-                            seeking_break = 0;
+                            seeking_break = false;
                         }
                         else
                         {
@@ -606,7 +608,7 @@ void NpcGraphics::ShowSpeechBalloon(String text, int npc_index, int style)
                             balloon_lines[line_index] = text.SubString(line_start, j - line_start + 1) + "-";
                             text_height = text_height + MainForm->draw_canvas->TextHeight(text) + 1;
                             next_line_start = j + 1;
-                            seeking_break = 0;
+                            seeking_break = false;
                         }
                     }
                 }

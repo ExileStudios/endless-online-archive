@@ -1,6 +1,12 @@
 #ifndef Ctrl_shopH
 #define Ctrl_shopH
 
+enum ShopList
+{
+    ShopList_Buy = 1,
+    ShopList_Sell = 2
+};
+
 #include <vector.h>
 
 #include "Itemcraft.h"
@@ -51,7 +57,7 @@ struct ShopController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0xd4[4];
+    char unused_bytes[4];
 
     ShopController();
     ~ShopController();

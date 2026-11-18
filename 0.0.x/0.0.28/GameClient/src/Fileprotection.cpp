@@ -31,31 +31,31 @@ void FileController::BuildFileList()
 {
     file_names->Add("Endless.exe");
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(1));
+    file_names->Add(GetDataFilePath(DataFile_Credits));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(2));
+    file_names->Add(GetDataFilePath(DataFile_CreditsCheck));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(3));
+    file_names->Add(GetDataFilePath(DataFile_WordFilter));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(4));
+    file_names->Add(GetDataFilePath(DataFile_SongNames));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(5));
+    file_names->Add(GetDataFilePath(DataFile_EnglishDialogTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(6));
+    file_names->Add(GetDataFilePath(DataFile_EnglishUiTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(7));
+    file_names->Add(GetDataFilePath(DataFile_DutchDialogTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(8));
+    file_names->Add(GetDataFilePath(DataFile_DutchUiTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(9));
+    file_names->Add(GetDataFilePath(DataFile_SwedishDialogTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(10));
+    file_names->Add(GetDataFilePath(DataFile_SwedishUiTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(11));
+    file_names->Add(GetDataFilePath(DataFile_PortugueseDialogTexts));
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(12));
+    file_names->Add(GetDataFilePath(DataFile_PortugueseUiTexts));
     file_sizes->Add("");
-    for (int i = 1; i <= 25; i++)
+    for (int i = 1; i <= GFX_LIBRARY_COUNT; i++)
     {
         file_names->Add(GetGfxPath(i));
         file_sizes->Add("");
@@ -78,7 +78,7 @@ char FileController::VerifyFiles()
     char all_ok;
     int i;
     int FileHandle;
-    all_ok = 1;
+    all_ok = true;
     for (i = 0; i < file_names->Count; i++)
     {
         String lpFileName = file_names->Strings[i];
@@ -94,7 +94,7 @@ char FileController::VerifyFiles()
                     int file_length = filelength(FileHandle);
                     if (file_length != StrToInt(file_sizes->Strings[i]))
                     {
-                        all_ok = 0;
+                        all_ok = false;
                         break;
                     }
                     close(FileHandle);
@@ -107,7 +107,7 @@ char FileController::VerifyFiles()
         }
         else
         {
-            all_ok = 0;
+            all_ok = false;
             // When the program itself is not found by its bare name, every listed name gets the program's folder.
             if (!i)
                 all_ok = PrefixAppDirectory();
@@ -121,18 +121,19 @@ char FileController::VerifyFiles()
 bool FileController::PrefixAppDirectory()
 {
     int position;
-    bool prefixed = 0;
+    bool prefixed = false;
     String app_dir = Application->ExeName;
     if (app_dir.Length() > 0)
     {
-        for (position = app_dir.Length(); position > 0; position--)
+        position = app_dir.Length();
+        for (; position > 0; position--)
         {
             if (app_dir[position] == '/' || app_dir[position] == '\\')
             {
                 app_dir = app_dir.SubString(1, position);
                 for (int i = 0; i < file_names->Count; i++)
                     file_names->Strings[i] = app_dir + file_names->Strings[i];
-                prefixed = 1;
+                prefixed = true;
                 break;
             }
         }
@@ -144,8 +145,8 @@ bool FileController::PrefixAppDirectory()
 String FileController::GetGfxPath(int file_number)
 {
     std::string scrambled_name = ".f!ggef.xx!fg";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
     if (file_number <= 9)
         file_name.Insert("0", 10);
@@ -158,8 +159,8 @@ String FileController::GetGfxPath(int file_number)
 String FileController::GetSoundPath(int file_number)
 {
     std::string scrambled_name = ".v!aswf.xx!fs";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
     if (file_number <= 9)
         file_name.Insert("0", 10);
@@ -172,8 +173,8 @@ String FileController::GetSoundPath(int file_number)
 String FileController::GetMusicPath(int file_number)
 {
     std::string scrambled_name = ".d!immf.xx!fm";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 10);
     if (file_number <= 9)
         file_name.Insert("0", 10);
@@ -186,8 +187,8 @@ String FileController::GetMusicPath(int file_number)
 String FileController::GetDataFilePath(int file_number)
 {
     std::string scrambled_name = ".f!ddea.ttaa!d";
-    String file_name = RestorePathSeparators(this,
-        UnscrambleString(this, 4, scrambled_name.begin(), scrambled_name.end()));
+    String file_name = RestorePathSeparators(
+        UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
     file_name.Insert(IntToStr(file_number), 11);
     if (file_number <= 9)
         file_name.Insert("0", 11);
@@ -197,7 +198,7 @@ String FileController::GetDataFilePath(int file_number)
 }
 
 // Turns each marker sign of an unscrambled path into a backslash.
-String FileController::RestorePathSeparators(FileController *self, String path)
+String FileController::RestorePathSeparators(String path)
 {
     int position = path.Length();
     for (; position > 0; position--)
@@ -214,7 +215,7 @@ String FileController::RestorePathSeparators(FileController *self, String path)
 // Unscrambles a path text in three passes.
 // Characters at odd places go into a queue, the others onto a stack that is then emptied onto the queue.
 // Characters whose code divides by divisor are held back and put out in reverse order before the next other one.
-String FileController::UnscrambleString(FileController *self, int divisor, unsigned char *data_begin,
+String FileController::UnscrambleString(int divisor, unsigned char *data_begin,
     unsigned char *data_end)
 {
     int divisor_copy;
@@ -225,18 +226,18 @@ String FileController::UnscrambleString(FileController *self, int divisor, unsig
     {
         std::stack<char > char_stack;
         std::queue<char > char_queue;
-        to_first_list = 1;
+        to_first_list = true;
         while (data_begin != data_end)
         {
             if (to_first_list)
             {
                 char_queue.push(*(char *)data_begin);
-                to_first_list = 0;
+                to_first_list = false;
             }
             else
             {
                 char_stack.push(*(char *)data_begin);
-                to_first_list = 1;
+                to_first_list = true;
             }
             data_begin++;
         }

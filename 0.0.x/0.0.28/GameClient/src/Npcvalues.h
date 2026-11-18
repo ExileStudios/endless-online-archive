@@ -8,8 +8,11 @@
 enum NpcType
 {
     NpcType_Friendly = 0,
-    NpcType_Unknown1 = 1,
-    NpcType_Unknown2 = 2,
+    NpcType_Passive = 1,
+    NpcType_Aggressive = 2,
+    NpcType_Untargetable = 3,
+    NpcType_Monster4 = 4,
+    NpcType_Monster5 = 5,
     NpcType_Shop = 6,
     NpcType_Inn = 7,
     NpcType_Bank = 9,
@@ -23,23 +26,23 @@ enum NpcType
 struct NpcTypeInfo
 {
     int npc_type;
-    int npc_record_word_at_10;
+    int behavior_id;
 };
 
 // The NPC file: pub/dtn001.enf onward, 900 NPCs to a file, kept as one list in NPC id order.
 struct NpcValues
 {
     char is_downloading;
-    unsigned char unread_flag_at_1;
+    unsigned char download_requested;
     int expected_part_count;
     int received_part_count;
     char is_loaded;
     int checksum_high;
     int checksum_low;
     int record_count;
-    char pad_0x1c[4];
+    char unused_bytes[4];
     vector<NpcValue> records;
-    int unread_int_at_64;
+    int unused_value;
     String file_prefix;
 
     NpcValues();
@@ -48,13 +51,13 @@ struct NpcValues
     void SaveFilePart(int part_number, String data);
     void Load();
     void DeleteFiles();
-    void AddNpc(int npc_id, String name, short graphic, short npc_record_byte_at_3, short npc_record_word_at_4,
-        short npc_record_word_at_6, short npc_type, short npc_record_word_at_10, int npc_record_triple_at_12,
-        short npc_record_word_at_15, short npc_record_word_at_17, short npc_record_word_at_19,
-        short npc_record_word_at_21, short npc_record_word_at_23, short npc_record_word_at_25,
-        short npc_record_byte_at_27, short npc_record_word_at_28, short npc_record_word_at_30,
-        short npc_record_word_at_32, short npc_record_word_at_34, short npc_record_byte_at_36,
-        int npc_record_triple_at_37);
+    void AddNpc(int npc_id, String name, short graphic, short race, short boss,
+        short child, short npc_type, short behavior_id, int hp,
+        short tp, short min_damage, short max_damage,
+        short accuracy, short evade, short armor,
+        short return_damage, short element, short element_damage,
+        short element_weakness, short element_weakness_damage, short level,
+        int experience);
     void Clear();
     int GetGraphic(int npc_id);
     String GetName(int npc_id);

@@ -17,7 +17,7 @@ GameBars::GameBars()
     stamina_segments = BAR_FULL_SEGMENTS;
     experience_segments = BAR_FULL_SEGMENTS;
     quest_request_cooldown = 0;
-    is_dirty = 1;
+    is_dirty = true;
     show_health_text = false;
     show_mana_text = false;
     show_stamina_text = false;
@@ -42,8 +42,8 @@ void GameBars::MouseDown(int x, int y, int button)
         if (x >= 55 && x <= 74 && y >= 0 && y <= 10)
         {
             MainForm->animation->stat->Open();
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
         if (x >= 75 && x <= 94 && y >= 0 && y <= 10)
@@ -53,8 +53,8 @@ void GameBars::MouseDown(int x, int y, int button)
                 MainForm->net_client->sender->RequestQuestProgress();
                 quest_request_cooldown = 20;
             }
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
         if (x >= 99 && x <= 213 && y >= 0 && y <= 10)
@@ -69,8 +69,8 @@ void GameBars::MouseDown(int x, int y, int button)
                 show_health_text = false;
                 health_text_timer = 0;
             }
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
         if (x >= 214 && x <= 322 && y >= 0 && y <= 10)
@@ -85,8 +85,8 @@ void GameBars::MouseDown(int x, int y, int button)
                 show_mana_text = false;
                 mana_text_timer = 0;
             }
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
         if (x >= 325 && x <= 433 && y >= 0 && y <= 10)
@@ -101,8 +101,8 @@ void GameBars::MouseDown(int x, int y, int button)
                 show_stamina_text = false;
                 stamina_text_timer = 0;
             }
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
         if (x >= 434 && x <= 542 && y >= 0 && y <= 10)
@@ -117,8 +117,8 @@ void GameBars::MouseDown(int x, int y, int button)
                 show_experience_text = false;
                 experience_text_timer = 0;
             }
-            MainForm->sfx->PlaySfx(13);
-            is_dirty = 1;
+            MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -133,7 +133,7 @@ void GameBars::Tick()
         if (health_text_timer <= 0)
         {
             show_health_text = false;
-            is_dirty = 1;
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -143,7 +143,7 @@ void GameBars::Tick()
         if (mana_text_timer <= 0)
         {
             show_mana_text = false;
-            is_dirty = 1;
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -153,7 +153,7 @@ void GameBars::Tick()
         if (stamina_text_timer <= 0)
         {
             show_stamina_text = false;
-            is_dirty = 1;
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -163,7 +163,7 @@ void GameBars::Tick()
         if (experience_text_timer <= 0)
         {
             show_experience_text = false;
-            is_dirty = 1;
+            is_dirty = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -184,7 +184,7 @@ void GameBars::SetHealthBar(int health, int max_health)
         health_segments = 0;
     if (percent > 98)
         health_segments = BAR_FULL_SEGMENTS;
-    is_dirty = 1;
+    is_dirty = true;
     MainForm->redraw_needed = true;
 }
 
@@ -201,7 +201,7 @@ void GameBars::SetManaBar(int mana, int max_mana)
         mana_segments = 0;
     if (percent > 98)
         mana_segments = BAR_FULL_SEGMENTS;
-    is_dirty = 1;
+    is_dirty = true;
     MainForm->redraw_needed = true;
 }
 
@@ -218,7 +218,7 @@ void GameBars::SetStaminaBar(int stamina, int max_stamina)
         stamina_segments = 0;
     if (percent > 98)
         stamina_segments = BAR_FULL_SEGMENTS;
-    is_dirty = 1;
+    is_dirty = true;
     MainForm->redraw_needed = true;
 }
 
@@ -235,7 +235,7 @@ void GameBars::SetExperienceBar(int level_progress, int level_span)
         experience_segments = 0;
     if (percent > 98)
         experience_segments = BAR_FULL_SEGMENTS;
-    is_dirty = 1;
+    is_dirty = true;
     MainForm->redraw_needed = true;
 }
 
@@ -261,7 +261,7 @@ int GameBars::GetExperienceBarSegments()
 
 void GameBars::MarkDirty()
 {
-    is_dirty = 1;
+    is_dirty = true;
 }
 
 DEFINE_TEST_AND_CLEAR_DIRTY(GameBars)

@@ -162,9 +162,9 @@ void AnimationController::StartObjectClickDelay()
 
 bool AnimationController::IsObjectClickDelayed()
 {
-    bool delayed = 0;
+    bool delayed = false;
     if (object_click_delay > 0)
-        delayed = 1;
+        delayed = true;
     return delayed;
 }
 
@@ -181,9 +181,9 @@ void AnimationController::RestartCommandDelay()
 
 bool AnimationController::IsCommandDelayed()
 {
-    bool delayed = 0;
+    bool delayed = false;
     if (command_delay > 0)
-        delayed = 1;
+        delayed = true;
     return delayed;
 }
 
@@ -194,9 +194,9 @@ void AnimationController::StartTileUseDelay()
 
 bool AnimationController::IsTileUseDelayed()
 {
-    bool delayed = 0;
+    bool delayed = false;
     if (tile_use_delay > 0)
-        delayed = 1;
+        delayed = true;
     return delayed;
 }
 
@@ -207,15 +207,17 @@ void AnimationController::BlockWalking()
 
 bool AnimationController::IsWalkingBlocked()
 {
-    bool blocked = 0;
+    bool blocked = false;
     if (walk_block > 0)
-        blocked = 1;
+        blocked = true;
     return blocked;
 }
 
 // Counts the action and chat delays down, lets the chat counts decay, and scrolls the credits.
 void AnimationController::UpdateTimers()
 {
+    CreditsController *credits_controller;
+    int line_delay;
     // Every write in this class updates the hex copy with the count.
     // They differ only when a count was changed from outside, and then the client stalls for a second.
     if (IntToHex(chat_decay_ticks, 2) != chat_decay_check || IntToHex(chat_message_count, 2) != chat_count_check)
@@ -263,7 +265,7 @@ void AnimationController::UpdateTimers()
             if (credits->is_running)
             {
                 credits->tick_counter++;
-                CreditsController *credits_controller = credits;
+                credits_controller = credits;
                 if (credits_controller->credit_styles->Count > credits_controller->next_line_index)
                 {
                     int line_delay = 35;
@@ -325,18 +327,18 @@ void AnimationController::RecordGlobalMessage()
 
 bool AnimationController::CanSendChat()
 {
-    bool allowed = 0;
+    bool allowed = false;
     if (chat_delay <= 0)
-        allowed = 1;
+        allowed = true;
     return allowed;
 }
 
 // Whether chat may be sent now; when not, the status bar says so.
 bool AnimationController::IsChatAllowed()
 {
-    bool allowed = 0;
+    bool allowed = false;
     if (chat_message_count < MAX_RECENT_CHAT_MESSAGES)
-        allowed = 1;
+        allowed = true;
     else
         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
             MainForm->strings->GetText(GameText_WaitMinuteBeforeTalking));
@@ -346,9 +348,9 @@ bool AnimationController::IsChatAllowed()
 // Whether a global message may be sent now; when not, the status bar says so.
 bool AnimationController::IsGlobalMessageAllowed()
 {
-    bool allowed = 0;
+    bool allowed = false;
     if (global_message_count < MAX_RECENT_GLOBAL_MESSAGES)
-        allowed = 1;
+        allowed = true;
     else
         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
             MainForm->strings->GetText(GameText_WaitMinuteBeforeUsing));
@@ -466,7 +468,7 @@ void AnimationController::UpdateIntroAndDelays()
         reply_timeout++;
         if (reply_timeout == 50)
         {
-            menu->SetEnteringGame(1);
+            menu->SetEnteringGame(true);
             menu->StartRequestDelay();
             reply_timeout = 0;
         }
@@ -523,7 +525,7 @@ void AnimationController::UpdateIntroAndDelays()
             intro->clear_screen_pending = true;
         if (frame_counter == 17)
         {
-            MainForm->sfx->PlaySfx(1);
+            MainForm->sfx->PlaySfx(SfxSound_Intro);
             intro->logo_redraw_pending = true;
             intro->logo_sound_played = true;
         }
@@ -538,16 +540,13 @@ void AnimationController::UpdateIntroAndDelays()
         }
         if (frame_counter == 40)
         {
-            MainForm->sfx->QueueMusic(1);
+            MainForm->sfx->QueueMusic(Music_TitleTheme);
             Screen->Cursor = crDefault;
-            if (MainForm->config->GetFullscreen())
-            {
-                if (Application->Active)
-                    SetCursorPos(20, 20);
-            }
+            if (MainForm->config->GetFullscreen() && Application->Active)
+                SetCursorPos(20, 20);
             screen_mode = ScreenMode_Menu;
             sub_state = MenuScreen_Main;
-            menu->unread_flag_at_48 = true;
+            menu->unused_flag = true;
             MainForm->gfx->FreeIntroGraphics();
         }
     }

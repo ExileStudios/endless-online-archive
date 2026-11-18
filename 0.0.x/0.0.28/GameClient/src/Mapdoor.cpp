@@ -16,7 +16,7 @@ MapDoor::MapDoor(int tile_x, int tile_y, int door_key)
     y = tile_y;
     key = door_key;
     closed_graphic = 0;
-    open = 0;
+    open = false;
 }
 
 MapDoor::~MapDoor()

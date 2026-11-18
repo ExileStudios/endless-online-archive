@@ -8,10 +8,10 @@
 // The spell effects playing on map tiles.
 struct Effects
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
     vector<MapEffect> effects;
     int current_index;
-    char pad_0x2c[4];
+    char second_unused_bytes[4];
 
     Effects();
     ~Effects();

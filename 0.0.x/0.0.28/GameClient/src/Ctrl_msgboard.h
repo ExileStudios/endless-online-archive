@@ -26,12 +26,12 @@ struct MsgBoardController
     bool is_composing;
     char scroll_up_hovered;
     char scroll_down_hovered;
-    char pad_0x2c[4];
+    char unused_bytes[4];
     int next_local_post_id;
-    char pad_0x34[4];
+    char second_unused_bytes[4];
     vector<Msg> posts;
     char scroll_changed;
-    char pad_0x59[7];
+    char third_unused_bytes[7];
     int top_line;
     int scroll_thumb_offset;
     char scroll_up_held;
@@ -42,7 +42,7 @@ struct MsgBoardController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x80[8];
+    char fourth_unused_bytes[8];
 
     MsgBoardController();
     ~MsgBoardController();

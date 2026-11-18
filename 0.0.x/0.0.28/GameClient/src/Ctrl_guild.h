@@ -37,7 +37,7 @@ struct GuildController
     int guild_bank_gold;
     int link_line_index;
     int npc_session_id;
-    char pad_0x24[1];
+    char unused_bytes[1];
     char scroll_up_hovered;
     char scroll_down_hovered;
     char unused_flag;
@@ -45,8 +45,8 @@ struct GuildController
     TStringList *member_rank_titles;
     String new_guild_tag;
     String new_guild_name;
-    String unused_text_a;
-    String unused_text_b;
+    String unused_text;
+    String second_unused_text;
     String new_guild_description;
     int request_player_id;
     String target_member_name;
@@ -62,7 +62,7 @@ struct GuildController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x74[4];
+    char second_unused_bytes[4];
 
     GuildController();
     ~GuildController();
@@ -131,7 +131,7 @@ void Class::MouseMove(int x, int y) \
     { \
         if (!close_hovered) \
         { \
-            close_hovered = 1; \
+            close_hovered = true; \
             MainForm->redraw_needed = true; \
         } \
     } \
@@ -139,7 +139,7 @@ void Class::MouseMove(int x, int y) \
     { \
         if (close_hovered) \
         { \
-            close_hovered = 0; \
+            close_hovered = false; \
             MainForm->redraw_needed = true; \
         } \
     } \

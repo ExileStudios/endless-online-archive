@@ -55,10 +55,10 @@ struct GameGraphics
 
     GameGraphics();
     ~GameGraphics();
-    static Windows::TRect GetListBoxBodyRect(GameGraphics *self, int item_count);
-    static Windows::TRect GetListBoxFooterRect(GameGraphics *self, int footer);
-    static Windows::TRect GetIconRect(GameGraphics *self, int icon);
-    static Windows::TPoint GetPaperdollSlotOffset(GameGraphics *self, int item_size);
+    Windows::TRect GetListBoxBodyRect(int item_count);
+    Windows::TRect GetListBoxFooterRect(int footer);
+    Windows::TRect GetIconRect(int icon);
+    Windows::TPoint GetPaperdollSlotOffset(int item_size);
     void BlitClippedAlpha(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect, int alpha);
     void BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect);
     bool BlitClipped(int x, int y, TDx_DrawSurface *source, Windows::TRect source_rect);
@@ -114,9 +114,9 @@ struct GameGraphics
     void DrawBookButtons();
     void DrawPaperdollButtons();
     void DrawItemAmountButtons();
-    static Windows::TRect GetPaperdollFrameRect(GameGraphics *self, int frame);
-    static Windows::TRect GetButtonRect(GameGraphics *self, int button, int state);
-    static Windows::TRect ClipSourceRect(GameGraphics *self, int x, int y, Windows::TRect source_rect);
+    Windows::TRect GetPaperdollFrameRect(int frame);
+    Windows::TRect GetButtonRect(int button, int state);
+    Windows::TRect ClipSourceRect(int x, int y, Windows::TRect source_rect);
     void LoadButtonSheet(int library, int resource_id);
     void LoadPopupMenu(int library, int resource_id);
     void LoadListBoxBackground(int library, int resource_id);
@@ -146,8 +146,8 @@ struct GameGraphics
     void DrawPaperdollText();
     void LoadPaperdollBackground(int library, int resource_id);
     void LoadBookBackground(int library, int resource_id);
+    Windows::TRect GetMenuRowRect(int row);
 };
 
-Windows::TRect Gfx_game_GetMenuRowRect(GameGraphics *self, int row);
 
 #endif

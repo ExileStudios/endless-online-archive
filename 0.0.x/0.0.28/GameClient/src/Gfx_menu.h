@@ -31,7 +31,7 @@ struct MenuGraphics
     TDx_DrawSurface *animation_sheet;
     int background_id;
     int artwork_id;
-    char pad_0x50[4];
+    char unused_bytes[4];
     Windows::TRect background_rect;
     Windows::TRect message_box_rect;
     Windows::TRect create_character_rect;
@@ -55,12 +55,12 @@ struct MenuGraphics
 
     MenuGraphics();
     ~MenuGraphics();
-    static Windows::TRect GetKeyRect(MenuGraphics *self, int column, int row);
-    static Windows::TRect GetScrollIconRect(MenuGraphics *self, int icon);
-    static Windows::TRect GetMainMenuButtonRect(MenuGraphics *self, int button, int state);
-    static Windows::TRect GetWideButtonRect(MenuGraphics *self, int button, int state);
-    static Windows::TRect GetSmallButtonRect(MenuGraphics *self, int button, int state);
-    static Windows::TRect GetCornerButtonRect(MenuGraphics *self, int state);
+    Windows::TRect GetKeyRect(int column, int row);
+    Windows::TRect GetScrollIconRect(int icon);
+    Windows::TRect GetMainMenuButtonRect(int button, int state);
+    Windows::TRect GetWideButtonRect(int button, int state);
+    Windows::TRect GetSmallButtonRect(int button, int state);
+    Windows::TRect GetCornerButtonRect(int state);
     void LoadBackground(int library, int resource_id);
     void LoadScrollIcons(int library, int resource_id);
     void LoadLabelSheet(int library, int resource_id);

@@ -1,32 +1,11 @@
 #ifndef Ctrl_paperdollH
 #define Ctrl_paperdollH
 
-enum EifItemType
-{
-    EifItemType_Heal = 3,
-    EifItemType_Teleport = 4,
-    EifItemType_ExpReward = 6,
-    EifItemType_Weapon = 10,
-    EifItemType_Shield = 11,
-    EifItemType_Armor = 12,
-    EifItemType_Hat = 13,
-    EifItemType_Boots = 14,
-    EifItemType_Gloves = 15,
-    EifItemType_Accessory = 16,
-    EifItemType_Belt = 17,
-    EifItemType_Necklace = 18,
-    EifItemType_Ring = 19,
-    EifItemType_Armlet = 20,
-    EifItemType_Bracer = 21,
-    EifItemType_Alcohol = 22,
-    EifItemType_EffectPotion = 23,
-    EifItemType_HairDye = 24,
-    EifItemType_CureCurse = 25
-};
 
 enum PaperdollSlot
 {
     PaperdollSlot_None = -1,
+    PaperdollSlot_NoSlot = 0,
     PaperdollSlot_Head = 1,
     PaperdollSlot_Necklace = 2,
     PaperdollSlot_Weapon = 3,
@@ -58,16 +37,16 @@ struct PaperdollController
     char is_visible;
     int window_x;
     int window_y;
-    String info_line_1;
-    String info_line_2;
-    String info_line_4;
-    String info_line_5;
+    String player_name;
+    String home_name;
+    String partner_name;
+    String title;
     String class_name;
-    String info_line_7;
-    String info_line_8;
+    String guild_name;
+    String guild_rank_name;
     int icon_type;
     int frame_index;
-    int extra_value;
+    int admin_level;
     int head_item_id;
     int necklace_item_id;
     int armor_item_id;
@@ -91,43 +70,43 @@ struct PaperdollController
     int belt_item_id;
     int gloves_item_id;
     int boots_item_id;
-    int type19_left_item_id;
-    int type19_right_item_id;
+    int ring1_item_id;
+    int ring2_item_id;
     int belt_graphic;
     int gloves_graphic;
     int boots_graphic;
-    int type19_left_graphic;
-    int type19_right_graphic;
+    int ring1_graphic;
+    int ring2_graphic;
     int equipped_belt;
     int equipped_gloves;
     int equipped_boots;
-    int equipped_type19_left;
-    int equipped_type19_right;
+    int equipped_ring1;
+    int equipped_ring2;
     int belt_item_size;
     int gloves_item_size;
     int boots_item_size;
-    int type19_left_item_size;
-    int type19_right_item_size;
-    int type20_left_item_id;
-    int type20_right_item_id;
-    int type21_left_item_id;
-    int type21_right_item_id;
-    int type16_item_id;
-    int type20_left_graphic;
-    int type20_right_graphic;
-    int type21_left_graphic;
-    int type21_right_graphic;
-    int type16_graphic;
-    int equipped_type20_left;
-    int equipped_type20_right;
-    int equipped_type21_left;
-    int equipped_type21_right;
-    int equipped_type16;
-    int type20_left_item_size;
-    int type20_right_item_size;
-    int type21_left_item_size;
-    int type21_right_item_size;
-    int type16_item_size;
+    int ring1_item_size;
+    int ring2_item_size;
+    int armlet1_item_id;
+    int armlet2_item_id;
+    int bracer1_item_id;
+    int bracer2_item_id;
+    int accessory_item_id;
+    int armlet1_graphic;
+    int armlet2_graphic;
+    int bracer1_graphic;
+    int bracer2_graphic;
+    int accessory_graphic;
+    int equipped_armlet1;
+    int equipped_armlet2;
+    int equipped_bracer1;
+    int equipped_bracer2;
+    int equipped_accessory;
+    int armlet1_item_size;
+    int armlet2_item_size;
+    int bracer1_item_size;
+    int bracer2_item_size;
+    int accessory_item_size;
     char is_own_character;
     int drag_mode;
     int hovered_slot;
@@ -139,8 +118,8 @@ struct PaperdollController
     PaperdollController();
     ~PaperdollController();
     void EquipDroppedItem(int item_id, int x, int y);
-    void Open(int frame_value, String line_1_text, String line_2_text, String line_4_text, String line_5_text,
-        String player_class_name, String line_7_text, String line_8_text, int new_icon_type, int unused_value,
+    void Open(int frame_row, String name_text, String home_text, String partner_text, String title_text,
+        String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level,
         char own_character_flag);
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
@@ -153,13 +132,13 @@ struct PaperdollController
     void SetBeltSlot(int item_id);
     void SetGlovesSlot(int item_id);
     void SetBootsSlot(int item_id);
-    void SetType19LeftSlot(int item_id);
-    void SetType19RightSlot(int item_id);
-    void SetType20LeftSlot(int item_id);
-    void SetType20RightSlot(int item_id);
-    void SetType21LeftSlot(int item_id);
-    void SetType21RightSlot(int item_id);
-    void SetType16Slot(int item_id);
+    void SetRing1Slot(int item_id);
+    void SetRing2Slot(int item_id);
+    void SetArmlet1Slot(int item_id);
+    void SetArmlet2Slot(int item_id);
+    void SetBracer1Slot(int item_id);
+    void SetBracer2Slot(int item_id);
+    void SetAccessorySlot(int item_id);
     bool RemoveCursedItems();
 };
 

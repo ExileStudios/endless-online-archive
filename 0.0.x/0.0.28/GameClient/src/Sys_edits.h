@@ -1,13 +1,57 @@
 #ifndef Sys_editsH
 #define Sys_editsH
 
+enum EditGroup
+{
+    EditGroup_Menu = 2,
+    EditGroup_Game = 3,
+    EditGroup_InputForm = 105,
+    EditGroup_MsgBoard = 109,
+    EditGroup_All = 240
+};
+
+enum EditCharFilter
+{
+    EditCharFilter_NoPunctuation = 1,
+    EditCharFilter_AlphanumericSpaces = 2,
+    EditCharFilter_LettersSpaces = 3,
+    EditCharFilter_Letters = 4
+};
+
+enum EditCaseMode
+{
+    EditCaseMode_None = 0,
+    EditCaseMode_Upper = 1,
+    EditCaseMode_Lower = 2,
+    EditCaseMode_CapitalFirst = 3,
+    EditCaseMode_GuildTag = 4,
+    EditCaseMode_Name = 5
+};
+
 #include <vector.h>
 
 enum EditId
 {
+    EditId_AccountName = 1,
+    EditId_Password = 2,
+    EditId_AccountPassword = 3,
+    EditId_ConfirmPassword = 4,
+    EditId_OldPassword = 5,
+    EditId_NewPassword = 6,
+    EditId_ConfirmNewPassword = 7,
+    EditId_AccountDetailA = 8,
+    EditId_AccountDetailB = 9,
+    EditId_Email = 10,
     EditId_Chat = 11,
+    EditId_InputBox = 12,
+    EditId_Amount = 13,
     EditId_FormFirstRow = 14,
-    EditId_FormSecondRow = 15
+    EditId_FormSecondRow = 15,
+    EditId_FormThirdRow = 16,
+    EditId_FormFourthRow = 17,
+    EditId_FormFifthRow = 18,
+    EditId_Code = 22,
+    EditId_Captcha = 23
 };
 
 #include "Sys_edit.h"
@@ -18,13 +62,13 @@ struct Edits
     bool caret_blink_on;
     bool caret_enabled;
     bool chat_locked;
-    char pad_0x3[5];
+    char unused_bytes[5];
     vector<Edit> edits;
     int current_index;
     bool tick_redraw;
     bool text_changed;
     int lock_countdown;
-    char pad_0x34[4];
+    char second_unused_bytes[4];
 
     Edits();
     ~Edits();

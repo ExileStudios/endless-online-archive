@@ -13,16 +13,16 @@ struct BookController
     int window_x;
     int window_y;
     TStringList *lines;
-    String info_line_1;
-    String info_line_2;
-    String info_line_4;
-    String info_line_5;
+    String player_name;
+    String home_name;
+    String partner_name;
+    String title;
     String class_name;
-    String info_line_7;
-    String info_line_8;
+    String guild_name;
+    String guild_rank_name;
     int icon_type;
     int frame_index;
-    int extra_value;
+    int admin_level;
     int drag_mode;
     int unused_index;
     int top_line;
@@ -39,8 +39,8 @@ struct BookController
 
     BookController();
     ~BookController();
-    void Open(int frame_byte, String line_1_text, String line_2_text, String line_4_text, String line_5_text,
-        String player_class_name, String line_7_text, String line_8_text, int new_icon_type, int unused_value);
+    void Open(int frame_row, String name_text, String home_text, String partner_text, String title_text,
+        String player_class_name, String guild_text, String guild_rank_text, int new_icon_type, int new_admin_level);
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
     void DragScrollThumb(int y);

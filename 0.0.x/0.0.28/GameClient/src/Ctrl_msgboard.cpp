@@ -15,21 +15,21 @@ MsgBoardController::MsgBoardController()
 {
     window_x = 77;
     window_y = 16;
-    unused_cleared_flag = 0;
+    unused_cleared_flag = false;
     is_composing = false;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     board_id = -1;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
+    is_visible = false;
     action_button_hovered = false;
-    close_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    close_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
     next_local_post_id = FIRST_LOCAL_POST_ID;
 }
 
@@ -40,38 +40,39 @@ MsgBoardController::~MsgBoardController()
 // Places the subject and body edits over the window, with their limits and colours, and focuses the subject.
 void MsgBoardController::CreatePostEdits()
 {
-    MainForm->edits->AddEdit(20, 109, window_x + 144, window_y + 43, 302, EDIT_LINE_HEIGHT);
-    MainForm->edits->AddEdit(21, 109, window_x + 14, window_y + 74, 431, 170);
-    MainForm->edits->EnableChangeNotify(20);
-    MainForm->edits->EnableChangeNotify(21);
-    MainForm->edits->SetText(20, "");
-    MainForm->edits->SetTextColor(20, 13158600);
-    MainForm->edits->SetCharFilter(20, 1);
-    MainForm->edits->SetMaxLength(20, 32);
-    MainForm->edits->SetBackgroundVisible(20, 0);
-    MainForm->edits->SetBorderVisible(20, 0);
-    MainForm->edits->SetText(21, MainForm->strings->GetText(GameText_LoadingMessage));
-    MainForm->edits->SetTextColor(21, 13158600);
-    MainForm->edits->SetMaxLength(21, 1200);
-    MainForm->edits->SetBackgroundVisible(21, 0);
-    MainForm->edits->SetBorderVisible(21, 0);
-    MainForm->edits->SetMultiLine(21, 1);
-    MainForm->edits->FocusEdit(20);
+    MainForm->edits->AddEdit(POST_SUBJECT_EDIT, EditGroup_MsgBoard, window_x + 144, window_y + 43, 302,
+        EDIT_LINE_HEIGHT);
+    MainForm->edits->AddEdit(POST_MESSAGE_EDIT, EditGroup_MsgBoard, window_x + 14, window_y + 74, 431, 170);
+    MainForm->edits->EnableChangeNotify(POST_SUBJECT_EDIT);
+    MainForm->edits->EnableChangeNotify(POST_MESSAGE_EDIT);
+    MainForm->edits->SetText(POST_SUBJECT_EDIT, "");
+    MainForm->edits->SetTextColor(POST_SUBJECT_EDIT, 0xC8C8C8);
+    MainForm->edits->SetCharFilter(POST_SUBJECT_EDIT, EditCharFilter_NoPunctuation);
+    MainForm->edits->SetMaxLength(POST_SUBJECT_EDIT, 32);
+    MainForm->edits->SetBackgroundVisible(POST_SUBJECT_EDIT, false);
+    MainForm->edits->SetBorderVisible(POST_SUBJECT_EDIT, false);
+    MainForm->edits->SetText(POST_MESSAGE_EDIT, MainForm->strings->GetText(GameText_LoadingMessage));
+    MainForm->edits->SetTextColor(POST_MESSAGE_EDIT, 0xC8C8C8);
+    MainForm->edits->SetMaxLength(POST_MESSAGE_EDIT, 1200);
+    MainForm->edits->SetBackgroundVisible(POST_MESSAGE_EDIT, false);
+    MainForm->edits->SetBorderVisible(POST_MESSAGE_EDIT, false);
+    MainForm->edits->SetMultiLine(POST_MESSAGE_EDIT, true);
+    MainForm->edits->FocusEdit(POST_SUBJECT_EDIT);
     ResetScroll();
 }
 
 // Removes the subject and body edits and gives the focus back to the chat edit.
 void MsgBoardController::HidePostEdits()
 {
-    MainForm->edits->RemoveEdit(20);
-    MainForm->edits->RemoveEdit(21);
+    MainForm->edits->RemoveEdit(POST_SUBJECT_EDIT);
+    MainForm->edits->RemoveEdit(POST_MESSAGE_EDIT);
     MainForm->edits->FocusEdit(EditId_Chat);
 }
 
 // Shows the board on its post list, closing the quest window.
 void MsgBoardController::Open(int new_board_id)
 {
-    MainForm->animation->quests->is_visible = 0;
+    MainForm->animation->quests->is_visible = false;
     MainForm->gfx->CreateMsgBoardGraphics();
     MainForm->gfx->LoadMsgBoardGraphics();
     // Without a new board id the last board is kept
@@ -80,8 +81,8 @@ void MsgBoardController::Open(int new_board_id)
     view_mode = 0;
     top_line = 0;
     scroll_thumb_offset = 0;
-    MainForm->edits->SetVisible(13, 0);
-    is_visible = 1;
+    MainForm->edits->SetVisible(EditId_Amount, false);
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
@@ -89,7 +90,7 @@ void MsgBoardController::Open(int new_board_id)
 void MsgBoardController::Close()
 {
     MainForm->gfx->FreeMsgBoardGraphics();
-    is_visible = 0;
+    is_visible = false;
     MainForm->redraw_needed = true;
 }
 
@@ -111,9 +112,9 @@ void MsgBoardController::ResetScroll()
 {
     top_line = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 // Empties the post list.
@@ -130,7 +131,7 @@ void MsgBoardController::SetPostBody(String reply_data)
     {
         String post_id_text = MainForm->net_client->DecodeNumber(reply_data.SubString(1, 2));
         reply_data.Delete(1, 2);
-        String body = Client::CensorText(MainForm->net_client, reply_data);
+        String body = MainForm->net_client->CensorText(reply_data);
         if (body == "")
             body = "****";
         vector<Msg>::iterator it;
@@ -147,8 +148,8 @@ void MsgBoardController::SetPostBody(String reply_data)
             if (IntToStr(current_post_id) == post_id_text)
             {
                 current_post_body = body;
-                MainForm->edits->SetText(21, body);
-                MainForm->edits->SetPendingScroll(21, 10000);
+                MainForm->edits->SetText(POST_MESSAGE_EDIT, body);
+                MainForm->edits->SetPendingScroll(POST_MESSAGE_EDIT, 10000);
             }
         }
     }
@@ -167,7 +168,7 @@ void MsgBoardController::LoadPosts(String reply_data)
         {
             String post_id_text = MainForm->net_client->NextToken();
             String post_author = MainForm->net_client->NextToken();
-            String post_subject = Client::CensorText(MainForm->net_client, MainForm->net_client->NextToken());
+            String post_subject = MainForm->net_client->CensorText(MainForm->net_client->NextToken());
             if (post_subject == "")
                 post_subject = "****";
             int post_id = MainForm->net_client->DecodeNumber(post_id_text);
@@ -233,19 +234,19 @@ void MsgBoardController::ReadPost(int index)
     if (posts.size() > (unsigned int)index)
     {
         CreatePostEdits();
-        MainForm->edits->SetEditable(POST_SUBJECT_EDIT, 0);
-        MainForm->edits->SetEditable(POST_MESSAGE_EDIT, 0);
+        MainForm->edits->SetEditable(POST_SUBJECT_EDIT, false);
+        MainForm->edits->SetEditable(POST_MESSAGE_EDIT, false);
         is_composing = false;
         current_post_id = posts[index].post_id;
         current_post_author = posts[index].author;
         current_post_subject = posts[index].subject;
         current_post_body = posts[index].body;
-        MainForm->edits->SetText(20, current_post_subject);
+        MainForm->edits->SetText(POST_SUBJECT_EDIT, current_post_subject);
         if (current_post_body.Length() > 0)
-            MainForm->edits->SetText(21, current_post_body);
+            MainForm->edits->SetText(POST_MESSAGE_EDIT, current_post_body);
         else
             MainForm->net_client->sender->RequestBoardPost(board_id, current_post_id);
-        MainForm->edits->SetPendingScroll(21, 10000);
+        MainForm->edits->SetPendingScroll(POST_MESSAGE_EDIT, 10000);
         hovered_row = -1;
         is_composing = false;
         view_mode = 1;
@@ -256,8 +257,8 @@ void MsgBoardController::ReadPost(int index)
 // click starts moving the window.
 void MsgBoardController::MouseDown(int x, int y, int button)
 {
-    int __slot1;
-    char handled = 0;
+    int unused_int;
+    char handled = false;
     if (button == 0 || button == 1)
     {
         if (window_x <= x && window_x + 282 >= x && y >= window_y && y <= window_y + 290)
@@ -269,7 +270,7 @@ void MsgBoardController::MouseDown(int x, int y, int button)
                     row = -1;
                 if (row >= 0)
                 {
-                    handled = 1;
+                    handled = true;
                     ReadPost(row);
                     MainForm->redraw_needed = true;
                     top_line = 0;
@@ -285,23 +286,23 @@ void MsgBoardController::MouseDown(int x, int y, int button)
                 {
                     if (y >= window_y + scroll_thumb_offset + 88 && y <= window_y + scroll_thumb_offset + 103)
                     {
-                        handled = 1;
-                        thumb_grabbed = 1;
+                        handled = true;
+                        thumb_grabbed = true;
                         thumb_grab_offset = y - scroll_thumb_offset - window_y;
                         DragScrollThumb(y);
                     }
                 }
                 if (window_x + 449 <= x && window_x + 464 >= x && y >= window_y + 74 && y <= window_y + 89)
                 {
-                    handled = 1;
-                    scroll_up_held = 1;
+                    handled = true;
+                    scroll_up_held = true;
                     scroll_repeat_delay = 4;
                     ScrollUp();
                 }
                 if (window_x + 449 <= x && window_x + 464 >= x && y >= window_y + 228 && y <= window_y + 243)
                 {
-                    handled = 1;
-                    scroll_down_held = 1;
+                    handled = true;
+                    scroll_down_held = true;
                     scroll_repeat_delay = 4;
                     ScrollDown();
                 }
@@ -312,23 +313,23 @@ void MsgBoardController::MouseDown(int x, int y, int button)
                 {
                     if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
                     {
-                        handled = 1;
-                        thumb_grabbed = 1;
+                        handled = true;
+                        thumb_grabbed = true;
                         thumb_grab_offset = y - scroll_thumb_offset - window_y;
                         DragScrollThumb(y);
                     }
                 }
                 if (window_x + 449 <= x && window_x + 464 >= x && y >= window_y + 44 && y <= window_y + 59)
                 {
-                    handled = 1;
-                    scroll_up_held = 1;
+                    handled = true;
+                    scroll_up_held = true;
                     scroll_repeat_delay = 4;
                     ScrollUp();
                 }
                 if (window_x + 449 <= x && window_x + 464 >= x && y >= window_y + 228 && y <= window_y + 243)
                 {
-                    handled = 1;
-                    scroll_down_held = 1;
+                    handled = true;
+                    scroll_down_held = true;
                     scroll_repeat_delay = 4;
                     ScrollDown();
                 }
@@ -339,7 +340,7 @@ void MsgBoardController::MouseDown(int x, int y, int button)
     {
         if (!this->is_dragging)
         {
-            this->is_dragging = 1;
+            this->is_dragging = true;
             this->drag_offset_x = x - this->window_x;
             this->drag_offset_y = y - this->window_y;
         }
@@ -362,8 +363,8 @@ void MsgBoardController::MouseMove(int x, int y)
             window_x = 146;
         if (window_y >= 19)
             window_y = 19;
-        MainForm->edits->SetPosition(20, window_x + 144, window_y + 43);
-        MainForm->edits->SetPosition(21, window_x + 14, window_y + 74);
+        MainForm->edits->SetPosition(POST_SUBJECT_EDIT, window_x + 144, window_y + 43);
+        MainForm->edits->SetPosition(POST_MESSAGE_EDIT, window_x + 14, window_y + 74);
         MainForm->redraw_needed = true;
     }
     if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 467 && !is_dragging)
@@ -409,7 +410,7 @@ void MsgBoardController::MouseMove(int x, int y)
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -417,7 +418,7 @@ void MsgBoardController::MouseMove(int x, int y)
     {
         if (close_hovered)
         {
-            close_hovered = 0;
+            close_hovered = false;
             MainForm->redraw_needed = true;
         }
     }
@@ -428,35 +429,35 @@ void MsgBoardController::UpdateScrollHover(int x, int y)
 {
     if (!view_mode)
     {
-        if (x >= this->window_x + 449 && x <= this->window_x + 464)
+        if (x >= window_x + 449 && x <= window_x + 464)
         {
-            if (y >= this->window_y + 58 && y <= this->window_y + 229)
-                this->DragScrollThumb(y);
+            if (y >= window_y + 58 && y <= window_y + 229)
+                DragScrollThumb(y);
         }
         if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 44 && y <= window_y + 59)
         {
             if (!scroll_up_hovered)
             {
-                scroll_up_hovered = 1;
+                scroll_up_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
         else if (scroll_up_hovered)
         {
-            scroll_up_hovered = 0;
+            scroll_up_hovered = false;
             MainForm->redraw_needed = true;
         }
         if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 228 && y <= window_y + 243)
         {
             if (!scroll_down_hovered)
             {
-                scroll_down_hovered = 1;
+                scroll_down_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
         else if (scroll_down_hovered)
         {
-            scroll_down_hovered = 0;
+            scroll_down_hovered = false;
             MainForm->redraw_needed = true;
         }
     }
@@ -468,26 +469,26 @@ void MsgBoardController::UpdateScrollHover(int x, int y)
         {
             if (!scroll_up_hovered)
             {
-                scroll_up_hovered = 1;
+                scroll_up_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
         else if (scroll_up_hovered)
         {
-            scroll_up_hovered = 0;
+            scroll_up_hovered = false;
             MainForm->redraw_needed = true;
         }
         if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 228 && y <= window_y + 243)
         {
             if (!scroll_down_hovered)
             {
-                scroll_down_hovered = 1;
+                scroll_down_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
         else if (scroll_down_hovered)
         {
-            scroll_down_hovered = 0;
+            scroll_down_hovered = false;
             MainForm->redraw_needed = true;
         }
     }
@@ -524,11 +525,11 @@ void MsgBoardController::DragScrollThumb(int y)
             if (body_top_line != top_line)
             {
                 top_line = body_top_line;
-                MainForm->edits->SetScrollOffset(21, line_count - visible_lines - this->top_line);
+                MainForm->edits->SetScrollOffset(POST_MESSAGE_EDIT, line_count - visible_lines - top_line);
             }
         }
         scroll_thumb_offset = body_thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
     if (!view_mode && thumb_grabbed)
@@ -547,7 +548,7 @@ void MsgBoardController::DragScrollThumb(int y)
                 top_line = list_top_row;
         }
         scroll_thumb_offset = list_thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -557,7 +558,7 @@ void MsgBoardController::ScrollUp()
 {
     if (view_mode)
     {
-        MainForm->edits->ScrollUp(21);
+        MainForm->edits->ScrollUp(POST_MESSAGE_EDIT);
         int visible_lines = MainForm->edits->GetVisibleLineCount(POST_MESSAGE_EDIT);
         int line_count = MainForm->edits->GetLineCount(POST_MESSAGE_EDIT);
         MainForm->edits->GetFirstVisibleLine(POST_MESSAGE_EDIT);
@@ -571,7 +572,7 @@ void MsgBoardController::ScrollUp()
             double body_scroll_fraction = (double)top_line / (double)(line_count - visible_lines);
             double body_thumb_pos = MSGBOARD_THUMB_TRAVEL * body_scroll_fraction;
             scroll_thumb_offset = body_thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -583,7 +584,7 @@ void MsgBoardController::ScrollUp()
             double list_scroll_fraction = (double)top_line / (double)(posts.size() - 12);
             double list_thumb_pos = NPC_THUMB_TRAVEL * list_scroll_fraction;
             scroll_thumb_offset = list_thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -594,7 +595,7 @@ void MsgBoardController::ScrollDown()
 {
     if (view_mode)
     {
-        MainForm->edits->ScrollDown(21);
+        MainForm->edits->ScrollDown(POST_MESSAGE_EDIT);
         int visible_lines = MainForm->edits->GetVisibleLineCount(POST_MESSAGE_EDIT);
         int line_count = MainForm->edits->GetLineCount(POST_MESSAGE_EDIT);
         MainForm->edits->GetFirstVisibleLine(POST_MESSAGE_EDIT);
@@ -608,7 +609,7 @@ void MsgBoardController::ScrollDown()
             double body_scroll_fraction = (double)top_line / (double)(line_count - visible_lines);
             double body_thumb_pos = MSGBOARD_THUMB_TRAVEL * body_scroll_fraction;
             scroll_thumb_offset = body_thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -620,7 +621,7 @@ void MsgBoardController::ScrollDown()
             double list_scroll_fraction = (double)top_line / (double)(posts.size() - 12);
             double list_thumb_pos = NPC_THUMB_TRAVEL * list_scroll_fraction;
             scroll_thumb_offset = list_thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -629,8 +630,8 @@ void MsgBoardController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void MsgBoardController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }

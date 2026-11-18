@@ -17,13 +17,13 @@ Npcs::Npcs(char preload_option)
     preload_graphics = preload_option;
     if (preload_graphics)
     {
-        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(21).c_str());
+        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
         library_ref_count++;
     }
     for (int i = 0; i < MAX_NPC_GRAPHICS; i++)
     {
         frame_offsets[i].x = 0; frame_offsets[i].y = 0; attack_frame_offsets[i].x = 0; attack_frame_offsets[i].y = 0;
-        has_idle_animation[i] = 0; head_heights[i] = 0;
+        has_idle_animation[i] = false; head_heights[i] = 0;
     }
     frame_offsets[0].y = 16; head_heights[0] = 4;
     frame_offsets[1].y = 18; attack_frame_offsets[1].x = -6; attack_frame_offsets[1].y = -3;
@@ -55,14 +55,14 @@ Npcs::Npcs(char preload_option)
     frame_offsets[19].x = 0; frame_offsets[19].y = 7; head_heights[19] = 40;
     frame_offsets[20].x = -2; frame_offsets[20].y = 17; attack_frame_offsets[20].x = -10;
     attack_frame_offsets[20].y = -5; head_heights[20] = 40;
-    frame_offsets[21].x = 0; frame_offsets[21].y = 11; head_heights[21] = 45; has_idle_animation[21] = 1;
+    frame_offsets[21].x = 0; frame_offsets[21].y = 11; head_heights[21] = 45; has_idle_animation[21] = true;
     frame_offsets[22].y = 17; head_heights[22] = 40;
     frame_offsets[23].y = 17; head_heights[23] = 40;
-    frame_offsets[24].y = 6; head_heights[24] = 50; has_idle_animation[24] = 1;
+    frame_offsets[24].y = 6; head_heights[24] = 50; has_idle_animation[24] = true;
     frame_offsets[25].x = -2; frame_offsets[25].y = 11; attack_frame_offsets[25].x = -6;
     attack_frame_offsets[25].y = -3; head_heights[25] = 0;
-    frame_offsets[26].y = 9; head_heights[26] = 12; has_idle_animation[26] = 1;
-    frame_offsets[27].x = -4; frame_offsets[27].y = 16; head_heights[27] = 42; has_idle_animation[27] = 1;
+    frame_offsets[26].y = 9; head_heights[26] = 12; has_idle_animation[26] = true;
+    frame_offsets[27].x = -4; frame_offsets[27].y = 16; head_heights[27] = 42; has_idle_animation[27] = true;
     frame_offsets[28].y = 7; attack_frame_offsets[28].x = -6; attack_frame_offsets[28].y = -3;
     frame_offsets[29].x = -10; frame_offsets[29].y = 13; attack_frame_offsets[29].x = -8;
     attack_frame_offsets[29].y = -4; head_heights[29] = 42;
@@ -101,23 +101,23 @@ Npcs::Npcs(char preload_option)
     frame_offsets[48].x = -9; frame_offsets[48].y = 13; attack_frame_offsets[48].x = -6;
     attack_frame_offsets[48].y = -3; head_heights[48] = 68;
     frame_offsets[49].x = 4; frame_offsets[49].y = 10; attack_frame_offsets[49].x = -6; attack_frame_offsets[49].y = -3;
-    head_heights[49] = 82; has_idle_animation[49] = 1;
+    head_heights[49] = 82; has_idle_animation[49] = true;
     frame_offsets[50].y = 13; attack_frame_offsets[50].x = -10; attack_frame_offsets[50].y = -5; head_heights[50] = 59;
-    has_idle_animation[50] = 1;
+    has_idle_animation[50] = true;
     frame_offsets[51].y = 1; attack_frame_offsets[51].x = -4; attack_frame_offsets[51].y = -2; head_heights[51] = 48;
-    has_idle_animation[51] = 1;
+    has_idle_animation[51] = true;
     frame_offsets[52].x = -2; frame_offsets[52].y = 17; head_heights[52] = 40;
     frame_offsets[53].y = 14; head_heights[53] = 28;
     frame_offsets[54].x = -3; frame_offsets[54].y = 4; attack_frame_offsets[54].x = -3; attack_frame_offsets[54].y = -2;
-    head_heights[54] = 13; has_idle_animation[54] = 1;
+    head_heights[54] = 13; has_idle_animation[54] = true;
     frame_offsets[55].x = -3; frame_offsets[55].y = 4; attack_frame_offsets[55].x = -3; attack_frame_offsets[55].y = -2;
-    head_heights[55] = 13; has_idle_animation[55] = 1;
+    head_heights[55] = 13; has_idle_animation[55] = true;
     frame_offsets[56].x = -3; frame_offsets[56].y = 4; attack_frame_offsets[56].x = -3; attack_frame_offsets[56].y = -2;
-    head_heights[56] = 13; has_idle_animation[56] = 1;
+    head_heights[56] = 13; has_idle_animation[56] = true;
     frame_offsets[57].y = 18; attack_frame_offsets[57].x = -8; attack_frame_offsets[57].y = -4; head_heights[57] = 42;
-    has_idle_animation[57] = 1;
+    has_idle_animation[57] = true;
     frame_offsets[58].y = 16; attack_frame_offsets[58].x = -8; attack_frame_offsets[58].y = -4; head_heights[58] = 44;
-    has_idle_animation[58] = 1;
+    has_idle_animation[58] = true;
     frame_offsets[59].x = -3; frame_offsets[59].y = 6; attack_frame_offsets[59].x = -6; attack_frame_offsets[59].y = -3;
     head_heights[59] = 10;
     attack_frame_offsets[60].x = -12; attack_frame_offsets[60].y = -6; head_heights[60] = 10;
@@ -126,14 +126,14 @@ Npcs::Npcs(char preload_option)
     frame_offsets[62].x = -3; frame_offsets[62].y = 11; attack_frame_offsets[62].x = -8;
     attack_frame_offsets[62].y = -4; head_heights[62] = 10;
     frame_offsets[63].y = 15; attack_frame_offsets[63].x = -12; attack_frame_offsets[63].y = -6; head_heights[63] = 41;
-    has_idle_animation[63] = 1;
+    has_idle_animation[63] = true;
     frame_offsets[64].x = 3; frame_offsets[64].y = 12; attack_frame_offsets[64].x = -8; attack_frame_offsets[64].y = -4;
     head_heights[64] = 23;
     frame_offsets[65].x = -1; frame_offsets[65].y = 8; attack_frame_offsets[65].x = -10;
     attack_frame_offsets[65].y = -5; head_heights[65] = 53;
     frame_offsets[66].y = 12; attack_frame_offsets[66].x = -4; attack_frame_offsets[66].y = -2; head_heights[66] = 28;
     frame_offsets[67].y = 6; attack_frame_offsets[67].x = -4; attack_frame_offsets[67].y = -2; head_heights[67] = 93;
-    frame_offsets[68].y = 20; head_heights[68] = 48; has_idle_animation[68] = 1;
+    frame_offsets[68].y = 20; head_heights[68] = 48; has_idle_animation[68] = true;
     frame_offsets[69].x = -1; frame_offsets[69].y = 17; attack_frame_offsets[69].x = -8;
     attack_frame_offsets[69].y = -4; head_heights[69] = 18;
     frame_offsets[70].x = -2; frame_offsets[70].y = 10; attack_frame_offsets[70].x = -6;
@@ -143,52 +143,52 @@ Npcs::Npcs(char preload_option)
     attack_frame_offsets[72].y = -4; head_heights[72] = 55;
     frame_offsets[73].y = 16; attack_frame_offsets[73].x = -4; attack_frame_offsets[73].y = -2; head_heights[73] = 22;
     frame_offsets[74].x = -1; frame_offsets[74].y = 17; attack_frame_offsets[74].x = -6;
-    attack_frame_offsets[74].y = -3; head_heights[74] = 37; has_idle_animation[74] = 1;
+    attack_frame_offsets[74].y = -3; head_heights[74] = 37; has_idle_animation[74] = true;
     frame_offsets[75].x = -1; frame_offsets[75].y = 16; attack_frame_offsets[75].x = -4;
     attack_frame_offsets[75].y = -2; head_heights[75] = 41;
     frame_offsets[76].x = -2; frame_offsets[76].y = 10; head_heights[76] = 14;
     frame_offsets[77].x = -2; frame_offsets[77].y = 10; head_heights[77] = 14;
-    frame_offsets[78].y = 15; head_heights[78] = 41; has_idle_animation[78] = 1;
+    frame_offsets[78].y = 15; head_heights[78] = 41; has_idle_animation[78] = true;
     frame_offsets[79].y = 5; attack_frame_offsets[79].x = -8; attack_frame_offsets[79].y = -4; head_heights[79] = 31;
     frame_offsets[80].x = -3; frame_offsets[80].y = 15; attack_frame_offsets[80].x = -6;
-    attack_frame_offsets[80].y = -3; head_heights[80] = 44; has_idle_animation[80] = 1;
+    attack_frame_offsets[80].y = -3; head_heights[80] = 44; has_idle_animation[80] = true;
     frame_offsets[81].x = -2; frame_offsets[81].y = 18; head_heights[81] = 40;
     frame_offsets[82].x = -2; frame_offsets[82].y = 17; head_heights[82] = 40;
     frame_offsets[83].x = -2; frame_offsets[83].y = 18; head_heights[83] = 40;
     frame_offsets[84].y = 18; attack_frame_offsets[84].x = -10; attack_frame_offsets[84].y = -5; head_heights[84] = 50;
-    has_idle_animation[84] = 1;
-    frame_offsets[85].x = -2; frame_offsets[85].y = 14; head_heights[85] = 43; has_idle_animation[85] = 1;
+    has_idle_animation[84] = true;
+    frame_offsets[85].x = -2; frame_offsets[85].y = 14; head_heights[85] = 43; has_idle_animation[85] = true;
     frame_offsets[86].x = -4; frame_offsets[86].y = 11; attack_frame_offsets[86].x = -8;
     attack_frame_offsets[86].y = -4; head_heights[86] = 40;
     frame_offsets[87].x = 1; frame_offsets[87].y = 12; attack_frame_offsets[87].x = -10;
     attack_frame_offsets[87].y = -5; head_heights[87] = 54;
-    frame_offsets[88].y = -4; head_heights[88] = 43; has_idle_animation[88] = 1;
+    frame_offsets[88].y = -4; head_heights[88] = 43; has_idle_animation[88] = true;
     frame_offsets[89].x = 1; frame_offsets[89].y = 6; attack_frame_offsets[89].x = -8; attack_frame_offsets[89].y = -4;
-    head_heights[89] = 54; has_idle_animation[89] = 1;
+    head_heights[89] = 54; has_idle_animation[89] = true;
     frame_offsets[90].x = -14; frame_offsets[90].y = 14; attack_frame_offsets[90].x = -3;
     attack_frame_offsets[90].y = -2; head_heights[90] = 64;
     frame_offsets[91].y = 13; attack_frame_offsets[91].x = -6; attack_frame_offsets[91].y = -4; head_heights[91] = 21;
-    frame_offsets[92].x = -9; frame_offsets[92].y = 14; head_heights[92] = 55; has_idle_animation[92] = 1;
-    frame_offsets[93].x = -9; frame_offsets[93].y = 14; head_heights[93] = 50; has_idle_animation[93] = 1;
+    frame_offsets[92].x = -9; frame_offsets[92].y = 14; head_heights[92] = 55; has_idle_animation[92] = true;
+    frame_offsets[93].x = -9; frame_offsets[93].y = 14; head_heights[93] = 50; has_idle_animation[93] = true;
     frame_offsets[94].x = -7; frame_offsets[94].y = 9; head_heights[94] = 32;
     frame_offsets[95].x = -1; frame_offsets[95].y = 18; attack_frame_offsets[95].x = -6;
-    attack_frame_offsets[95].y = -3; head_heights[95] = 46; has_idle_animation[95] = 1;
+    attack_frame_offsets[95].y = -3; head_heights[95] = 46; has_idle_animation[95] = true;
     frame_offsets[96].x = -2; frame_offsets[96].y = 14; attack_frame_offsets[96].x = -4;
     attack_frame_offsets[96].y = -2; head_heights[96] = 46;
     frame_offsets[97].x = -1; frame_offsets[97].y = 20; attack_frame_offsets[97].x = -8;
-    attack_frame_offsets[97].y = -4; head_heights[97] = 50; has_idle_animation[97] = 1;
+    attack_frame_offsets[97].y = -4; head_heights[97] = 50; has_idle_animation[97] = true;
     frame_offsets[98].y = 17; attack_frame_offsets[98].x = -6; attack_frame_offsets[98].y = -3; head_heights[98] = 68;
-    has_idle_animation[98] = 1;
+    has_idle_animation[98] = true;
     frame_offsets[99].y = 17; attack_frame_offsets[99].x = -6; attack_frame_offsets[99].y = -3; head_heights[99] = 30;
     frame_offsets[100].y = 17; attack_frame_offsets[100].x = -6; attack_frame_offsets[100].y = -3;
     head_heights[100] = 30;
-    frame_offsets[101].y = 15; head_heights[101] = 84; has_idle_animation[101] = 1;
+    frame_offsets[101].y = 15; head_heights[101] = 84; has_idle_animation[101] = true;
     frame_offsets[102].y = 16; attack_frame_offsets[102].x = -10; attack_frame_offsets[102].y = -5;
     head_heights[102] = 48;
     frame_offsets[103].y = 15; attack_frame_offsets[103].x = -8; attack_frame_offsets[103].y = -4;
     head_heights[103] = 60;
     frame_offsets[104].y = 15; attack_frame_offsets[104].x = -8; attack_frame_offsets[104].y = -4;
-    head_heights[104] = 70; has_idle_animation[104] = 1;
+    head_heights[104] = 70; has_idle_animation[104] = true;
     frame_offsets[105].y = 13; attack_frame_offsets[105].x = -6; attack_frame_offsets[105].y = -3;
     head_heights[105] = 30;
     frame_offsets[106].x = -31; frame_offsets[106].y = 4; attack_frame_offsets[106].x = -4;
@@ -197,39 +197,39 @@ Npcs::Npcs(char preload_option)
     head_heights[107] = 12;
     frame_offsets[108].x = -2; frame_offsets[108].y = 16; head_heights[108] = 43;
     frame_offsets[109].x = -2; frame_offsets[109].y = 17; attack_frame_offsets[109].x = -6;
-    attack_frame_offsets[109].y = -3; head_heights[109] = 59; has_idle_animation[109] = 1;
+    attack_frame_offsets[109].y = -3; head_heights[109] = 59; has_idle_animation[109] = true;
     frame_offsets[110].y = 17; attack_frame_offsets[110].x = -6; attack_frame_offsets[110].y = -3;
-    head_heights[110] = 17; has_idle_animation[110] = 1;
+    head_heights[110] = 17; has_idle_animation[110] = true;
     frame_offsets[111].x = 4; frame_offsets[111].y = 6; attack_frame_offsets[111].x = -6;
-    attack_frame_offsets[111].y = -3; head_heights[111] = 30; has_idle_animation[111] = 1;
+    attack_frame_offsets[111].y = -3; head_heights[111] = 30; has_idle_animation[111] = true;
     frame_offsets[112].x = 1; frame_offsets[112].y = 7; head_heights[112] = 6;
     frame_offsets[113].y = 17; attack_frame_offsets[113].x = -4; attack_frame_offsets[113].y = -2;
-    head_heights[113] = 44; has_idle_animation[113] = 1;
+    head_heights[113] = 44; has_idle_animation[113] = true;
     frame_offsets[114].x = -6; frame_offsets[114].y = 16; attack_frame_offsets[114].x = -6;
-    attack_frame_offsets[114].y = -3; head_heights[114] = 42; has_idle_animation[114] = 1;
-    frame_offsets[115].y = 18; head_heights[115] = 40; has_idle_animation[115] = 1;
-    frame_offsets[116].x = -2; frame_offsets[116].y = 15; head_heights[116] = 32; has_idle_animation[116] = 1;
+    attack_frame_offsets[114].y = -3; head_heights[114] = 42; has_idle_animation[114] = true;
+    frame_offsets[115].y = 18; head_heights[115] = 40; has_idle_animation[115] = true;
+    frame_offsets[116].x = -2; frame_offsets[116].y = 15; head_heights[116] = 32; has_idle_animation[116] = true;
     frame_offsets[117].x = -6; frame_offsets[117].y = 15; attack_frame_offsets[117].x = -4;
-    attack_frame_offsets[117].y = -2; head_heights[117] = 47; has_idle_animation[117] = 1;
+    attack_frame_offsets[117].y = -2; head_heights[117] = 47; has_idle_animation[117] = true;
     frame_offsets[118].x = -1; frame_offsets[118].y = 13; attack_frame_offsets[118].x = -6;
     attack_frame_offsets[118].y = -3; head_heights[118] = 15;
     frame_offsets[119].x = -3; frame_offsets[119].y = 19; attack_frame_offsets[119].x = -8;
     attack_frame_offsets[119].y = -4; head_heights[119] = 19;
     frame_offsets[120].x = -1; frame_offsets[120].y = 16; attack_frame_offsets[120].x = -2;
-    attack_frame_offsets[120].y = -1; head_heights[120] = 10; has_idle_animation[120] = 1;
+    attack_frame_offsets[120].y = -1; head_heights[120] = 10; has_idle_animation[120] = true;
     frame_offsets[121].y = 18; attack_frame_offsets[121].x = -8; attack_frame_offsets[121].y = -4;
-    head_heights[121] = 58; has_idle_animation[121] = 1;
+    head_heights[121] = 58; has_idle_animation[121] = true;
     frame_offsets[122].y = 4; head_heights[122] = 65;
     frame_offsets[123].x = -4; frame_offsets[123].y = 9; attack_frame_offsets[123].x = -10;
     attack_frame_offsets[123].y = -5; head_heights[123] = 71;
     head_heights[124] = 88;
     frame_offsets[125].y = 20; attack_frame_offsets[125].x = -10; attack_frame_offsets[125].y = -5;
-    head_heights[125] = 58; has_idle_animation[125] = 1;
+    head_heights[125] = 58; has_idle_animation[125] = true;
     frame_offsets[126].x = -4; frame_offsets[126].y = 12; attack_frame_offsets[126].x = -14;
-    attack_frame_offsets[126].y = -5; head_heights[126] = 36; has_idle_animation[126] = 1;
+    attack_frame_offsets[126].y = -5; head_heights[126] = 36; has_idle_animation[126] = true;
     frame_offsets[127].x = -5; frame_offsets[127].y = 17; attack_frame_offsets[127].x = -4;
     attack_frame_offsets[127].y = -2; head_heights[127] = 36;
-    frame_offsets[128].y = 7; head_heights[128] = 32; has_idle_animation[128] = 1;
+    frame_offsets[128].y = 7; head_heights[128] = 32; has_idle_animation[128] = true;
     frame_offsets[129].y = 15; attack_frame_offsets[129].x = -10; attack_frame_offsets[129].y = -5;
     head_heights[129] = 5;
     frame_offsets[130].x = -1; frame_offsets[130].y = 16; attack_frame_offsets[130].x = -8;
@@ -239,7 +239,7 @@ Npcs::Npcs(char preload_option)
     frame_offsets[132].x = -2; frame_offsets[132].y = 5; attack_frame_offsets[132].x = -6;
     attack_frame_offsets[132].y = -3; head_heights[132] = 47;
     frame_offsets[133].y = 18; attack_frame_offsets[133].x = -10; attack_frame_offsets[133].y = -5;
-    head_heights[133] = 80; has_idle_animation[133] = 1;
+    head_heights[133] = 80; has_idle_animation[133] = true;
     frame_offsets[134].y = 18; attack_frame_offsets[134].y = 5; head_heights[134] = 41;
     frame_offsets[135].x = -2; frame_offsets[135].y = 19; attack_frame_offsets[135].x = -4;
     attack_frame_offsets[135].y = -2; head_heights[135] = 22;
@@ -250,11 +250,11 @@ Npcs::Npcs(char preload_option)
     frame_offsets[138].y = 17; attack_frame_offsets[138].x = -6; attack_frame_offsets[138].y = -3;
     head_heights[138] = 32;
     frame_offsets[139].y = 18; attack_frame_offsets[139].x = -2; attack_frame_offsets[139].y = -1;
-    head_heights[139] = 65; has_idle_animation[139] = 1;
+    head_heights[139] = 65; has_idle_animation[139] = true;
     frame_offsets[140].y = 16; attack_frame_offsets[140].x = -6; attack_frame_offsets[140].y = -3;
     head_heights[140] = 25;
     frame_offsets[141].y = 18; attack_frame_offsets[141].x = -2; attack_frame_offsets[141].y = -1;
-    head_heights[141] = 20; has_idle_animation[141] = 1;
+    head_heights[141] = 20; has_idle_animation[141] = true;
     frame_offsets[142].y = 16; attack_frame_offsets[142].x = -6; attack_frame_offsets[142].y = -3;
     head_heights[142] = 40;
     frame_offsets[143].x = -3; frame_offsets[143].y = 8; head_heights[143] = 52;
@@ -264,7 +264,7 @@ Npcs::Npcs(char preload_option)
     head_heights[145] = 69;
     frame_offsets[146].y = 10; head_heights[146] = 32;
     frame_offsets[147].x = -4; frame_offsets[147].y = 16; attack_frame_offsets[147].x = -6;
-    attack_frame_offsets[147].y = -3; head_heights[147] = 37; has_idle_animation[147] = 1;
+    attack_frame_offsets[147].y = -3; head_heights[147] = 37; has_idle_animation[147] = true;
     frame_offsets[148].x = 2; frame_offsets[148].y = 6; head_heights[148] = 98;
     frame_offsets[149].x = -1; frame_offsets[149].y = 18; attack_frame_offsets[149].x = -6;
     attack_frame_offsets[149].y = -3; head_heights[149] = 48;
@@ -281,11 +281,11 @@ Npcs::Npcs(char preload_option)
     frame_offsets[155].y = 15; attack_frame_offsets[155].x = -6; attack_frame_offsets[155].y = -3;
     head_heights[155] = 32;
     frame_offsets[156].y = 6; attack_frame_offsets[156].x = -8; attack_frame_offsets[156].y = -4;
-    head_heights[156] = 58; has_idle_animation[156] = 1;
-    frame_offsets[157].y = 15; head_heights[157] = 74; has_idle_animation[157] = 1;
-    frame_offsets[158].x = -11; frame_offsets[158].y = 18; head_heights[158] = 57; has_idle_animation[158] = 1;
-    frame_offsets[159].x = -4; frame_offsets[159].y = 18; head_heights[159] = 45; has_idle_animation[159] = 1;
-    head_heights[160] = 65; has_idle_animation[160] = 1;
+    head_heights[156] = 58; has_idle_animation[156] = true;
+    frame_offsets[157].y = 15; head_heights[157] = 74; has_idle_animation[157] = true;
+    frame_offsets[158].x = -11; frame_offsets[158].y = 18; head_heights[158] = 57; has_idle_animation[158] = true;
+    frame_offsets[159].x = -4; frame_offsets[159].y = 18; head_heights[159] = 45; has_idle_animation[159] = true;
+    head_heights[160] = 65; has_idle_animation[160] = true;
     frame_offsets[161].x = -1; frame_offsets[161].y = 10; attack_frame_offsets[161].x = -8;
     attack_frame_offsets[161].y = -4; head_heights[161] = 15;
     frame_offsets[162].y = 8; attack_frame_offsets[162].x = -6; attack_frame_offsets[162].y = -3;
@@ -293,7 +293,7 @@ Npcs::Npcs(char preload_option)
     frame_offsets[163].y = 15; attack_frame_offsets[163].x = -8; attack_frame_offsets[163].y = -4;
     head_heights[163] = 10;
     frame_offsets[164].y = 13; head_heights[164] = 10;
-    frame_offsets[165].y = 18; head_heights[165] = 32; has_idle_animation[165] = 1;
+    frame_offsets[165].y = 18; head_heights[165] = 32; has_idle_animation[165] = true;
     frame_offsets[166].y = 14; attack_frame_offsets[166].x = -6; attack_frame_offsets[166].y = -3;
     head_heights[166] = 22;
     frame_offsets[167].y = 15; attack_frame_offsets[167].x = -8; attack_frame_offsets[167].y = -4;
@@ -320,7 +320,7 @@ void Npcs::ReloadGraphicsLibrary()
             library_ref_count = 0;
     }
     if (preload_graphics)
-        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(21).c_str());
+        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
 }
 
 // One step of every npc's timers and animations, then the name label of the npc under the mouse.
@@ -330,7 +330,7 @@ void Npcs::Animate()
     char walk_started;
     char no_hover_yet;
     int screen_y;
-    walk_started = 0;
+    walk_started = false;
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
@@ -342,12 +342,12 @@ void Npcs::Animate()
             if (it->idle_frame > 3)
                 it->idle_frame = -1;
             if (!it->idle_frame || it->idle_frame == 2)
-                it->redraw = 1;
+                it->redraw = true;
         }
         if (it->effect_start)
         {
-            it->effect_start = 0;
-            it->effect_running = 1;
+            it->effect_start = false;
+            it->effect_running = true;
             it->effect_frame = 0;
             MainForm->sound_mapper->PlayEffectSound(it->effect_id);
         }
@@ -360,21 +360,21 @@ void Npcs::Animate()
                 it->effect_loops_left--;
                 it->effect_frame = 0;
                 if (it->effect_loops_left <= 0)
-                    it->effect_running = 0;
+                    it->effect_running = false;
             }
-            it->redraw = 1;
+            it->redraw = true;
         }
         // A step starts at once; the npc is placed on the new tile as it starts.
         if (it->walk_start)
         {
-            it->walk_start = 0;
+            it->walk_start = false;
             it->x = it->walk_target_x;
             it->y = it->walk_target_y;
             it->walk_direction = it->walk_target_direction;
             it->direction = it->walk_facing;
             it->walk_frame = -1;
-            it->walking = 1;
-            walk_started = 1;
+            it->walking = true;
+            walk_started = true;
         }
         // As for players: four frames from the pass the step starts, and the fifth pass ends it.
         if (it->walking)
@@ -384,16 +384,16 @@ void Npcs::Animate()
             else
             {
                 it->walk_frame = 0;
-                it->walking = 0;
+                it->walking = false;
             }
-            it->redraw = 1;
+            it->redraw = true;
         }
         if (it->attack_start)
         {
-            it->attack_start = 0;
+            it->attack_start = false;
             it->attack_direction = it->direction;
             it->attack_frame = -1;
-            it->attacking = 1;
+            it->attacking = true;
         }
         if (it->attacking)
         {
@@ -401,14 +401,14 @@ void Npcs::Animate()
             {
                 it->attack_frame++;
                 if (it->attack_frame == 1)
-                    MainForm->sfx->PlaySfx(10);
+                    MainForm->sfx->PlaySfx(SfxSound_PunchAttack);
             }
             else
             {
                 it->attack_frame = 0;
-                it->attacking = 0;
+                it->attacking = false;
             }
-            it->redraw = 1;
+            it->redraw = true;
         }
         if (it->alt_attack_start)
         {
@@ -423,22 +423,22 @@ void Npcs::Animate()
             {
                 it->alt_attack_frame++;
                 if (it->alt_attack_frame == 1)
-                    MainForm->sfx->PlaySfx(11);
+                    MainForm->sfx->PlaySfx(SfxSound_NpcAltAttack);
             }
             else
             {
                 it->alt_attack_frame = 0;
                 it->alt_attacking = false;
             }
-            it->redraw = 1;
+            it->redraw = true;
         }
         if (it->health_bar_start)
         {
-            it->health_bar_start = 0;
+            it->health_bar_start = false;
             if (it->health_bar_timer > 0)
             {
-                it->health_bar_shown = 1;
-                it->redraw = 1;
+                it->health_bar_shown = true;
+                it->redraw = true;
             }
         }
         if (it->health_bar_shown)
@@ -446,27 +446,27 @@ void Npcs::Animate()
             it->health_bar_timer--;
             if (it->health_bar_timer <= 0)
             {
-                it->health_bar_shown = 0;
-                it->redraw = 1;
+                it->health_bar_shown = false;
+                it->redraw = true;
             }
         }
         if (it->damage_start)
         {
-            it->damage_start = 0;
+            it->damage_start = false;
             if (it->damage_timer > 0)
             {
-                it->damage_shown = 1;
-                it->redraw = 1;
+                it->damage_shown = true;
+                it->redraw = true;
             }
         }
         if (it->damage_shown)
         {
             it->damage_timer--;
-            it->redraw = 1;
+            it->redraw = true;
             if (it->damage_timer <= 0)
             {
-                it->damage_shown = 0;
-                it->redraw = 1;
+                it->damage_shown = false;
+                it->redraw = true;
             }
         }
         if (it->dying)
@@ -507,7 +507,7 @@ void Npcs::Animate()
     // A player under the mouse keeps the label; npcs get one only when no player has it.
     if (!MainForm->players->hover_label_shown)
     {
-        no_hover_yet = 1;
+        no_hover_yet = true;
         for (vector<Npc>::reverse_iterator it(npcs.end()); it != vector<Npc>::reverse_iterator(npcs.begin()); it++)
         {
             int screen_x = 32 * (*it).x - 32 * (*it).y + MainForm->map->GetScrollOffsetX() + 319;
@@ -520,17 +520,17 @@ void Npcs::Animate()
                     if (!(*it).label_shown)
                     {
                         String npc_name = MainForm->npc_values->GetName((*it).npc_id);
-                        MainForm->gfx->sprites->ShowNameLabel(npc_name, 0);
-                        (*it).label_shown = 1;
+                        MainForm->gfx->sprites->ShowNameLabel(npc_name, LabelColor_White);
+                        (*it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }
-                    no_hover_yet = 0;
+                    no_hover_yet = false;
                 }
                 else
                 {
                     if ((*it).label_shown)
                     {
-                        (*it).label_shown = 0;
+                        (*it).label_shown = false;
                         MainForm->redraw_needed = true;
                     }
                 }
@@ -539,15 +539,15 @@ void Npcs::Animate()
             {
                 if ((*it).label_shown)
                 {
-                    (*it).label_shown = 0;
+                    (*it).label_shown = false;
                     MainForm->redraw_needed = true;
                 }
             }
         }
         if (no_hover_yet)
-            hover_label_shown = 0;
+            hover_label_shown = false;
         else
-            hover_label_shown = 1;
+            hover_label_shown = true;
     }
     else
     {
@@ -555,11 +555,11 @@ void Npcs::Animate()
         {
             if ((*it).label_shown)
             {
-                (*it).label_shown = 0;
+                (*it).label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
-        hover_label_shown = 0;
+        hover_label_shown = false;
     }
     if (walk_started)
         SortByPosition();
@@ -574,7 +574,7 @@ void Npcs::RemoveExpiredNpcs()
     center_y = MainForm->map->GetCenterY();
     do
     {
-        list_changed = 0;
+        list_changed = false;
         for (vector<Npc>::iterator i = npcs.begin(); i != npcs.end(); i++)
         {
             if (i->dying)
@@ -583,7 +583,7 @@ void Npcs::RemoveExpiredNpcs()
                 {
                     i->FreeResources();
                     npcs.erase(i);
-                    list_changed = 1;
+                    list_changed = true;
                     break;
                 }
             }
@@ -593,7 +593,7 @@ void Npcs::RemoveExpiredNpcs()
                 {
                     if (!i->out_of_range)
                     {
-                        i->out_of_range = 1;
+                        i->out_of_range = true;
                         i->removal_countdown = 6;
                     }
                     else
@@ -604,13 +604,13 @@ void Npcs::RemoveExpiredNpcs()
                             i->FreeResources();
                             i->CloseBalloon();
                             npcs.erase(i);
-                            list_changed = 1;
+                            list_changed = true;
                             break;
                         }
                     }
                 }
                 else
-                    i->out_of_range = 0;
+                    i->out_of_range = false;
             }
         }
     } while (list_changed);
@@ -633,8 +633,8 @@ void Npcs::LoadPendingGraphics()
             {
                 i->FreeResources();
                 i->CreateResources();
-                i->reload_requested = 0;
-                i->graphics_pending = 1;
+                i->reload_requested = false;
+                i->graphics_pending = true;
                 i->load_stage = 0;
             }
         }
@@ -648,7 +648,7 @@ void Npcs::LoadPendingGraphics()
                 if (!i->load_stage)
                 {
                     if (!preload_graphics && library_ref_count <= 0)
-                        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(21).c_str());
+                        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
                     HMODULE library_handle = graphics_library;
                     i->resources->CreateSheets((int)library_handle, base_resource, has_idle_animation[i->graphic - 1]);
                     i->frame_width = i->resources->GetFrameWidth();
@@ -693,8 +693,8 @@ void Npcs::LoadPendingGraphics()
                     i->load_stage++;
                 if (i->load_stage >= 4)
                 {
-                    i->graphics_pending = 0;
-                    i->redraw = 1;
+                    i->graphics_pending = false;
+                    i->redraw = true;
                     if (!preload_graphics)
                     {
                         if (library_ref_count > 0)
@@ -729,13 +729,13 @@ int Npcs::GetNpcId(int index)
 // True when any npc needs a redraw; clears the flags.
 bool Npcs::ConsumeRedraw()
 {
-    bool any_redraw = 0;
+    bool any_redraw = false;
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
         if (it->redraw)
         {
-            it->redraw = 0;
-            any_redraw = 1;
+            it->redraw = false;
+            any_redraw = true;
         }
     }
     return any_redraw;
@@ -750,7 +750,7 @@ void Npcs::SortByPosition()
     char swapped;
     do
     {
-        swapped = 0;
+        swapped = false;
         for (int i = 0; i < (int)GetCount() - 1; i++)
         {
             Npc handle;
@@ -761,7 +761,7 @@ void Npcs::SortByPosition()
                     handle = npcs[i];
                     npcs[i] = npcs[i + 1];
                     npcs[i + 1] = handle;
-                    swapped = 1;
+                    swapped = true;
                 }
             }
             if (npcs[i].y > npcs[i + 1].y)
@@ -769,7 +769,7 @@ void Npcs::SortByPosition()
                 handle = npcs[i];
                 npcs[i] = npcs[i + 1];
                 npcs[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
         }
     } while (swapped);
@@ -778,13 +778,13 @@ void Npcs::SortByPosition()
 // True when an npc with the map index is on the list and not dying.
 bool Npcs::HasNpc(int index)
 {
-    bool found = 0;
+    bool found = false;
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
         if ((unsigned int)index == it->index && !it->dying)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -794,13 +794,13 @@ bool Npcs::HasNpc(int index)
 // True when a living npc stands on the tile.
 bool Npcs::HasNpcAt(int x, int y)
 {
-    bool found = 0;
+    bool found = false;
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
         if ((unsigned int)x == it->x && (unsigned int)y == it->y && !it->dying)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -814,7 +814,7 @@ void Npcs::KillNpc(int index)
     {
         if ((unsigned int)index == it->index)
         {
-            it->dying = 1;
+            it->dying = true;
             it->death_countdown = 9;
             it->index = -1;
             return;
@@ -827,11 +827,12 @@ void Npcs::KillNpcsById(int npc_id)
 {
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (npc_id != it->npc_id)
-            continue;
-        it->dying = 1;
-        it->death_countdown = 9;
-        it->index = -1;
+        if (npc_id == it->npc_id)
+        {
+            it->dying = true;
+            it->death_countdown = 9;
+            it->index = -1;
+        }
     }
 }
 
@@ -848,7 +849,7 @@ void Npcs::StartWalk(int index, int x, int y, int direction)
     {
         if ((unsigned int)index == it->index)
         {
-            it->walk_start = 1;
+            it->walk_start = true;
             it->walk_target_x = x;
             it->walk_target_y = y;
             it->walk_target_direction = direction;
@@ -870,8 +871,8 @@ void Npcs::ShowDamage(int index, int amount, char heal)
                 String amount_text = IntToStr(amount);
                 it->damage_digits = amount_text.Length();
             }
-            it->damage_start = 1;
-            it->damage_shown = 0;
+            it->damage_start = true;
+            it->damage_shown = false;
             it->damage_timer = 8;
             it->damage_amount = amount;
             it->damage_heal = heal;
@@ -890,8 +891,8 @@ void Npcs::ShowHealthBar(int index, int percent, int duration)
         if ((unsigned int)index == it->index)
         {
             bar_width = percent * HEALTH_BAR_SCALE;
-            it->health_bar_start = 1;
-            it->health_bar_shown = 0;
+            it->health_bar_start = true;
+            it->health_bar_shown = false;
             it->health_bar_timer = duration;
             it->health_bar_width = bar_width;
             return;
@@ -907,8 +908,8 @@ void Npcs::StartEffect(int index, int effect_id)
     {
         if ((unsigned int)index == it->index)
         {
-            it->effect_start = 1;
-            it->effect_running = 0;
+            it->effect_start = true;
+            it->effect_running = false;
             it->effect_id = effect_id;
             it->effect_frame = 0;
             it->effect_base_layer = MainForm->magic_mapper->base_layer[effect_id];
@@ -928,7 +929,7 @@ void Npcs::StartAttack(int index, int direction)
     {
         if ((unsigned int)index == it->index)
         {
-            it->attack_start = 1;
+            it->attack_start = true;
             it->direction = direction;
             return;
         }
@@ -941,7 +942,7 @@ void Npcs::AddNpc(int index, int npc_id, int graphic, String name, int x, int y,
     if (!HasNpc(index))
     {
         Npc handle(index, npc_id, graphic, name, x, y, direction);
-        handle.hidden = 0;
+        handle.hidden = false;
         handle.CreateResources();
         npcs.insert(npcs.end(), handle);
         SortByPosition();
@@ -951,8 +952,8 @@ void Npcs::AddNpc(int index, int npc_id, int graphic, String name, int x, int y,
 // Frees every npc's cells and balloon, then empties the list.
 void Npcs::Clear()
 {
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
         it->FreeResources();

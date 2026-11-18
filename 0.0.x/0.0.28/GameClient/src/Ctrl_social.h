@@ -14,16 +14,16 @@ struct SocialController
     int window_y;
     String title;
     int list_kind;
-    String unused_text_at_24;
-    char pad_0x1c[1];
+    String unused_text;
+    char unused_bytes[1];
     char scroll_up_hover;
     char scroll_down_hover;
-    bool unread_flag_at_31;
+    bool unused_flag;
     TStringList *ignored_names;
     TStringList *friend_names;
     TStringList *online_names;
     bool scroll_moved_flag;
-    int unread_int_at_48;
+    int unused_value;
     int scroll_offset;
     int scrollbar_position;
     char scrolling_up;
@@ -34,7 +34,7 @@ struct SocialController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x54[4];
+    char second_unused_bytes[4];
 
     SocialController();
     ~SocialController();
@@ -53,7 +53,7 @@ struct SocialController
     void SaveFriendList();
     bool IsIgnored(String name);
     bool IsFriend(String name);
-    static String UnscrambleString(SocialController *self, int divisor, unsigned char *data_begin,
+    String UnscrambleString(int divisor, unsigned char *data_begin,
         unsigned char *data_end);
     void OnTimer();
     int GetScrollbarPosition();

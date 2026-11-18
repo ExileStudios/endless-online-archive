@@ -20,7 +20,7 @@ struct ChestController
     char is_dragging;
     int drag_offset_x;
     int drag_offset_y;
-    char pad_0x48[8];
+    char unused_bytes[8];
 
     ChestController();
     ~ChestController();

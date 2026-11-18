@@ -43,9 +43,9 @@ GraphicSize TradeGraphics::LoadBackground(HMODULE library, int resource_id)
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
     MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = MainForm->resource_bitmap->Width;
     surface_desc->Height = MainForm->resource_bitmap->Height;
     if (!background_surface)
@@ -89,7 +89,7 @@ GraphicSize TradeGraphics::LoadBackground(HMODULE library, int resource_id)
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376);
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (...)
             {

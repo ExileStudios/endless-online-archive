@@ -13,7 +13,8 @@ enum SettingOption
     SettingOption_Shadows = 7,
     SettingOption_Filter = 8,
     SettingOption_LogChat = 9,
-    SettingOption_Requests = 10
+    SettingOption_Requests = 10,
+    SettingOption_GameHelp = 11
 };
 
 // The settings panel of the game screen: ten switches in two columns.

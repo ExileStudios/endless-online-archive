@@ -17,23 +17,23 @@ QuestController::QuestController()
     history_lines = new TStringList();
     window_x = 77;
     window_y = 16;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_line = -1;
-    is_visible = 0;
-    close_hovered = 0;
+    is_visible = false;
+    close_hovered = false;
     history_button_hovered = false;
-    unused_cleared_flag = 0;
-    showing_history = 0;
+    unused_cleared_flag = false;
+    showing_history = false;
     history_requested = false;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 QuestController::~QuestController()
@@ -65,8 +65,9 @@ void QuestController::LoadQuestHistory(String reply_data, String separator)
 // step kind turned into one of the icons and the progress shown as done and needed.
 void QuestController::LoadQuestList(String reply_data, String separator)
 {
-    int token_end = 0;
-    int third_sep_pos = 0;
+    int token_end;
+    int next_end;
+    int third_sep_pos;
     quest_entries->Clear();
     do
     {
@@ -119,11 +120,11 @@ void QuestController::LoadQuestList(String reply_data, String separator)
         String detail_text = entry.SubString(1, first_sep_pos - 1);
         entry.Delete(1, first_sep_pos);
         int icon_type = MainForm->net_client->DecodeNumber(entry.SubString(1, 2));
-        int v5b = MainForm->net_client->DecodeNumber(entry.SubString(3, 2));
+        int progress_count = MainForm->net_client->DecodeNumber(entry.SubString(3, 2));
         int progress_target = MainForm->net_client->DecodeNumber(entry.SubString(5, 2));
         String progress_text = "n/a";
-        if (v5b > 0 || progress_target > 0)
-            progress_text = IntToStr(v5b) + " / " + IntToStr(progress_target);
+        if (progress_count > 0 || progress_target > 0)
+            progress_text = IntToStr(progress_count) + " / " + IntToStr(progress_target);
         // The step kinds fold into four icons; unknown kinds get the first
         if (icon_type == 3)
             icon_type = 1;
@@ -170,23 +171,24 @@ void QuestController::AddText(String icon_type, String text, String detail_text,
                 }
                 else
                 {
-                    char split_done = 0;
+                    char split_done = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
-                        if (text[i] != ' ' && i != text.Length())
-                            continue;
-                        String prefix = text.SubString(1, i);
-                        if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                        if (text[i] == ' ' || i == text.Length())
                         {
-                            lines->Add(fitted_text);
-                            line_icon_types->Add(icon_type);
-                            line_detail_texts->Add(detail_text);
-                            line_progress_texts->Add(progress_text);
-                            text.Delete(1, fitted_text.Length());
-                            split_done = 1;
-                            break;
+                            String prefix = text.SubString(1, i);
+                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            {
+                                lines->Add(fitted_text);
+                                line_icon_types->Add(icon_type);
+                                line_detail_texts->Add(detail_text);
+                                line_progress_texts->Add(progress_text);
+                                text.Delete(1, fitted_text.Length());
+                                split_done = true;
+                                break;
+                            }
+                            fitted_text = prefix;
                         }
-                        fitted_text = prefix;
                     }
                     if (!split_done)
                     {
@@ -218,9 +220,9 @@ void QuestController::AddText(String icon_type, String text, String detail_text,
 // Shows the quest book titled with the character's name, empty and on the current quests, closing the board.
 void QuestController::Open()
 {
-    MainForm->animation->message_board->is_visible = 0;
+    MainForm->animation->message_board->is_visible = false;
     title = MainForm->players->GetName(MainForm->net_client->GetPlayerId());
-    title = Client::Capitalize(MainForm->net_client, title);
+    title = MainForm->net_client->Capitalize(title);
     title = title + "'s " + MainForm->strings->GetText(GameText_QuestProgress);
     MainForm->gfx->CreateMsgBoardGraphics();
     MainForm->gfx->LoadMsgBoardGraphics();
@@ -231,18 +233,18 @@ void QuestController::Open()
     history_lines->Clear();
     top_line = 0;
     scroll_thumb_offset = 0;
-    showing_history = 0;
+    showing_history = false;
     history_requested = false;
-    close_hovered = 0;
+    close_hovered = false;
     history_button_hovered = false;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void QuestController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     MainForm->gfx->FreeMsgBoardGraphics();
     MainForm->redraw_needed = true;
 }
@@ -264,26 +266,26 @@ void QuestController::MouseDown(int x, int y, int button)
     {
         if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
     }
     if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 44 && y <= window_y + 59)
     {
-        scroll_up_held = 1;
+        scroll_up_held = true;
         scroll_repeat_delay = 4;
         ScrollUp();
     }
     if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 228 && y <= window_y + 243)
     {
-        scroll_down_held = 1;
+        scroll_down_held = true;
         scroll_repeat_delay = 4;
         ScrollDown();
     }
     if (x >= window_x && x <= window_x + 484 && y >= window_y && y <= window_y + 290 && !thumb_grabbed)
     {
-        is_dragging = 1;
+        is_dragging = true;
         drag_offset_x = x - window_x;
         drag_offset_y = y - window_y;
     }
@@ -321,80 +323,71 @@ void QuestController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_line >= 0)
     {
-        if (this->hovered_line >= 0)
-        {
-            this->hovered_line = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_line = -1;
+        MainForm->redraw_needed = true;
     }
     if (!(x < this->window_x + 288 || x > this->window_x + 378 || y < this->window_y + 253 || y > this->window_y + 279))
     {
-        if (!this->history_button_hovered)
+        if (!history_button_hovered)
         {
-            this->history_button_hovered = true;
+            history_button_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (history_button_hovered)
     {
-        if (history_button_hovered)
-        {
-            history_button_hovered = false;
-            MainForm->redraw_needed = true;
-        }
+        history_button_hovered = false;
+        MainForm->redraw_needed = true;
     }
     if (!(x < this->window_x + 380 || x > this->window_x + 470 || y < this->window_y + 253 || y > this->window_y + 279))
     {
-        if (!this->close_hovered)
+        if (!close_hovered)
         {
-            this->close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (close_hovered)
     {
-        if (close_hovered)
-        {
-            close_hovered = 0;
-            MainForm->redraw_needed = true;
-        }
+        close_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
 // Lights the scroll arrow under the mouse and drags a grabbed thumb.
 void QuestController::UpdateScrollHover(int x, int y)
 {
-    if (x >= this->window_x + 449 && x <= this->window_x + 464)
+    if (x >= window_x + 449 && x <= window_x + 464)
     {
-        if (y >= this->window_y + 58 && y <= this->window_y + 229)
-            this->DragScrollThumb(y);
+        if (y >= window_y + 58 && y <= window_y + 229)
+            DragScrollThumb(y);
     }
     if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 44 && y <= window_y + 59)
     {
         if (!scroll_up_hovered)
         {
-            scroll_up_hovered = 1;
+            scroll_up_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (scroll_up_hovered)
     {
-        scroll_up_hovered = 0;
+        scroll_up_hovered = false;
         MainForm->redraw_needed = true;
     }
     if (x >= window_x + 449 && x <= window_x + 464 && y >= window_y + 228 && y <= window_y + 243)
     {
         if (!scroll_down_hovered)
         {
-            scroll_down_hovered = 1;
+            scroll_down_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (scroll_down_hovered)
     {
-        scroll_down_hovered = 0;
+        scroll_down_hovered = false;
         MainForm->redraw_needed = true;
     }
 }
@@ -404,7 +397,7 @@ void QuestController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -424,7 +417,7 @@ void QuestController::DragScrollThumb(int y)
                 top_line = new_top_line;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -443,7 +436,7 @@ void QuestController::ScrollUp()
         scroll_fraction = (double)top_line / (double)(line_count - 12);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -462,7 +455,7 @@ void QuestController::ScrollDown()
         scroll_fraction = (double)top_line / (double)(result - 12);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -470,10 +463,10 @@ void QuestController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void QuestController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 // Scrolls back to the top, for a switch between the quests and the history.

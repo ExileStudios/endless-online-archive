@@ -95,13 +95,13 @@ void TMainForm::CountDrawError()
 {
     draw_error_count++;
     if (draw_error_count > 2 && !config->GetUseBitBltDraw())
-        config->SetUseBitBltDraw(1);
+        config->SetUseBitBltDraw(true);
 }
 
 // Alt+F4: on the menu screens it frees everything and quits; in game it asks first.
 void __fastcall TMainForm::FormKeyDown(System::TObject *Sender, Word &Key, Classes::TShiftState Shift)
 {
-    if (Shift.Contains(ssAlt) && Key == 115)
+    if (Shift.Contains(ssAlt) && Key == VK_F4)
     {
         if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
         {
@@ -139,7 +139,7 @@ void __fastcall TMainForm::FormKeyDown(System::TObject *Sender, Word &Key, Class
         if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
         {
             Key = (Word)0;
-            MainForm->animation->game->ShowMessageBox(3, ConfirmAction_Logout,
+            MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_Logout,
                 MainForm->strings->GetDialogText(DialogText_ExitGame, false),
                 MainForm->strings->GetDialogText(DialogText_ExitGame, true));
             MainForm->edits->caret_enabled = false;
@@ -293,7 +293,7 @@ void __fastcall TMainForm::FormCreate(System::TObject *Sender)
                     Screen->Cursor = (TCursor)-1;
             }
             else
-                MainForm->sfx->PlayMusic(1);
+                MainForm->sfx->PlayMusic(Music_TitleTheme);
             if (!config->GetFullscreen())
             {
                 Height = 500;
@@ -317,7 +317,7 @@ void __fastcall TMainForm::FormCreate(System::TObject *Sender)
             Application->OnIdle = OnIdle;
             mm_timer_id = 0;
             // The fast timer drives animation and input; Timer1 loads and purges graphics.
-            mm_timer_id = timeSetEvent(12, 0, MMTimerProc, 0, 1);
+            mm_timer_id = timeSetEvent(12, 0, MMTimerProc, 0, TIME_PERIODIC);
             Timer1->Enabled = true;
             randomize();
         }
@@ -337,7 +337,7 @@ void __fastcall TMainForm::FormCreate(System::TObject *Sender)
         error_text = error_text + "Please, completely uninstall Endless Online\n";
         error_text = error_text + "and re-install the correct client version.\n";
         error_text = error_text + "Goto: http://www.endless-online.com";
-        if (MessageDlg(error_text, mtError, TMsgDlgButtons() << mbOK, 0) == 1)
+        if (MessageDlg(error_text, mtError, TMsgDlgButtons() << mbOK, 0) == mrOk)
         {
             delete files;
             delete config;
@@ -407,7 +407,7 @@ void __fastcall TMainForm::FormDestroy(System::TObject *Sender)
 }
 
 // Logs out when in game, then closes the connection, the chat log, the fast timer and DirectX.
-void __fastcall TMainForm::FormClose(System::TObject *Sender, Forms::TCloseAction &Action)
+void __fastcall TMainForm::FormClose(TObject *Sender, TCloseAction &Action)
 {
     if (animation->GetScreenMode() == ScreenMode_Game)
         animation->interface_controller->Logout();
@@ -445,14 +445,14 @@ void __fastcall TMainForm::Dx_Draw1Create(System::TObject *Sender)
                 BorderStyle = bsSingle;
                 BorderIcons >> biMaximize;
             }
-            Dx_Draw1->SetCooperativeLevel(Handle, 8);
+            Dx_Draw1->SetCooperativeLevel(Handle, DDSCL_NORMAL);
             PrimarySurfaceDesc->Flags = 0;
             PrimarySurfaceDesc->SCaps = PrimaryCaps;
-            PrimarySurfaceDesc->SCaps->Caps = 512;
+            PrimarySurfaceDesc->SCaps->Caps = DDSCAPS_PRIMARYSURFACE;
             PrimarySurface->Create(PrimarySurfaceDesc, Dx_Draw1);
-            PrimarySurfaceDesc->Flags = 6;
+            PrimarySurfaceDesc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
             PrimarySurfaceDesc->SCaps = PrimaryCaps;
-            PrimarySurfaceDesc->SCaps->Caps = 64;
+            PrimarySurfaceDesc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN;
             PrimarySurfaceDesc->Width = Width;
             PrimarySurfaceDesc->Height = Height;
             OffscreenSurface->Create(PrimarySurfaceDesc, Dx_Draw1);
@@ -472,8 +472,8 @@ void __fastcall TMainForm::Dx_Draw1Create(System::TObject *Sender)
                 PrimarySurface->Destroy();
             BorderStyle = bsNone;
             Dx_Draw1->EnumDisplayModes(0, 0, 0);
-            Dx_Draw1->SetCooperativeLevel(Application->Handle, 17);
-            PrimarySurfaceDesc->Flags = 33;
+            Dx_Draw1->SetCooperativeLevel(Application->Handle, DDSCL_FULLSCREEN | DDSCL_EXCLUSIVE);
+            PrimarySurfaceDesc->Flags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
             PrimarySurfaceDesc->SCaps = PrimaryCaps;
             PrimaryCaps->Caps = 16920;
             PrimarySurfaceDesc->Width = Width;
@@ -483,17 +483,17 @@ void __fastcall TMainForm::Dx_Draw1Create(System::TObject *Sender)
             PrimarySurface->Create(PrimarySurfaceDesc, Dx_Draw1);
             if (!PrimarySurface->Created)
             {
-                PrimarySurfaceDesc->Flags = 33;
+                PrimarySurfaceDesc->Flags = DDSD_CAPS | DDSD_BACKBUFFERCOUNT;
                 PrimarySurfaceDesc->BackBufferCount = 1;
-                PrimaryCaps->Caps = 536;
+                PrimaryCaps->Caps = DDSCAPS_COMPLEX | DDSCAPS_FLIP | DDSCAPS_PRIMARYSURFACE;
                 BackBufferCaps->Caps = 4;
                 PrimarySurfaceDesc->SCaps = PrimaryCaps;
                 BackBufferDesc->SCaps = BackBufferCaps;
                 PrimarySurface->Create(PrimarySurfaceDesc, Dx_Draw1);
             }
-            OffscreenDesc->Flags = 6;
+            OffscreenDesc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
             OffscreenDesc->SCaps = OffscreenCaps;
-            OffscreenDesc->SCaps->Caps = 2112;
+            OffscreenDesc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
             OffscreenDesc->Width = Width;
             OffscreenDesc->Height = Height;
             OffscreenSurface->GetSurfaceDesc(OffscreenDesc);
@@ -506,13 +506,10 @@ void __fastcall TMainForm::Dx_Draw1Create(System::TObject *Sender)
 }
 
 // Full screen, attaches the back buffer to the new primary surface.
-void __fastcall TMainForm::PrimarySurfaceCreate(System::TObject *Sender)
+void __fastcall TMainForm::PrimarySurfaceCreate(TObject *Sender)
 {
-    if (config->GetFullscreen())
-    {
-        if (PrimarySurface->GetAttachedSurface(BackBufferCaps, BackBuffer))
-            MainForm->BorderStyle = bsNone;
-    }
+    if (config->GetFullscreen() && PrimarySurface->GetAttachedSurface(BackBufferCaps, BackBuffer))
+        MainForm->BorderStyle = bsNone;
 }
 
 // Counts the display modes, and keeps the refresh rate of the 16-bit mode at the window size.
@@ -583,12 +580,12 @@ void __fastcall TMainForm::Dx_Draw1EnumDisplayModes(System::TObject *Sender, TDD
             display_mode_count++;
         }
         else
-            Finished = 1;
+            Finished = true;
     }
 }
 
 // Frees the surfaces.
-void __fastcall TMainForm::Dx_Draw1Destroy(System::TObject *Sender)
+void __fastcall TMainForm::Dx_Draw1Destroy(TObject *Sender)
 {
     OffscreenSurface->Destroy();
     if (BackBuffer->Created)
@@ -596,9 +593,8 @@ void __fastcall TMainForm::Dx_Draw1Destroy(System::TObject *Sender)
     PrimarySurface->Destroy();
 }
 
-void __fastcall TMainForm::PrimarySurfaceSurfaceLost(System::TObject *Sender)
+void __fastcall TMainForm::PrimarySurfaceSurfaceLost(TObject *Sender)
 {
-
 }
 
 void __stdcall MMTimerProc(UINT timer_id, UINT message, DWORD_PTR user_data, DWORD_PTR first_reserved,
@@ -607,10 +603,10 @@ void __stdcall MMTimerProc(UINT timer_id, UINT message, DWORD_PTR user_data, DWO
     MainForm->HandleMMTimerEvent();
 }
 
-// Loads pending graphics in turns, drops distant players, items and npcs, and purges graphics not used lately.
-// The tick count is kept in display_width: the turns follow its remainder by four, the drops come every twentieth
-// tick, and the purge comes with the reset above forty.
-void __fastcall TMainForm::Timer1Timer(System::TObject *Sender)
+// Loads pending graphics in turns, plays queued music, drops distant players, items and npcs, and purges graphics not
+// used lately. The tick count is kept in display_width: the turns follow its remainder by four, the music and the
+// screenshot key come every twelfth tick, the drops every twe
+void __fastcall TMainForm::Timer1Timer(TObject *Sender)
 {
     if (display_width % 4 == 1)
     {
@@ -761,10 +757,10 @@ void __fastcall TMainForm::HandleMMTimerEvent()
 }
 
 // Sets up the keyboard device and acquires it.
-void __fastcall TMainForm::Dx_InputDevice1Create(System::TObject *Sender)
+void __fastcall TMainForm::Dx_InputDevice1Create(TObject *Sender)
 {
     Dx_InputDevice1->SetDataFormat(DIKeyboardState1);
-    Dx_InputDevice1->SetCooperativeLevel(Application->Handle, 10);
+    Dx_InputDevice1->SetCooperativeLevel(Application->Handle, DISCL_NONEXCLUSIVE | DISCL_BACKGROUND);
     keyboard_acquired = Dx_InputDevice1->Acquire();
     if (keyboard_acquired)
     {
@@ -782,19 +778,19 @@ void __fastcall TMainForm::Dx_InputDevice1Destroy(System::TObject *Sender)
     return;
 }
 
-void __fastcall TMainForm::Dx_Input1Destroy(System::TObject *Sender)
+void __fastcall TMainForm::Dx_Input1Destroy(TObject *Sender)
 {
     if (Dx_InputDevice1->Created)
         Dx_InputDevice1->Destroy();
 }
 
-void __fastcall TMainForm::Dx_Sound1Create(System::TObject *Sender)
+void __fastcall TMainForm::Dx_Sound1Create(TObject *Sender)
 {
-    Dx_Sound1->SetCooperativeLevel(Application->Handle, 2);
+    Dx_Sound1->SetCooperativeLevel(Application->Handle, DSSCL_PRIORITY);
 }
 
 // Frees the sound buffers before the sound device goes.
-void __fastcall TMainForm::Dx_Sound1Destroy(System::TObject *Sender)
+void __fastcall TMainForm::Dx_Sound1Destroy(TObject *Sender)
 {
     if (Dx_SoundBuffer7->Created)
         Dx_SoundBuffer4->Destroy();
@@ -823,27 +819,26 @@ void __fastcall TMainForm::Dx_Sound1DSEnumerate(System::TObject *Sender, GUID *G
         sound_driver_guids->Add((void *)Guid);
     }
     else
-        Finished = 1;
+        Finished = true;
 }
 
 void TMainForm::IntroAnimator()
 {
-
 }
 
 // Scales the cursor in a window to game coordinates and hands it to the mouse.
 void __fastcall TMainForm::FormMouseMove(System::TObject *Sender, Classes::TShiftState Shift, int X, int Y)
 {
-    int __slot1;
-    int __slot2;
-    int __slot3;
-    int __slot4;
-    int __slot5;
-    int __slot6;
-    int __slot7;
-    int __slot8;
-    int __slot9;
-    int __slot10;
+    int unused_int;
+    int second_unused_int;
+    int third_unused_int;
+    int fourth_unused_int;
+    int fifth_unused_int;
+    int sixth_unused_int;
+    int seventh_unused_int;
+    int eighth_unused_int;
+    int ninth_unused_int;
+    int tenth_unused_int;
     int mouse_x;
     int mouse_y = Y;
     mouse_x = X;
@@ -881,7 +876,7 @@ void __fastcall TMainForm::FormMouseDown(System::TObject *Sender, Controls::TMou
             if (X >= handle.x && X <= handle.x + handle.width && Y >= handle.y && Y <= handle.y + handle.height)
             {
                 edits->FocusClickedEdit(handle);
-                sfx->PlaySfx(4);
+                sfx->PlaySfx(SfxSound_Select);
                 break;
             }
             edits->MoveNext();
@@ -893,22 +888,17 @@ void __fastcall TMainForm::FormMouseDown(System::TObject *Sender, Controls::TMou
         Sys_mouse_HandleClick((int *)mouse, X, Y, 1);
 }
 
-void __fastcall TMainForm::FormMouseWheelDown(System::TObject *Sender, Classes::TShiftState Shift, Windows::TPoint &MousePos,
-    bool &Handled)
+void __fastcall TMainForm::FormMouseWheelDown(TObject *Sender, TShiftState Shift, TPoint &MousePos, bool &Handled)
 {
-    int __slot1;
-    mouse->HandleWheel(2);
+    mouse->HandleWheel(WheelDirection_Down);
 }
 
-void __fastcall TMainForm::FormMouseWheelUp(System::TObject *Sender, Classes::TShiftState Shift, Windows::TPoint &MousePos,
-    bool &Handled)
+void __fastcall TMainForm::FormMouseWheelUp(TObject *Sender, TShiftState Shift, TPoint &MousePos, bool &Handled)
 {
-    int __slot1;
-    mouse->HandleWheel(1);
+    mouse->HandleWheel(WheelDirection_Up);
 }
 
-void __fastcall TMainForm::FormMouseUp(System::TObject *Sender, Controls::TMouseButton Button,
-    Classes::TShiftState Shift, int X, int Y)
+void __fastcall TMainForm::FormMouseUp(TObject *Sender, TMouseButton Button, TShiftState Shift, int X, int Y)
 {
     mouse->HandleMouseUp();
 }
@@ -930,7 +920,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             sfx->QueueMusic(map->GetMusicId());
     }
     // Print Screen saves a screenshot.
-    if (GetAsyncKeyState(44))
+    if (GetAsyncKeyState(VK_SNAPSHOT))
         gfx->interface_graphics->SaveScreenshot();
     if (animation->GetScreenMode() == ScreenMode_Game)
     {
@@ -939,7 +929,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             flip_needed = true;
             redraw_needed = true;
             OffscreenSurface->BltFast(0, 0, gfx->interface_graphics->hud_background,
-                &gfx->interface_graphics->hud_background_rect, 16);
+                &gfx->interface_graphics->hud_background_rect, DDBLTFAST_WAIT);
             animation->interface_controller->ClearFullRedraw();
         }
         if (animation_tick_due)
@@ -948,31 +938,36 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             // While warping or loading, only the frame, the bars and the loading text are drawn.
             if (map->warp_pending || map->loading_map || animation->interface_controller->timed_text_visible)
             {
-                OffscreenSurface->Blt(&gfx->game->view_clip_rect, 0, 0, 16778240, gfx->game->view_fill_fx);
+                OffscreenSurface->Blt(&gfx->game->view_clip_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT,
+                    gfx->game->view_fill_fx);
                 OffscreenSurface->BltFast(0, 0, gfx->interface_graphics->hud_frame,
-                    &gfx->interface_graphics->hud_frame_rect, 17);
+                    &gfx->interface_graphics->hud_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(7, 53, gfx->interface_graphics->hud_left_frame,
-                    &gfx->interface_graphics->hud_left_frame_rect, 17);
+                    &gfx->interface_graphics->hud_left_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(49, 7, gfx->interface_graphics->hud_top_frame,
-                    &gfx->interface_graphics->hud_top_frame_rect, 17);
+                    &gfx->interface_graphics->hud_top_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(55, 0, gfx->interface_graphics->hud_sheet,
-                    &gfx->interface_graphics->status_icon_left_rect, 17);
+                    &gfx->interface_graphics->status_icon_left_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(77, 0, gfx->interface_graphics->hud_sheet,
-                    &gfx->interface_graphics->status_icon_right_rect, 17);
+                    &gfx->interface_graphics->status_icon_right_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(101, 0, gfx->interface_graphics->hud_sheet,
-                    &gfx->interface_graphics->status_bars_frame_rect, 17);
+                    &gfx->interface_graphics->status_bars_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(125, 4, gfx->interface_graphics->hud_sheet,
-                    &InterfaceGraphics::GetStatusBarFillRect(gfx->interface_graphics, 0,
-                    animation->interface_controller->game_bars->GetHealthBarSegments()), 17);
+                    &gfx->interface_graphics->GetStatusBarFillRect(0,
+                        animation->interface_controller->game_bars->GetHealthBarSegments()),
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(234, 4, gfx->interface_graphics->hud_sheet,
-                    &InterfaceGraphics::GetStatusBarFillRect(gfx->interface_graphics, 1,
-                    animation->interface_controller->game_bars->GetManaBarSegments()), 17);
+                    &gfx->interface_graphics->GetStatusBarFillRect(1,
+                        animation->interface_controller->game_bars->GetManaBarSegments()),
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(345, 4, gfx->interface_graphics->hud_sheet,
-                    &InterfaceGraphics::GetStatusBarFillRect(gfx->interface_graphics, 2,
-                    animation->interface_controller->game_bars->GetStaminaBarSegments()), 17);
+                    &gfx->interface_graphics->GetStatusBarFillRect(2,
+                        animation->interface_controller->game_bars->GetStaminaBarSegments()),
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(454, 4, gfx->interface_graphics->hud_sheet,
-                    &InterfaceGraphics::GetStatusBarFillRect(gfx->interface_graphics, 3,
-                    animation->interface_controller->game_bars->GetExperienceBarSegments()), 17);
+                    &gfx->interface_graphics->GetStatusBarFillRect(3,
+                        animation->interface_controller->game_bars->GetExperienceBarSegments()),
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 animation->interface_controller->game_bars->MarkDirty();
                 gfx->interface_graphics->DrawCornerButton();
                 HDC timed_text_dc;
@@ -998,7 +993,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (map->loading_map)
                 {
                     OffscreenSurface->BltFast(230, 138, gfx->interface_graphics->loading_icon,
-                        &gfx->interface_graphics->loading_icon_rect, 16);
+                        &gfx->interface_graphics->loading_icon_rect, DDBLTFAST_WAIT);
                     HDC loading_dc;
                     if (OffscreenSurface->GetDC(&loading_dc))
                     {
@@ -1023,8 +1018,8 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (map->map_request_pending)
                 {
                     map->map_request_pending = false;
-                    String map_request = Client::EncodeNumber(MainForm->net_client, map->map_id, 2);
-                    map_request = map_request + Client::EncodeNumber(MainForm->net_client, map->warp_session_id, 2);
+                    String map_request = MainForm->net_client->EncodeNumber(map->map_id, 2);
+                    map_request = map_request + MainForm->net_client->EncodeNumber(map->warp_session_id, 2);
                     net_client->SendPacket(AC_GET, OP_MAP, map_request);
                 }
                 flip_needed = true;
@@ -1038,12 +1033,13 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 int effect_index = 0;
                 int item_index = 0;
                 int own_player_index = -1;
-                char own_has_weapon = 0;
-                char own_has_shield = 0;
+                char own_has_weapon = false;
+                char own_has_shield = false;
                 int shake_offset = 0;
                 if (animation->interface_controller->is_shaking)
                     shake_offset = animation->interface_controller->shake_offset;
-                OffscreenSurface->Blt(&gfx->game->view_clip_rect, 0, 0, 16778240, gfx->game->view_fill_fx);
+                OffscreenSurface->Blt(&gfx->game->view_clip_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT,
+                    gfx->game->view_fill_fx);
                 // The tiles around the centre; the rows run on to the bottom of the map.
                 int first_x = map->GetCenterX() - 28;
                 int last_x = map->GetCenterX() + 28;
@@ -1071,7 +1067,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                 {
                                     gfx->game->BlitClipped(ground_x, ground_y,
                                         gfx->tiles->GetGraphic(map->ground_tiles[j][i]).resource->surface,
-                                        Gfx_tile_GetFrameRect(gfx->tiles->GetGraphic(map->ground_tiles[j][i]).resource,
+                                        gfx->tiles->GetGraphic(map->ground_tiles[j][i]).resource->GetFrameRect(
                                         map->tile_frame));
                                     if (gfx->tiles->GetGraphic(map->ground_tiles[j][i]).resource->is_animated)
                                         MainForm->map->has_animated_tiles = true;
@@ -1121,43 +1117,43 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                 if (map->GetPathMarkerTimer() > 4)
                                     gfx->game->BlitClippedAlpha(screen_x, screen_y,
                                         gfx->interface_graphics->tile_cursor,
-                                        Gfx_interface_GetTileCursorRect(gfx->interface_graphics, 3),
+                                        gfx->interface_graphics->GetTileCursorRect(3),
                                         24 * map->GetPathMarkerTimer() + 12);
                                 else
                                     gfx->game->BlitClippedAlpha(screen_x, screen_y,
                                         gfx->interface_graphics->tile_cursor,
-                                        Gfx_interface_GetTileCursorRect(gfx->interface_graphics, 4),
+                                        gfx->interface_graphics->GetTileCursorRect(4),
                                         24 * map->GetPathMarkerTimer() + 12);
                             }
                             if (ii == map->GetCursorX() && n == map->GetCursorY() && !map->blocked[ii][n] &&
                                 !map->minimap_mask[ii][n] &&
                                 (!animation->game->player_menu_visible ||
-                                animation->game->player_menu_hovered_option < 0))
+                                    animation->game->player_menu_hovered_option < 0))
                             {
                                 if (MainForm->map_items->HasItemAt(ii, n))
                                     gfx->game->BlitClipped(screen_x, screen_y, gfx->interface_graphics->tile_cursor,
-                                        Gfx_interface_GetTileCursorRect(gfx->interface_graphics, 2));
+                                        gfx->interface_graphics->GetTileCursorRect(2));
                                 else if (map->has_tile_spec[ii][n] || players->HasVisiblePlayerAt(ii, n) ||
                                     npcs->HasNpcAt(ii, n))
                                     gfx->game->BlitClipped(screen_x, screen_y, gfx->interface_graphics->tile_cursor,
-                                        Gfx_interface_GetTileCursorRect(gfx->interface_graphics, 1));
+                                        gfx->interface_graphics->GetTileCursorRect(1));
                                 else
                                     gfx->game->BlitClipped(screen_x, screen_y, gfx->interface_graphics->tile_cursor,
-                                        Gfx_interface_GetTileCursorRect(gfx->interface_graphics, 0));
+                                        gfx->interface_graphics->GetTileCursorRect(0));
                             }
                             if ((int)MainForm->map_items->GetCount() > item_index)
                             {
                                 char item_found;
                                 do
                                 {
-                                    item_found = 0;
+                                    item_found = false;
                                     MapItem map_item = map_items->GetItem(item_index);
                                     if (ii == map_item.x && n == map_item.y)
                                     {
                                         int item_graphic = item_values->GetGraphic(map_item.item_id) - 1;
                                         if (item_graphic >= 0)
                                         {
-                                            if (map_item.item_id == 1)
+                                            if (map_item.item_id == ItemId_Gold)
                                             {
                                                 item_graphic = 134;
                                                 if (map_item.amount > 1)
@@ -1184,7 +1180,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     redraw_needed = true;
                                             }
                                         }
-                                        item_found = 1;
+                                        item_found = true;
                                         item_index++;
                                     }
                                 } while ((int)MainForm->map_items->GetCount() > item_index && item_found);
@@ -1203,12 +1199,12 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                             {
                                 if (net_client->IsTallObjectInDrawRange(map->GetCenterX(), map->GetCenterY(), ii, n))
                                 {
-                                    char draw_object = 1;
+                                    char draw_object = true;
                                     int object_spec = this->map->GetTileSpec(ii, n);
                                     if (object_spec == 33 && map->trap_reveal_timer < 1)
-                                        draw_object = 0;
+                                        draw_object = false;
                                     if (object_spec == 35 && players->FindPlayerAt(ii, n) < PlayerId_Unset)
-                                        draw_object = 0;
+                                        draw_object = false;
                                     if (draw_object)
                                     {
                                         if (gfx->objects->RequestGraphic(map->objects[ii][n]))
@@ -1231,15 +1227,15 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                 char player_found;
                                 do
                                 {
-                                    player_found = 0;
+                                    player_found = false;
                                     Player player = MainForm->players->GetPlayer(player_index);
                                     if (net_client->GetPlayerId() == player.player_id)
                                     {
                                         own_player_index = player_index;
                                         if (player.weapon > 0)
-                                            own_has_weapon = 1;
-                                        if (player.shield > 0)
-                                            own_has_shield = 1;
+                                            own_has_weapon = true;
+                                        if (player.shield > ShieldGraphic_None)
+                                            own_has_shield = true;
                                     }
                                     if ((unsigned int)ii == player.x && (unsigned int)n == player.y)
                                     {
@@ -1261,16 +1257,16 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                 {
                                                     if (player.walk_direction == FacingDirection_Left)
                                                     {
-                                                        behind_effect_x = behind_effect_x + 32 -
-                                                            (8 * player.walk_frame + 8);
-                                                        behind_effect_y = behind_effect_y + 16 -
-                                                            (4 * player.walk_frame + 4);
+                                                        behind_effect_x =
+                                                            behind_effect_x + 32 - (8 * player.walk_frame + 8);
+                                                        behind_effect_y =
+                                                            behind_effect_y + 16 - (4 * player.walk_frame + 4);
                                                     }
                                                     if (player.walk_direction == FacingDirection_Up)
                                                     {
                                                         behind_effect_x = 8 * player.walk_frame + behind_effect_x - 24;
-                                                        behind_effect_y = behind_effect_y + 16 -
-                                                            (4 * player.walk_frame + 4);
+                                                        behind_effect_y =
+                                                            behind_effect_y + 16 - (4 * player.walk_frame + 4);
                                                     }
                                                     if (player.walk_direction == FacingDirection_Right)
                                                     {
@@ -1279,14 +1275,14 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     }
                                                     if (player.walk_direction == FacingDirection_Down)
                                                     {
-                                                        behind_effect_x = behind_effect_x + 32 -
-                                                            (8 * player.walk_frame + 8);
+                                                        behind_effect_x =
+                                                            behind_effect_x + 32 - (8 * player.walk_frame + 8);
                                                         behind_effect_y = 4 * player.walk_frame + behind_effect_y - 12;
                                                     }
                                                 }
                                                 if (player.effect_id == SpellEffect_FireBall)
                                                     behind_effect_y -= 160 - 30 * player.effect_frame;
-                                                if (player.effect_id == 22)
+                                                if (player.effect_id == SpellEffect_IceBall)
                                                     behind_effect_y -= 160 - 30 * player.effect_frame;
                                                 if (player.effect_id == SpellEffect_EnergyBall)
                                                     behind_effect_y -= 10 * player.effect_frame;
@@ -1322,20 +1318,20 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     this->gfx->game->BlitClipped(behind_effect_x + shake_offset,
                                                         behind_effect_y,
                                                         this->gfx->effects->GetGraphic(player.effect_id).resource->layer0_surface,
-                                                        Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(player.effect_id).resource,
+                                                        this->gfx->effects->GetGraphic(player.effect_id).resource->GetFrameRect(
                                                         behind_effect_frame));
                                                 }
                                                 else
                                                     this->gfx->game->BlitClipped(behind_effect_x + shake_offset,
                                                         behind_effect_y,
                                                         this->gfx->effects->GetGraphic(player.effect_id).resource->layer0_surface,
-                                                        Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(player.effect_id).resource,
+                                                        this->gfx->effects->GetGraphic(player.effect_id).resource->GetFrameRect(
                                                         player.effect_frame));
                                             }
                                             if (player.dying || player.hiding || player.unhiding || player.hidden)
-                                                gfx->sprites->DrawPlayer(player, 1, shake_offset);
+                                                gfx->sprites->DrawPlayer(player, true, shake_offset);
                                             else
-                                                gfx->sprites->DrawPlayer(player, 0, shake_offset);
+                                                gfx->sprites->DrawPlayer(player, false, shake_offset);
                                             if (player.attacking && player.attack_frame >= 2 && player.weapon > 0)
                                             {
                                                 int weapon_effect_x = 32 * player.x - 32 * player.y +
@@ -1358,10 +1354,11 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     weapon_effect_x += 28;
                                                 if (!weapon_mapper->IsRangedWeapon(player.weapon))
                                                 {
-                                                    int weapon_effect_type = weapon_mapper->weapon_effect_types[player.weapon];
+                                                    int weapon_effect_type =
+                                                        weapon_mapper->weapon_effect_types[player.weapon];
                                                     gfx->game->BlitClippedHalfBlend(weapon_effect_x, weapon_effect_y,
                                                         gfx->interface_graphics->weapon_effects,
-                                                        Gfx_interface_GetWeaponEffectRect(gfx->interface_graphics,
+                                                        gfx->interface_graphics->GetWeaponEffectRect(
                                                         weapon_effect_type, player.direction));
                                                 }
                                             }
@@ -1372,62 +1369,64 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                 GraphicSize front_effect_size = gfx->effects->GetGraphicSize(player.effect_id);
                                                 int front_effect_x = 32 * player.x - 32 * player.y +
                                                     MainForm->map->GetScrollOffsetX() + 309;
-                                                int v43b = 16 * player.x + 16 * player.y +
+                                                int front_effect_y = 16 * player.x + 16 * player.y +
                                                     MainForm->map->GetScrollOffsetY() + 120;
                                                 front_effect_x -= front_effect_size.width / 2;
-                                                v43b -= front_effect_size.height / 2;
+                                                front_effect_y -= front_effect_size.height / 2;
                                                 if (player.walking)
                                                 {
                                                     if (player.walk_direction == FacingDirection_Left)
                                                     {
-                                                        front_effect_x = front_effect_x + 32 -
-                                                            (8 * player.walk_frame + 8);
-                                                        v43b = v43b + 16 - (4 * player.walk_frame + 4);
+                                                        front_effect_x =
+                                                            front_effect_x + 32 - (8 * player.walk_frame + 8);
+                                                        front_effect_y =
+                                                            front_effect_y + 16 - (4 * player.walk_frame + 4);
                                                     }
                                                     if (player.walk_direction == FacingDirection_Up)
                                                     {
                                                         front_effect_x = 8 * player.walk_frame + front_effect_x - 24;
-                                                        v43b = v43b + 16 - (4 * player.walk_frame + 4);
+                                                        front_effect_y =
+                                                            front_effect_y + 16 - (4 * player.walk_frame + 4);
                                                     }
                                                     if (player.walk_direction == FacingDirection_Right)
                                                     {
                                                         front_effect_x = 8 * player.walk_frame + front_effect_x - 24;
-                                                        v43b = 4 * player.walk_frame + v43b - 12;
+                                                        front_effect_y = 4 * player.walk_frame + front_effect_y - 12;
                                                     }
                                                     if (player.walk_direction == FacingDirection_Down)
                                                     {
                                                         front_effect_x = front_effect_x + 32 -
                                                             (8 * player.walk_frame + 8);
-                                                        v43b = 4 * player.walk_frame + v43b - 12;
+                                                        front_effect_y = 4 * player.walk_frame + front_effect_y - 12;
                                                     }
                                                 }
                                                 if (player.effect_id == SpellEffect_FireBall)
-                                                    v43b -= 160 - 30 * player.effect_frame;
-                                                if (player.effect_id == 22)
-                                                    v43b -= 160 - 30 * player.effect_frame;
+                                                    front_effect_y -= 160 - 30 * player.effect_frame;
+                                                if (player.effect_id == SpellEffect_IceBall)
+                                                    front_effect_y -= 160 - 30 * player.effect_frame;
                                                 if (player.effect_id == SpellEffect_EnergyBall)
-                                                    v43b -= 10 * player.effect_frame;
+                                                    front_effect_y -= 10 * player.effect_frame;
                                                 if (player.effect_id == SpellEffect_Boulders)
-                                                    v43b -= 160 - 30 * player.effect_frame;
+                                                    front_effect_y -= 160 - 30 * player.effect_frame;
                                                 if (player.effect_id == SpellEffect_Aura)
-                                                    v43b -= 12;
+                                                    front_effect_y -= 12;
                                                 if (player.effect_id == SpellEffect_Heaven)
-                                                    v43b -= 114;
+                                                    front_effect_y -= 114;
                                                 if (player.effect_id == SpellEffect_DarkBeam)
-                                                    v43b -= 114;
+                                                    front_effect_y -= 114;
                                                 if (player.effect_id == SpellEffect_GreenFlame)
-                                                    v43b -= 44;
+                                                    front_effect_y -= 44;
                                                 if (player.effect_id == SpellEffect_Whirl)
                                                 {
-                                                    v43b -= 10;
+                                                    front_effect_y -= 10;
                                                     if (!player.effect_frame)
                                                         front_effect_x -= 20;
                                                     if (player.effect_frame == 1)
-                                                        v43b += 14;
+                                                        front_effect_y += 14;
                                                     if (player.effect_frame == 2)
                                                         front_effect_x += 20;
                                                     if (player.effect_frame == 3)
-                                                        v43b -= 14;
+                                                        front_effect_y -= 14;
                                                 }
                                                 if (player.effect_id == SpellEffect_DarkBeam ||
                                                     player.effect_id == SpellEffect_Heaven ||
@@ -1441,29 +1440,29 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                         front_effect_frame = random(2) + 3;
                                                     if (flicker_roll > 0 && player.effect_blend_layer)
                                                         this->gfx->game->BlitClippedHalfBlend(front_effect_x +
-                                                            shake_offset, v43b,
+                                                            shake_offset, front_effect_y,
                                                             this->gfx->effects->GetGraphic(player.effect_id).resource->layer1_surface,
-                                                            Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(player.effect_id).resource,
+                                                            this->gfx->effects->GetGraphic(player.effect_id).resource->GetFrameRect(
                                                             front_effect_frame));
                                                 }
                                                 else
                                                 {
                                                     if (player.effect_blend_layer)
                                                         this->gfx->game->BlitClippedHalfBlend(front_effect_x +
-                                                            shake_offset, v43b,
+                                                            shake_offset, front_effect_y,
                                                             this->gfx->effects->GetGraphic(player.effect_id).resource->layer1_surface,
-                                                            Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(player.effect_id).resource,
+                                                            this->gfx->effects->GetGraphic(player.effect_id).resource->GetFrameRect(
                                                             player.effect_frame));
                                                     if (player.effect_solid_layer)
                                                         this->gfx->game->BlitClipped(front_effect_x + shake_offset,
-                                                            v43b,
+                                                            front_effect_y,
                                                             this->gfx->effects->GetGraphic(player.effect_id).resource->layer2_surface,
-                                                            Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(player.effect_id).resource,
+                                                            this->gfx->effects->GetGraphic(player.effect_id).resource->GetFrameRect(
                                                             player.effect_frame));
                                                 }
                                             }
                                         }
-                                        player_found = 1;
+                                        player_found = true;
                                         player_index++;
                                     }
                                 } while ((int)MainForm->players->GetCount() > player_index && player_found);
@@ -1473,7 +1472,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                 char npc_found;
                                 do
                                 {
-                                    npc_found = 0;
+                                    npc_found = false;
                                     Npc npc = MainForm->npcs->GetNpc(npc_index);
                                     if ((unsigned int)ii == npc.x && (unsigned int)n == npc.y)
                                     {
@@ -1523,7 +1522,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     }
                                                     if (npc.effect_id == SpellEffect_FireBall)
                                                         npc_behind_effect_y -= 160 - 30 * npc.effect_frame;
-                                                    if (npc.effect_id == 22)
+                                                    if (npc.effect_id == SpellEffect_IceBall)
                                                         npc_behind_effect_y -= 160 - 30 * npc.effect_frame;
                                                     if (npc.effect_id == SpellEffect_EnergyBall)
                                                         npc_behind_effect_y -= 10 * npc.effect_frame;
@@ -1548,7 +1547,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                     this->gfx->game->BlitClipped(npc_behind_effect_x + shake_offset,
                                                         npc_behind_effect_y,
                                                         this->gfx->effects->GetGraphic(npc.effect_id).resource->layer0_surface,
-                                                        Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(npc.effect_id).resource,
+                                                        this->gfx->effects->GetGraphic(npc.effect_id).resource->GetFrameRect(
                                                         npc.effect_frame));
                                                 }
                                             }
@@ -1558,8 +1557,8 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                             if (npc.death_countdown > 2)
                                                 gfx->npcs->DrawNpc(npc, 30 * npc.death_countdown - 60, shake_offset);
                                         }
-                                        else if (npc.graphic == 85 || npc.graphic == NpcGraphic_CursedMask ||
-                                            npc.graphic == NpcGraphic_AncientWraith)
+                                        else if (npc.graphic == NpcGraphic_Wraith || npc.graphic ==
+                                            NpcGraphic_CursedMask || npc.graphic == NpcGraphic_AncientWraith)
                                         {
                                             int npc_alpha = random(20) + 44;
                                             if (npc.attacking || npc.alt_attacking)
@@ -1583,34 +1582,34 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                             {
                                                 if (npc.walk_direction == FacingDirection_Left)
                                                 {
-                                                    npc_front_effect_x = npc_front_effect_x + 32 -
-                                                        (8 * npc.walk_frame + 8);
-                                                    npc_front_effect_y[0] = npc_front_effect_y[0] + 16 -
-                                                        (4 * npc.walk_frame + 4);
+                                                    npc_front_effect_x =
+                                                        npc_front_effect_x + 32 - (8 * npc.walk_frame + 8);
+                                                    npc_front_effect_y[0] =
+                                                        npc_front_effect_y[0] + 16 - (4 * npc.walk_frame + 4);
                                                 }
                                                 if (npc.walk_direction == FacingDirection_Up)
                                                 {
                                                     npc_front_effect_x = 8 * npc.walk_frame + npc_front_effect_x - 24;
-                                                    npc_front_effect_y[0] = npc_front_effect_y[0] + 16 -
-                                                        (4 * npc.walk_frame + 4);
+                                                    npc_front_effect_y[0] =
+                                                        npc_front_effect_y[0] + 16 - (4 * npc.walk_frame + 4);
                                                 }
                                                 if (npc.walk_direction == FacingDirection_Right)
                                                 {
                                                     npc_front_effect_x = 8 * npc.walk_frame + npc_front_effect_x - 24;
-                                                    npc_front_effect_y[0] = npc_front_effect_y[0] + 4 * npc.walk_frame -
-                                                        12;
+                                                    npc_front_effect_y[0] =
+                                                        npc_front_effect_y[0] + 4 * npc.walk_frame - 12;
                                                 }
                                                 if (npc.walk_direction == FacingDirection_Down)
                                                 {
-                                                    npc_front_effect_x = npc_front_effect_x + 32 -
-                                                        (8 * npc.walk_frame + 8);
-                                                    npc_front_effect_y[0] = npc_front_effect_y[0] + 4 * npc.walk_frame -
-                                                        12;
+                                                    npc_front_effect_x =
+                                                        npc_front_effect_x + 32 - (8 * npc.walk_frame + 8);
+                                                    npc_front_effect_y[0] =
+                                                        npc_front_effect_y[0] + 4 * npc.walk_frame - 12;
                                                 }
                                             }
                                             if (npc.effect_id == SpellEffect_FireBall)
                                                 npc_front_effect_y[0] -= 160 - 30 * npc.effect_frame;
-                                            if (npc.effect_id == 22)
+                                            if (npc.effect_id == SpellEffect_IceBall)
                                                 npc_front_effect_y[0] -= 160 - 30 * npc.effect_frame;
                                             if (npc.effect_id == SpellEffect_EnergyBall)
                                                 npc_front_effect_y[0] -= 10 * npc.effect_frame;
@@ -1636,16 +1635,16 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                                 this->gfx->game->BlitClippedHalfBlend(npc_front_effect_x + shake_offset,
                                                     npc_front_effect_y[0],
                                                     this->gfx->effects->GetGraphic(npc.effect_id).resource->layer1_surface,
-                                                    Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(npc.effect_id).resource,
+                                                    this->gfx->effects->GetGraphic(npc.effect_id).resource->GetFrameRect(
                                                     npc.effect_frame));
                                             if (npc.effect_solid_layer)
                                                 this->gfx->game->BlitClipped(npc_front_effect_x + shake_offset,
                                                     npc_front_effect_y[0],
                                                     this->gfx->effects->GetGraphic(npc.effect_id).resource->layer2_surface,
-                                                    Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(npc.effect_id).resource,
+                                                    this->gfx->effects->GetGraphic(npc.effect_id).resource->GetFrameRect(
                                                     npc.effect_frame));
                                         }
-                                        npc_found = 1;
+                                        npc_found = true;
                                         npc_index++;
                                     }
                                 } while ((int)MainForm->npcs->GetCount() > npc_index && npc_found);
@@ -1655,7 +1654,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                 char effect_found;
                                 do
                                 {
-                                    effect_found = 0;
+                                    effect_found = false;
                                     MapEffect map_effect = MainForm->effects->GetEffect(effect_index);
                                     if (ii == map_effect.x && n == map_effect.y)
                                     {
@@ -1671,15 +1670,15 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                             if (map_effect.has_blend_layer)
                                                 this->gfx->game->BlitClippedHalfBlend(effect_x + shake_offset, effect_y,
                                                     this->gfx->effects->GetGraphic(map_effect.effect_id).resource->layer1_surface,
-                                                    Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(map_effect.effect_id).resource,
+                                                    this->gfx->effects->GetGraphic(map_effect.effect_id).resource->GetFrameRect(
                                                     map_effect.frame));
                                             if (map_effect.has_solid_layer)
                                                 this->gfx->game->BlitClipped(effect_x + shake_offset, effect_y,
                                                     this->gfx->effects->GetGraphic(map_effect.effect_id).resource->layer2_surface,
-                                                    Gfx_effect_GetFrameRect(this->gfx->effects->GetGraphic(map_effect.effect_id).resource,
+                                                    this->gfx->effects->GetGraphic(map_effect.effect_id).resource->GetFrameRect(
                                                     map_effect.frame));
                                         }
-                                        effect_found = 1;
+                                        effect_found = true;
                                         effect_index++;
                                     }
                                 } while (MainForm->effects->GetCount() > effect_index && effect_found);
@@ -1709,7 +1708,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                         int wall_y = screen_y + 31 - wall_size.height;
                                         gfx->game->BlitClipped(screen_x, wall_y,
                                             gfx->walls->GetGraphic(map->walls[ii][n]).resource->surface,
-                                            Gfx_wall_GetFrameRect(gfx->walls->GetGraphic(map->walls[ii][n]).resource,
+                                            gfx->walls->GetGraphic(map->walls[ii][n]).resource->GetFrameRect(
                                             map->tile_frame));
                                         if (gfx->walls->GetGraphic(map->walls[ii][n]).resource->is_animated)
                                             MainForm->map->has_animated_tiles = true;
@@ -1731,7 +1730,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                                         int lower_wall_y = screen_y + 31 - lower_wall_size.height;
                                         gfx->game->BlitClipped(screen_x, lower_wall_y + 16,
                                             gfx->walls->GetGraphic(map->walls_next_row[ii][n + 1]).resource->surface,
-                                            Gfx_wall_GetFrameRect(gfx->walls->GetGraphic(map->walls_next_row[ii][n + 1]).resource,
+                                            gfx->walls->GetGraphic(map->walls_next_row[ii][n + 1]).resource->GetFrameRect(
                                             map->tile_frame));
                                         if (gfx->walls->GetGraphic(map->walls_next_row[ii][n + 1]).resource->is_animated)
                                             MainForm->map->has_animated_tiles = true;
@@ -1786,7 +1785,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 {
                     Player own_player = players->GetPlayer(own_player_index);
                     if (net_client->GetPlayerId() == own_player.player_id)
-                        gfx->sprites->DrawPlayer(own_player, 1, shake_offset);
+                        gfx->sprites->DrawPlayer(own_player, true, shake_offset);
                 }
                 gfx->tiles->AgeGraphics();
                 gfx->walls->AgeGraphics();
@@ -1808,107 +1807,107 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                         {
                             int minimap_origin_x = 0 - 14 * this->map->GetCenterX() + 14 * this->map->GetCenterY();
                             int minimap_origin_y = 0 - 7 * this->map->GetCenterX() - 7 * this->map->GetCenterY();
-                            int v43bb = 14 * nn - 14 * mm + minimap_origin_x + 278;
+                            int minimap_x = 14 * nn - 14 * mm + minimap_origin_x + 278;
                             int minimap_y = 7 * nn + 7 * mm + minimap_origin_y + 134;
                             char x_border;
-                            char y_border = 0;
+                            char y_border = false;
                             if (!this->map->minimap_mask[nn][mm])
                             {
-                                x_border = 0;
-                                y_border = 0;
+                                x_border = false;
+                                y_border = false;
                                 if (!nn)
-                                    x_border = 1;
+                                    x_border = true;
                                 else
                                 {
                                     if (this->map->minimap_mask[nn - 1][mm] == 1)
-                                        x_border = 1;
+                                        x_border = true;
                                 }
                                 if (!mm)
-                                    y_border = 1;
+                                    y_border = true;
                                 else
                                 {
                                     if (this->map->minimap_mask[nn][mm - 1] == 1)
-                                        y_border = 1;
+                                        y_border = true;
                                 }
                                 if (x_border || y_border)
                                 {
                                     if (x_border && !y_border)
-                                        this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                        this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                             this->gfx->interface_graphics->minimap_tiles,
-                                            Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 0));
+                                            this->gfx->interface_graphics->GetMinimapEdgeRect(0));
                                     if (y_border && !x_border)
-                                        this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                        this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                             this->gfx->interface_graphics->minimap_tiles,
-                                            Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 1));
+                                            this->gfx->interface_graphics->GetMinimapEdgeRect(1));
                                 }
                                 else
-                                    this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                    this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                         this->gfx->interface_graphics->minimap_tiles,
-                                        Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 2));
+                                        this->gfx->interface_graphics->GetMinimapEdgeRect(2));
                             }
                             if (this->map->blocked[nn][mm] || this->map->minimap_mask[nn][mm] == 2)
                             {
                                 if (this->map->minimap_mask[nn][mm] == 2)
-                                    this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                    this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                         this->gfx->interface_graphics->minimap_tiles,
-                                        Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 2));
+                                        this->gfx->interface_graphics->GetMinimapEdgeRect(2));
                                 if (this->map->minimap_mask[nn][mm] != 1)
-                                    this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                    this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                         this->gfx->interface_graphics->minimap_tiles,
-                                        Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 3));
+                                        this->gfx->interface_graphics->GetMinimapEdgeRect(3));
                             }
-                            char player_on_cell = 0;
+                            char player_on_cell = false;
                             if ((int)MainForm->players->GetCount() > minimap_player_index)
                             {
                                 char minimap_player_found;
                                 do
                                 {
-                                    minimap_player_found = 0;
+                                    minimap_player_found = false;
                                     Player minimap_player = MainForm->players->GetPlayer(minimap_player_index);
                                     if ((unsigned int)nn == minimap_player.x && (unsigned int)mm == minimap_player.y)
                                     {
                                         if (!minimap_player.hidden)
-                                            player_on_cell = 1;
+                                            player_on_cell = true;
                                         if (this->net_client->GetPlayerId() == minimap_player.player_id)
-                                            this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                            this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                                 this->gfx->interface_graphics->minimap_tiles,
-                                                Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 6));
+                                                this->gfx->interface_graphics->GetMinimapEdgeRect(6));
                                         else if (!minimap_player.hidden)
-                                            this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                            this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                                 this->gfx->interface_graphics->minimap_tiles,
-                                                Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 4));
-                                        minimap_player_found = 1;
+                                                this->gfx->interface_graphics->GetMinimapEdgeRect(4));
+                                        minimap_player_found = true;
                                         minimap_player_index++;
                                     }
                                 } while ((int)MainForm->players->GetCount() > minimap_player_index &&
                                     minimap_player_found);
                             }
                             if (!player_on_cell && this->map->has_tile_spec[nn][mm])
-                                this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                     this->gfx->interface_graphics->minimap_tiles,
-                                    Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 7));
+                                    this->gfx->interface_graphics->GetMinimapEdgeRect(7));
                             if ((int)MainForm->npcs->GetCount() > minimap_npc_index)
                             {
                                 char minimap_npc_found;
                                 do
                                 {
-                                    minimap_npc_found = 0;
+                                    minimap_npc_found = false;
                                     Npc minimap_npc = MainForm->npcs->GetNpc(minimap_npc_index);
                                     if ((unsigned int)nn == minimap_npc.x && (unsigned int)mm == minimap_npc.y)
                                     {
-                                        if (minimap_npc.graphic != 85)
+                                        if (minimap_npc.graphic != NpcGraphic_Wraith)
                                         {
                                             NpcTypeInfo npc_type = MainForm->npc_values->GetType(minimap_npc.npc_id);
                                             if (npc_type.npc_type > NpcType_Friendly && npc_type.npc_type < NpcType_Shop)
-                                                this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                                this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                                     this->gfx->interface_graphics->minimap_tiles,
-                                                    Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 5));
+                                                    this->gfx->interface_graphics->GetMinimapEdgeRect(5));
                                             else
-                                                this->gfx->game->BlitClippedHalfBlend(v43bb, minimap_y,
+                                                this->gfx->game->BlitClippedHalfBlend(minimap_x, minimap_y,
                                                     this->gfx->interface_graphics->minimap_tiles,
-                                                    Gfx_interface_GetMinimapEdgeRect(this->gfx->interface_graphics, 8));
+                                                    this->gfx->interface_graphics->GetMinimapEdgeRect(8));
                                         }
-                                        minimap_npc_found = 1;
+                                        minimap_npc_found = true;
                                         minimap_npc_index++;
                                     }
                                 } while ((int)MainForm->npcs->GetCount() > minimap_npc_index && minimap_npc_found);
@@ -1922,36 +1921,36 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 {
                     MainForm->blitter->AlphaBlt(status_icon_x, 285, OffscreenSurface,
                         gfx->interface_graphics->status_icons,
-                        &Gfx_interface_GetStatusIconRect(gfx->interface_graphics, 3, false), 140);
+                        &gfx->interface_graphics->GetStatusIconRect(StatusIcon_Pvp, false), 140);
                     status_icon_x += 24;
                 }
                 if (animation->interface_controller->spells->awaiting_target)
                 {
                     MainForm->blitter->AlphaBlt(status_icon_x, 285, OffscreenSurface,
                         gfx->interface_graphics->status_icons,
-                        &Gfx_interface_GetStatusIconRect(gfx->interface_graphics, 2, false), 140);
+                        &gfx->interface_graphics->GetStatusIconRect(StatusIcon_SpellTarget, false), 140);
                     status_icon_x += 24;
                 }
                 if (own_has_weapon)
                 {
                     MainForm->blitter->AlphaBlt(status_icon_x, 285, OffscreenSurface,
                         gfx->interface_graphics->status_icons,
-                        &Gfx_interface_GetStatusIconRect(gfx->interface_graphics, 0, false), 140);
+                        &gfx->interface_graphics->GetStatusIconRect(StatusIcon_Weapon, false), 140);
                     status_icon_x += 24;
                 }
                 if (own_has_shield)
                 {
                     MainForm->blitter->AlphaBlt(status_icon_x, 285, OffscreenSurface,
                         gfx->interface_graphics->status_icons,
-                        &Gfx_interface_GetStatusIconRect(gfx->interface_graphics, 1, false), 140);
+                        &gfx->interface_graphics->GetStatusIconRect(StatusIcon_Shield, false), 140);
                     status_icon_x += 24;
                 }
                 OffscreenSurface->BltFast(0, 0, gfx->interface_graphics->hud_frame,
-                    &gfx->interface_graphics->hud_frame_rect, 17);
+                    &gfx->interface_graphics->hud_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(7, 53, gfx->interface_graphics->hud_left_frame,
-                    &gfx->interface_graphics->hud_left_frame_rect, 17);
+                    &gfx->interface_graphics->hud_left_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 OffscreenSurface->BltFast(49, 7, gfx->interface_graphics->hud_top_frame,
-                    &gfx->interface_graphics->hud_top_frame_rect, 17);
+                    &gfx->interface_graphics->hud_top_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 animation->interface_controller->game_bars->MarkDirty();
                 if (animation->game->player_menu_visible)
                 {
@@ -1964,7 +1963,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                         gfx->game->BlitClipped(animation->game->player_menu_x + 13,
                             animation->game->player_menu_y + 15 * animation->game->player_menu_hovered_option + 9,
                             gfx->game->extra_surface,
-                            Gfx_game_GetMenuRowRect(gfx->game, animation->game->player_menu_hovered_option));
+                            gfx->game->GetMenuRowRect(animation->game->player_menu_hovered_option));
                 }
                 if (animation->quests->is_visible)
                 {
@@ -2316,43 +2315,43 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->game->amount_box_visible)
                 {
                     OffscreenSurface->BltFast(animation->game->amount_box_x, animation->game->amount_box_y,
-                        gfx->interface_graphics->control_sheet, &gfx->game->amount_box_rect, 16);
+                        gfx->interface_graphics->control_sheet, &gfx->game->amount_box_rect, DDBLTFAST_WAIT);
                     if (animation->game->amount_box_kind == AmountBoxKind_JunkItem)
                         OffscreenSurface->BltFast(animation->game->amount_box_x + 11,
                             animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet,
-                            &gfx->game->junk_title_rect, 16);
-                    if (animation->game->amount_box_kind == 3)
+                            &gfx->game->junk_title_rect, DDBLTFAST_WAIT);
+                    if (animation->game->amount_box_kind == AmountBoxKind_Amount)
                         OffscreenSurface->BltFast(animation->game->amount_box_x + 11,
                             animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet,
-                            &gfx->game->amount_title_rect, 16);
+                            &gfx->game->amount_title_rect, DDBLTFAST_WAIT);
                     if (animation->game->amount_box_kind == AmountBoxKind_TradeAddItem)
                         OffscreenSurface->BltFast(animation->game->amount_box_x + 11,
                             animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet,
-                            &gfx->game->trade_title_rect, 16);
+                            &gfx->game->trade_title_rect, DDBLTFAST_WAIT);
                     if (animation->game->amount_box_kind == AmountBoxKind_BankDeposit ||
                         animation->game->amount_box_kind == AmountBoxKind_BankWithdraw)
                         OffscreenSurface->BltFast(animation->game->amount_box_x + 11,
                             animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet,
-                            &gfx->game->bank_title_rect, 16);
+                            &gfx->game->bank_title_rect, DDBLTFAST_WAIT);
                     if (animation->game->amount_box_kind == AmountBoxKind_ShopBuy ||
                         animation->game->amount_box_kind == AmountBoxKind_ShopSell ||
                         animation->game->amount_box_kind == AmountBoxKind_LockerAddItem)
                         OffscreenSurface->BltFast(animation->game->amount_box_x + 11,
                             animation->game->amount_box_y + 10, gfx->interface_graphics->control_sheet,
-                            &gfx->game->shop_title_rect, 16);
+                            &gfx->game->shop_title_rect, DDBLTFAST_WAIT);
                     if (animation->game->amount_slider_grabbed)
                         this->OffscreenSurface->BltFast(this->animation->game->amount_box_x +
                             this->animation->game->amount_slider_offset + 25, this->animation->game->amount_box_y + 96,
                             MainForm->gfx->interface_graphics->scroll_icons,
-                            &InterfaceGraphics::GetScrollIconRect(MainForm->gfx->interface_graphics, 6), 16);
+                            &MainForm->gfx->interface_graphics->GetScrollIconRect(6), DDBLTFAST_WAIT);
                     else
                     {
                         int knob_icon = 5;
                         if (animation->game->amount_slider_hovered)
                             knob_icon = 6;
-                        if (edits->GetText(13).Length() > 0)
+                        if (edits->GetText(EditId_Amount).Length() > 0)
                         {
-                            int typed_amount = StrToInt(edits->GetText(13));
+                            int typed_amount = StrToInt(edits->GetText(EditId_Amount));
                             int slider_width = 107;
                             typed_amount--;
                             double slider_step = (double)slider_width / (double)(animation->game->amount_max - 1);
@@ -2361,23 +2360,20 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                             if (animation->game->amount_slider_offset < 0)
                                 OffscreenSurface->BltFast(animation->game->amount_box_x + 25,
                                     animation->game->amount_box_y + 96, MainForm->gfx->interface_graphics->scroll_icons,
-                                    &InterfaceGraphics::GetScrollIconRect(MainForm->gfx->interface_graphics, knob_icon),
-                                    16);
+                                    &MainForm->gfx->interface_graphics->GetScrollIconRect(knob_icon), DDBLTFAST_WAIT);
                             else
                                 this->OffscreenSurface->BltFast(this->animation->game->amount_box_x +
                                     this->animation->game->amount_slider_offset + 25,
                                     this->animation->game->amount_box_y + 96,
                                     MainForm->gfx->interface_graphics->scroll_icons,
-                                    &InterfaceGraphics::GetScrollIconRect(MainForm->gfx->interface_graphics, knob_icon),
-                                    16);
+                                    &MainForm->gfx->interface_graphics->GetScrollIconRect(knob_icon), DDBLTFAST_WAIT);
                         }
                         else
                         {
                             animation->game->amount_slider_offset = 0;
                             OffscreenSurface->BltFast(animation->game->amount_box_x + 25,
                                 animation->game->amount_box_y + 96, MainForm->gfx->interface_graphics->scroll_icons,
-                                &InterfaceGraphics::GetScrollIconRect(MainForm->gfx->interface_graphics, knob_icon),
-                                16);
+                                &MainForm->gfx->interface_graphics->GetScrollIconRect(knob_icon), DDBLTFAST_WAIT);
                         }
                     }
                     HDC amount_dc;
@@ -2407,7 +2403,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                         {
                             text_canvas->Handle = msg_board_dc;
                             gfx->game->DrawMsgBoardText();
-                            edit_canvas->DrawEditBoxes(109);
+                            edit_canvas->DrawEditBoxes(EditGroup_MsgBoard);
                             text_canvas->Handle = 0;
                         }
                         catch (Exception &)
@@ -2446,7 +2442,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                         {
                             text_canvas->Handle = form_dc;
                             gfx->game->DrawListBoxText();
-                            edit_canvas->DrawEditBoxes(105);
+                            edit_canvas->DrawEditBoxes(EditGroup_InputForm);
                             text_canvas->Handle = 0;
                         }
                         catch (Exception &)
@@ -2458,7 +2454,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->game->input_box_visible)
                 {
                     OffscreenSurface->BltFast(animation->game->input_box_x, animation->game->input_box_y,
-                        gfx->game->input_box_surface, &gfx->game->input_box_rect, 16);
+                        gfx->game->input_box_surface, &gfx->game->input_box_rect, DDBLTFAST_WAIT);
                     HDC input_box_dc;
                     if (OffscreenSurface->GetDC(&input_box_dc))
                     {
@@ -2478,7 +2474,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->game->large_box_visible)
                 {
                     OffscreenSurface->BltFast(animation->game->large_box_x, animation->game->large_box_y,
-                        gfx->game->text_box_surface, &gfx->game->text_box_rect, 16);
+                        gfx->game->text_box_surface, &gfx->game->text_box_rect, DDBLTFAST_WAIT);
                     HDC text_box_dc;
                     if (OffscreenSurface->GetDC(&text_box_dc))
                     {
@@ -2498,7 +2494,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->game->message_visible)
                 {
                     OffscreenSurface->BltFast(animation->game->message_x, animation->game->message_y,
-                        gfx->game->message_box_surface, &gfx->game->message_box_rect, 16);
+                        gfx->game->message_box_surface, &gfx->game->message_box_rect, DDBLTFAST_WAIT);
                     HDC message_box_dc;
                     if (OffscreenSurface->GetDC(&message_box_dc))
                     {
@@ -2547,7 +2543,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         {
             flip_needed = true;
             OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                &gfx->interface_graphics->panel_rect, 16);
+                &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
         }
         if (!animation->interface_controller->IsFullRedrawPending())
         {
@@ -2556,7 +2552,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->status->TestAndClearDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     HDC status_dc;
                     if (OffscreenSurface->GetDC(&status_dc))
                     {
@@ -2578,17 +2574,17 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                     if (animation->interface_controller->status->GetBlinkPhase() > 5)
                         raise_button_frame = 1;
                     MainForm->OffscreenSurface->BltFast(208, 337, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                     MainForm->OffscreenSurface->BltFast(208, 355, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                     MainForm->OffscreenSurface->BltFast(208, 373, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                     MainForm->OffscreenSurface->BltFast(208, 391, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                     MainForm->OffscreenSurface->BltFast(208, 409, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                     MainForm->OffscreenSurface->BltFast(208, 427, gfx->interface_graphics->control_sheet,
-                        &InterfaceGraphics::GetRaiseButtonRect(gfx->interface_graphics, raise_button_frame), 16);
+                        &gfx->interface_graphics->GetRaiseButtonRect(raise_button_frame), DDBLTFAST_WAIT);
                 }
             }
             if (MainForm->animation->GetSubState() == GamePanel_Chat)
@@ -2596,7 +2592,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->chat->TakeTextDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawChatPanel();
                     HDC chat_dc;
                     if (OffscreenSurface->GetDC(&chat_dc))
@@ -2624,7 +2620,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->player_list->TestAndClearListDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawPlayerList();
                     HDC player_list_dc;
                     if (OffscreenSurface->GetDC(&player_list_dc))
@@ -2652,7 +2648,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->spells->TestAndClearDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawSpellPanel();
                     HDC spell_dc;
                     if (OffscreenSurface->GetDC(&spell_dc))
@@ -2681,7 +2677,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->skills->TestAndClearDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawSkillPanel();
                     HDC skill_dc;
                     if (OffscreenSurface->GetDC(&skill_dc))
@@ -2710,7 +2706,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->inventory->TestAndClearItemsDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     MainForm->animation->interface_controller->inventory->MarkHoverDirty();
                     gfx->interface_graphics->DrawInventoryGrid();
                     HDC inventory_dc;
@@ -2739,7 +2735,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->group->TestAndClearListDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawGroupList();
                     HDC group_dc;
                     if (OffscreenSurface->GetDC(&group_dc))
@@ -2781,7 +2777,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->settings->TestAndClearDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawSettingMarkers();
                     HDC settings_dc;
                     if (OffscreenSurface->GetDC(&settings_dc))
@@ -2804,7 +2800,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->news->TestAndClearTextDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawNewsList();
                     HDC news_dc;
                     if (OffscreenSurface->GetDC(&news_dc))
@@ -2832,7 +2828,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 if (animation->interface_controller->help->TestAndClearTextDirty())
                 {
                     OffscreenSurface->BltFast(102, 330, gfx->interface_graphics->panel_background,
-                        &gfx->interface_graphics->panel_rect, 16);
+                        &gfx->interface_graphics->panel_rect, DDBLTFAST_WAIT);
                     gfx->interface_graphics->DrawHelpList();
                     HDC help_dc;
                     if (OffscreenSurface->GetDC(&help_dc))
@@ -2869,7 +2865,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             if (status_change == 1)
             {
                 OffscreenSurface->BltFast(99, 452, gfx->interface_graphics->tooltip_background,
-                    &gfx->interface_graphics->tooltip_rect, 16);
+                    &gfx->interface_graphics->tooltip_rect, DDBLTFAST_WAIT);
                 HDC status_message_dc;
                 if (OffscreenSurface->GetDC(&status_message_dc))
                 {
@@ -2894,7 +2890,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             }
             if (status_change == 2)
                 OffscreenSurface->BltFast(99, 452, gfx->interface_graphics->tooltip_background,
-                    &gfx->interface_graphics->tooltip_rect, 16);
+                    &gfx->interface_graphics->tooltip_rect, DDBLTFAST_WAIT);
         }
         // The clock is drawn again only when its text changes.
         String current_clock_text = TimeToStr(Time());
@@ -2902,7 +2898,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         {
             clock_text = current_clock_text;
             OffscreenSurface->BltFast(543, 452, gfx->interface_graphics->clock_background,
-                &gfx->interface_graphics->clock_rect, 16);
+                &gfx->interface_graphics->clock_rect, DDBLTFAST_WAIT);
             HDC clock_dc;
             if (OffscreenSurface->GetDC(&clock_dc))
             {
@@ -2933,7 +2929,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             {
                 gfx->interface_graphics->DrawChatModeIcon();
                 OffscreenSurface->BltFast(98, 309, gfx->interface_graphics->chat_input_background,
-                    &gfx->interface_graphics->chat_input_rect, 16);
+                    &gfx->interface_graphics->chat_input_rect, DDBLTFAST_WAIT);
                 flip_needed = true;
             }
             HDC chat_edit_dc;
@@ -2942,7 +2938,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                 try
                 {
                     text_canvas->Handle = chat_edit_dc;
-                    edit_canvas->DrawEditBoxes(3);
+                    edit_canvas->DrawEditBoxes(EditGroup_Game);
                     text_canvas->Handle = 0;
                 }
                 catch (Exception &)
@@ -2955,9 +2951,10 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
     if (animation->GetScreenMode() == ScreenMode_Menu)
     {
         flip_needed = true;
-        OffscreenSurface->BltFast(0, 0, gfx->menu->background, &gfx->menu->background_rect, 16);
-        if (animation->GetSubState() == MenuScreen_Main || animation->GetSubState() == MenuScreen_Credits || animation->GetSubState() == MenuScreen_Login ||
-            animation->GetSubState() == MenuScreen_GridAccountName || animation->GetSubState() == MenuScreen_PasswordGrid)
+        OffscreenSurface->BltFast(0, 0, gfx->menu->background, &gfx->menu->background_rect, DDBLTFAST_WAIT);
+        if (animation->GetSubState() == MenuScreen_Main || animation->GetSubState() == MenuScreen_Credits ||
+            animation->GetSubState() == MenuScreen_Login || animation->GetSubState() == MenuScreen_GridAccountName ||
+            animation->GetSubState() == MenuScreen_PasswordGrid)
             gfx->menu->DrawMainMenuButtons();
         if (animation->GetSubState() == MenuScreen_CharacterSelect)
         {
@@ -2980,7 +2977,8 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         }
         if (animation->GetSubState() == MenuScreen_CreateAccount)
             gfx->menu->DrawAccountCreationButtons();
-        if (animation->GetSubState() == MenuScreen_Login || animation->GetSubState() == MenuScreen_GridAccountName || animation->GetSubState() == MenuScreen_PasswordGrid)
+        if (animation->GetSubState() == MenuScreen_Login || animation->GetSubState() == MenuScreen_GridAccountName ||
+            animation->GetSubState() == MenuScreen_PasswordGrid)
             gfx->menu->DrawConfirmButtons();
         if (animation->GetSubState() == MenuScreen_PasswordGrid)
         {
@@ -3027,7 +3025,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             loading_frame_rect.left = 220 * (MainForm->animation->menu->loading_frame / 2);
             loading_frame_rect.bottom = 127;
             loading_frame_rect.right = 220 * (MainForm->animation->menu->loading_frame / 2) + 220;
-            OffscreenSurface->BltFast(397, 333, gfx->menu->animation_sheet, &loading_frame_rect, 16);
+            OffscreenSurface->BltFast(397, 333, gfx->menu->animation_sheet, &loading_frame_rect, DDBLTFAST_WAIT);
             HDC loading_text_dc;
             if (OffscreenSurface->GetDC(&loading_text_dc))
             {
@@ -3039,36 +3037,36 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                     draw_canvas->Font->Color = (TColor)0xC8F0F0;
                     draw_canvas->Font->Name = "MS Sans Serif";
                     draw_canvas->Font->Size = 10;
-                    char text_shown = 0;
+                    char text_shown = false;
                     if (!text_shown && animation->menu->IsMapNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingMap));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown && animation->menu->IsItemFileNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingItems));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown && animation->menu->IsNpcFileNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingNpcs));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown && animation->menu->IsSkillFileNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingSkills));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown && animation->menu->IsClassFileNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingClasses));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown && animation->menu->IsReservedFileNeeded() && animation->menu->IsEnteringGame())
                     {
                         draw_canvas->TextOut(410, 341, MainForm->strings->GetText(GameText_UpdatingGuilds));
-                        text_shown = 1;
+                        text_shown = true;
                     }
                     if (!text_shown)
                     {
@@ -3091,30 +3089,30 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
                         tip_text = MainForm->strings->GetText(GameText_MakeSureNooneIs);
                     int tip_y = 394;
                     int break_index = 0;
-                    char more_lines = 1;
+                    char more_lines = true;
                     while (true)
                     {
                         if (draw_canvas->TextWidth(tip_text) > 180)
                         {
-                            for (int i1 = 1; i1 <= tip_text.Length(); i1++)
+                            for (int prefix_length = 1; prefix_length <= tip_text.Length(); prefix_length++)
                             {
-                                int prefix_width = draw_canvas->TextWidth(tip_text.SubString(1, i1));
-                                if (tip_text[i1] == ' ' || i1 == tip_text.Length())
+                                int prefix_width = draw_canvas->TextWidth(tip_text.SubString(1, prefix_length));
+                                if (tip_text[prefix_length] == ' ' || prefix_length == tip_text.Length())
                                 {
-                                    if (prefix_width > 180 || i1 == tip_text.Length())
+                                    if (prefix_width > 180 || prefix_length == tip_text.Length())
                                     {
                                         draw_canvas->TextOut(416, tip_y, tip_text.SubString(1, break_index - 1));
                                         tip_text.Delete(1, break_index);
                                         break;
                                     }
-                                    break_index = i1;
+                                    break_index = prefix_length;
                                 }
                             }
                         }
                         else
                         {
                             draw_canvas->TextOut(416, tip_y, tip_text);
-                            more_lines = 0;
+                            more_lines = false;
                         }
                         tip_y += 16;
                         break_index = 0;
@@ -3134,7 +3132,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         if (animation->menu->is_form_open)
         {
             OffscreenSurface->BltFast(animation->menu->form_x, animation->menu->form_y,
-                gfx->menu->create_character_background, &gfx->menu->create_character_rect, 16);
+                gfx->menu->create_character_background, &gfx->menu->create_character_rect, DDBLTFAST_WAIT);
             gfx->menu->DrawCreateCharacterControls();
             gfx->sprites->DrawPreviewPlayers(1);
         }
@@ -3144,7 +3142,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             try
             {
                 text_canvas->Handle = menu_edit_dc;
-                edit_canvas->DrawEditBoxes(240);
+                edit_canvas->DrawEditBoxes(EditGroup_All);
                 text_canvas->Handle = 0;
             }
             catch (Exception &)
@@ -3204,7 +3202,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         if (animation->menu->is_text_window_open)
         {
             OffscreenSurface->BltFast(animation->menu->text_window_x, animation->menu->text_window_y,
-                gfx->menu->list_box_background, &gfx->menu->list_box_rect, 16);
+                gfx->menu->list_box_background, &gfx->menu->list_box_rect, DDBLTFAST_WAIT);
             HDC menu_list_dc;
             if (OffscreenSurface->GetDC(&menu_list_dc))
             {
@@ -3224,7 +3222,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         if (animation->menu->is_message_open)
         {
             OffscreenSurface->BltFast(animation->menu->message_x, animation->menu->message_y,
-                gfx->menu->message_box_background, &gfx->menu->message_box_rect, 16);
+                gfx->menu->message_box_background, &gfx->menu->message_box_rect, DDBLTFAST_WAIT);
             HDC menu_message_dc;
             if (OffscreenSurface->GetDC(&menu_message_dc))
             {
@@ -3251,7 +3249,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             intro_rect.top = 0;
             intro_rect.right = 640;
             intro_rect.bottom = 480;
-            OffscreenSurface->Blt(&intro_rect, 0, 0, 16778240, gfx->intro->fill_fx);
+            OffscreenSurface->Blt(&intro_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, gfx->intro->fill_fx);
             animation->intro->clear_screen_pending = false;
             flip_needed = true;
         }
@@ -3262,7 +3260,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             intro_panel_rect.top = 0;
             intro_panel_rect.right = 358;
             intro_panel_rect.bottom = 187;
-            OffscreenSurface->BltFast(141, 125, gfx->intro->surface, &intro_panel_rect, 16);
+            OffscreenSurface->BltFast(141, 125, gfx->intro->surface, &intro_panel_rect, DDBLTFAST_WAIT);
             animation->intro->logo_redraw_pending = false;
             flip_needed = true;
         }
@@ -3271,7 +3269,7 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
     {
         if (animation->GetScreenMode() == ScreenMode_Game)
             OffscreenSurface->BltFast(0, 0, gfx->interface_graphics->hud_frame,
-                &gfx->interface_graphics->hud_frame_rect, 17);
+                &gfx->interface_graphics->hud_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         HDC frame_rate_dc;
         if (OffscreenSurface->GetDC(&frame_rate_dc))
         {
@@ -3292,9 +3290,9 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             OffscreenSurface->ReleaseDC(frame_rate_dc);
         }
     }
-    char item_drag_drawn = 0;
-    char spell_drag_drawn = 0;
-    char skill_drag_drawn = 0;
+    char item_drag_drawn = false;
+    char spell_drag_drawn = false;
+    char skill_drag_drawn = false;
     if (dragging)
     {
         if ((flip_needed || animation->interface_controller->inventory->TestAndClearDragDirty()) &&
@@ -3302,21 +3300,21 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         {
             gfx->interface_graphics->DrawDraggedItem();
             flip_needed = true;
-            item_drag_drawn = 1;
+            item_drag_drawn = true;
         }
         if ((flip_needed || animation->interface_controller->spells->TestAndClearDragDirty()) &&
-            animation->GetSubState() == 8)
+            animation->GetSubState() == MenuScreen_PasswordGrid)
         {
             gfx->interface_graphics->DrawDraggedSpell();
             flip_needed = true;
-            spell_drag_drawn = 1;
+            spell_drag_drawn = true;
         }
         if ((flip_needed || animation->interface_controller->skills->TestAndClearDragDirty()) &&
             animation->GetSubState() == GamePanel_Skills)
         {
             gfx->interface_graphics->DrawDraggedSkill();
             flip_needed = true;
-            skill_drag_drawn = 1;
+            skill_drag_drawn = true;
         }
     }
     if (config->GetFullscreen() && flip_needed)
@@ -3327,16 +3325,16 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         {
             if (!BackBuffer)
                 BackBuffer->Restore();
-            BackBuffer->BltFast(0, 0, OffscreenSurface, &screen_rect, 16);
+            BackBuffer->BltFast(0, 0, OffscreenSurface, &screen_rect, DDBLTFAST_WAIT);
             if (!PrimarySurface)
                 PrimarySurface->Restore();
-            PrimarySurface->Flip(BackBuffer, 1);
+            PrimarySurface->Flip(BackBuffer, DDFLIP_WAIT);
         }
         else
         {
             if (!PrimarySurface)
                 PrimarySurface->Restore();
-            PrimarySurface->BltFast(0, 0, OffscreenSurface, &screen_rect, 16);
+            PrimarySurface->BltFast(0, 0, OffscreenSurface, &screen_rect, DDBLTFAST_WAIT);
         }
         if (PrimarySurface->ErrorValue == DDERR_SURFACELOST || OffscreenSurface->ErrorValue == DDERR_SURFACELOST ||
             BackBuffer->ErrorValue == DDERR_SURFACELOST)
@@ -3352,11 +3350,11 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
             window_rect.top += window_height_padding;
         if (!PrimarySurface)
             PrimarySurface->Restore();
-        PrimarySurface->Flip(OffscreenSurface, 1);
-        Dx_Draw1->WaitForVerticalBlank(1);
+        PrimarySurface->Flip(OffscreenSurface, DDFLIP_WAIT);
+        Dx_Draw1->WaitForVerticalBlank(DDWAITVB_BLOCKBEGIN);
         if (!OffscreenSurface)
             OffscreenSurface->Restore();
-        PrimarySurface->Blt(&window_rect, OffscreenSurface, 0, 16777216, 0);
+        PrimarySurface->Blt(&window_rect, OffscreenSurface, 0, DDBLT_WAIT, 0);
         if (PrimarySurface->ErrorValue == DDERR_SURFACELOST || OffscreenSurface->ErrorValue == DDERR_SURFACELOST)
             Dx_Draw1->RestoreAllSurfaces();
     }
@@ -3372,32 +3370,32 @@ void __fastcall TMainForm::OnIdle(System::TObject *Sender, bool &Done)
         dwMilliseconds = 10;
     // A short sleep on each pass, longer during the intro.
     Sleep(dwMilliseconds);
-    Done = 0;
+    Done = false;
 }
 
-void __fastcall TMainForm::clientError(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket,
-    Scktcomp::TErrorEvent ErrorEvent, int &ErrorCode)
+void __fastcall TMainForm::clientError(TObject *Sender, TCustomWinSocket *Socket, TErrorEvent ErrorEvent,
+    int &ErrorCode)
 {
     Socket->Close();
     ErrorCode = 0;
 }
 
-void __fastcall TMainForm::clientDisconnect(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket)
+void __fastcall TMainForm::clientDisconnect(TObject *Sender, TCustomWinSocket *Socket)
 {
     net_client->HandleDisconnect();
 }
 
-void __fastcall TMainForm::clientRead(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket)
+void __fastcall TMainForm::clientRead(TObject *Sender, TCustomWinSocket *Socket)
 {
     net_client->ReceiveData(Socket, Socket->ReceiveText());
 }
 
-void __fastcall TMainForm::clientConnect(System::TObject *Sender, Scktcomp::TCustomWinSocket *Socket)
+void __fastcall TMainForm::clientConnect(TObject *Sender, TCustomWinSocket *Socket)
 {
     net_client->SendInitRequest();
 }
 
-void __fastcall TMainForm::ApplicationEvents1Exception(System::TObject *Sender, Sysutils::Exception *E)
+void __fastcall TMainForm::ApplicationEvents1Exception(TObject *Sender, Exception *E)
 {
     String message = E->Message;
 }

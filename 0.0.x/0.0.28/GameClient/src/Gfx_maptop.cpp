@@ -18,8 +18,8 @@ TopWrapper::TopWrapper()
 TopWrapper::TopWrapper(int requested_id)
 {
     graphic_id = requested_id;
-    is_loaded = 0;
-    was_used = 0;
+    is_loaded = false;
+    was_used = false;
     idle_ticks = 0;
 }
 

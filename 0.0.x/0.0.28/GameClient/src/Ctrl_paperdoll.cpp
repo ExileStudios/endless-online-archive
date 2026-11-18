@@ -14,11 +14,11 @@ PaperdollController::PaperdollController()
     window_x = 133;
     window_y = 13;
     frame_index = 0;
-    extra_value = 0;
-    is_visible = 0;
-    close_hovered = 0;
+    admin_level = 0;
+    is_visible = false;
+    close_hovered = false;
     hovered_slot = PaperdollSlot_None;
-    unused_flag = 1;
+    unused_flag = true;
     equipped_head = -1;
     equipped_necklace = -1;
     equipped_armor = -1;
@@ -27,13 +27,13 @@ PaperdollController::PaperdollController()
     equipped_belt = -1;
     equipped_gloves = -1;
     equipped_boots = -1;
-    equipped_type19_left = -1;
-    equipped_type19_right = -1;
-    equipped_type20_left = -1;
-    equipped_type20_right = -1;
-    equipped_type21_left = -1;
-    equipped_type21_right = -1;
-    equipped_type16 = -1;
+    equipped_ring1 = -1;
+    equipped_ring2 = -1;
+    equipped_armlet1 = -1;
+    equipped_armlet2 = -1;
+    equipped_bracer1 = -1;
+    equipped_bracer2 = -1;
+    equipped_accessory = -1;
 }
 
 PaperdollController::~PaperdollController()
@@ -48,50 +48,50 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
     int sub_slot;
     int item_type;
     int required_class;
-    bool dropped_on_slot = 0;
-    can_equip = 0;
+    bool dropped_on_slot = false;
+    can_equip = false;
     sub_slot = 0;
     if (is_own_character)
     {
         if (x >= window_x + 86 && y >= window_y + 19 && x <= window_x + 141 && y <= window_y + 72)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 151 && y >= window_y + 50 && x <= window_x + 206 && y <= window_y + 72)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 21 && y >= window_y + 81 && x <= window_x + 76 && y <= window_y + 178)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 86 && y >= window_y + 81 && x <= window_x + 141 && y <= window_y + 178)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 151 && y >= window_y + 81 && x <= window_x + 206 && y <= window_y + 178)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 21 && y >= window_y + 187 && x <= window_x + 76 && y <= window_y + 240)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 86 && y >= window_y + 187 && x <= window_x + 141 && y <= window_y + 209)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209)
         {
             sub_slot = 1;
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         }
         if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240)
         {
             sub_slot = 1;
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         }
         if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271)
         {
             sub_slot = 1;
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         }
         if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271)
-            dropped_on_slot = 1;
+            dropped_on_slot = true;
         if (dropped_on_slot)
         {
             item_type = MainForm->item_values->GetType(item_id);
@@ -107,7 +107,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Weapon)
             {
                 if (weapon_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -115,7 +115,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Shield)
             {
                 if (shield_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -124,9 +124,9 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             {
                 if (armor_graphic <= 0)
                 {
-                    required_class = MainForm->item_values->GetGender(item_id);
-                    if (required_class == MainForm->players->GetGender(MainForm->net_client->GetPlayerId()))
-                        can_equip = 1;
+                    if (MainForm->item_values->GetGender(item_id) ==
+                        MainForm->players->GetGender(MainForm->net_client->GetPlayerId()))
+                        can_equip = true;
                     else
                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                             MainForm->strings->GetText(GameText_ThisArmorDoesNot));
@@ -138,7 +138,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Hat)
             {
                 if (head_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -146,7 +146,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Boots)
             {
                 if (boots_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -154,15 +154,15 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Gloves)
             {
                 if (gloves_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
             }
             if (item_type == EifItemType_Accessory)
             {
-                if (type16_graphic <= 0)
-                    can_equip = 1;
+                if (accessory_graphic <= 0)
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -170,7 +170,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Belt)
             {
                 if (belt_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -178,7 +178,7 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (item_type == EifItemType_Necklace)
             {
                 if (necklace_graphic <= 0)
-                    can_equip = 1;
+                    can_equip = true;
                 else
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                         MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
@@ -186,38 +186,38 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             // A pair fills its left box first, then the right one
             if (item_type == EifItemType_Ring)
             {
-                if (type19_left_graphic <= 0 && !sub_slot)
-                    can_equip = 1;
+                if (ring1_graphic <= 0 && !sub_slot)
+                    can_equip = true;
                 else
                     sub_slot = 1;
-                if (type19_right_graphic <= 0 && sub_slot == 1)
-                    can_equip = 1;
+                if (ring2_graphic <= 0 && sub_slot == 1)
+                    can_equip = true;
             }
-            if (item_type == EifItemType_Ring && type19_left_graphic > 0 && type19_right_graphic > 0)
+            if (item_type == EifItemType_Ring && ring1_graphic > 0 && ring2_graphic > 0)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                     MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
             if (item_type == EifItemType_Armlet)
             {
-                if (type20_left_graphic <= 0 && !sub_slot)
-                    can_equip = 1;
+                if (armlet1_graphic <= 0 && !sub_slot)
+                    can_equip = true;
                 else
                     sub_slot = 1;
-                if (type20_right_graphic <= 0 && sub_slot == 1)
-                    can_equip = 1;
+                if (armlet2_graphic <= 0 && sub_slot == 1)
+                    can_equip = true;
             }
-            if (item_type == EifItemType_Armlet && type20_left_graphic > 0 && type20_right_graphic > 0)
+            if (item_type == EifItemType_Armlet && armlet1_graphic > 0 && armlet2_graphic > 0)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                     MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
             if (item_type == EifItemType_Bracer)
             {
-                if (type21_left_graphic <= 0 && !sub_slot)
-                    can_equip = 1;
+                if (bracer1_graphic <= 0 && !sub_slot)
+                    can_equip = true;
                 else
                     sub_slot = 1;
-                if (type21_right_graphic <= 0 && sub_slot == 1)
-                    can_equip = 1;
+                if (bracer2_graphic <= 0 && sub_slot == 1)
+                    can_equip = true;
             }
-            if (item_type == EifItemType_Bracer && type21_left_graphic > 0 && type21_right_graphic > 0)
+            if (item_type == EifItemType_Bracer && bracer1_graphic > 0 && bracer2_graphic > 0)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                     MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
             if (can_equip)
@@ -231,24 +231,24 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
 }
 
 // Shows the paperdoll from the paperdoll reply: the info lines, and every box empty until the slot setters fill it.
-void PaperdollController::Open(int frame_value, String line_1_text, String line_2_text, String line_4_text,
-    String line_5_text, String player_class_name, String line_7_text, String line_8_text, int new_icon_type,
-    int unused_value, char own_character_flag)
+void PaperdollController::Open(int frame_row, String name_text, String home_text, String partner_text,
+    String title_text, String player_class_name, String guild_text, String guild_rank_text, int new_icon_type,
+    int new_admin_level, char own_character_flag)
 {
-    is_visible = 1;
-    info_line_1 = line_1_text;
-    info_line_2 = line_2_text;
-    info_line_4 = line_4_text;
-    info_line_5 = line_5_text;
+    is_visible = true;
+    player_name = name_text;
+    home_name = home_text;
+    partner_name = partner_text;
+    title = title_text;
     class_name = player_class_name;
-    info_line_7 = line_7_text;
-    info_line_8 = line_8_text;
-    frame_index = frame_value;
+    guild_name = guild_text;
+    guild_rank_name = guild_rank_text;
+    frame_index = frame_row;
     icon_type = new_icon_type;
-    extra_value = unused_value;
+    admin_level = new_admin_level;
     // A text shorter than four characters is not shown
-    if (info_line_4.Length() < 4)
-        info_line_4 = "";
+    if (partner_name.Length() < 4)
+        partner_name = "";
     is_own_character = own_character_flag;
     head_graphic = -1;
     necklace_graphic = -1;
@@ -258,22 +258,22 @@ void PaperdollController::Open(int frame_value, String line_1_text, String line_
     belt_graphic = -1;
     gloves_graphic = -1;
     boots_graphic = -1;
-    type19_left_graphic = -1;
-    type19_right_graphic = -1;
-    type20_left_graphic = -1;
-    type20_right_graphic = -1;
-    type21_left_graphic = -1;
-    type21_right_graphic = -1;
-    type16_graphic = -1;
+    ring1_graphic = -1;
+    ring2_graphic = -1;
+    armlet1_graphic = -1;
+    armlet2_graphic = -1;
+    bracer1_graphic = -1;
+    bracer2_graphic = -1;
+    accessory_graphic = -1;
 }
 
 // A click on the paperdoll: the left button picks up an equipped item to drag, or starts moving the window.
 // Another button asks to unequip the item under the mouse. Only the own character's items, from the inventory panel.
 void PaperdollController::MouseDown(int x, int y, int button)
 {
-    char slot_clicked = 0;
-    char no_room = 0;
-    char cursed = 0;
+    char slot_clicked = false;
+    char no_room = false;
+    char cursed = false;
     int item_id = 0;
     int sub_slot = 0;
     int slot_graphic = 0;
@@ -286,20 +286,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(head_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(head_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = head_item_id;
                     slot_graphic = head_graphic;
                     head_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 151 && y >= window_y + 50 && x <= window_x + 206 && y <= window_y + 72 &&
@@ -307,20 +307,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(necklace_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(necklace_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = necklace_item_id;
                     slot_graphic = necklace_graphic;
                     necklace_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 21 && y >= window_y + 81 && x <= window_x + 76 && y <= window_y + 178 &&
@@ -328,20 +328,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(weapon_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(weapon_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = weapon_item_id;
                     slot_graphic = weapon_graphic;
                     weapon_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 86 && y >= window_y + 81 && x <= window_x + 141 && y <= window_y + 178 &&
@@ -349,20 +349,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(armor_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(armor_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = armor_item_id;
                     slot_graphic = armor_graphic;
                     armor_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 151 && y >= window_y + 81 && x <= window_x + 206 && y <= window_y + 178 &&
@@ -370,20 +370,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(shield_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(shield_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = shield_item_id;
                     slot_graphic = shield_graphic;
                     shield_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 21 && y >= window_y + 187 && x <= window_x + 76 && y <= window_y + 240 &&
@@ -391,20 +391,20 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(gloves_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(gloves_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = gloves_item_id;
                     slot_graphic = gloves_graphic;
                     gloves_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 86 && y >= window_y + 187 && x <= window_x + 141 && y <= window_y + 209 &&
@@ -412,63 +412,63 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(belt_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(belt_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = belt_item_id;
                     slot_graphic = belt_graphic;
                     belt_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209 &&
-                type19_left_graphic > 0)
+                ring1_graphic > 0)
             {
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type19_left_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(ring1_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type19_left_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(ring1_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type19_left_item_id;
-                    slot_graphic = type19_left_graphic;
-                    type19_left_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = ring1_item_id;
+                    slot_graphic = ring1_graphic;
+                    ring1_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209 &&
-                type19_right_graphic > 0)
+                ring2_graphic > 0)
             {
                 sub_slot = 1;
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type19_right_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(ring2_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type19_right_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(ring2_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type19_right_item_id;
-                    slot_graphic = type19_right_graphic;
-                    type19_right_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = ring2_item_id;
+                    slot_graphic = ring2_graphic;
+                    ring2_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271 &&
@@ -476,136 +476,133 @@ void PaperdollController::MouseDown(int x, int y, int button)
             {
                 if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(boots_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
                 else if (MainForm->item_values->GetSpecial(boots_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
                     item_id = boots_item_id;
                     slot_graphic = boots_graphic;
                     boots_graphic = 0;
-                    slot_clicked = 1;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240 &&
-                type20_left_graphic > 0)
+                armlet1_graphic > 0)
             {
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type20_left_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(armlet1_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type20_left_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(armlet1_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type20_left_item_id;
-                    slot_graphic = type20_left_graphic;
-                    type20_left_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = armlet1_item_id;
+                    slot_graphic = armlet1_graphic;
+                    armlet1_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240 &&
-                type20_right_graphic > 0)
+                armlet2_graphic > 0)
             {
                 sub_slot = 1;
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type20_right_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(armlet2_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type20_right_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(armlet2_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type20_right_item_id;
-                    slot_graphic = type20_right_graphic;
-                    type20_right_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = armlet2_item_id;
+                    slot_graphic = armlet2_graphic;
+                    armlet2_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271 &&
-                type21_left_graphic > 0)
+                bracer1_graphic > 0)
             {
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type21_left_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(bracer1_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type21_left_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(bracer1_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type21_left_item_id;
-                    slot_graphic = type21_left_graphic;
-                    type21_left_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = bracer1_item_id;
+                    slot_graphic = bracer1_graphic;
+                    bracer1_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271 &&
-                type21_right_graphic > 0)
+                bracer2_graphic > 0)
             {
                 sub_slot = 1;
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type21_right_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(bracer2_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type21_right_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(bracer2_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type21_right_item_id;
-                    slot_graphic = type21_right_graphic;
-                    type21_right_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = bracer2_item_id;
+                    slot_graphic = bracer2_graphic;
+                    bracer2_graphic = 0;
+                    slot_clicked = true;
                 }
             }
             if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271 &&
-                type16_graphic > 0)
+                accessory_graphic > 0)
             {
-                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(type16_item_id))
+                if (!MainForm->animation->interface_controller->inventory->HasRoomForItem(accessory_item_id))
                 {
-                    slot_clicked = 1;
-                    no_room = 1;
+                    slot_clicked = true;
+                    no_room = true;
                 }
-                else if (MainForm->item_values->GetSpecial(type16_item_id) == ItemSpecial_Cursed)
+                else if (MainForm->item_values->GetSpecial(accessory_item_id) == ItemSpecial_Cursed)
                 {
-                    slot_clicked = 1;
-                    cursed = 1;
+                    slot_clicked = true;
+                    cursed = true;
                 }
                 else
                 {
-                    item_id = type16_item_id;
-                    slot_graphic = type16_graphic;
-                    type16_graphic = 0;
-                    slot_clicked = 1;
+                    item_id = accessory_item_id;
+                    slot_graphic = accessory_graphic;
+                    accessory_graphic = 0;
+                    slot_clicked = true;
                 }
             }
         }
-        else if (is_own_character)
-        {
-            if (MainForm->animation->GetSubState() != GamePanel_Inventory)
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                    MainForm->strings->GetText(GameText_OpenYourInventoryFirst));
-        }
+        else if (is_own_character && MainForm->animation->GetSubState() != GamePanel_Inventory)
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                MainForm->strings->GetText(GameText_OpenYourInventoryFirst));
         // An item that does not fit the inventory, or one that cannot be taken off, stays
         if (slot_clicked)
         {
@@ -616,7 +613,7 @@ void PaperdollController::MouseDown(int x, int y, int button)
                         MainForm->strings->GetText(GameText_CouldNotRemoveItem));
                 else
                 {
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetDialogText(DialogText_CursedItem, false),
                         MainForm->strings->GetDialogText(DialogText_CursedItem, true));
                     MainForm->edits->caret_enabled = false;
@@ -624,21 +621,23 @@ void PaperdollController::MouseDown(int x, int y, int button)
             }
             else
             {
-                MainForm->sfx->PlaySfx(20);
-                MainForm->animation->interface_controller->inventory->hover_item_size = MainForm->item_values->GetSize(item_id);
+                MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                MainForm->animation->interface_controller->inventory->hover_item_size =
+                    MainForm->item_values->GetSize(item_id);
                 MainForm->animation->interface_controller->inventory->hover_item_id = item_id;
-                MainForm->animation->interface_controller->inventory->is_dragging = 1;
+                MainForm->animation->interface_controller->inventory->is_dragging = true;
                 MainForm->animation->interface_controller->inventory->dragging_from_paperdoll = true;
                 MainForm->animation->interface_controller->inventory->paperdoll_slot_graphic = slot_graphic;
                 MainForm->animation->interface_controller->inventory->paperdoll_sub_slot = sub_slot;
-                MainForm->animation->interface_controller->inventory->drag_started = 0;
+                MainForm->animation->interface_controller->inventory->drag_started = false;
                 MainForm->animation->interface_controller->inventory->drag_delay_ticks = 0;
                 MainForm->animation->interface_controller->inventory->drag_x = x;
                 MainForm->animation->interface_controller->inventory->drag_y = y;
-                MainForm->animation->interface_controller->inventory->drag_item_size = MainForm->item_values->GetSize(item_id);
+                MainForm->animation->interface_controller->inventory->drag_item_size =
+                    MainForm->item_values->GetSize(item_id);
                 MainForm->animation->interface_controller->inventory->drag_item_id = item_id;
-                MainForm->animation->interface_controller->inventory->drag_graphic = MainForm->item_values->GetGraphic(item_id) -
-                    1;
+                MainForm->animation->interface_controller->inventory->drag_graphic =
+                    MainForm->item_values->GetGraphic(item_id) - 1;
                 MainForm->redraw_needed = true;
                 MainForm->dragging = true;
             }
@@ -647,7 +646,7 @@ void PaperdollController::MouseDown(int x, int y, int button)
         {
             if (x <= window_x + 360 && y >= window_y && y <= window_y + 280)
             {
-                is_dragging = 1;
+                is_dragging = true;
                 drag_mode = 1;
                 drag_offset_x = x - window_x;
                 drag_offset_y = y - window_y;
@@ -674,43 +673,43 @@ void PaperdollController::MouseDown(int x, int y, int button)
         if (x >= window_x + 86 && y >= window_y + 187 && x <= window_x + 141 && y <= window_y + 209 && belt_graphic > 0)
             item_id = belt_item_id;
         if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209 &&
-            type19_left_graphic > 0)
-            item_id = type19_left_item_id;
+            ring1_graphic > 0)
+            item_id = ring1_item_id;
         if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209 &&
-            type19_right_graphic > 0)
+            ring2_graphic > 0)
         {
-            item_id = type19_right_item_id;
+            item_id = ring2_item_id;
             sub_slot = 1;
         }
         if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271 &&
             boots_graphic > 0)
             item_id = boots_item_id;
         if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240 &&
-            type20_left_graphic > 0)
-            item_id = type20_left_item_id;
+            armlet1_graphic > 0)
+            item_id = armlet1_item_id;
         if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240 &&
-            type20_right_graphic > 0)
+            armlet2_graphic > 0)
         {
-            item_id = type20_right_item_id;
+            item_id = armlet2_item_id;
             sub_slot = 1;
         }
         if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271 &&
-            type21_left_graphic > 0)
-            item_id = type21_left_item_id;
+            bracer1_graphic > 0)
+            item_id = bracer1_item_id;
         if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271 &&
-            type21_right_graphic > 0)
+            bracer2_graphic > 0)
         {
-            item_id = type21_right_item_id;
+            item_id = bracer2_item_id;
             sub_slot = 1;
         }
         if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271 &&
-            type16_graphic > 0)
-            item_id = type16_item_id;
+            accessory_graphic > 0)
+            item_id = accessory_item_id;
         if (MainForm->animation->interface_controller->inventory->HasRoomForItem(item_id))
         {
             if (MainForm->item_values->GetSpecial(item_id) == ItemSpecial_Cursed)
             {
-                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                     MainForm->strings->GetDialogText(DialogText_CursedItem, false),
                     MainForm->strings->GetDialogText(DialogText_CursedItem, true));
                 MainForm->edits->caret_enabled = false;
@@ -746,13 +745,13 @@ void PaperdollController::MouseMove(int x, int y)
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (close_hovered)
     {
-        close_hovered = 0;
+        close_hovered = false;
         MainForm->redraw_needed = true;
     }
     if (x >= window_x + 86 && y >= window_y + 19 && x <= window_x + 141 && y <= window_y + 72 &&
@@ -814,18 +813,18 @@ void PaperdollController::MouseMove(int x, int y)
     }
     if (x >= window_x + 151 && y >= window_y + 187 && x <= window_x + 173 && y <= window_y + 209 && hovered_slot != PaperdollSlot_Text71Left)
     {
-        String type19_left_text = MainForm->strings->GetText(GameText_RingEquipment);
-        if (type19_left_item_id > 0)
-            type19_left_text = type19_left_text + ", " + MainForm->item_values->GetName(type19_left_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type19_left_text);
+        String ring1_text = MainForm->strings->GetText(GameText_RingEquipment);
+        if (ring1_item_id > 0)
+            ring1_text = ring1_text + ", " + MainForm->item_values->GetName(ring1_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, ring1_text);
         hovered_slot = PaperdollSlot_Text71Left;
     }
     if (x >= window_x + 184 && y >= window_y + 187 && x <= window_x + 206 && y <= window_y + 209 && hovered_slot != PaperdollSlot_Text71Right)
     {
-        String type19_right_text = MainForm->strings->GetText(GameText_RingEquipment);
-        if (type19_right_item_id > 0)
-            type19_right_text = type19_right_text + ", " + MainForm->item_values->GetName(type19_right_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type19_right_text);
+        String ring2_text = MainForm->strings->GetText(GameText_RingEquipment);
+        if (ring2_item_id > 0)
+            ring2_text = ring2_text + ", " + MainForm->item_values->GetName(ring2_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, ring2_text);
         hovered_slot = PaperdollSlot_Text71Right;
     }
     if (x >= window_x + 86 && y >= window_y + 218 && x <= window_x + 141 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Boots)
@@ -838,42 +837,42 @@ void PaperdollController::MouseMove(int x, int y)
     }
     if (x >= window_x + 151 && y >= window_y + 218 && x <= window_x + 173 && y <= window_y + 240 && hovered_slot != PaperdollSlot_Text72Left)
     {
-        String type20_left_text = MainForm->strings->GetText(GameText_ArmletEquipment);
-        if (type20_left_item_id > 0)
-            type20_left_text = type20_left_text + ", " + MainForm->item_values->GetName(type20_left_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type20_left_text);
+        String armlet1_text = MainForm->strings->GetText(GameText_ArmletEquipment);
+        if (armlet1_item_id > 0)
+            armlet1_text = armlet1_text + ", " + MainForm->item_values->GetName(armlet1_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, armlet1_text);
         hovered_slot = PaperdollSlot_Text72Left;
     }
     if (x >= window_x + 184 && y >= window_y + 218 && x <= window_x + 206 && y <= window_y + 240 && hovered_slot != PaperdollSlot_Text72Right)
     {
-        String type20_right_text = MainForm->strings->GetText(GameText_ArmletEquipment);
-        if (type20_right_item_id > 0)
-            type20_right_text = type20_right_text + ", " + MainForm->item_values->GetName(type20_right_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type20_right_text);
+        String armlet2_text = MainForm->strings->GetText(GameText_ArmletEquipment);
+        if (armlet2_item_id > 0)
+            armlet2_text = armlet2_text + ", " + MainForm->item_values->GetName(armlet2_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, armlet2_text);
         hovered_slot = PaperdollSlot_Text72Right;
     }
     if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text73Left)
     {
-        String type21_left_text = MainForm->strings->GetText(GameText_BracerEquipment);
-        if (type21_left_item_id > 0)
-            type21_left_text = type21_left_text + ", " + MainForm->item_values->GetName(type21_left_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type21_left_text);
+        String bracer1_text = MainForm->strings->GetText(GameText_BracerEquipment);
+        if (bracer1_item_id > 0)
+            bracer1_text = bracer1_text + ", " + MainForm->item_values->GetName(bracer1_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, bracer1_text);
         hovered_slot = PaperdollSlot_Text73Left;
     }
     if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text73Right)
     {
-        String type21_right_text = MainForm->strings->GetText(GameText_BracerEquipment);
-        if (type21_right_item_id > 0)
-            type21_right_text = type21_right_text + ", " + MainForm->item_values->GetName(type21_right_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type21_right_text);
+        String bracer2_text = MainForm->strings->GetText(GameText_BracerEquipment);
+        if (bracer2_item_id > 0)
+            bracer2_text = bracer2_text + ", " + MainForm->item_values->GetName(bracer2_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, bracer2_text);
         hovered_slot = PaperdollSlot_Text73Right;
     }
     if (x >= window_x + 54 && y >= window_y + 249 && x <= window_x + 76 && y <= window_y + 271 && hovered_slot != PaperdollSlot_Text76)
     {
-        String type16_text = MainForm->strings->GetText(GameText_MiscellaneousEquipment);
-        if (type16_item_id > 0)
-            type16_text = type16_text + ", " + MainForm->item_values->GetName(type16_item_id);
-        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, type16_text);
+        String accessory_text = MainForm->strings->GetText(GameText_MiscellaneousEquipment);
+        if (accessory_item_id > 0)
+            accessory_text = accessory_text + ", " + MainForm->item_values->GetName(accessory_item_id);
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, accessory_text);
         hovered_slot = PaperdollSlot_Text76;
     }
 }
@@ -881,7 +880,7 @@ void PaperdollController::MouseMove(int x, int y)
 // Ends moving the window.
 void PaperdollController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }
 
 void PaperdollController::SetHeadSlot(int item_id)
@@ -940,138 +939,138 @@ void PaperdollController::SetBootsSlot(int item_id)
     boots_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType19LeftSlot(int item_id)
+void PaperdollController::SetRing1Slot(int item_id)
 {
-    type19_left_item_id = item_id;
-    type19_left_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type19_left_item_size = MainForm->item_values->GetSize(item_id);
+    ring1_item_id = item_id;
+    ring1_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    ring1_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType19RightSlot(int item_id)
+void PaperdollController::SetRing2Slot(int item_id)
 {
-    type19_right_item_id = item_id;
-    type19_right_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type19_right_item_size = MainForm->item_values->GetSize(item_id);
+    ring2_item_id = item_id;
+    ring2_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    ring2_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType20LeftSlot(int item_id)
+void PaperdollController::SetArmlet1Slot(int item_id)
 {
-    type20_left_item_id = item_id;
-    type20_left_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type20_left_item_size = MainForm->item_values->GetSize(item_id);
+    armlet1_item_id = item_id;
+    armlet1_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    armlet1_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType20RightSlot(int item_id)
+void PaperdollController::SetArmlet2Slot(int item_id)
 {
-    type20_right_item_id = item_id;
-    type20_right_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type20_right_item_size = MainForm->item_values->GetSize(item_id);
+    armlet2_item_id = item_id;
+    armlet2_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    armlet2_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType21LeftSlot(int item_id)
+void PaperdollController::SetBracer1Slot(int item_id)
 {
-    type21_left_item_id = item_id;
-    type21_left_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type21_left_item_size = MainForm->item_values->GetSize(item_id);
+    bracer1_item_id = item_id;
+    bracer1_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    bracer1_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType21RightSlot(int item_id)
+void PaperdollController::SetBracer2Slot(int item_id)
 {
-    type21_right_item_id = item_id;
-    type21_right_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type21_right_item_size = MainForm->item_values->GetSize(item_id);
+    bracer2_item_id = item_id;
+    bracer2_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    bracer2_item_size = MainForm->item_values->GetSize(item_id);
 }
 
-void PaperdollController::SetType16Slot(int item_id)
+void PaperdollController::SetAccessorySlot(int item_id)
 {
-    type16_item_id = item_id;
-    type16_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
-    type16_item_size = MainForm->item_values->GetSize(item_id);
+    accessory_item_id = item_id;
+    accessory_graphic = MainForm->item_values->GetGraphic(item_id) - 1;
+    accessory_item_size = MainForm->item_values->GetSize(item_id);
 }
 
 // Empties every box whose item cannot be taken off; true when the weapon, shield, armor, head or boots box changed.
 bool PaperdollController::RemoveCursedItems()
 {
-    bool removed = 0;
+    bool removed = false;
     if (MainForm->item_values->GetSpecial(weapon_item_id) == ItemSpecial_Cursed)
     {
-        SetWeaponSlot(0);
+        SetWeaponSlot(ItemId_None);
         equipped_weapon = 0;
-        removed = 1;
+        removed = true;
     }
     if (MainForm->item_values->GetSpecial(shield_item_id) == ItemSpecial_Cursed)
     {
-        SetShieldSlot(0);
+        SetShieldSlot(ItemId_None);
         equipped_shield = 0;
-        removed = 1;
+        removed = true;
     }
     if (MainForm->item_values->GetSpecial(armor_item_id) == ItemSpecial_Cursed)
     {
-        SetArmorSlot(0);
+        SetArmorSlot(ItemId_None);
         equipped_armor = 0;
-        removed = 1;
+        removed = true;
     }
     if (MainForm->item_values->GetSpecial(head_item_id) == ItemSpecial_Cursed)
     {
-        SetHeadSlot(0);
+        SetHeadSlot(ItemId_None);
         equipped_head = 0;
-        removed = 1;
+        removed = true;
     }
     if (MainForm->item_values->GetSpecial(boots_item_id) == ItemSpecial_Cursed)
     {
-        SetBootsSlot(0);
+        SetBootsSlot(ItemId_None);
         equipped_boots = 0;
-        removed = 1;
+        removed = true;
     }
     if (MainForm->item_values->GetSpecial(gloves_item_id) == ItemSpecial_Cursed)
     {
-        SetGlovesSlot(0);
+        SetGlovesSlot(ItemId_None);
         equipped_gloves = 0;
     }
     if (MainForm->item_values->GetSpecial(necklace_item_id) == ItemSpecial_Cursed)
     {
-        SetNecklaceSlot(0);
+        SetNecklaceSlot(ItemId_None);
         equipped_necklace = 0;
     }
     if (MainForm->item_values->GetSpecial(belt_item_id) == ItemSpecial_Cursed)
     {
-        SetBeltSlot(0);
+        SetBeltSlot(ItemId_None);
         equipped_belt = 0;
     }
-    if (MainForm->item_values->GetSpecial(type19_left_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(ring1_item_id) == ItemSpecial_Cursed)
     {
-        SetType19LeftSlot(0);
-        equipped_type19_left = 0;
+        SetRing1Slot(ItemId_None);
+        equipped_ring1 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type19_right_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(ring2_item_id) == ItemSpecial_Cursed)
     {
-        SetType19RightSlot(0);
-        equipped_type19_right = 0;
+        SetRing2Slot(ItemId_None);
+        equipped_ring2 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type20_left_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(armlet1_item_id) == ItemSpecial_Cursed)
     {
-        SetType20LeftSlot(0);
-        equipped_type20_left = 0;
+        SetArmlet1Slot(ItemId_None);
+        equipped_armlet1 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type20_right_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(armlet2_item_id) == ItemSpecial_Cursed)
     {
-        SetType20RightSlot(0);
-        equipped_type20_right = 0;
+        SetArmlet2Slot(ItemId_None);
+        equipped_armlet2 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type21_left_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(bracer1_item_id) == ItemSpecial_Cursed)
     {
-        SetType21LeftSlot(0);
-        equipped_type21_left = 0;
+        SetBracer1Slot(ItemId_None);
+        equipped_bracer1 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type21_right_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(bracer2_item_id) == ItemSpecial_Cursed)
     {
-        SetType21RightSlot(0);
-        equipped_type21_right = 0;
+        SetBracer2Slot(ItemId_None);
+        equipped_bracer2 = 0;
     }
-    if (MainForm->item_values->GetSpecial(type16_item_id) == ItemSpecial_Cursed)
+    if (MainForm->item_values->GetSpecial(accessory_item_id) == ItemSpecial_Cursed)
     {
-        SetType16Slot(0);
-        equipped_type16 = 0;
+        SetAccessorySlot(ItemId_None);
+        equipped_accessory = 0;
     }
     MainForm->redraw_needed = true;
     return removed;

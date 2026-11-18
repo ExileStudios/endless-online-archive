@@ -16,8 +16,8 @@ ObjectWrapper::ObjectWrapper(int requested_id)
     graphic_id = requested_id;
     width = 0;
     height = 0;
-    is_loaded = 0;
-    was_used = 0;
+    is_loaded = false;
+    was_used = false;
     idle_ticks = 0;
 }
 

@@ -40,11 +40,11 @@ struct StatusController
     int stat_points;
     int train_confirm_ticks;
     int train_stat_index;
-    int label_413_from;
-    int label_413_to;
-    int label_414_value;
-    int label_416_value;
-    int label_415_value;
+    int damage_min;
+    int damage_max;
+    int hitrate;
+    int dodge;
+    int armor;
     int stat_str;
     int stat_wis;
     int stat_int;

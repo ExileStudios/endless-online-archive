@@ -17,21 +17,21 @@ ShopController::ShopController()
 {
     window_x = 49;
     window_y = 13;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     npc_session_id = -1;
     top_row = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
-    close_hovered = 0;
-    back_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    is_visible = false;
+    close_hovered = false;
+    back_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 ShopController::~ShopController()
@@ -41,12 +41,12 @@ ShopController::~ShopController()
 // Shows the shop for the npc on its menu page with empty lists, closing the other npc windows.
 void ShopController::Open(String npc, int session_id)
 {
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->guild->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->learn->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     npc_name = npc;
@@ -58,15 +58,15 @@ void ShopController::Open(String npc, int session_id)
     buy_items.clear();
     sell_items.clear();
     craft_items.clear();
-    is_visible = 1;
-    unused_cleared_flag = 0;
+    is_visible = true;
+    unused_cleared_flag = false;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void ShopController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
@@ -77,22 +77,26 @@ void ShopController::AddCraftItem(int item_id, int first_ingredient_id, int firs
     int second_ingredient_id, int second_ingredient_amount, int third_ingredient_id, int third_ingredient_amount,
     int fourth_ingredient_id, int fourth_ingredient_amount)
 {
-    char known = 0;
+    char known = false;
     for (vector<CraftItem>::iterator it = craft_items.begin(); it != craft_items.end(); it++)
     {
         if (item_id == it->item_id)
         {
-            known = 1;
+            known = true;
             break;
         }
     }
     if (!known)
     {
         CraftItem handle(item_id);
-        handle.ingredient_ids[0] = first_ingredient_id; handle.ingredient_amounts[0] = first_ingredient_amount;
-        handle.ingredient_ids[1] = second_ingredient_id; handle.ingredient_amounts[1] = second_ingredient_amount;
-        handle.ingredient_ids[2] = third_ingredient_id; handle.ingredient_amounts[2] = third_ingredient_amount;
-        handle.ingredient_ids[3] = fourth_ingredient_id; handle.ingredient_amounts[3] = fourth_ingredient_amount;
+        handle.ingredient_ids[0] = first_ingredient_id;
+        handle.ingredient_amounts[0] = first_ingredient_amount;
+        handle.ingredient_ids[1] = second_ingredient_id;
+        handle.ingredient_amounts[1] = second_ingredient_amount;
+        handle.ingredient_ids[2] = third_ingredient_id;
+        handle.ingredient_amounts[2] = third_ingredient_amount;
+        handle.ingredient_ids[3] = fourth_ingredient_id;
+        handle.ingredient_amounts[3] = fourth_ingredient_amount;
         craft_items.insert(craft_items.end(), handle);
     }
 }
@@ -102,15 +106,15 @@ void ShopController::AddTradeItem(int list_type, int item_id, int item_id_copy, 
 {
     char buy_found;
     char sell_found;
-    if (list_type == 1)
+    if (list_type == ShopList_Buy)
     {
         vector<ShopItem>::iterator it;
-        buy_found = 0;
+        buy_found = false;
         for (it = buy_items.begin(); it != buy_items.end(); it++)
         {
             if (item_id == it->item_id)
             {
-                buy_found = 1;
+                buy_found = true;
                 it->max_amount += amount;
                 break;
             }
@@ -126,12 +130,12 @@ void ShopController::AddTradeItem(int list_type, int item_id, int item_id_copy, 
     else
     {
         vector<ShopItem>::iterator it;
-        sell_found = 0;
+        sell_found = false;
         for (it = sell_items.begin(); it != sell_items.end(); it++)
         {
             if (item_id == it->item_id)
             {
-                sell_found = 1;
+                sell_found = true;
                 it->max_amount += amount;
                 break;
             }
@@ -183,20 +187,20 @@ int ShopController::CountSellableItems()
 // On the craft list: shows the recipe. Otherwise the scroll bar and moving the window.
 void ShopController::MouseDown(int x, int y, int button)
 {
-    char handled = 0;
+    char handled = false;
     if ((button == 0 || button == 1) && this->window_y + 43 < y && this->window_y + 243 > y)
     {
         if (window_x + 17 < x && window_x + 252 > x)
         {
-            is_dragging = 0;
+            is_dragging = false;
             int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
             if (page == ShopPage_Menu)
             {
                 if (!row)
                 {
-                    handled = 1;
+                    handled = true;
                     if (this->buy_items.size() <= 0)
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, false),
                             MainForm->strings->GetDialogText(DialogText_StoreEmptyThere, true));
                     else
@@ -209,9 +213,9 @@ void ShopController::MouseDown(int x, int y, int button)
                 }
                 if (row == 1)
                 {
-                    handled = 1;
+                    handled = true;
                     if (this->sell_items.size() <= 0)
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_RefusedBuying, false),
                             MainForm->strings->GetDialogText(DialogText_RefusedBuying, true));
                     else
@@ -228,7 +232,7 @@ void ShopController::MouseDown(int x, int y, int button)
                             }
                         }
                         if (!this->shown_items.size())
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_RefusedBuying, false),
                                 MainForm->strings->GetDialogText(DialogText_RefusedBuying, true));
                         else
@@ -237,7 +241,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 }
                 if (row == 2)
                 {
-                    handled = 1;
+                    handled = true;
                     if (craft_items.size() > 0)
                     {
                         shown_items.clear();
@@ -261,7 +265,7 @@ void ShopController::MouseDown(int x, int y, int button)
             {
                 if (page == ShopPage_Buy && row >= 0 && (int)shown_items.size() > row)
                 {
-                    handled = 1;
+                    handled = true;
                     int buy_item_id = MainForm->animation->shop->shown_items[row].item_id;
                     int buy_amount = MainForm->animation->shop->shown_items[row].max_amount;
                     selected_price = MainForm->animation->shop->shown_items[row].price;
@@ -278,31 +282,34 @@ void ShopController::MouseDown(int x, int y, int button)
                                 {
                                     String buy_confirm_text = MainForm->strings->GetText(GameText_Buy);
                                     buy_confirm_text = buy_confirm_text + " 1 ";
-                                    buy_confirm_text = buy_confirm_text +
-                                        MainForm->item_values->GetName(selected_item_id);
+                                    buy_confirm_text =
+                                        buy_confirm_text + MainForm->item_values->GetName(selected_item_id);
                                     buy_confirm_text = buy_confirm_text + " ";
                                     buy_confirm_text = buy_confirm_text + MainForm->strings->GetText(GameText_For);
                                     buy_confirm_text = buy_confirm_text + " ";
                                     buy_confirm_text = buy_confirm_text + IntToStr(selected_price);
                                     buy_confirm_text = buy_confirm_text + " ";
-                                    buy_confirm_text = buy_confirm_text + LowerCase(MainForm->item_values->GetName(1));
+                                    buy_confirm_text = buy_confirm_text +
+                                        LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                                     buy_confirm_text = buy_confirm_text + " ?";
-                                    MainForm->animation->game->ShowMessageBox(3, ConfirmAction_BuyItem,
-                                        MainForm->strings->GetText(GameText_BuyItemS), buy_confirm_text);
+                                    MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel,
+                                        ConfirmAction_BuyItem, MainForm->strings->GetText(GameText_BuyItemS),
+                                        buy_confirm_text);
                                     MainForm->edits->caret_enabled = false;
                                 }
                                 if (buy_amount > 1)
                                 {
-                                    MainForm->animation->game->OpenAmountBox(AmountBoxKind_ShopBuy, buy_amount, buy_item_id, 0);
+                                    MainForm->animation->game->OpenAmountBox(AmountBoxKind_ShopBuy, buy_amount,
+                                        buy_item_id, 0);
                                     MainForm->animation->interface_controller->inventory->input_enabled = true;
                                 }
                             }
                             else
                             {
-                                String no_gold_text = MainForm->strings->GetDialogText(DialogText_WarningEnough, true) +
-                                    " " +
-                                    LowerCase(MainForm->item_values->GetName(1));
-                                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                                String no_gold_text =
+                                    MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
+                                        LowerCase(MainForm->item_values->GetName(ItemId_Gold));
+                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                     MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
                                 MainForm->edits->caret_enabled = false;
                             }
@@ -311,7 +318,7 @@ void ShopController::MouseDown(int x, int y, int button)
                         {
                             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                                 MainForm->strings->GetText(GameText_YouHaveNotEnough));
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetText(GameText_Warning),
                                 MainForm->strings->GetText(GameText_YouHaveNotEnough));
                             MainForm->edits->caret_enabled = false;
@@ -321,7 +328,7 @@ void ShopController::MouseDown(int x, int y, int button)
                     {
                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                             MainForm->strings->GetText(GameText_YouCannotCarryEnough));
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetText(GameText_Warning),
                             MainForm->strings->GetText(GameText_YouCannotCarryEnough));
                         MainForm->edits->caret_enabled = false;
@@ -329,7 +336,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 }
                 if (page == ShopPage_Sell && row >= 0 && (int)shown_items.size() > row)
                 {
-                    handled = 1;
+                    handled = true;
                     int sell_item_id = MainForm->animation->shop->shown_items[row].item_id;
                     int sell_amount = MainForm->animation->shop->shown_items[row].max_amount;
                     selected_price = MainForm->animation->shop->shown_items[row].price;
@@ -345,9 +352,9 @@ void ShopController::MouseDown(int x, int y, int button)
                         sell_confirm_text = sell_confirm_text + " ";
                         sell_confirm_text = sell_confirm_text + IntToStr(selected_price);
                         sell_confirm_text = sell_confirm_text + " ";
-                        sell_confirm_text = sell_confirm_text + LowerCase(MainForm->item_values->GetName(1));
+                        sell_confirm_text = sell_confirm_text + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                         sell_confirm_text = sell_confirm_text + " ?";
-                        MainForm->animation->game->ShowMessageBox(3, ConfirmAction_SellItem,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_SellItem,
                             MainForm->strings->GetText(GameText_SellItemsS), sell_confirm_text);
                         MainForm->edits->caret_enabled = false;
                     }
@@ -359,7 +366,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 }
                 if (page == ShopPage_Craft && row >= 0 && (int)shown_items.size() > row)
                 {
-                    handled = 1;
+                    handled = true;
                     int craft_item_id = MainForm->animation->shop->shown_items[row].item_id;
                     int craft_max_amount = MainForm->animation->shop->shown_items[row].max_amount;
                     String craft_item_name = MainForm->item_values->GetName(craft_item_id);
@@ -367,7 +374,7 @@ void ShopController::MouseDown(int x, int y, int button)
                     MainForm->animation->shop->selected_amount = 1;
                     String craft_text;
                     int buttons = 2;
-                    char recipe_found = 0;
+                    char recipe_found = false;
                     MainForm->animation->game->large_box_lines[1] = "";
                     MainForm->animation->game->large_box_lines[2] = "";
                     MainForm->animation->game->large_box_lines[3] = "";
@@ -378,7 +385,7 @@ void ShopController::MouseDown(int x, int y, int button)
                     {
                         if (craft_item_id == i->item_id)
                         {
-                            recipe_found = 1;
+                            recipe_found = true;
                             for (int craft_ingredient = 0; craft_ingredient < MAX_CRAFT_INGREDIENTS; craft_ingredient++)
                             {
                                 if (i->ingredient_ids[craft_ingredient] <= 0)
@@ -387,11 +394,12 @@ void ShopController::MouseDown(int x, int y, int button)
                                     continue;
                                 int carried_ingredient_amount = MainForm->animation->interface_controller->inventory->GetItemAmount(i->ingredient_ids[craft_ingredient]);
                                 int needed_ingredient_amount = i->ingredient_amounts[craft_ingredient];
-                                String ingredient_name = MainForm->item_values->GetName(i->ingredient_ids[craft_ingredient]);
+                                String ingredient_name =
+                                    MainForm->item_values->GetName(i->ingredient_ids[craft_ingredient]);
                                 if (carried_ingredient_amount < needed_ingredient_amount)
-                                    recipe_found = 0;
-                                MainForm->animation->game->large_box_lines[craft_ingredient + 2] = "+  " +
-                                    IntToStr(needed_ingredient_amount) + " " + ingredient_name;
+                                    recipe_found = false;
+                                MainForm->animation->game->large_box_lines[craft_ingredient + 2] =
+                                    "+  " + IntToStr(needed_ingredient_amount) + " " + ingredient_name;
                             }
                             break;
                         }
@@ -409,7 +417,7 @@ void ShopController::MouseDown(int x, int y, int button)
                     MainForm->edits->caret_enabled = false;
                 }
                 if (page == ShopPage_Unknown4 && row >= 0 && (int)shown_items.size() > row)
-                    handled = 1;
+                    handled = true;
             }
         }
     }
@@ -419,7 +427,7 @@ void ShopController::MouseDown(int x, int y, int button)
             this->window_y + this->scroll_thumb_offset + 58 <= y &&
             this->window_y + this->scroll_thumb_offset + 73 >= y)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
@@ -427,7 +435,7 @@ void ShopController::MouseDown(int x, int y, int button)
         {
             if (window_y + 59 >= y)
             {
-                scroll_up_held = 1;
+                scroll_up_held = true;
                 scroll_repeat_delay = 4;
                 ScrollUp();
             }
@@ -436,7 +444,7 @@ void ShopController::MouseDown(int x, int y, int button)
         {
             if (window_y + 228 <= y && window_y + 243 >= y)
             {
-                scroll_down_held = 1;
+                scroll_down_held = true;
                 scroll_repeat_delay = 4;
                 ScrollDown();
             }
@@ -445,7 +453,7 @@ void ShopController::MouseDown(int x, int y, int button)
         {
             if (window_x + 284 >= x && y >= window_y && window_y + 290 >= y && !thumb_grabbed)
             {
-                is_dragging = 1;
+                is_dragging = true;
                 drag_offset_x = x - window_x;
                 drag_offset_y = y - window_y;
             }
@@ -457,6 +465,7 @@ void ShopController::MouseDown(int x, int y, int button)
 // bar, and tracks the close and back buttons.
 void ShopController::MouseMove(int x, int y)
 {
+    int item_id;
     int row;
     UpdateScrollHover(x, y);
     if (is_dragging)
@@ -496,13 +505,13 @@ void ShopController::MouseMove(int x, int y)
             {
                 if (page == ShopPage_Buy || page == ShopPage_Craft)
                 {
-                    String tooltip_text = Client::Capitalize(MainForm->net_client,
+                    String tooltip_text = MainForm->net_client->Capitalize(
                         MainForm->item_values->GetName(shown_items[row].item_id));
                     if (page == ShopPage_Buy)
                     {
                         tooltip_text = tooltip_text + ", ";
                         tooltip_text = tooltip_text + IntToStr((unsigned int)shown_items[row].price) + " " +
-                            MainForm->item_values->GetName(1);
+                            MainForm->item_values->GetName(ItemId_Gold);
                     }
                     int required_class = MainForm->item_values->GetClassRequirement(shown_items[row].item_id);
                     if (required_class > 0)
@@ -525,9 +534,9 @@ void ShopController::MouseMove(int x, int y)
         if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -535,7 +544,7 @@ void ShopController::MouseMove(int x, int y)
         {
             if (close_hovered)
             {
-                close_hovered = 0;
+                close_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -545,9 +554,9 @@ void ShopController::MouseMove(int x, int y)
         if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -555,16 +564,16 @@ void ShopController::MouseMove(int x, int y)
         {
             if (close_hovered)
             {
-                close_hovered = 0;
+                close_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
         if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->back_hovered)
+            if (!back_hovered)
             {
-                this->back_hovered = 1;
+                back_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -572,7 +581,7 @@ void ShopController::MouseMove(int x, int y)
         {
             if (back_hovered)
             {
-                back_hovered = 0;
+                back_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -587,8 +596,8 @@ void ShopController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -605,7 +614,7 @@ void ShopController::DragScrollThumb(int y)
                 top_row = new_top_row;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -615,15 +624,15 @@ void ShopController::ScrollUp()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)shown_items.size() > SHOP_VISIBLE_ROWS && top_row > 0)
     {
         top_row--;
         scroll_fraction = (double)top_row / (double)(shown_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -633,15 +642,15 @@ void ShopController::ScrollDown()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)shown_items.size() - 5 > top_row)
     {
         top_row++;
         scroll_fraction = (double)top_row / (double)(shown_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -649,8 +658,8 @@ void ShopController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void ShopController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }

@@ -10,15 +10,14 @@
 #include "Gfx_sprites.h"
 #include "Ctrl_status.h"
 #pragma package(smart_init)
-#define AMOUNT_EDIT 13
 #define INPUT_FORM_THUMB_TRAVEL 60.0
 #define SIT_DELAY_TICKS 4
 
 GameController::GameController()
 {
     last_action_time = DateTimeToTimeStamp(Now());
-    unused_flag = 1;
-    ghost_walk = 0;
+    unused_flag = true;
+    ghost_walk = false;
     spot_countdown = 0;
     message_visible = false;
     message_x = 190;
@@ -86,7 +85,7 @@ void GameController::CenterViewOnPlayer(int player_id)
 bool GameController::StandUp()
 {
     ResetIdleTimer();
-    bool stood_up = 0;
+    bool stood_up = false;
     if (!MainForm->animation->IsSitDelayed() && !MainForm->map->IsActionBlocked() && !MainForm->map->IsScrolling() &&
         !MainForm->players->IsWalking(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
@@ -97,7 +96,7 @@ bool GameController::StandUp()
             MainForm->animation->game->ClosePlayerMenu();
         MainForm->animation->StartSitDelay(SIT_DELAY_TICKS);
         MainForm->net_client->sender->SendFloorStand();
-        stood_up = 1;
+        stood_up = true;
     }
     return stood_up;
 }
@@ -106,7 +105,7 @@ bool GameController::StandUp()
 bool GameController::ToggleSit(int x, int y)
 {
     ResetIdleTimer();
-    bool stood_up = 0;
+    bool stood_up = false;
     if (!MainForm->animation->IsSitDelayed() && !MainForm->map->IsActionBlocked() && !MainForm->map->IsScrolling() &&
         !MainForm->players->IsWalking(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
@@ -127,7 +126,7 @@ bool GameController::ToggleSit(int x, int y)
                 MainForm->animation->game->ClosePlayerMenu();
             MainForm->animation->StartSitDelay(SIT_DELAY_TICKS);
             MainForm->net_client->sender->SendFloorStand();
-            stood_up = 1;
+            stood_up = true;
         }
         MainForm->map->BlockActionsBriefly();
     }
@@ -138,7 +137,7 @@ bool GameController::ToggleSit(int x, int y)
 bool GameController::SitOnChair(int x, int y)
 {
     ResetIdleTimer();
-    bool acted = 0;
+    bool acted = false;
     if (!MainForm->animation->IsSitDelayed() && !MainForm->map->IsActionBlocked() && !MainForm->map->IsScrolling() &&
         !MainForm->players->IsWalking(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
@@ -150,7 +149,7 @@ bool GameController::SitOnChair(int x, int y)
                 MainForm->animation->game->ClosePlayerMenu();
             int tile_spec = MainForm->map->GetUsableTileSpec(x, y);
             // The chair specs; the tile must be free and the player must not sit on the floor
-            if (tile_spec >= 0 && tile_spec <= 6 &&
+            if (tile_spec >= TileSpec_ChairYHigh && tile_spec <= TileSpec_ChairAnySide &&
                 !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) &&
                 !MainForm->players->HasPlayerAt(x, y))
             {
@@ -158,7 +157,7 @@ bool GameController::SitOnChair(int x, int y)
                 MainForm->animation->interface_controller->spells->CancelCast();
                 MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
                 MainForm->net_client->sender->SendChairSit(x, y);
-                acted = 1;
+                acted = true;
                 MainForm->map->BlockActionsBriefly();
             }
         }
@@ -168,7 +167,7 @@ bool GameController::SitOnChair(int x, int y)
                 MainForm->animation->game->ClosePlayerMenu();
             MainForm->animation->StartSitDelay(8);
             MainForm->net_client->sender->SendChairStand();
-            acted = 1;
+            acted = true;
             MainForm->map->BlockActionsBriefly();
         }
     }
@@ -219,8 +218,8 @@ void GameController::Attack(char animation_only)
         if (MainForm->map->GetTileSpec(player_x, MainForm->players->GetY(MainForm->net_client->GetPlayerId())) ==
             TileSpec_Splash)
         {
-            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-            MainForm->sfx->PlaySfx(42);
+            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
+            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
         }
         attack_count++;
         MainForm->animation->interface_controller->spells->CancelCast();
@@ -282,11 +281,11 @@ void GameController::Walk(int direction)
         {
             if (MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
             {
-                char on_jump_tile = 0;
+                char on_jump_tile = false;
                 if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump)
-                    on_jump_tile = 1;
+                    on_jump_tile = true;
                 // Directions: 0 = down, 1 = left, 2 = up, 3 = right
-                if (direction == FacingDirection_Left && MainForm->map->GetCenterX() > 0 &&
+                if (direction == 1 && MainForm->map->GetCenterX() > 0 &&
                     !MainForm->map->IsScrolling())
                 {
                     target_x--;
@@ -302,17 +301,18 @@ void GameController::Walk(int direction)
                             {
                                 if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                                 {
-                                    char walk_left = 1;
+                                    char walk_left = true;
                                     if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
                                     {
-                                        walk_left = 0;
+                                        walk_left = false;
                                         MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
                                             target_y, direction);
                                     }
                                     if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
                                     {
-                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                                        MainForm->sfx->PlaySfx(42);
+                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                            SpellEffect_WaterSplash);
+                                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                                     }
                                     if (walk_left)
                                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
@@ -323,7 +323,7 @@ void GameController::Walk(int direction)
                                     attack_count = 0;
                                     if (ghost_walk)
                                     {
-                                        MainForm->sfx->PlaySfx(33);
+                                        MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
                                         MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
                                     }
                                     else
@@ -350,7 +350,7 @@ void GameController::Walk(int direction)
                     }
                     else
                     {
-                        char tile_used_left = 0;
+                        char tile_used_left = false;
                         int usable_spec_left = MainForm->map->GetUsableTileSpec(target_x, target_y);
                         if (usable_spec_left >= 0 && !MainForm->animation->IsTileUseDelayed())
                         {
@@ -359,34 +359,34 @@ void GameController::Walk(int direction)
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenChest(target_x, target_y, usable_spec_left);
-                                tile_used_left = 1;
+                                tile_used_left = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_left);
-                                tile_used_left = 1;
+                                tile_used_left = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_left);
-                                tile_used_left = 1;
+                                tile_used_left = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_left);
-                                tile_used_left = 1;
+                                tile_used_left = true;
                             }
                             if (!tile_action_used)
                             {
                                 TrySitOnChair(target_x, target_y, usable_spec_left);
-                                tile_used_left = 1;
+                                tile_used_left = true;
                             }
                             if (tile_used_left)
                                 MainForm->animation->BlockWalking();
                         }
                     }
                 }
-                if (direction == FacingDirection_Up && MainForm->map->GetCenterY() > 0 && !MainForm->map->IsScrolling())
+                if (direction == 2 && MainForm->map->GetCenterY() > 0 && !MainForm->map->IsScrolling())
                 {
                     target_y--;
                     if (spot_countdown > 0)
@@ -403,17 +403,18 @@ void GameController::Walk(int direction)
                             {
                                 if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                                 {
-                                    char walk_up = 1;
+                                    char walk_up = true;
                                     if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
                                     {
-                                        walk_up = 0;
+                                        walk_up = false;
                                         MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
                                             target_y, direction);
                                     }
                                     if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
                                     {
-                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                                        MainForm->sfx->PlaySfx(42);
+                                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                            SpellEffect_WaterSplash);
+                                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                                     }
                                     if (walk_up)
                                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
@@ -424,7 +425,7 @@ void GameController::Walk(int direction)
                                     attack_count = 0;
                                     if (ghost_walk)
                                     {
-                                        MainForm->sfx->PlaySfx(33);
+                                        MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
                                         MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
                                     }
                                     else
@@ -450,7 +451,7 @@ void GameController::Walk(int direction)
                     }
                     else
                     {
-                        char tile_used_up = 0;
+                        char tile_used_up = false;
                         int usable_spec_up = MainForm->map->GetUsableTileSpec(target_x, target_y);
                         if (usable_spec_up >= 0 && !MainForm->animation->IsTileUseDelayed())
                         {
@@ -459,27 +460,27 @@ void GameController::Walk(int direction)
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenChest(target_x, target_y, usable_spec_up);
-                                tile_used_up = 1;
+                                tile_used_up = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_up);
-                                tile_used_up = 1;
+                                tile_used_up = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_up);
-                                tile_used_up = 1;
+                                tile_used_up = true;
                             }
                             if (!tile_action_used)
                             {
                                 tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_up);
-                                tile_used_up = 1;
+                                tile_used_up = true;
                             }
                             if (!tile_action_used)
                             {
                                 TrySitOnChair(target_x, target_y, usable_spec_up);
-                                tile_used_up = 1;
+                                tile_used_up = true;
                             }
                             if (tile_used_up)
                                 MainForm->animation->BlockWalking();
@@ -502,18 +503,19 @@ void GameController::Walk(int direction)
                                 {
                                     if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                                     {
-                                        char walk_right = 1;
+                                        char walk_right = true;
                                         if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump ||
                                             on_jump_tile)
                                         {
-                                            walk_right = 0;
+                                            walk_right = false;
                                             MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
                                                 target_y, direction);
                                         }
                                         if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
                                         {
-                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                                            MainForm->sfx->PlaySfx(42);
+                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                                SpellEffect_WaterSplash);
+                                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                                         }
                                         if (walk_right)
                                             MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
@@ -524,7 +526,7 @@ void GameController::Walk(int direction)
                                         attack_count = 0;
                                         if (ghost_walk)
                                         {
-                                            MainForm->sfx->PlaySfx(33);
+                                            MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
                                             MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
                                         }
                                         else
@@ -550,7 +552,7 @@ void GameController::Walk(int direction)
                         }
                         else
                         {
-                            char tile_used_right = 0;
+                            char tile_used_right = false;
                             int usable_spec_right = MainForm->map->GetUsableTileSpec(target_x, target_y);
                             if (usable_spec_right >= 0 && !MainForm->animation->IsTileUseDelayed())
                             {
@@ -559,27 +561,27 @@ void GameController::Walk(int direction)
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenChest(target_x, target_y, usable_spec_right);
-                                    tile_used_right = 1;
+                                    tile_used_right = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_right);
-                                    tile_used_right = 1;
+                                    tile_used_right = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_right);
-                                    tile_used_right = 1;
+                                    tile_used_right = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_right);
-                                    tile_used_right = 1;
+                                    tile_used_right = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     TrySitOnChair(target_x, target_y, usable_spec_right);
-                                    tile_used_right = 1;
+                                    tile_used_right = true;
                                 }
                                 if (tile_used_right)
                                     MainForm->animation->BlockWalking();
@@ -603,18 +605,19 @@ void GameController::Walk(int direction)
                                 {
                                     if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
                                     {
-                                        char walk_down = 1;
+                                        char walk_down = true;
                                         if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump ||
                                             on_jump_tile)
                                         {
-                                            walk_down = 0;
+                                            walk_down = false;
                                             MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), target_x,
                                                 target_y, direction);
                                         }
                                         if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Splash)
                                         {
-                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                                            MainForm->sfx->PlaySfx(42);
+                                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                                SpellEffect_WaterSplash);
+                                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                                         }
                                         if (walk_down)
                                             MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), target_x,
@@ -625,7 +628,7 @@ void GameController::Walk(int direction)
                                         attack_count = 0;
                                         if (ghost_walk)
                                         {
-                                            MainForm->sfx->PlaySfx(33);
+                                            MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
                                             MainForm->net_client->sender->SendWalkNoWall(direction, target_x, target_y);
                                         }
                                         else
@@ -651,7 +654,7 @@ void GameController::Walk(int direction)
                         }
                         else
                         {
-                            char tile_used_down = 0;
+                            char tile_used_down = false;
                             int usable_spec_down = MainForm->map->GetUsableTileSpec(target_x, target_y);
                             if (usable_spec_down >= 0 && !MainForm->animation->IsTileUseDelayed())
                             {
@@ -660,27 +663,27 @@ void GameController::Walk(int direction)
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenChest(target_x, target_y, usable_spec_down);
-                                    tile_used_down = 1;
+                                    tile_used_down = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenLocker(target_x, target_y, usable_spec_down);
-                                    tile_used_down = 1;
+                                    tile_used_down = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenBoard(target_x, target_y, usable_spec_down);
-                                    tile_used_down = 1;
+                                    tile_used_down = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     tile_action_used = TryOpenJukebox(target_x, target_y, usable_spec_down);
-                                    tile_used_down = 1;
+                                    tile_used_down = true;
                                 }
                                 if (!tile_action_used)
                                 {
                                     TrySitOnChair(target_x, target_y, usable_spec_down);
-                                    tile_used_down = 1;
+                                    tile_used_down = true;
                                 }
                                 if (tile_used_down)
                                     MainForm->animation->BlockWalking();
@@ -726,7 +729,7 @@ void GameController::ClosePlayerMenu()
 void GameController::CloseInputBox()
 {
     input_box_visible = false;
-    MainForm->edits->RemoveEdit(12);
+    MainForm->edits->RemoveEdit(EditId_InputBox);
     MainForm->edits->FocusEdit(EditId_Chat);
     MainForm->edits->caret_enabled = true;
     MainForm->redraw_needed = true;
@@ -736,9 +739,9 @@ void GameController::CloseInputBox()
 void GameController::CloseInputForm()
 {
     form_visible = false;
-    MainForm->edits->RemoveEdit(18);
-    MainForm->edits->RemoveEdit(17);
-    MainForm->edits->RemoveEdit(16);
+    MainForm->edits->RemoveEdit(EditId_FormFifthRow);
+    MainForm->edits->RemoveEdit(EditId_FormFourthRow);
+    MainForm->edits->RemoveEdit(EditId_FormThirdRow);
     MainForm->edits->RemoveEdit(EditId_FormSecondRow);
     MainForm->edits->RemoveEdit(EditId_FormFirstRow);
     MainForm->edits->FocusEdit(EditId_Chat);
@@ -765,8 +768,8 @@ void GameController::ShowLargeMessageBox(int buttons, int kind, String title, St
     large_box_buttons = buttons;
     large_box_kind = kind;
     large_box_title = title;
-    MainForm->edits->SetVisible(13, 0);
-    MainForm->edits->SetVisible(12, 0);
+    MainForm->edits->SetVisible(EditId_Amount, false);
+    MainForm->edits->SetVisible(EditId_InputBox, false);
     amount_box_dragging = false;
     input_box_dragging = false;
     amount_ok_hovered = false;
@@ -786,15 +789,15 @@ void GameController::ShowMessageBox(int buttons, int kind, String title, String 
     message_buttons = buttons;
     message_kind = kind;
     message_title = title;
-    MainForm->edits->SetVisible(13, 0);
-    MainForm->edits->SetVisible(12, 0);
-    MainForm->edits->SetVisible(EditId_FormFirstRow, 0);
-    MainForm->edits->SetVisible(EditId_FormSecondRow, 0);
-    MainForm->edits->SetVisible(16, 0);
-    MainForm->edits->SetVisible(17, 0);
-    MainForm->edits->SetVisible(18, 0);
-    MainForm->edits->SetEditable(POST_SUBJECT_EDIT, 0);
-    MainForm->edits->SetEditable(POST_MESSAGE_EDIT, 0);
+    MainForm->edits->SetVisible(EditId_Amount, false);
+    MainForm->edits->SetVisible(EditId_InputBox, false);
+    MainForm->edits->SetVisible(EditId_FormFirstRow, false);
+    MainForm->edits->SetVisible(EditId_FormSecondRow, false);
+    MainForm->edits->SetVisible(EditId_FormThirdRow, false);
+    MainForm->edits->SetVisible(EditId_FormFourthRow, false);
+    MainForm->edits->SetVisible(EditId_FormFifthRow, false);
+    MainForm->edits->SetEditable(POST_SUBJECT_EDIT, false);
+    MainForm->edits->SetEditable(POST_MESSAGE_EDIT, false);
     amount_box_dragging = false;
     input_box_dragging = false;
     amount_ok_hovered = false;
@@ -812,8 +815,12 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
         row_count = 2;
     for (int row = 0; row < INPUT_FORM_MAX_ROWS; row++)
     {
-        form_row_labels[row] = ""; form_row_texts[row] = ""; form_row_char_filters[row] = char_filter;
-        form_row_max_lengths[row] = max_length; form_row_password_flags[row] = 0; form_row_case_modes[row] = 0;
+        form_row_labels[row] = "";
+        form_row_texts[row] = "";
+        form_row_char_filters[row] = char_filter;
+        form_row_max_lengths[row] = max_length;
+        form_row_password_flags[row] = 0;
+        form_row_case_modes[row] = EditCaseMode_None;
     }
     form_visible = true;
     form_dragging = false;
@@ -834,54 +841,59 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
     int edit_width = 170;
     if (form_row_count > 5)
         edit_width = 145;
-    MainForm->edits->AddEdit(EditId_FormFirstRow, 105, form_x + 126, form_y + 70, edit_width, EDIT_LINE_HEIGHT);
+    MainForm->edits->AddEdit(EditId_FormFirstRow, EditGroup_InputForm, form_x + 126, form_y + 70, edit_width,
+        EDIT_LINE_HEIGHT);
     MainForm->edits->EnableChangeNotify(EditId_FormFirstRow);
     MainForm->edits->SetText(EditId_FormFirstRow, "");
-    MainForm->edits->SetTextColor(EditId_FormFirstRow, 11847900);
+    MainForm->edits->SetTextColor(EditId_FormFirstRow, 0xB4C8DC);
     MainForm->edits->SetCharFilter(EditId_FormFirstRow, char_filter);
     MainForm->edits->SetMaxLength(EditId_FormFirstRow, max_length);
-    MainForm->edits->SetBackgroundVisible(EditId_FormFirstRow, 0);
-    MainForm->edits->SetBorderVisible(EditId_FormFirstRow, 0);
-    MainForm->edits->AddEdit(EditId_FormSecondRow, 105, form_x + 126, form_y + 93, edit_width, EDIT_LINE_HEIGHT);
+    MainForm->edits->SetBackgroundVisible(EditId_FormFirstRow, false);
+    MainForm->edits->SetBorderVisible(EditId_FormFirstRow, false);
+    MainForm->edits->AddEdit(EditId_FormSecondRow, EditGroup_InputForm, form_x + 126, form_y + 93, edit_width,
+        EDIT_LINE_HEIGHT);
     MainForm->edits->EnableChangeNotify(EditId_FormSecondRow);
     MainForm->edits->SetText(EditId_FormSecondRow, "");
-    MainForm->edits->SetTextColor(EditId_FormSecondRow, 11847900);
+    MainForm->edits->SetTextColor(EditId_FormSecondRow, 0xB4C8DC);
     MainForm->edits->SetCharFilter(EditId_FormSecondRow, char_filter);
     MainForm->edits->SetMaxLength(EditId_FormSecondRow, max_length);
-    MainForm->edits->SetBackgroundVisible(EditId_FormSecondRow, 0);
-    MainForm->edits->SetBorderVisible(EditId_FormSecondRow, 0);
+    MainForm->edits->SetBackgroundVisible(EditId_FormSecondRow, false);
+    MainForm->edits->SetBorderVisible(EditId_FormSecondRow, false);
     if (form_row_count > 2)
     {
-        MainForm->edits->AddEdit(16, 105, form_x + 126, form_y + 116, edit_width, EDIT_LINE_HEIGHT);
-        MainForm->edits->EnableChangeNotify(16);
-        MainForm->edits->SetText(16, "");
-        MainForm->edits->SetTextColor(16, 11847900);
-        MainForm->edits->SetCharFilter(16, char_filter);
-        MainForm->edits->SetMaxLength(16, max_length);
-        MainForm->edits->SetBackgroundVisible(16, 0);
-        MainForm->edits->SetBorderVisible(16, 0);
+        MainForm->edits->AddEdit(EditId_FormThirdRow, EditGroup_InputForm, form_x + 126, form_y + 116, edit_width,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->EnableChangeNotify(EditId_FormThirdRow);
+        MainForm->edits->SetText(EditId_FormThirdRow, "");
+        MainForm->edits->SetTextColor(EditId_FormThirdRow, 0xB4C8DC);
+        MainForm->edits->SetCharFilter(EditId_FormThirdRow, char_filter);
+        MainForm->edits->SetMaxLength(EditId_FormThirdRow, max_length);
+        MainForm->edits->SetBackgroundVisible(EditId_FormThirdRow, false);
+        MainForm->edits->SetBorderVisible(EditId_FormThirdRow, false);
     }
     if (form_row_count > 3)
     {
-        MainForm->edits->AddEdit(17, 105, form_x + 126, form_y + 139, edit_width, EDIT_LINE_HEIGHT);
-        MainForm->edits->EnableChangeNotify(17);
-        MainForm->edits->SetText(17, "");
-        MainForm->edits->SetTextColor(17, 11847900);
-        MainForm->edits->SetCharFilter(17, char_filter);
-        MainForm->edits->SetMaxLength(17, max_length);
-        MainForm->edits->SetBackgroundVisible(17, 0);
-        MainForm->edits->SetBorderVisible(17, 0);
+        MainForm->edits->AddEdit(EditId_FormFourthRow, EditGroup_InputForm, form_x + 126, form_y + 139, edit_width,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->EnableChangeNotify(EditId_FormFourthRow);
+        MainForm->edits->SetText(EditId_FormFourthRow, "");
+        MainForm->edits->SetTextColor(EditId_FormFourthRow, 0xB4C8DC);
+        MainForm->edits->SetCharFilter(EditId_FormFourthRow, char_filter);
+        MainForm->edits->SetMaxLength(EditId_FormFourthRow, max_length);
+        MainForm->edits->SetBackgroundVisible(EditId_FormFourthRow, false);
+        MainForm->edits->SetBorderVisible(EditId_FormFourthRow, false);
     }
     if (form_row_count > 4)
     {
-        MainForm->edits->AddEdit(18, 105, form_x + 126, form_y + 162, edit_width, EDIT_LINE_HEIGHT);
-        MainForm->edits->EnableChangeNotify(18);
-        MainForm->edits->SetText(18, "");
-        MainForm->edits->SetTextColor(18, 11847900);
-        MainForm->edits->SetCharFilter(18, char_filter);
-        MainForm->edits->SetMaxLength(18, max_length);
-        MainForm->edits->SetBackgroundVisible(18, 0);
-        MainForm->edits->SetBorderVisible(18, 0);
+        MainForm->edits->AddEdit(EditId_FormFifthRow, EditGroup_InputForm, form_x + 126, form_y + 162, edit_width,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->EnableChangeNotify(EditId_FormFifthRow);
+        MainForm->edits->SetText(EditId_FormFifthRow, "");
+        MainForm->edits->SetTextColor(EditId_FormFifthRow, 0xB4C8DC);
+        MainForm->edits->SetCharFilter(EditId_FormFifthRow, char_filter);
+        MainForm->edits->SetMaxLength(EditId_FormFifthRow, max_length);
+        MainForm->edits->SetBackgroundVisible(EditId_FormFifthRow, false);
+        MainForm->edits->SetBorderVisible(EditId_FormFifthRow, false);
     }
     int form_rows = form_row_count;
     // Each row under five makes the form one row shorter, so it may sit lower on screen
@@ -906,14 +918,15 @@ void GameController::OpenInputBox(int kind, String prompt, int char_filter, int 
     input_box_lines[0] = prompt;
     input_box_lines[1] = "";
     input_box_kind = kind;
-    MainForm->edits->AddEdit(12, 3, input_box_x + 43, input_box_y + 73, 178, EDIT_LINE_HEIGHT);
-    MainForm->edits->EnableChangeNotify(12);
-    MainForm->edits->SetText(12, "");
-    MainForm->edits->SetTextColor(12, 11847900);
-    MainForm->edits->SetCharFilter(12, char_filter);
-    MainForm->edits->SetMaxLength(12, max_length);
-    MainForm->edits->SetBackgroundVisible(12, 0);
-    MainForm->edits->SetBorderVisible(12, 0);
+    MainForm->edits->AddEdit(EditId_InputBox, EditGroup_Game, input_box_x + 43, input_box_y + 73, 178,
+        EDIT_LINE_HEIGHT);
+    MainForm->edits->EnableChangeNotify(EditId_InputBox);
+    MainForm->edits->SetText(EditId_InputBox, "");
+    MainForm->edits->SetTextColor(EditId_InputBox, 0xB4C8DC);
+    MainForm->edits->SetCharFilter(EditId_InputBox, char_filter);
+    MainForm->edits->SetMaxLength(EditId_InputBox, max_length);
+    MainForm->edits->SetBackgroundVisible(EditId_InputBox, false);
+    MainForm->edits->SetBorderVisible(EditId_InputBox, false);
     input_box_dragging = false;
     input_box_ok_hovered = false;
     input_box_cancel_hovered = false;
@@ -930,19 +943,20 @@ void GameController::OpenAmountBoxAtTile(int kind, int max_amount, int item_id, 
     amount_box_reserved = reserved;
     amount_box_kind = kind;
     amount_max = max_amount;
-    amount_box_opened = 1;
+    amount_box_opened = true;
     amount_slider_grabbed = false;
     amount_slider_offset = 0;
     drop_x = x;
     drop_y = y;
-    MainForm->edits->AddEdit(13, 3, amount_box_x + 158, amount_box_y + 94, 72, EDIT_LINE_HEIGHT);
-    MainForm->edits->SetNumericRange(AMOUNT_EDIT, 1, max_amount);
-    MainForm->edits->EnableChangeNotify(13);
-    MainForm->edits->SetText(13, "1");
-    MainForm->edits->SetTextColor(13, 11847900);
-    MainForm->edits->SetMaxLength(13, 8);
-    MainForm->edits->SetBackgroundVisible(13, 0);
-    MainForm->edits->SetBorderVisible(13, 0);
+    MainForm->edits->AddEdit(EditId_Amount, EditGroup_Game, amount_box_x + 158, amount_box_y + 94, 72,
+        EDIT_LINE_HEIGHT);
+    MainForm->edits->SetNumericRange(EditId_Amount, 1, max_amount);
+    MainForm->edits->EnableChangeNotify(EditId_Amount);
+    MainForm->edits->SetText(EditId_Amount, "1");
+    MainForm->edits->SetTextColor(EditId_Amount, 0xB4C8DC);
+    MainForm->edits->SetMaxLength(EditId_Amount, 8);
+    MainForm->edits->SetBackgroundVisible(EditId_Amount, false);
+    MainForm->edits->SetBorderVisible(EditId_Amount, false);
     MainForm->redraw_needed = true;
 }
 
@@ -956,33 +970,30 @@ void GameController::OpenAmountBox(int kind, int max_amount, int item_id, int re
     amount_box_reserved = reserved;
     amount_box_kind = kind;
     amount_max = max_amount;
-    amount_box_opened = 1;
+    amount_box_opened = true;
     amount_slider_grabbed = false;
     amount_slider_offset = 0;
     drop_x = -1;
     drop_y = -1;
-    MainForm->edits->AddEdit(13, 3, amount_box_x + 158, amount_box_y + 94, 72, EDIT_LINE_HEIGHT);
-    MainForm->edits->SetNumericRange(AMOUNT_EDIT, 1, max_amount);
-    MainForm->edits->EnableChangeNotify(13);
-    MainForm->edits->SetText(13, "1");
-    MainForm->edits->SetTextColor(13, 11847900);
-    MainForm->edits->SetMaxLength(13, 8);
-    MainForm->edits->SetBackgroundVisible(13, 0);
-    MainForm->edits->SetBorderVisible(13, 0);
+    MainForm->edits->AddEdit(EditId_Amount, EditGroup_Game, amount_box_x + 158, amount_box_y + 94, 72,
+        EDIT_LINE_HEIGHT);
+    MainForm->edits->SetNumericRange(EditId_Amount, 1, max_amount);
+    MainForm->edits->EnableChangeNotify(EditId_Amount);
+    MainForm->edits->SetText(EditId_Amount, "1");
+    MainForm->edits->SetTextColor(EditId_Amount, 0xB4C8DC);
+    MainForm->edits->SetMaxLength(EditId_Amount, 8);
+    MainForm->edits->SetBackgroundVisible(EditId_Amount, false);
+    MainForm->edits->SetBorderVisible(EditId_Amount, false);
     MainForm->redraw_needed = true;
 }
 
 // Starts dragging the open box, or grabs the form's scroll thumb or the amount slider; the first open box takes it.
 void GameController::MouseDown(int x, int y)
 {
-    char handled;
-    volatile char __hole1;
-    volatile char __hole2;
-    volatile char __hole3;
-    handled = 0;
+    char handled = false;
     if (!handled && message_visible)
     {
-        handled = 1;
+        handled = true;
         if (x >= message_x && x <= message_x + 290 && y >= message_y && y <= message_y + 125)
         {
             message_dragging = true;
@@ -991,42 +1002,36 @@ void GameController::MouseDown(int x, int y)
             message_drag_offset_y = y - message_y;
         }
     }
-    if (!handled)
+    if (!handled && large_box_visible)
     {
-        if (large_box_visible)
+        handled = true;
+        if (x >= large_box_x && x <= large_box_x + 290 && y >= large_box_y && y <= large_box_y + 189)
         {
-            handled = 1;
-            if (x >= large_box_x && x <= large_box_x + 290 && y >= large_box_y && y <= large_box_y + 189)
-            {
-                large_box_dragging = true;
-                large_box_drag_offset_x = x - large_box_x;
-                large_box_drag_offset_y = y - large_box_y;
-            }
+            large_box_dragging = true;
+            large_box_drag_offset_x = x - large_box_x;
+            large_box_drag_offset_y = y - large_box_y;
         }
     }
-    if (!handled)
+    if (!handled && input_box_visible)
     {
-        if (input_box_visible)
+        handled = true;
+        if (x >= input_box_x && x <= input_box_x + 265 && y >= input_box_y && y <= input_box_y + 148)
         {
-            handled = 1;
-            if (x >= input_box_x && x <= input_box_x + 265 && y >= input_box_y && y <= input_box_y + 148)
-            {
-                input_box_dragging = true;
-                input_box_drag_offset_x = x - input_box_x;
-                input_box_drag_offset_y = y - input_box_y;
-            }
+            input_box_dragging = true;
+            input_box_drag_offset_x = x - input_box_x;
+            input_box_drag_offset_y = y - input_box_y;
         }
     }
     if (!handled && form_visible)
     {
-        handled = 0;
+        handled = false;
         if (form_row_count > 5)
         {
             if (x >= form_x + 284 && x <= form_x + 299)
             {
                 if (y >= form_y + form_thumb_offset + 85 && y <= form_y + form_thumb_offset + 100)
                 {
-                    handled = 1;
+                    handled = true;
                     form_thumb_grabbed = true;
                     form_thumb_grab_offset = y - form_thumb_offset - form_y;
                     InputFormDragThumb(y);
@@ -1047,13 +1052,12 @@ void GameController::MouseDown(int x, int y)
         }
         if (!handled)
         {
-            int body_offset;
-            if (this->form_row_count < 5)
-                body_offset = 23 * (5 - this->form_row_count);
+            int body_offset = form_row_count;
+            if (body_offset < 5)
+                body_offset = 23 * (5 - body_offset);
             else
                 body_offset = 0;
-            if (x >= this->form_x && x <= this->form_x + 330 && y >= this->form_y - body_offset &&
-                y <= this->form_y + 240 - body_offset)
+            if (x >= form_x && x <= form_x + 330 && y >= form_y - body_offset && y <= form_y + 240 - body_offset)
             {
                 form_dragging = true;
                 form_drag_offset_x = x - form_x;
@@ -1063,21 +1067,17 @@ void GameController::MouseDown(int x, int y)
     }
     if (!handled && amount_box_visible)
     {
-        if (x >= this->amount_box_x + this->amount_slider_offset + 25 &&
-            x <= this->amount_box_x + this->amount_slider_offset + 40 && y >= this->amount_box_y + 97 &&
-            y <= this->amount_box_y + 111)
+        if (x >= amount_box_x + amount_slider_offset + 25 && x <= amount_box_x + amount_slider_offset + 40 &&
+            y >= amount_box_y + 97 && y <= amount_box_y + 111)
         {
             amount_slider_grabbed = true;
-            this->amount_slider_grab_offset = x - (this->amount_box_x + this->amount_slider_offset + 25);
+            amount_slider_grab_offset = x - (amount_box_x + amount_slider_offset + 25);
         }
-        else
+        else if (x >= amount_box_x && x <= amount_box_x + 265 && y >= amount_box_y && y <= amount_box_y + 170)
         {
-            if (x >= amount_box_x && x <= amount_box_x + 265 && y >= amount_box_y && y <= amount_box_y + 170)
-            {
-                amount_box_dragging = true;
-                amount_box_drag_offset_x = x - amount_box_x;
-                amount_box_drag_offset_y = y - amount_box_y;
-            }
+            amount_box_dragging = true;
+            amount_box_drag_offset_x = x - amount_box_x;
+            amount_box_drag_offset_y = y - amount_box_y;
         }
     }
 }
@@ -1087,10 +1087,10 @@ void GameController::MouseMove(int x, int y)
 {
     int slider_offset;
     double slider_fraction;
-    char handled = 0;
+    char handled = false;
     if (!handled && message_visible)
     {
-        handled = 1;
+        handled = true;
         if (message_dragging)
         {
             if (message_drag_mode == 1)
@@ -1113,7 +1113,7 @@ void GameController::MouseMove(int x, int y)
     {
         if (large_box_visible)
         {
-            handled = 1;
+            handled = true;
             if (large_box_dragging)
             {
                 large_box_x = x - large_box_drag_offset_x;
@@ -1134,7 +1134,7 @@ void GameController::MouseMove(int x, int y)
     {
         if (input_box_visible)
         {
-            handled = 1;
+            handled = true;
             if (input_box_dragging)
             {
                 input_box_x = x - input_box_drag_offset_x;
@@ -1147,14 +1147,14 @@ void GameController::MouseMove(int x, int y)
                     input_box_x = 365;
                 if (input_box_y >= 161)
                     input_box_y = 161;
-                MainForm->edits->SetPosition(12, input_box_x + 43, input_box_y + 73);
+                MainForm->edits->SetPosition(EditId_InputBox, input_box_x + 43, input_box_y + 73);
                 MainForm->redraw_needed = true;
             }
         }
     }
     if (!handled && form_visible)
     {
-        handled = 1;
+        handled = true;
         if (x >= form_x + 284 && x <= form_x + 299)
         {
             if (form_y + 85 <= y && form_y + 160 >= y)
@@ -1177,9 +1177,9 @@ void GameController::MouseMove(int x, int y)
                 form_x = 300;
             if (unused_height + 69 <= form_y)
                 form_y = unused_height + 69;
-            MainForm->edits->SetPosition(18, form_x + 126, form_y + 162);
-            MainForm->edits->SetPosition(17, form_x + 126, form_y + 139);
-            MainForm->edits->SetPosition(16, form_x + 126, form_y + 116);
+            MainForm->edits->SetPosition(EditId_FormFifthRow, form_x + 126, form_y + 162);
+            MainForm->edits->SetPosition(EditId_FormFourthRow, form_x + 126, form_y + 139);
+            MainForm->edits->SetPosition(EditId_FormThirdRow, form_x + 126, form_y + 116);
             MainForm->edits->SetPosition(EditId_FormSecondRow, form_x + 126, form_y + 93);
             MainForm->edits->SetPosition(EditId_FormFirstRow, form_x + 126, form_y + 70);
             MainForm->redraw_needed = true;
@@ -1219,7 +1219,7 @@ void GameController::MouseMove(int x, int y)
     }
     if (!handled && amount_box_visible)
     {
-        handled = 1;
+        handled = true;
         if (x >= amount_box_x + amount_slider_offset + 25 && !(x > amount_box_x + amount_slider_offset + 40) &&
             amount_box_y + 97 <= y && !(amount_box_y + 111 < y))
         {
@@ -1248,12 +1248,12 @@ void GameController::MouseMove(int x, int y)
                 int amount_offset = (amount_max - 1) * slider_fraction;
                 amount_slider_offset = slider_offset;
                 amount_offset++;
-                MainForm->edits->SetText(13, IntToStr(amount_offset));
+                MainForm->edits->SetText(EditId_Amount, IntToStr(amount_offset));
             }
             else
             {
                 amount_slider_offset = 0;
-                MainForm->edits->SetText(13, "1");
+                MainForm->edits->SetText(EditId_Amount, "1");
             }
             MainForm->redraw_needed = true;
         }
@@ -1269,7 +1269,7 @@ void GameController::MouseMove(int x, int y)
                 amount_box_x = 365;
             if (amount_box_y >= 139)
                 amount_box_y = 139;
-            MainForm->edits->SetPosition(13, amount_box_x + 158, amount_box_y + 94);
+            MainForm->edits->SetPosition(EditId_Amount, amount_box_x + 158, amount_box_y + 94);
             MainForm->redraw_needed = true;
         }
     }
@@ -1299,11 +1299,14 @@ void GameController::AddInputFormRow(String label, String text, short char_filte
     {
         if (form_row_labels[row] == "")
         {
-            this->form_row_labels[row] = label; this->form_row_texts[row] = text;
-            this->form_row_char_filters[row] = char_filter; this->form_row_max_lengths[row] = max_length;
-            this->form_row_case_modes[row] = case_mode; this->form_row_password_flags[row] = password;
-            if (row < 5 && !this->form_top_row)
-                this->ShowInputFormRows(0);
+            form_row_labels[row] = label;
+            form_row_texts[row] = text;
+            form_row_char_filters[row] = char_filter;
+            form_row_max_lengths[row] = max_length;
+            form_row_case_modes[row] = case_mode;
+            form_row_password_flags[row] = password;
+            if (row < 5 && !form_top_row)
+                ShowInputFormRows(0);
             break;
         }
     }
@@ -1314,29 +1317,29 @@ void GameController::ShowInputFormRows(int first_row)
 {
     MainForm->edits->SetText(EditId_FormFirstRow, form_row_texts[first_row]);
     MainForm->edits->SetText(EditId_FormSecondRow, form_row_texts[first_row + 1]);
-    MainForm->edits->SetText(16, form_row_texts[first_row + 2]);
-    MainForm->edits->SetText(17, form_row_texts[first_row + 3]);
-    MainForm->edits->SetText(18, form_row_texts[first_row + 4]);
+    MainForm->edits->SetText(EditId_FormThirdRow, form_row_texts[first_row + 2]);
+    MainForm->edits->SetText(EditId_FormFourthRow, form_row_texts[first_row + 3]);
+    MainForm->edits->SetText(EditId_FormFifthRow, form_row_texts[first_row + 4]);
     MainForm->edits->SetMaxLength(EditId_FormFirstRow, form_row_max_lengths[first_row]);
     MainForm->edits->SetMaxLength(EditId_FormSecondRow, form_row_max_lengths[first_row + 1]);
-    MainForm->edits->SetMaxLength(16, form_row_max_lengths[first_row + 2]);
-    MainForm->edits->SetMaxLength(17, form_row_max_lengths[first_row + 3]);
-    MainForm->edits->SetMaxLength(18, form_row_max_lengths[first_row + 4]);
+    MainForm->edits->SetMaxLength(EditId_FormThirdRow, form_row_max_lengths[first_row + 2]);
+    MainForm->edits->SetMaxLength(EditId_FormFourthRow, form_row_max_lengths[first_row + 3]);
+    MainForm->edits->SetMaxLength(EditId_FormFifthRow, form_row_max_lengths[first_row + 4]);
     MainForm->edits->SetCharFilter(EditId_FormFirstRow, form_row_char_filters[first_row]);
     MainForm->edits->SetCharFilter(EditId_FormSecondRow, form_row_char_filters[first_row + 1]);
-    MainForm->edits->SetCharFilter(16, form_row_char_filters[first_row + 2]);
-    MainForm->edits->SetCharFilter(17, form_row_char_filters[first_row + 3]);
-    MainForm->edits->SetCharFilter(18, form_row_char_filters[first_row + 4]);
+    MainForm->edits->SetCharFilter(EditId_FormThirdRow, form_row_char_filters[first_row + 2]);
+    MainForm->edits->SetCharFilter(EditId_FormFourthRow, form_row_char_filters[first_row + 3]);
+    MainForm->edits->SetCharFilter(EditId_FormFifthRow, form_row_char_filters[first_row + 4]);
     MainForm->edits->SetCaseMode(EditId_FormFirstRow, form_row_case_modes[first_row]);
     MainForm->edits->SetCaseMode(EditId_FormSecondRow, form_row_case_modes[first_row + 1]);
-    MainForm->edits->SetCaseMode(16, form_row_case_modes[first_row + 2]);
-    MainForm->edits->SetCaseMode(17, form_row_case_modes[first_row + 3]);
-    MainForm->edits->SetCaseMode(18, form_row_case_modes[first_row + 4]);
+    MainForm->edits->SetCaseMode(EditId_FormThirdRow, form_row_case_modes[first_row + 2]);
+    MainForm->edits->SetCaseMode(EditId_FormFourthRow, form_row_case_modes[first_row + 3]);
+    MainForm->edits->SetCaseMode(EditId_FormFifthRow, form_row_case_modes[first_row + 4]);
     MainForm->edits->SetPasswordMode(EditId_FormFirstRow, form_row_password_flags[first_row]);
     MainForm->edits->SetPasswordMode(EditId_FormSecondRow, form_row_password_flags[first_row + 1]);
-    MainForm->edits->SetPasswordMode(16, form_row_password_flags[first_row + 2]);
-    MainForm->edits->SetPasswordMode(17, form_row_password_flags[first_row + 3]);
-    MainForm->edits->SetPasswordMode(18, form_row_password_flags[first_row + 4]);
+    MainForm->edits->SetPasswordMode(EditId_FormThirdRow, form_row_password_flags[first_row + 2]);
+    MainForm->edits->SetPasswordMode(EditId_FormFourthRow, form_row_password_flags[first_row + 3]);
+    MainForm->edits->SetPasswordMode(EditId_FormFifthRow, form_row_password_flags[first_row + 4]);
 }
 
 // Stores the texts of the five edits back into the rows on screen.
@@ -1344,9 +1347,9 @@ void GameController::SaveInputFormRows()
 {
     form_row_texts[form_top_row] = MainForm->edits->GetText(EditId_FormFirstRow);
     form_row_texts[form_top_row + 1] = MainForm->edits->GetText(EditId_FormSecondRow);
-    form_row_texts[form_top_row + 2] = MainForm->edits->GetText(16);
-    form_row_texts[form_top_row + 3] = MainForm->edits->GetText(17);
-    form_row_texts[form_top_row + 4] = MainForm->edits->GetText(18);
+    form_row_texts[form_top_row + 2] = MainForm->edits->GetText(EditId_FormThirdRow);
+    form_row_texts[form_top_row + 3] = MainForm->edits->GetText(EditId_FormFourthRow);
+    form_row_texts[form_top_row + 4] = MainForm->edits->GetText(EditId_FormFifthRow);
 }
 
 int GameController::GetInputFormThumbOffset()
@@ -1392,7 +1395,7 @@ void GameController::InputFormDragThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
+    int unused_int;
     if (form_thumb_grabbed)
     {
         int thumb_offset = y - form_thumb_grab_offset - form_y;
@@ -1420,14 +1423,14 @@ void GameController::InputFormDragThumb(int y)
 // Sends a chair-sit request when the tile is a chair; true when sent.
 char GameController::TrySitOnChair(int x, int y, int tile_spec)
 {
-    char sat = 0;
-    if (tile_spec >= 0 && tile_spec <= 6)
+    char sat = false;
+    if (tile_spec >= TileSpec_ChairYHigh && tile_spec <= TileSpec_ChairAnySide)
     {
         MainForm->map->BlockActionsBriefly();
         MainForm->animation->StartTileUseDelay();
         MainForm->animation->StartSitDelay(SIT_DELAY_TICKS);
         MainForm->net_client->sender->SendChairSit(x, y);
-        sat = 1;
+        sat = true;
     }
     return sat;
 }
@@ -1435,10 +1438,10 @@ char GameController::TrySitOnChair(int x, int y, int tile_spec)
 // Asks to open the locker at the tile when the tile is a locker.
 bool GameController::TryOpenLocker(int x, int y, int tile_spec)
 {
-    bool handled = 0;
-    if (tile_spec == 15)
+    bool handled = false;
+    if (tile_spec == TileSpec_Locker)
     {
-        handled = 1;
+        handled = true;
         MainForm->animation->StartTileUseDelay();
         TPoint pos;
         pos.x = x;
@@ -1451,11 +1454,11 @@ bool GameController::TryOpenLocker(int x, int y, int tile_spec)
 // Asks to open the board when the tile is a board; the board specs are consecutive, the number sent is the offset.
 bool GameController::TryOpenBoard(int x, int y, int tile_spec)
 {
-    bool handled = 0;
-    if (tile_spec >= 19 && tile_spec <= 26)
+    bool handled = false;
+    if (tile_spec >= TileSpec_Board1 && tile_spec <= TileSpec_Board8)
     {
-        handled = 1;
-        MainForm->net_client->sender->RequestBoardOpen(tile_spec - 19);
+        handled = true;
+        MainForm->net_client->sender->RequestBoardOpen(tile_spec - TileSpec_Board1);
     }
     return handled;
 }
@@ -1463,10 +1466,10 @@ bool GameController::TryOpenBoard(int x, int y, int tile_spec)
 // Asks to open the jukebox at the tile when the tile is a jukebox.
 bool GameController::TryOpenJukebox(int x, int y, int tile_spec)
 {
-    bool handled = 0;
-    if (tile_spec == 27)
+    bool handled = false;
+    if (tile_spec == TileSpec_Jukebox)
     {
-        handled = 1;
+        handled = true;
         TPoint pos;
         pos.x = x;
         pos.y = y;
@@ -1478,10 +1481,10 @@ bool GameController::TryOpenJukebox(int x, int y, int tile_spec)
 // Asks to open the chest at the tile; a locked chest needs its key in the inventory, else the key's name shows.
 bool GameController::TryOpenChest(int x, int y, int tile_spec)
 {
-    bool handled = 0;
-    if (tile_spec == 8)
+    bool handled = false;
+    if (tile_spec == TileSpec_Chest)
     {
-        handled = 1;
+        handled = true;
         TPoint pos;
         pos.x = x;
         pos.y = y;
@@ -1489,24 +1492,20 @@ bool GameController::TryOpenChest(int x, int y, int tile_spec)
         if (key_id > 0)
         {
             if (MainForm->animation->interface_controller->inventory->HasKey(key_id))
-            {
                 MainForm->net_client->sender->RequestChestOpen(pos);
-            }
             else
             {
                 String key_name = MainForm->item_values->GetKeyName(key_id);
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                     MainForm->strings->GetText(GameText_ChestIsLocked2) + " - " + key_name);
-                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                     MainForm->strings->GetDialogText(DialogText_ChestLocked, false),
                     MainForm->strings->GetDialogText(DialogText_ChestLocked, true));
-                MainForm->sfx->PlaySfx(25);
+                MainForm->sfx->PlaySfx(SfxSound_Locked);
             }
         }
         else
-        {
             MainForm->net_client->sender->RequestChestOpen(pos);
-        }
     }
     return handled;
 }
@@ -1514,13 +1513,13 @@ bool GameController::TryOpenChest(int x, int y, int tile_spec)
 // Opens the door at the tile; a locked door needs its key in the inventory, else the key's name shows.
 bool GameController::TryOpenDoor(int x, int y, int tile_spec)
 {
-    bool handled = 0;
-    if (tile_spec == 7)
+    bool handled = false;
+    if (tile_spec == TileSpec_Door)
     {
         int key_id = MainForm->map->GetDoorKey(x, y);
         if (key_id > 0)
         {
-            handled = 1;
+            handled = true;
             if (MainForm->animation->interface_controller->inventory->HasKey(key_id))
             {
                 MainForm->net_client->sender->SendOpenDoor(x, y);
@@ -1531,15 +1530,15 @@ bool GameController::TryOpenDoor(int x, int y, int tile_spec)
                 String key_name = MainForm->item_values->GetKeyName(key_id);
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                     MainForm->strings->GetText(GameText_DoorIsLocked2) + " - " + key_name);
-                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                     MainForm->strings->GetDialogText(DialogText_DoorLocked, false),
                     MainForm->strings->GetDialogText(DialogText_DoorLocked, true));
-                MainForm->sfx->PlaySfx(25);
+                MainForm->sfx->PlaySfx(SfxSound_Locked);
             }
         }
         if (!key_id)
         {
-            handled = 1;
+            handled = true;
             MainForm->net_client->sender->SendOpenDoor(x, y);
             MainForm->map->BlockActionsBriefly();
         }
@@ -1557,7 +1556,7 @@ void GameController::Tick()
         if (this->idle_ticks >= 2500)
         {
             if (!(idle_ticks % 250))
-                PlayEmote(8);
+                PlayEmote(Emote_Moon);
             if (idle_ticks >= 15000)
             {
                 if (!(idle_ticks % 500))
@@ -1570,7 +1569,7 @@ void GameController::Tick()
             if (idle_ticks >= 17500)
             {
                 idle_ticks = 0;
-                MainForm->sfx->PlaySfx(3);
+                MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                 MainForm->animation->interface_controller->Logout();
             }
         }
@@ -1586,7 +1585,7 @@ void GameController::Tick()
             {
                 if (MainForm->players->GetY(MainForm->net_client->GetPlayerId()) == spot_y)
                 {
-                    MainForm->sfx->PlaySfx(51);
+                    MainForm->sfx->PlaySfx(SfxSound_Countdown);
                     if (spot_countdown == 70)
                         MainForm->gfx->sprites->ShowSpeechBalloon(MainForm->strings->GetText(GameText_MoveAwayFromPlace),
                             MainForm->net_client->GetPlayerId(), 0);
@@ -1623,7 +1622,7 @@ void GameController::Tick()
                         {
                             if (!MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()))
                             {
-                                MainForm->sfx->PlaySfx(33);
+                                MainForm->sfx->PlaySfx(SfxSound_GhostWalk);
                                 MainForm->map->StartScroll(blocked_direction);
                                 MainForm->net_client->sender->SendWalkGhost(blocked_direction, blocked_x, blocked_y,
                                     last_blocking_player_id);
@@ -1679,8 +1678,6 @@ void GameController::ResetIdleTimer()
 // The total experience at which a level starts; 0 for level 0 and below.
 int GameController::GetExperienceForLevel(int level)
 {
-    int __slot1;
-    int __slot2;
     int experience = 0;
     if (level > 0)
         experience = level * 1.1 * (level * 1.1) * (level * 1.1) * 100.0;
@@ -1713,17 +1710,16 @@ void GameController::ToggleGhostWalk()
     if (MainForm->net_client->GetAdminLevel() > 2)
     {
         if (ghost_walk)
-            ghost_walk = 0;
+            ghost_walk = false;
         else
-            ghost_walk = 1;
+            ghost_walk = true;
     }
 }
 
 // True when enough time passed since the last call; every call restarts the time.
 bool GameController::IsActionDelayElapsed()
 {
-    TTimeStamp now;
-    now = DateTimeToTimeStamp(Now());
+    TTimeStamp now = DateTimeToTimeStamp(Now());
     int elapsed_ms = now.Time - last_action_time.Time;
     last_action_time = now;
     if (elapsed_ms < 460)

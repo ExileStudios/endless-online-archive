@@ -22,7 +22,7 @@ struct Npcs
     short head_heights[MAX_NPC_GRAPHICS];
     char hover_label_shown;
     char list_changed;
-    char pad_0xa52[6];
+    char unused_bytes[6];
     vector<Npc> npcs;
     int current_index;
     int mouse_x;

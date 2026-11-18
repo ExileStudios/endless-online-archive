@@ -10,7 +10,9 @@ enum StatusCategory
     StatusCategory_Item = 5,
     StatusCategory_Npc = 6,
     StatusCategory_Spell = 7,
-    StatusCategory_Skill = 8
+    StatusCategory_Skill = 8,
+    StatusCategory_Hotkey = 9,
+    StatusCategory_Locker = 10
 };
 
 struct ChatController;
@@ -41,8 +43,8 @@ struct InterfaceController
     bool help_button_hover;
     bool friends_button_hover;
     bool ignore_button_hover;
-    bool unread_flag_at_13;
-    bool unread_flag_at_14;
+    bool unused_flag;
+    bool second_unused_flag;
     bool corner_button_hover;
     bool gold_drop_warning_pending;
     bool welcome_notice_pending;

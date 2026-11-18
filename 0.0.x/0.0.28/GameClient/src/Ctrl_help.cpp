@@ -11,24 +11,19 @@
 
 HelpController::HelpController()
 {
-    int new_list;
-    int new_list_2;
-    int new_list_3;
-    int new_list_4;
-    int new_list_5;
     lines = new TStringList();
     line_flags = new TStringList();
     file_lines = new TStringList();
     link_targets = new TStringList();
     line_icons = new TStringList();
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_dirty = 0;
-    is_dirty = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_dirty = false;
+    is_dirty = false;
     top_line = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
 }
 
 // Empties the page's lists.
@@ -45,10 +40,10 @@ HelpController::~HelpController()
 // Empties the page and scrolls back to the top.
 void HelpController::Clear()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
     top_line = 0;
     scroll_thumb_offset = 0;
     file_lines->Clear();
@@ -74,24 +69,18 @@ void HelpController::MouseDown(int x, int y)
 {
     if (x >= 124)
     {
-        if (x <= 568)
+        if (x <= 568 && y >= 350 && y <= 447)
         {
-            if (y >= 350)
+            int line = (y - 350) / 14;
+            if (line < 7)
             {
-                if (y <= 447)
+                line += top_line;
+                if (link_targets->Strings[line] != "")
                 {
-                    int line = (y - 350) / 14;
-                    if (line < 7)
-                    {
-                        line = top_line + line;
-                        if (link_targets->Strings[line] != "")
-                        {
-                            MainForm->sfx->PlaySfx(4);
-                            clicked_line_text = lines->Strings[line];
-                            LoadPage(link_targets->Strings[line]);
-                            return;
-                        }
-                    }
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                    clicked_line_text = lines->Strings[line];
+                    LoadPage(link_targets->Strings[line]);
+                    return;
                 }
             }
         }
@@ -100,24 +89,23 @@ void HelpController::MouseDown(int x, int y)
     {
         if (y >= scroll_thumb_offset + 366 && y <= scroll_thumb_offset + 381)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset;
             DragScrollThumb(y);
         }
         if (y >= 350 && y <= 365)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (y >= 432 && y <= 447)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
     }
-    return;
 }
 
 // Reads a help page from the help folder: each line carries one tag, for bold text, a link, a blank line or the
@@ -137,8 +125,8 @@ void HelpController::LoadPage(String page_name)
                 char line_flag;
                 String line = file_lines->Strings[i];
                 String link_target = "";
-                line_flag = 0;
-                char hide_icon = 0;
+                line_flag = false;
+                char hide_icon = false;
                 int open_pos = line.Pos("<");
                 int close_pos = line.Pos(">");
                 String tag = "";
@@ -148,7 +136,7 @@ void HelpController::LoadPage(String page_name)
                 tag = line.SubString(open_pos + 1, close_pos - open_pos - 1);
                 line.Delete(open_pos, close_pos - open_pos + 1);
                 if (tag == "bold")
-                    line_flag = 1;
+                    line_flag = true;
                 int separator_pos = tag.Pos(" ");
                 if (separator_pos > 0)
                 {
@@ -157,7 +145,7 @@ void HelpController::LoadPage(String page_name)
                     if (tag == "link")
                         link_target = tag_value;
                     if (tag_value == "noicon")
-                        hide_icon = 1;
+                        hide_icon = true;
                 }
                 if (tag == "newline")
                 {
@@ -172,12 +160,12 @@ void HelpController::LoadPage(String page_name)
                 {
                     line = clicked_line_text;
                     link_target = "";
-                    line_flag = 1;
+                    line_flag = true;
                 }
                 AddText(line, link_target, line_flag, hide_icon);
             }
         }
-        is_dirty = 1;
+        is_dirty = true;
     }
     catch (...)
     {
@@ -216,7 +204,7 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
                             continue;
                         piece_count++;
                         piece_start = next_start;
-                        char searching = 1;
+                        char searching = true;
                         for (j = next_start; j <= text.Length() && searching; j++)
                         {
                             int piece_indent = 0;
@@ -233,13 +221,13 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
                                 {
                                     wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
                                     next_start = j + 1;
-                                    searching = 0;
+                                    searching = false;
                                 }
                                 else
                                 {
                                     wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1) + "-";
                                     next_start = j + 1;
-                                    searching = 0;
+                                    searching = false;
                                 }
                             }
                         }
@@ -270,7 +258,7 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
             }
             MainForm->OffscreenSurface->ReleaseDC(dc);
         }
-        is_dirty = 1;
+        is_dirty = true;
     }
 }
 
@@ -286,8 +274,8 @@ void HelpController::ScrollUp()
         double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        is_dirty = 1;
+        scroll_dirty = true;
+        is_dirty = true;
     }
 }
 
@@ -300,8 +288,8 @@ void HelpController::ScrollDown()
         double scroll_fraction = (double)top_line / (double)(lines->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        is_dirty = 1;
+        scroll_dirty = true;
+        is_dirty = true;
     }
 }
 
@@ -310,7 +298,7 @@ void HelpController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -327,17 +315,17 @@ void HelpController::DragScrollThumb(int y)
                 top_line = new_top_line;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_dirty = 1;
-        is_dirty = 1;
+        scroll_dirty = true;
+        is_dirty = true;
     }
 }
 
 // Lets go of the held scroll arrows and the grabbed thumb.
 void HelpController::MouseUp()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 void HelpController::MouseMove(int x, int y)
@@ -352,16 +340,16 @@ DEFINE_TEST_AND_CLEAR_SCROLL_DIRTY(HelpController)
 
 bool HelpController::TestAndClearTextDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (is_dirty)
     {
-        is_dirty = 0;
-        was_dirty = 1;
+        is_dirty = false;
+        was_dirty = true;
     }
     return was_dirty;
 }
 
 void HelpController::MarkTextDirty()
 {
-    is_dirty = 1;
+    is_dirty = true;
 }

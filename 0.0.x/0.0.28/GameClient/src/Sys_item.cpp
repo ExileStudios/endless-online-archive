@@ -12,13 +12,13 @@
 
 MapItem::MapItem()
 {
-    label_shown = 0;
+    label_shown = false;
     protection_ticks = 0;
 }
 
 MapItem::MapItem(int item_uid, int record_id, int tile_x, int tile_y, int item_amount)
 {
-    label_shown = 0;
+    label_shown = false;
     protection_ticks = 0;
     uid = item_uid;
     item_id = record_id;

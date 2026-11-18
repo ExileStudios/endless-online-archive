@@ -19,7 +19,9 @@ enum MessageBoxKind
 {
     MessageBoxKind_Plain = 1,
     MessageBoxKind_Progress = 2,
-    MessageBoxKind_Confirm = 3
+    MessageBoxKind_Confirm = 3,
+    MessageBoxKind_RecoverNotice = 4,
+    MessageBoxKind_RecoverAccepted = 5
 };
 
 // The title screens before the game: account form, text window, message box and password letter pad.
@@ -60,8 +62,8 @@ struct MenuController
     bool corner_close_hover;
     bool login_ok_button_hover;
     bool login_cancel_button_hover;
-    bool unread_flag_at_48;
-    int unread_int_at_52;
+    bool unused_flag;
+    int unused_value;
     bool create_account_enabled;
     bool login_enabled;
     bool change_password_enabled;

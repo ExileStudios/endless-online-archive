@@ -20,24 +20,24 @@ DialogController::DialogController()
     quest_names = new TStringList();
     window_x = 49;
     window_y = 115;
-    unused_flag = 1;
+    unused_flag = true;
     has_quest_list = true;
     unused_value = 0;
     request_cooldown = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
+    is_visible = false;
     prev_button_hovered = false;
     next_button_hovered = false;
     prev_button_kind = 0;
     next_button_kind = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 DialogController::~DialogController()
@@ -82,7 +82,7 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
                 }
                 else
                 {
-                    char split_done = 0;
+                    char split_done = false;
                     for (int i = 1; i <= text.Length(); i++)
                     {
                         if (text[i] != ' ' && i != text.Length())
@@ -93,7 +93,7 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
                             lines->Add(fitted_text);
                             line_right_texts->Add(right_text);
                             text.Delete(1, fitted_text.Length());
-                            split_done = 1;
+                            split_done = true;
                             break;
                         }
                         fitted_text = prefix;
@@ -137,14 +137,11 @@ void DialogController::ShowPage()
         next_button_kind = DIALOG_BUTTON_OK_FRAME;
     else
         next_button_kind = DIALOG_BUTTON_NEXT_FRAME;
-    if (pages->Count - 1 <= page_index)
+    if (pages->Count - 1 <= page_index && link_texts->Count > 0)
     {
-        if (link_texts->Count > 0)
-        {
-            AddText(" ", "", false);
-            for (int i = 0; i < link_texts->Count; i++)
-                AddText("*" + link_texts->Strings[i], "", false);
-        }
+        AddText(" ", "", false);
+        for (int i = 0; i < link_texts->Count; i++)
+            AddText("*" + link_texts->Strings[i], "", false);
     }
 }
 
@@ -165,14 +162,11 @@ void DialogController::PreviousPage()
         next_button_kind = DIALOG_BUTTON_OK_FRAME;
     else
         next_button_kind = DIALOG_BUTTON_NEXT_FRAME;
-    if (pages->Count - 1 <= page_index)
+    if (pages->Count - 1 <= page_index && link_texts->Count > 0)
     {
-        if (link_texts->Count > 0)
-        {
-            AddText(" ", "", false);
-            for (int i = 0; i < link_texts->Count; i++)
-                AddText("*" + link_texts->Strings[i], "", false);
-        }
+        AddText(" ", "", false);
+        for (int i = 0; i < link_texts->Count; i++)
+            AddText("*" + link_texts->Strings[i], "", false);
     }
 }
 
@@ -193,14 +187,11 @@ void DialogController::NextPage()
         next_button_kind = DIALOG_BUTTON_OK_FRAME;
     else
         next_button_kind = DIALOG_BUTTON_NEXT_FRAME;
-    if (pages->Count - 1 <= page_index)
+    if (pages->Count - 1 <= page_index && link_texts->Count > 0)
     {
-        if (link_texts->Count > 0)
-        {
-            AddText(" ", "", false);
-            for (int i = 0; i < link_texts->Count; i++)
-                AddText("*" + link_texts->Strings[i], "", false);
-        }
+        AddText(" ", "", false);
+        for (int i = 0; i < link_texts->Count; i++)
+            AddText("*" + link_texts->Strings[i], "", false);
     }
 }
 
@@ -235,14 +226,14 @@ void DialogController::Open(String first_quest_name)
     showing_quest_list = false;
     if (pages->Count > 0)
         AddText(pages->Strings[0], "", false);
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void DialogController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     MainForm->gfx->FreeDialogGraphics();
     MainForm->redraw_needed = true;
 }
@@ -282,14 +273,14 @@ void DialogController::MouseDown(int x, int y, int button)
     {
         if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
     }
     if (y > window_y + 13 && y < window_y + 29 && x > window_x + 251 && x < window_x + 270)
     {
-        MainForm->sfx->PlaySfx(2);
+        MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
         if (!showing_quest_list)
             showing_quest_list = true;
         else
@@ -306,15 +297,14 @@ void DialogController::MouseDown(int x, int y, int button)
         {
             for (int slot = 0; slot < DIALOG_MAX_LINKS; slot++)
             {
-                if (link_line_indices[slot] != line)
-                    continue;
-                if (link_line_indices[slot] == -1)
-                    continue;
-                MainForm->sfx->PlaySfx(2);
-                MainForm->net_client->sender->SendQuestDialogLink(dialog_echo_a, quest_id, dialog_echo_b,
-                    link_ids[slot]);
-                Close();
-                MainForm->redraw_needed = true;
+                if (link_line_indices[slot] == line && link_line_indices[slot] != -1)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->net_client->sender->SendQuestDialogLink(dialog_echo_a, quest_id, dialog_echo_b,
+                        link_ids[slot]);
+                    Close();
+                    MainForm->redraw_needed = true;
+                }
             }
         }
         else if (line >= 0 && quest_names->Count > line && request_cooldown <= 0)
@@ -330,7 +320,7 @@ void DialogController::MouseDown(int x, int y, int button)
             }
             else
             {
-                MainForm->sfx->PlaySfx(2);
+                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                 MainForm->net_client->sender->RequestQuestDialog(npc_index, quest_ids[line]);
                 MainForm->redraw_needed = true;
                 request_cooldown = QUEST_REQUEST_COOLDOWN_TICKS;
@@ -339,19 +329,19 @@ void DialogController::MouseDown(int x, int y, int button)
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
     {
-        scroll_up_held = 1;
+        scroll_up_held = true;
         scroll_repeat_delay = 4;
         ScrollUp();
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 128 && y <= window_y + 143)
     {
-        scroll_down_held = 1;
+        scroll_down_held = true;
         scroll_repeat_delay = 4;
         ScrollDown();
     }
     if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 190 && !thumb_grabbed)
     {
-        is_dragging = 1;
+        is_dragging = true;
         drag_offset_x = x - window_x;
         drag_offset_y = y - window_y;
     }
@@ -360,6 +350,7 @@ void DialogController::MouseDown(int x, int y, int button)
 // Moves a dragged window, kept on screen, and tracks the hovered line and the previous and next buttons.
 void DialogController::MouseMove(int x, int y)
 {
+    int line_count;
     UpdateScrollHover(x, y);
     if (is_dragging)
     {
@@ -391,13 +382,10 @@ void DialogController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (hovered_row >= 0)
-        {
-            hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (!(x < window_x + 89 || x > window_x + 169 || y < window_y + 153 || y > window_y + 179))
     {
@@ -407,13 +395,10 @@ void DialogController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (prev_button_hovered)
     {
-        if (prev_button_hovered)
-        {
-            prev_button_hovered = false;
-            MainForm->redraw_needed = true;
-        }
+        prev_button_hovered = false;
+        MainForm->redraw_needed = true;
     }
     if (!(x < window_x + 183 || x > window_x + 273 || y < window_y + 153 || y > window_y + 179))
     {
@@ -423,13 +408,10 @@ void DialogController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (next_button_hovered)
     {
-        if (next_button_hovered)
-        {
-            next_button_hovered = false;
-            MainForm->redraw_needed = true;
-        }
+        next_button_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
@@ -445,26 +427,26 @@ void DialogController::UpdateScrollHover(int x, int y)
     {
         if (!scroll_up_hovered)
         {
-            scroll_up_hovered = 1;
+            scroll_up_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (scroll_up_hovered)
     {
-        scroll_up_hovered = 0;
+        scroll_up_hovered = false;
         MainForm->redraw_needed = true;
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 128 && y <= window_y + 143)
     {
         if (!scroll_down_hovered)
         {
-            scroll_down_hovered = 1;
+            scroll_down_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (scroll_down_hovered)
     {
-        scroll_down_hovered = 0;
+        scroll_down_hovered = false;
         MainForm->redraw_needed = true;
     }
 }
@@ -474,7 +456,7 @@ void DialogController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -494,7 +476,7 @@ void DialogController::DragScrollThumb(int y)
                 top_line = new_top_line;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -513,7 +495,7 @@ void DialogController::ScrollUp()
         scroll_fraction = (double)top_line / (double)(line_count - 6);
         thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -532,7 +514,7 @@ void DialogController::ScrollDown()
         scroll_fraction = (double)top_line / (double)(result - 6);
         thumb_pos = DIALOG_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -540,10 +522,10 @@ void DialogController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void DialogController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 // Empties the page and its link slots and scrolls back to the top.

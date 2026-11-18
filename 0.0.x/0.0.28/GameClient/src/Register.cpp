@@ -42,7 +42,7 @@ void WinRegister::BuildKeyPaths(String account, String character)
     value_prefix = "item";
     account_name = LowerCase(account);
     character_name = LowerCase(character);
-    unread_int_at_1068 = 0;
+    unused_value = 0;
     character_key = root_key;
     character_key.Insert(separator, character_key.Length() + 1);
     character_key.Insert(account_name, character_key.Length() + 1);
@@ -65,13 +65,13 @@ void WinRegister::WriteSlotValue(int slot_type, int slot_index, int value)
 {
     if (!slot_type)
         current_key = "";
-    if (slot_type == 1)
+    if (slot_type == LayoutKey_Inventory)
         current_key = inventory_key;
-    if (slot_type == 2)
+    if (slot_type == LayoutKey_Spells)
         current_key = spells_key;
-    if (slot_type == 3)
+    if (slot_type == LayoutKey_Skills)
         current_key = skills_key;
-    if (slot_type == 4)
+    if (slot_type == LayoutKey_Macros)
         current_key = macros_key;
     TRegIniFile *registry = new TRegIniFile(current_key);
     registry->RootKey = HKEY_CURRENT_USER;
@@ -91,13 +91,13 @@ int WinRegister::ReadSlotValue(int slot_type, int slot_index)
     int Integer = -1;
     if (!slot_type)
         current_key = "";
-    if (slot_type == 1)
+    if (slot_type == LayoutKey_Inventory)
         current_key = inventory_key;
-    if (slot_type == 2)
+    if (slot_type == LayoutKey_Spells)
         current_key = spells_key;
-    if (slot_type == 3)
+    if (slot_type == LayoutKey_Skills)
         current_key = skills_key;
-    if (slot_type == 4)
+    if (slot_type == LayoutKey_Macros)
         current_key = macros_key;
     TRegIniFile *registry = new TRegIniFile(current_key);
     registry->RootKey = HKEY_CURRENT_USER;

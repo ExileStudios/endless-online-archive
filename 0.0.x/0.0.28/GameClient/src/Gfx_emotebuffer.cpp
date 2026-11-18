@@ -16,9 +16,9 @@ EmoteBuffer::EmoteBuffer()
     fill_fx->FillColor = 0;
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 13;
     surface_desc->Height = 14;
     surface->GetSurfaceDesc(surface_desc);
@@ -27,8 +27,8 @@ EmoteBuffer::EmoteBuffer()
     surface_rect.top = 0;
     surface_rect.right = 13;
     surface_rect.bottom = 14;
-    surface->Blt(&surface_rect, 0, 0, 16778240, fill_fx);
-    surface->SetColorKey(8, color_key);
+    surface->Blt(&surface_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 EmoteBuffer::~EmoteBuffer()

@@ -13,8 +13,8 @@
 struct SkillController
 {
     vector<SkillItem> skills;
-    vector<SkillItem> unused_items_a;
-    vector<SkillItem> unused_items_b;
+    vector<SkillItem> unused_items;
+    vector<SkillItem> second_unused_items;
     String hover_text;
     int hover_skill_id;
     int hover_col;
@@ -24,7 +24,7 @@ struct SkillController
     char has_hover;
     char hover_alt_frame;
     int hover_text_width;
-    char pad_0x80[4];
+    char unused_bytes[4];
     bool has_selection;
     String selected_skill_name;
     int selected_skill_id;
@@ -38,7 +38,7 @@ struct SkillController
     int drag_x;
     int drag_y;
     int drag_icon;
-    char pad_0xb8[4];
+    char second_unused_bytes[4];
     int drag_skill_id;
     char is_dragging;
     char drag_started;
@@ -50,7 +50,7 @@ struct SkillController
     char scroll_down_hovered;
     int train_confirm_ticks;
     int train_skill_id;
-    char pad_0xdc[20];
+    char third_unused_bytes[20];
     char selection_dirty;
     char is_dirty;
     char drag_dirty;
@@ -104,7 +104,7 @@ void Class::DragScrollThumb(int y) \
 { \
     double thumb_fraction; \
     double scaled_row; \
-    int __slot1; \
+    int unused_int; \
     int thumb_offset; \
     int new_top_row; \
     if (thumb_grabbed) \
@@ -124,8 +124,8 @@ void Class::DragScrollThumb(int y) \
                 top_row = new_top_row; \
         } \
         scroll_thumb_offset = thumb_offset; \
-        buttons_dirty = 1; \
-        is_dirty = 1; \
+        buttons_dirty = true; \
+        is_dirty = true; \
     } \
 }
 
@@ -144,8 +144,8 @@ void Class::ScrollDown() \
         scroll_fraction = (double)top_row / (double)(row_count - 2); \
         thumb_pos = GRID_THUMB_TRAVEL * scroll_fraction; \
         scroll_thumb_offset = thumb_pos; \
-        buttons_dirty = 1; \
-        is_dirty = 1; \
+        buttons_dirty = true; \
+        is_dirty = true; \
     } \
 }
 
@@ -164,8 +164,8 @@ void Class::ScrollUp() \
         scroll_fraction = (double)top_row / (double)(row_count - 2); \
         thumb_pos = GRID_THUMB_TRAVEL * scroll_fraction; \
         scroll_thumb_offset = thumb_pos; \
-        buttons_dirty = 1; \
-        is_dirty = 1; \
+        buttons_dirty = true; \
+        is_dirty = true; \
     } \
 }
 

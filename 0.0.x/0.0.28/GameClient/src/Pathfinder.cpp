@@ -11,7 +11,7 @@
 PathFinder::PathFinder()
 {
     current_step = 0;
-    is_active = 0;
+    is_active = false;
 }
 
 PathFinder::~PathFinder()
@@ -28,7 +28,7 @@ char PathFinder::FindPath(int target_x, int target_y)
     int start_y;
     int i;
     int j;
-    found = 0;
+    found = false;
     if (!MainForm->animation->IsPathDelayed() && !MainForm->map->IsBlocked(target_x, target_y) &&
         !MainForm->players->HasPlayerAt(target_x, target_y) && !MainForm->npcs->HasNpcAt(target_x, target_y) &&
         target_x >= 0 && target_y >= 0 && MainForm->map->GetWidth() >= target_x &&
@@ -61,7 +61,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                             do
                             {
                                 depth++;
-                                reached_expanded = 0;
+                                reached_expanded = false;
                                 generation_start = previous_generation_end;
                                 previous_generation_end = generation_end;
                                 generation_end = nodes.size();
@@ -86,7 +86,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                                                     if (node_x + 1 == target_x && node_y == target_y)
                                                     {
                                                         path_node_id = handle.id;
-                                                        found = 1;
+                                                        found = true;
                                                         break;
                                                     }
                                                 }
@@ -105,7 +105,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                                                     if (node_x == target_x && node_y + 1 == target_y)
                                                     {
                                                         path_node_id = down_node.id;
-                                                        found = 1;
+                                                        found = true;
                                                         break;
                                                     }
                                                 }
@@ -124,7 +124,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                                                     if (node_x - 1 == target_x && node_y == target_y)
                                                     {
                                                         path_node_id = left_node.id;
-                                                        found = 1;
+                                                        found = true;
                                                         break;
                                                     }
                                                 }
@@ -143,7 +143,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                                                     if (node_x == target_x && node_y - 1 == target_y)
                                                     {
                                                         path_node_id = up_node.id;
-                                                        found = 1;
+                                                        found = true;
                                                         break;
                                                     }
                                                 }
@@ -151,7 +151,7 @@ char PathFinder::FindPath(int target_x, int target_y)
                                         }
                                     }
                                     else
-                                        reached_expanded = 1;
+                                        reached_expanded = true;
                                 }
                             } while (depth <= 11 && !found);
                         }
@@ -184,16 +184,13 @@ char PathFinder::FindPath(int target_x, int target_y)
 // True when the tile is in the search already and has been expanded; only the last two passes are searched.
 char PathFinder::ContainsNode(int x, int y)
 {
-    char is_expanded = 0;
+    char is_expanded = false;
     for (int i = nodes.size() - 1; i >= generation_start - 1; i--)
     {
         if (nodes[i].x == x && nodes[i].y == y)
         {
             if (nodes[i].expanded)
-            {
-                is_expanded = 1;
-                break;
-            }
+                is_expanded = true;
             break;
         }
     }
@@ -215,14 +212,14 @@ void PathFinder::FollowPath()
         {
             int player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
             int player_y = MainForm->players->GetY(MainForm->net_client->GetPlayerId());
-            int v51_1 = MainForm->players->GetDirection(MainForm->net_client->GetPlayerId());
-            int next_x = GetCurrentStep(MainForm->map->path_finder).x;
-            int next_y = GetCurrentStep(MainForm->map->path_finder).y;
+            int player_direction = MainForm->players->GetDirection(MainForm->net_client->GetPlayerId());
+            int next_x = MainForm->map->path_finder->GetCurrentStep().x;
+            int next_y = MainForm->map->path_finder->GetCurrentStep().y;
             MainForm->map->path_finder->AdvanceStep();
-            char is_stuck = 1;
-            bool on_jump_tile = 0;
+            char is_stuck = true;
+            bool on_jump_tile = false;
             if (MainForm->map->GetTileSpec(player_x, player_y) == TileSpec_Jump)
-                on_jump_tile = 1;
+                on_jump_tile = true;
             if (next_x > player_x && next_y == player_y)
             {
                 if (MainForm->map->GetCenterX() <= MainForm->map->GetWidth() &&
@@ -235,22 +232,23 @@ void PathFinder::FollowPath()
                         MainForm->map->StartScroll(FacingDirection_Right);
                         MainForm->animation->game->attack_count = 0;
                         MainForm->net_client->sender->SendWalk(FacingDirection_Right, next_x, next_y);
-                        char walk_right = 1;
+                        char walk_right = true;
                         if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Jump || on_jump_tile)
                         {
-                            walk_right = 0;
+                            walk_right = false;
                             MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), next_x, next_y,
                                 FacingDirection_Right);
                         }
                         if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                         {
-                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                            MainForm->sfx->PlaySfx(42);
+                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                SpellEffect_WaterSplash);
+                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                         }
                         if (walk_right)
                             MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,
                                 FacingDirection_Right);
-                        is_stuck = 0;
+                        is_stuck = false;
                     }
                     else
                     {
@@ -271,22 +269,22 @@ void PathFinder::FollowPath()
                     MainForm->map->StartScroll(FacingDirection_Left);
                     MainForm->animation->game->attack_count = 0;
                     MainForm->net_client->sender->SendWalk(FacingDirection_Left, next_x, next_y);
-                    char walk_left = 1;
+                    char walk_left = true;
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Jump || on_jump_tile)
                     {
-                        walk_left = 0;
+                        walk_left = false;
                         MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), next_x, next_y,
                             FacingDirection_Left);
                     }
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                     {
-                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                        MainForm->sfx->PlaySfx(42);
+                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
+                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                     }
                     if (walk_left)
                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,
                             FacingDirection_Left);
-                    is_stuck = 0;
+                    is_stuck = false;
                 }
                 else
                 {
@@ -305,22 +303,22 @@ void PathFinder::FollowPath()
                     MainForm->map->StartScroll(FacingDirection_Down);
                     MainForm->animation->game->attack_count = 0;
                     MainForm->net_client->sender->SendWalk(FacingDirection_Down, next_x, next_y);
-                    char walk_down = 1;
+                    char walk_down = true;
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Jump || on_jump_tile)
                     {
-                        walk_down = 0;
+                        walk_down = false;
                         MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), next_x, next_y,
                             FacingDirection_Down);
                     }
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                     {
-                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                        MainForm->sfx->PlaySfx(42);
+                        MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
+                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                     }
                     if (walk_down)
                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,
                             FacingDirection_Down);
-                    is_stuck = 0;
+                    is_stuck = false;
                 }
                 else
                 {
@@ -341,22 +339,23 @@ void PathFinder::FollowPath()
                         MainForm->map->StartScroll(FacingDirection_Up);
                         MainForm->animation->game->attack_count = 0;
                         MainForm->net_client->sender->SendWalk(FacingDirection_Up, next_x, next_y);
-                        char walk_up = 1;
+                        char walk_up = true;
                         if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Jump || on_jump_tile)
                         {
-                            walk_up = 0;
+                            walk_up = false;
                             MainForm->players->StartJump(MainForm->net_client->GetPlayerId(), next_x, next_y,
                                 FacingDirection_Up);
                         }
                         if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                         {
-                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), 8);
-                            MainForm->sfx->PlaySfx(42);
+                            MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(),
+                                SpellEffect_WaterSplash);
+                            MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
                         }
                         if (walk_up)
                             MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,
                                 FacingDirection_Up);
-                        is_stuck = 0;
+                        is_stuck = false;
                     }
                     else
                     {
@@ -380,17 +379,18 @@ char PathFinder::IsPathActive()
 
 void PathFinder::CancelPath()
 {
-    is_active = 0;
+    is_active = false;
 }
 
-Windows::TPoint PathFinder::GetCurrentStep(PathFinder *self)
+Windows::TPoint PathFinder::GetCurrentStep()
 {
-    return self->steps[self->current_step];
+    return steps[current_step];
 }
 
 // Moves to the next step; the path ends after the last.
 void PathFinder::AdvanceStep()
 {
-    if (++current_step >= step_count)
-        is_active = 0;
+    current_step++;
+    if (current_step >= step_count)
+        is_active = false;
 }

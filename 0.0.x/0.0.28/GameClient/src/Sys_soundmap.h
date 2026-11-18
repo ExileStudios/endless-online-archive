@@ -4,7 +4,7 @@
 // Picks the sound for a weapon swing or a spell effect.
 struct SoundMapper
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     SoundMapper();
     ~SoundMapper();

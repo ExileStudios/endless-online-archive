@@ -1,5 +1,13 @@
 #ifndef Sys_mouseH
 #define Sys_mouseH
+
+enum WheelDirection
+{
+    WheelDirection_Up = 1,
+    WheelDirection_Down = 2
+};
+
+#define CHANGE_PASSWORD_DIALOG 1
 #define CHARACTER_CREATE_DIALOG 2
 #define TRAIN_CONFIRM_TICKS 200
 

@@ -17,9 +17,9 @@ NpcResources::NpcResources()
     color_key->ColorSpaceLowValue = 0;
     fill_fx = new TDDBltFX(NULL);
     fill_fx->FillColor = 0;
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     sheets_created = false;
     frame_width = 0;
     frame_height = 0;
@@ -63,8 +63,8 @@ void NpcResources::CreateSheets(int library, int resource_id, char has_idle_anim
         sheet_top = 0;
         sheet_width = frame_width * frame_count;
         sheet_height = frame_height;
-        front_sheet->SetColorKey(8, color_key);
-        back_sheet->SetColorKey(8, color_key);
+        front_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
+        back_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
     }
 }
 
@@ -116,7 +116,7 @@ void NpcResources::LoadFrontFrame(int frame, int library, int resource_id)
             try
             {
                 BitBlt(blit_dc, frame * frame_width, 0, MainForm->resource_bitmap->Width,
-                    MainForm->resource_bitmap->Height, CompatibleDC, 0, 0, 13369376);
+                    MainForm->resource_bitmap->Height, CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (Exception &)
             {
@@ -164,7 +164,7 @@ void NpcResources::LoadBackFrame(int frame, int library, int resource_id)
             try
             {
                 BitBlt(dc, frame * frame_width, 0, MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
-                    CompatibleDC, 0, 0, 13369376);
+                    CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (Exception &)
             {
@@ -176,12 +176,12 @@ void NpcResources::LoadBackFrame(int frame, int library, int resource_id)
 }
 
 // The rect of one frame on an npc sheet.
-Windows::TRect Gfx_npc_GetFrameRect(NpcResources *self, int frame)
+Windows::TRect NpcResources::GetFrameRect(int frame)
 {
     TRect frame_rect;
-    frame_rect.left = frame * self->frame_width;
+    frame_rect.left = frame * frame_width;
     frame_rect.top = 0;
-    frame_rect.right = self->frame_width + frame * self->frame_width;
-    frame_rect.bottom = self->frame_height;
+    frame_rect.right = frame_width + frame * frame_width;
+    frame_rect.bottom = frame_height;
     return frame_rect;
 }

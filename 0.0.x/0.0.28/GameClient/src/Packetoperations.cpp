@@ -56,7 +56,7 @@ void PacketOperator::SendAccountCreate(String account_name, String password, Str
             computer_name = computer_name.SubString(1, 32);
         if (serial_text.Length() >= 33)
             serial_text = serial_text.SubString(1, 32);
-        String payload = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
+        String payload = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
         payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
         payload = payload + account_name;
         payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -102,7 +102,7 @@ void PacketOperator::RequestCharacterCreate()
 // Asks to delete a character; the server asks for a confirmation, which ConfirmCharacterDelete sends.
 void PacketOperator::RequestCharacterDelete(int character_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, character_id, 4);
+    String packet = MainForm->net_client->EncodeNumber(character_id, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_CHARACTER, packet);
 }
@@ -110,8 +110,8 @@ void PacketOperator::RequestCharacterDelete(int character_id)
 // Confirms the delete of the character the menu asked about.
 void PacketOperator::ConfirmCharacterDelete()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->animation->menu->delete_character_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->animation->menu->delete_character_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DELETE, OP_CHARACTER, packet);
 }
@@ -120,11 +120,11 @@ void PacketOperator::ConfirmCharacterDelete()
 void PacketOperator::SendCharacterCreate(String name, unsigned int gender, unsigned int hair_style,
     unsigned int hair_color, unsigned int skin)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, gender, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, hair_style, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, hair_color, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, skin, 2);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(gender, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(hair_style, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(hair_color, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(skin, 2);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + name;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -135,7 +135,7 @@ void PacketOperator::SendCharacterCreate(String name, unsigned int gender, unsig
 // Logs in with one character of the account.
 void PacketOperator::SelectCharacter(int character_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, character_id, 4);
+    String packet = MainForm->net_client->EncodeNumber(character_id, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAY, packet);
 }
@@ -164,10 +164,10 @@ void PacketOperator::SendGlobalChatOpen()
 void PacketOperator::SendWalkGhost(unsigned int direction, unsigned int x, unsigned int y, int blocking_player_id)
 {
     MainForm->net_client->CommitActionTime();
-    String packet = packet + Client::EncodeNumber(MainForm->net_client, direction, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
+    packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_HIT, OP_MOVE, packet);
 }
@@ -176,10 +176,10 @@ void PacketOperator::SendWalkGhost(unsigned int direction, unsigned int x, unsig
 void PacketOperator::SendWalkNoWall(unsigned int direction, unsigned int x, unsigned int y)
 {
     MainForm->net_client->CommitActionTime();
-    String packet = packet + Client::EncodeNumber(MainForm->net_client, direction, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
+    packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CAST, OP_MOVE, packet);
 }
@@ -188,10 +188,10 @@ void PacketOperator::SendWalkNoWall(unsigned int direction, unsigned int x, unsi
 void PacketOperator::SendWalk(unsigned int direction, unsigned int x, unsigned int y)
 {
     MainForm->net_client->CommitActionTime();
-    String packet = packet + Client::EncodeNumber(MainForm->net_client, direction, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = packet + MainForm->net_client->EncodeNumber(direction, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
+    packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_SET, OP_MOVE, packet);
 }
@@ -260,7 +260,6 @@ void PacketOperator::SendReportPlayer(String name, String reason)
     packet = packet + reason;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PUBLIC, OP_ADMIN, packet);
-    return;
 }
 
 void PacketOperator::SendHelpQuestion(String question)
@@ -275,7 +274,7 @@ void PacketOperator::SendHelpQuestion(String question)
 // Shows an emote over the player.
 void PacketOperator::SendEmote(int emote)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, emote, 1);
+    String packet = MainForm->net_client->EncodeNumber(emote, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PUBLIC, OP_EMOTE, packet);
 }
@@ -283,8 +282,8 @@ void PacketOperator::SendEmote(int emote)
 // Trains a stat: kind 1, then the stat.
 void PacketOperator::SendTrainStat(int stat_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, stat_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(stat_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
 }
@@ -292,8 +291,8 @@ void PacketOperator::SendTrainStat(int stat_id)
 // Trains a skill: kind 2, then the skill.
 void PacketOperator::SendTrainSkill(int skill_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, skill_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(skill_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
 }
@@ -301,7 +300,7 @@ void PacketOperator::SendTrainSkill(int skill_id)
 // Turns the player to face a direction without walking.
 void PacketOperator::SendFace(int direction)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, direction, 1);
+    String packet = MainForm->net_client->EncodeNumber(direction, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_SET, OP_DIR, packet);
 }
@@ -314,8 +313,8 @@ void PacketOperator::SendSpellChant(int spell_id)
     // Hundredths of a second since midnight.
     int tick = now.Time / 10;
     MainForm->net_client->CommitActionTime();
-    String packet = Client::EncodeNumber(MainForm->net_client, spell_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(spell_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_MAGIC, packet);
 }
@@ -326,9 +325,9 @@ void PacketOperator::SendSpellCastDirectional(int direction, int spell_id)
     TTimeStamp now;
     now = DateTimeToTimeStamp(Now());
     int tick = now.Time / 10;
-    String packet = Client::EncodeNumber(MainForm->net_client, direction, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, spell_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(direction, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_SELF, OP_MAGIC, packet);
 }
@@ -339,8 +338,8 @@ void PacketOperator::SendSpellCastGroup(int spell_id)
     TTimeStamp now;
     now = DateTimeToTimeStamp(Now());
     int tick = now.Time / 10;
-    String packet = Client::EncodeNumber(MainForm->net_client, spell_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(spell_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GROUP, OP_MAGIC, packet);
 }
@@ -352,11 +351,11 @@ void PacketOperator::SendSpellCastOnPlayer(unsigned int spell_id, unsigned int p
     now = DateTimeToTimeStamp(Now());
     int tick = now.Time / 10;
     MainForm->net_client->CommitActionTime();
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, spell_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
+    packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
 }
@@ -368,11 +367,11 @@ void PacketOperator::SendSpellCastOnNpc(unsigned int spell_id, unsigned int npc_
     now = DateTimeToTimeStamp(Now());
     int tick = now.Time / 10;
     MainForm->net_client->CommitActionTime();
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, spell_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, npc_index, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
+    packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(npc_index, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
 }
@@ -381,8 +380,8 @@ void PacketOperator::SendSpellCastOnNpc(unsigned int spell_id, unsigned int npc_
 void PacketOperator::SendAttack(int direction)
 {
     MainForm->net_client->CommitActionTime();
-    String packet = Client::EncodeNumber(MainForm->net_client, direction, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->last_action_tick, 3);
+    String packet = MainForm->net_client->EncodeNumber(direction, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DO, OP_ATTACK, packet);
 }
@@ -390,9 +389,9 @@ void PacketOperator::SendAttack(int direction)
 // Sits on the chair at a tile: kind 1, then the tile. SendChairStand sends kind 2.
 void PacketOperator::SendChairSit(int x, int y)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
 }
@@ -400,23 +399,23 @@ void PacketOperator::SendChairSit(int x, int y)
 // Sits on the floor: kind 1, then the tile. SendFloorStand sends kind 2.
 void PacketOperator::SendFloorSit(int x, int y)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
 }
 
 void PacketOperator::SendFloorStand()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 1);
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
 }
 
 void PacketOperator::SendChairStand()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 1);
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
 }
@@ -432,7 +431,7 @@ void PacketOperator::RequestRefresh()
 // Asks for the paperdoll of a player.
 void PacketOperator::RequestPaperdoll(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_PAPERDOLL, packet);
 }
@@ -440,7 +439,7 @@ void PacketOperator::RequestPaperdoll(int player_id)
 // Asks for the book of a player.
 void PacketOperator::RequestBook(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_BOOK, packet);
 }
@@ -448,8 +447,8 @@ void PacketOperator::RequestBook(int player_id)
 // Equips an item in slot 0 or 1 of its kind.
 void PacketOperator::SendEquipItem(int item_id, int sub_slot)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, sub_slot, 1);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(sub_slot, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_PAPERDOLL, packet);
 }
@@ -457,8 +456,8 @@ void PacketOperator::SendEquipItem(int item_id, int sub_slot)
 // Takes off the item in slot 0 or 1 of its kind.
 void PacketOperator::SendUnequipItem(int item_id, int sub_slot)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, sub_slot, 1);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(sub_slot, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DELETE, OP_PAPERDOLL, packet);
 }
@@ -482,40 +481,40 @@ void PacketOperator::RequestOnlineNames()
 // Asks for the quests in progress: kind 1.
 void PacketOperator::RequestQuestProgress()
 {
-    MainForm->net_client->SendPacket(AC_LIST, OP_QUEST, Client::EncodeNumber(MainForm->net_client, 1, 1));
+    MainForm->net_client->SendPacket(AC_LIST, OP_QUEST, MainForm->net_client->EncodeNumber(1, 1));
 }
 
 // Asks for the quests done: kind 2.
 void PacketOperator::RequestQuestHistory()
 {
-    MainForm->net_client->SendPacket(AC_LIST, OP_QUEST, Client::EncodeNumber(MainForm->net_client, 2, 1));
+    MainForm->net_client->SendPacket(AC_LIST, OP_QUEST, MainForm->net_client->EncodeNumber(2, 1));
 }
 
 void PacketOperator::RequestBankOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_BANK, packet);
 }
 
 void PacketOperator::SendGiveUpCitizenship(int session_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_id, 2);
     MainForm->net_client->SendPacket(AC_DELETE, OP_INN, packet);
 }
 
 // Asks the inn for a sleep; ConfirmInnSleep answers the inn's question that follows.
 void PacketOperator::RequestInnSleep(int session_value)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 2);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 2);
     MainForm->net_client->SendPacket(AC_REQUEST, OP_INN, packet);
 }
 
 void PacketOperator::ConfirmInnSleep(int session_value)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 2);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 2);
     MainForm->net_client->SendPacket(AC_CONFIRM, OP_INN, packet);
 }
 
@@ -523,9 +522,9 @@ void PacketOperator::ConfirmInnSleep(int session_value)
 void PacketOperator::SendCitizenshipAnswers(unsigned int session_value, String answer_first, String answer_second,
     String answer_third)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 2);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + answer_first;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -537,7 +536,7 @@ void PacketOperator::SendCitizenshipAnswers(unsigned int session_value, String a
 
 void PacketOperator::RequestInnOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_INN, packet);
 }
@@ -545,8 +544,8 @@ void PacketOperator::RequestInnOpen(int npc_index)
 // Takes gold out of the bank: the amount, then session_value.
 void PacketOperator::SendBankWithdraw(int session_value, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, amount, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 3);
+    String packet = MainForm->net_client->EncodeNumber(amount, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_BANK, packet);
 }
@@ -554,15 +553,15 @@ void PacketOperator::SendBankWithdraw(int session_value, int amount)
 // Puts gold in the bank: the amount, then session_value.
 void PacketOperator::SendBankDeposit(int session_value, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, amount, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 3);
+    String packet = MainForm->net_client->EncodeNumber(amount, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_BANK, packet);
 }
 
 void PacketOperator::RequestPriestOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_PRIEST, packet);
 }
@@ -570,7 +569,7 @@ void PacketOperator::RequestPriestOpen(int npc_index)
 // Asks the priest for a wedding with the named partner.
 void PacketOperator::RequestWedding(int request_id, String partner_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, request_id, 4);
+    String packet = MainForm->net_client->EncodeNumber(request_id, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + partner_name;
     MainForm->net_client->SendPacket(AC_REQUEST, OP_PRIEST, packet);
@@ -578,19 +577,19 @@ void PacketOperator::RequestWedding(int request_id, String partner_name)
 
 void PacketOperator::ConfirmWeddingVow(int request_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, request_id, 4);
+    String packet = MainForm->net_client->EncodeNumber(request_id, 4);
     MainForm->net_client->SendPacket(AC_DO, OP_PRIEST, packet);
 }
 
 void PacketOperator::AcceptWeddingRequest(int request_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, request_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(request_id, 2);
     MainForm->net_client->SendPacket(AC_CONFIRM, OP_PRIEST, packet);
 }
 
 void PacketOperator::RequestBarberOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_BARBER, packet);
 }
@@ -598,9 +597,9 @@ void PacketOperator::RequestBarberOpen(int npc_index)
 // Buys a hair style and color at the barber.
 void PacketOperator::SendBuyHairstyle(int session_value, int hair_style, int hair_color)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, hair_style, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, hair_color, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(hair_style, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(hair_color, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_BUY, OP_BARBER, packet);
 }
@@ -608,8 +607,8 @@ void PacketOperator::SendBuyHairstyle(int session_value, int hair_style, int hai
 // Opens the quest dialog of an npc.
 void PacketOperator::RequestQuestDialog(int npc_index, int quest_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, quest_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(quest_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DO, OP_QUEST, packet);
 }
@@ -617,12 +616,12 @@ void PacketOperator::RequestQuestDialog(int npc_index, int quest_id)
 // Answers a quest dialog with OK.
 void PacketOperator::SendQuestDialogOk(unsigned int dialog_echo_a, unsigned int quest_id, unsigned int dialog_echo_b)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, dialog_echo_a, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, quest_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, dialog_echo_b, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 0, 1);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_a, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(quest_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_b, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(0, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
 }
@@ -631,19 +630,19 @@ void PacketOperator::SendQuestDialogOk(unsigned int dialog_echo_a, unsigned int 
 void PacketOperator::SendQuestDialogLink(unsigned int dialog_echo_a, unsigned int quest_id, unsigned int dialog_echo_b,
     unsigned int link_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, dialog_echo_a, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, quest_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, dialog_echo_b, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 2, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, link_id, 1);
+    String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+    packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_a, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(quest_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_b, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(2, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(link_id, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
 }
 
 void PacketOperator::RequestSkillMasterOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_SKILL, packet);
 }
@@ -651,7 +650,7 @@ void PacketOperator::RequestSkillMasterOpen(int npc_index)
 // Asks the skill master for a reset, once the player has said yes.
 void PacketOperator::SendSkillReset(int session_value)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 4)
         MainForm->net_client->SendPacket(AC_JUNK, OP_SKILL, packet);
 }
@@ -659,8 +658,8 @@ void PacketOperator::SendSkillReset(int session_value)
 // Asks the skill master to take a skill away.
 void PacketOperator::SendForgetSkill(int session_value, int skill_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, skill_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(skill_id, 2);
     if (packet.Length() >= 6)
         MainForm->net_client->SendPacket(AC_DELETE, OP_SKILL, packet);
 }
@@ -668,15 +667,15 @@ void PacketOperator::SendForgetSkill(int session_value, int skill_id)
 // Buys a skill from the skill master.
 void PacketOperator::SendLearnSkill(int session_value, int skill_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, skill_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(skill_id, 2);
     if (packet.Length() >= 6)
         MainForm->net_client->SendPacket(AC_GET, OP_SKILL, packet);
 }
 
 void PacketOperator::RequestLawOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_LAW, packet);
 }
@@ -684,8 +683,8 @@ void PacketOperator::RequestLawOpen(int npc_index)
 // The first request of the law window: kind 1, session_value, then the text typed in, of 4 letters or more.
 void PacketOperator::SendLawMenuOption1Request(unsigned int session_value, String name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + name;
     if (packet.Length() >= 1)
@@ -695,8 +694,8 @@ void PacketOperator::SendLawMenuOption1Request(unsigned int session_value, Strin
 // The second request of the law window: kind 2, session_value, then the text typed in, of 4 letters or more.
 void PacketOperator::SendLawMenuOption2Request(unsigned int session_value, String name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + name;
     if (packet.Length() >= 1)
@@ -705,7 +704,7 @@ void PacketOperator::SendLawMenuOption2Request(unsigned int session_value, Strin
 
 void PacketOperator::RequestGuildOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_GUILD, packet);
 }
@@ -713,7 +712,7 @@ void PacketOperator::RequestGuildOpen(int npc_index)
 // Takes a member out of the guild.
 void PacketOperator::RemoveGuildMember(int session_value, String member_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + member_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REMOVE, OP_GUILD, packet);
@@ -722,7 +721,7 @@ void PacketOperator::RemoveGuildMember(int session_value, String member_name)
 // Ends the guild.
 void PacketOperator::DisbandGuild(int session_value)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_JUNK, OP_GUILD, packet);
 }
@@ -730,7 +729,7 @@ void PacketOperator::DisbandGuild(int session_value)
 // The first step of making a guild: the tag and the name. SendGuildCreate is the last, with the description.
 void PacketOperator::RequestGuildCreate(unsigned int session_value, String tag, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + tag;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -743,7 +742,7 @@ void PacketOperator::RequestGuildCreate(unsigned int session_value, String tag, 
 // Asks for the information page of a guild.
 void PacketOperator::RequestGuildInfo(int session_value, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + guild_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PUBLIC, OP_GUILD, packet);
@@ -752,7 +751,7 @@ void PacketOperator::RequestGuildInfo(int session_value, String guild_name)
 // Asks for the member list of a guild.
 void PacketOperator::RequestGuildMemberList(int session_value, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + guild_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PRIVATE, OP_GUILD, packet);
@@ -761,11 +760,11 @@ void PacketOperator::RequestGuildMemberList(int session_value, String guild_name
 // Creates a guild: the tag, the name with a capital first letter, and the description.
 void PacketOperator::SendGuildCreate(unsigned int session_value, String tag, String guild_name, String description)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + tag;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
-    packet = packet + Client::Capitalize(MainForm->net_client, guild_name);
+    packet = packet + MainForm->net_client->Capitalize(guild_name);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + description;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -776,8 +775,8 @@ void PacketOperator::SendGuildCreate(unsigned int session_value, String tag, Str
 // Accepts an invite to a guild; its one caller passes 20202 for session_value.
 void PacketOperator::AcceptGuildInvite(int session_value, int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_GUILD, packet);
 }
@@ -788,8 +787,8 @@ void PacketOperator::AcceptGuildInvite(int session_value, int player_id)
 // 3 = bank (RequestGuildBank)
 void PacketOperator::RequestGuildDescription(int session_value, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 1, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(1, 2);
     packet = packet + guild_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_GUILD, packet);
@@ -798,24 +797,24 @@ void PacketOperator::RequestGuildDescription(int session_value, String guild_nam
 // Puts gold in the guild bank.
 void PacketOperator::SendGuildDeposit(int session_value, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_BUY, OP_GUILD, packet);
 }
 
 void PacketOperator::RequestGuildBank(int session_value)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 3, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(3, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_GUILD, packet);
 }
 
 void PacketOperator::RequestGuildRanks(int session_value, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 2, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(2, 2);
     packet = packet + guild_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_GUILD, packet);
@@ -824,8 +823,8 @@ void PacketOperator::RequestGuildRanks(int session_value, String guild_name)
 // Gives a member a rank: session_value, the rank, then the name.
 void PacketOperator::SetGuildMemberRank(int session_value, String member_name, int rank)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, rank, 1);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(rank, 1);
     packet = packet + member_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_RANK, OP_GUILD, packet);
@@ -835,8 +834,8 @@ void PacketOperator::SetGuildMemberRank(int session_value, String member_name, i
 void PacketOperator::SetGuildRankNames(unsigned int session_value, String rank_name_first, String rank_name_second, String rank_name_third, String rank_name_fourth, String rank_name_fifth, String rank_name_sixth,
     String rank_name_seventh, String rank_name_eighth, String rank_name_ninth)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 2, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(2, 2);
     packet = packet + rank_name_first;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + rank_name_second;
@@ -861,8 +860,8 @@ void PacketOperator::SetGuildRankNames(unsigned int session_value, String rank_n
 
 void PacketOperator::SetGuildDescription(int session_value, String description)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, 1, 2);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(1, 2);
     packet = packet + description;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_UPDATE, OP_GUILD, packet);
@@ -871,7 +870,7 @@ void PacketOperator::SetGuildDescription(int session_value, String description)
 // Asks to join a guild with the two lines of the join form, the tag first.
 void PacketOperator::RequestGuildJoin(unsigned int session_value, String guild_tag, String recruiter_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + guild_tag;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -884,7 +883,7 @@ void PacketOperator::RequestGuildJoin(unsigned int session_value, String guild_t
 // Lets in a player who asked to join the guild.
 void PacketOperator::AcceptGuildJoinRequest(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DO, OP_GUILD, packet);
 }
@@ -892,7 +891,7 @@ void PacketOperator::AcceptGuildJoinRequest(int player_id)
 // Leaves the player's guild.
 void PacketOperator::LeaveGuild(int session_value, String guild_name)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(session_value, 4);
     packet = packet + guild_name;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DELETE, OP_GUILD, packet);
@@ -901,8 +900,8 @@ void PacketOperator::LeaveGuild(int session_value, String guild_name)
 // Deletes a post from a message board.
 void PacketOperator::SendBoardDeletePost(int board_id, int post_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, board_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, post_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(board_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(post_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DELETE, OP_MSGBOARD, packet);
 }
@@ -910,7 +909,7 @@ void PacketOperator::SendBoardDeletePost(int board_id, int post_id)
 // Posts on a message board: the subject and the text, each ended by a byte of 255.
 void PacketOperator::SendBoardPost(unsigned int board_id, String subject, String body)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, board_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(board_id, 2);
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + subject;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
@@ -922,7 +921,7 @@ void PacketOperator::SendBoardPost(unsigned int board_id, String subject, String
 
 void PacketOperator::RequestBoardOpen(int board_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, board_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(board_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_MSGBOARD, packet);
 }
@@ -930,15 +929,15 @@ void PacketOperator::RequestBoardOpen(int board_id)
 // Asks for one post of a message board.
 void PacketOperator::RequestBoardPost(int board_id, int post_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, board_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, post_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(board_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(post_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_MSGBOARD, packet);
 }
 
 void PacketOperator::RequestShopOpen(int npc_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, npc_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_SHOP, packet);
 }
@@ -946,8 +945,8 @@ void PacketOperator::RequestShopOpen(int npc_index)
 // Crafts an item at the shop.
 void PacketOperator::SendCraftItem(int session_value, int item_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_NEW, OP_SHOP, packet);
 }
@@ -955,9 +954,9 @@ void PacketOperator::SendCraftItem(int session_value, int item_id)
 // Buys an amount of an item at the shop.
 void PacketOperator::SendBuyItem(int session_value, int item_id, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_BUY, OP_SHOP, packet);
 }
@@ -965,18 +964,18 @@ void PacketOperator::SendBuyItem(int session_value, int item_id, int amount)
 // Sells an amount of an item at the shop.
 void PacketOperator::SendSellItem(int session_value, int item_id, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 4);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, session_value, 4);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 4);
+    packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_SELL, OP_SHOP, packet);
 }
 
 // Opens the jukebox at a tile.
-void PacketOperator::RequestJukeboxOpen(Windows::TPoint position)
+void PacketOperator::RequestJukeboxOpen(TPoint position)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_MUSIC, packet);
 }
@@ -984,9 +983,9 @@ void PacketOperator::RequestJukeboxOpen(Windows::TPoint position)
 // Asks the jukebox at a tile to play a song.
 void PacketOperator::SendJukeboxRequest(Windows::TPoint position, int song_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, song_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(song_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PLAY, OP_MUSIC, packet);
 }
@@ -994,8 +993,8 @@ void PacketOperator::SendJukeboxRequest(Windows::TPoint position, int song_id)
 // Opens the door at a tile.
 void PacketOperator::SendOpenDoor(int x, int y)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+    String packet = MainForm->net_client->EncodeNumber(x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_DOOR, packet);
 }
@@ -1003,8 +1002,8 @@ void PacketOperator::SendOpenDoor(int x, int y)
 // Plays one note, up to 36, on an instrument.
 void PacketOperator::SendPlayInstrument(int instrument_id, int note_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, instrument_id, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, note_id, 1);
+    String packet = MainForm->net_client->EncodeNumber(instrument_id, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(note_id, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DO, OP_MUSIC, packet);
 }
@@ -1013,13 +1012,13 @@ void PacketOperator::SendPlayInstrument(int instrument_id, int note_id)
 void PacketOperator::SendDropItem(unsigned int item_id, signed int amount, signed int x, signed int y)
 {
     char result = 1;
-    if (item_id == 1 && MainForm->animation->interface_controller->gold_drop_warning_pending)
+    if (item_id == ItemId_Gold && MainForm->animation->interface_controller->gold_drop_warning_pending)
     {
         // The first big gold drop after entering the game is stopped once with a warning.
         if (1000 * MainForm->animation->interface_controller->status->level + 1000 <= amount)
         {
-            MainForm->sfx->PlaySfx(5);
-            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+            MainForm->sfx->PlaySfx(SfxSound_Notice);
+            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                 MainForm->strings->GetDialogText(DialogText_SafetyCommentOnceReally, false),
                 MainForm->strings->GetDialogText(DialogText_SafetyCommentOnceReally, true));
             MainForm->redraw_needed = true;
@@ -1029,12 +1028,12 @@ void PacketOperator::SendDropItem(unsigned int item_id, signed int amount, signe
     }
     if (result)
     {
-        String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 3);
+        String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+        packet = packet + MainForm->net_client->EncodeNumber(amount, 3);
         if (x >= 0 && y >= 0)
         {
-            packet = packet + Client::EncodeNumber(MainForm->net_client, x, 1);
-            packet = packet + Client::EncodeNumber(MainForm->net_client, y, 1);
+            packet = packet + MainForm->net_client->EncodeNumber(x, 1);
+            packet = packet + MainForm->net_client->EncodeNumber(y, 1);
         }
         else
         {
@@ -1049,8 +1048,8 @@ void PacketOperator::SendDropItem(unsigned int item_id, signed int amount, signe
 // Destroys an amount of an item.
 void PacketOperator::SendJunkItem(int item_id, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 3);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_JUNK, OP_ITEM, packet);
 }
@@ -1058,7 +1057,7 @@ void PacketOperator::SendJunkItem(int item_id, int amount)
 // Picks up the map item with this index.
 void PacketOperator::SendPickupItem(int item_index)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_index, 2);
+    String packet = MainForm->net_client->EncodeNumber(item_index, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PICKUP, OP_ITEM, packet);
 }
@@ -1066,7 +1065,7 @@ void PacketOperator::SendPickupItem(int item_index)
 // Uses an item from the inventory.
 void PacketOperator::SendUseItem(int item_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DO, OP_ITEM, packet);
 }
@@ -1097,7 +1096,7 @@ void PacketOperator::RequestGameData()
     action = AC_UPDATE;
     family = OP_PLAY;
     String packet;
-    request_built = 0;
+    request_built = false;
     // The first byte says what is asked for:
     // 1 = the map
     // 2 = an item file part
@@ -1106,38 +1105,38 @@ void PacketOperator::RequestGameData()
     // 5 = a class file part
     if (!request_built && MainForm->animation->menu->IsMapNeeded())
     {
-        packet = packet + Client::EncodeNumber(MainForm->net_client, 1, 1);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->map->map_id, 2);
-        request_built = 1;
+        packet = packet + MainForm->net_client->EncodeNumber(1, 1);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->map->map_id, 2);
+        request_built = true;
     }
     if (!request_built && MainForm->animation->menu->IsItemFileNeeded())
     {
-        packet = packet + Client::EncodeNumber(MainForm->net_client, 2, 1);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->item_values->received_part_count, 1);
-        request_built = 1;
+        packet = packet + MainForm->net_client->EncodeNumber(2, 1);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->item_values->received_part_count, 1);
+        request_built = true;
     }
     if (!request_built && MainForm->animation->menu->IsNpcFileNeeded())
     {
-        packet = packet + Client::EncodeNumber(MainForm->net_client, 3, 1);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->npc_values->received_part_count, 1);
-        request_built = 1;
+        packet = packet + MainForm->net_client->EncodeNumber(3, 1);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->npc_values->received_part_count, 1);
+        request_built = true;
     }
     if (!request_built && MainForm->animation->menu->IsSkillFileNeeded())
     {
-        packet = packet + Client::EncodeNumber(MainForm->net_client, 4, 1);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->skill_values->received_part_count, 1);
-        request_built = 1;
+        packet = packet + MainForm->net_client->EncodeNumber(4, 1);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->skill_values->received_part_count, 1);
+        request_built = true;
     }
     if (!request_built && MainForm->animation->menu->IsClassFileNeeded())
     {
-        packet = packet + Client::EncodeNumber(MainForm->net_client, 5, 1);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 2);
-        packet = packet + Client::EncodeNumber(MainForm->net_client, MainForm->class_values->received_part_count, 1);
-        request_built = 1;
+        packet = packet + MainForm->net_client->EncodeNumber(5, 1);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->class_values->received_part_count, 1);
+        request_built = true;
     }
     if (!request_built)
     {
@@ -1147,9 +1146,8 @@ void PacketOperator::RequestGameData()
         MainForm->class_values->Load();
         action = AC_PLAY;
         family = OP_PLAY;
-        packet = Client::EncodeNumber(MainForm->net_client, MainForm->net_client->GetSessionId(), 3);
-        packet = packet +
-            Client::EncodeNumber(MainForm->net_client, MainForm->animation->menu->selected_character_id, 4);
+        packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 3);
+        packet = packet + MainForm->net_client->EncodeNumber(MainForm->animation->menu->selected_character_id, 4);
     }
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(action, family, packet);
@@ -1158,8 +1156,8 @@ void PacketOperator::RequestGameData()
 // Opens the chest at a tile.
 void PacketOperator::RequestChestOpen(Windows::TPoint position)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_CHEST, packet);
 }
@@ -1167,10 +1165,10 @@ void PacketOperator::RequestChestOpen(Windows::TPoint position)
 // Puts an amount of an item in the chest at a tile.
 void PacketOperator::SendChestAddItem(Windows::TPoint position, unsigned int item_id, unsigned int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 3);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_CHEST, packet);
 }
@@ -1178,9 +1176,9 @@ void PacketOperator::SendChestAddItem(Windows::TPoint position, unsigned int ite
 // Takes an item out of the chest at a tile.
 void PacketOperator::SendChestTakeItem(Windows::TPoint position, int item_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, item_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_CHEST, packet);
 }
@@ -1188,8 +1186,8 @@ void PacketOperator::SendChestTakeItem(Windows::TPoint position, int item_id)
 // Opens the locker at a tile.
 void PacketOperator::RequestLockerOpen(Windows::TPoint position)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_OPEN, OP_LOCKER, packet);
 }
@@ -1197,26 +1195,26 @@ void PacketOperator::RequestLockerOpen(Windows::TPoint position)
 // Buys more room in the locker.
 void PacketOperator::SendBuyLockerUpgrade()
 {
-    MainForm->net_client->SendPacket(AC_BUY, OP_LOCKER, Client::EncodeNumber(MainForm->net_client, 1, 1));
+    MainForm->net_client->SendPacket(AC_BUY, OP_LOCKER, MainForm->net_client->EncodeNumber(1, 1));
 }
 
 // Puts an amount of an item in the locker at a tile.
 void PacketOperator::SendLockerAddItem(Windows::TPoint position, unsigned int item_id, unsigned int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 3);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 3);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_LOCKER, packet);
 }
 
 // Takes an item out of the locker at a tile.
-void PacketOperator::SendLockerTakeItem(Windows::TPoint position, int item_id)
+void PacketOperator::SendLockerTakeItem(TPoint position, int item_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, position.x, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, position.y, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, item_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(position.x, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(position.y, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_GET, OP_LOCKER, packet);
 }
@@ -1224,21 +1222,21 @@ void PacketOperator::SendLockerTakeItem(Windows::TPoint position, int item_id)
 // Agrees to the trade as it stands; SendTradeDisagree takes the agreement back.
 void PacketOperator::SendTradeAgree()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_UPDATE, OP_TRADE, packet);
 }
 
 void PacketOperator::SendTradeDisagree()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 0, 1);
+    String packet = MainForm->net_client->EncodeNumber(0, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_UPDATE, OP_TRADE, packet);
 }
 
 void PacketOperator::SendTradeClose()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 0, 1);
+    String packet = MainForm->net_client->EncodeNumber(0, 1);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CLOSE, OP_TRADE, packet);
 }
@@ -1247,8 +1245,8 @@ void PacketOperator::SendTradeClose()
 void PacketOperator::RequestTrade(int player_id)
 {
     // A fixed first byte of 138.
-    String packet = Client::EncodeNumber(MainForm->net_client, 138, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(138, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_TRADE, packet);
 }
@@ -1256,15 +1254,15 @@ void PacketOperator::RequestTrade(int player_id)
 // Puts an amount of an item into the trade.
 void PacketOperator::SendTradeAddItem(int item_id, int amount)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, amount, 4);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + MainForm->net_client->EncodeNumber(amount, 4);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_ADD, OP_TRADE, packet);
 }
 
 void PacketOperator::SendTradeRemoveItem(int item_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, item_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(item_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_DELETE, OP_TRADE, packet);
 }
@@ -1272,16 +1270,16 @@ void PacketOperator::SendTradeRemoveItem(int item_id)
 // Asks to join a player's group: kind 0. RequestPartyInvite sends kind 1 to invite the player instead.
 void PacketOperator::RequestPartyJoin(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 0, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(0, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_GROUP, packet);
 }
 
 void PacketOperator::RequestPartyInvite(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_GROUP, packet);
 }
@@ -1289,8 +1287,8 @@ void PacketOperator::RequestPartyInvite(int player_id)
 // Answers a request to join the group with kind 0; AcceptPartyInvite answers an invite with kind 1.
 void PacketOperator::AcceptPartyJoin(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 0, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(0, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_GROUP, packet);
 }
@@ -1298,16 +1296,16 @@ void PacketOperator::AcceptPartyJoin(int player_id)
 // Accepts a player's trade request.
 void PacketOperator::AcceptTrade(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 0, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(0, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_TRADE, packet);
 }
 
 void PacketOperator::AcceptPartyInvite(int player_id)
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 1, 1);
-    packet = packet + Client::EncodeNumber(MainForm->net_client, player_id, 2);
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_GROUP, packet);
 }
@@ -1315,7 +1313,7 @@ void PacketOperator::AcceptPartyInvite(int player_id)
 // Asks the server for a reply, to measure the time it takes.
 void PacketOperator::SendPingRequest()
 {
-    String packet = Client::EncodeNumber(MainForm->net_client, 2, 2);
+    String packet = MainForm->net_client->EncodeNumber(2, 2);
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_SYN1, OP_SYSTEM, packet);
 }

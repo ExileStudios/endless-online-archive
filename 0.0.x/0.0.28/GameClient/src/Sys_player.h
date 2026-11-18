@@ -1,8 +1,17 @@
 #ifndef Sys_playerH
 #define Sys_playerH
 
+enum CharacterSlotState
+{
+    CharacterSlotState_Empty = 0,
+    CharacterSlotState_Preview = 1,
+    CharacterSlotState_Taken = 2
+};
+
 enum HatGraphic
 {
+    HatGraphic_None = 0,
+    HatGraphic_FirstHairOverHat = 7,
     HatGraphic_DragonMask = 15,
     HatGraphic_BlackHood = 16,
     HatGraphic_ChainmailHat = 21,
@@ -29,6 +38,7 @@ enum HatGraphic
 
 enum ShieldGraphic
 {
+    ShieldGraphic_None = 0,
     ShieldGraphic_GoodWings = 10,
     ShieldGraphic_Bag = 11,
     ShieldGraphic_NormalArrows = 14,
@@ -40,6 +50,7 @@ enum ShieldGraphic
 
 enum FacingDirection
 {
+    FacingDirection_Current = -1,
     FacingDirection_Down = 0,
     FacingDirection_Left = 1,
     FacingDirection_Up = 2,
@@ -88,7 +99,7 @@ struct Player
     bool level_up_pending;
     int player_id;
     int record_value_d;
-    int slot_state;
+    int draw_group;
     char redraw;
     bool emote_start;
     char emoting;
@@ -185,7 +196,7 @@ struct Player
 
     Player();
     Player(int tile_x, int tile_y, String player_name, int player_gender, int player_skin, int player_hair_style,
-        int player_hair_color, char start_pending);
+    int player_hair_color, char start_pending);
     ~Player();
     void ShowBalloon(String *lines, int width, int height, int tinted);
     Windows::TPoint GetAnimatedPosition(int screen_x, int screen_y);

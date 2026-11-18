@@ -7,13 +7,13 @@ struct ClassValue
     int class_id;
     int parent_class_id;
     String name;
-    short class_record_byte_at_3;
-    short class_record_word_at_4;
-    short class_record_word_at_6;
-    short class_record_word_at_8;
-    short class_record_word_at_10;
-    short class_record_word_at_12;
-    short class_record_word_at_14;
+    short stat_group;
+    short strength;
+    short intelligence;
+    short wisdom;
+    short agility;
+    short constitution;
+    short charisma;
 
     ClassValue(int record_id);
     ~ClassValue();

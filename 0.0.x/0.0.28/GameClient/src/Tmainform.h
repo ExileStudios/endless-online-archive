@@ -64,6 +64,7 @@
 
 enum NpcGraphic
 {
+    NpcGraphic_Wraith = 85,
     NpcGraphic_CursedMask = 99,
     NpcGraphic_AncientWraith = 171
 };
@@ -195,7 +196,7 @@ public:
     bool minimized;
     bool active;
     int draw_error_count;
-    char pad_0x434[4];
+    char unused_bytes[4];
     String clock_text;
     bool flip_needed;
     bool animation_tick_due;
@@ -207,14 +208,16 @@ public:
 
     __fastcall TMainForm(Classes::TComponent *owner);
     virtual __fastcall ~TMainForm();
-    void __fastcall ActivateForm(System::TObject *sender);
     void CountDrawError();
-    void __fastcall DeactivateForm(System::TObject *sender);
+    bool isActive();
+    void PaintFullDelayed();
+    void __fastcall ActivateForm(TObject *sender);
+    void __fastcall DeactivateForm(TObject *sender);
+    void __fastcall MinimizeForm(TObject *sender);
+    void __fastcall RestoreForm(TObject *sender);
+    String VersionString(int major, int minor, int build);
     void __fastcall HandleMMTimerEvent();
     void IntroAnimator();
-    void __fastcall MinimizeForm(System::TObject *sender);
-    void __fastcall RestoreForm(System::TObject *sender);
-    String VersionString(int major, int minor, int patch);
 };
 
 extern PACKAGE TMainForm *MainForm;
@@ -234,9 +237,9 @@ GraphicSize Class::LoadSurface(int library, int resource_id) \
     MainForm->resource_bitmap->Width = 0; \
     MainForm->resource_bitmap->Height = 0; \
     MainForm->resource_bitmap->LoadFromResourceID(library, resource_id); \
-    surface_desc->Flags = 6; \
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = 2112; \
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
     surface_desc->Width = MainForm->resource_bitmap->Width; \
     surface_desc->Height = MainForm->resource_bitmap->Height; \
     if (!surface) \
@@ -279,7 +282,7 @@ GraphicSize Class::LoadSurface(int library, int resource_id) \
         { \
             try \
             { \
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376); \
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY); \
             } \
             catch (...) \
             { \
@@ -292,7 +295,7 @@ GraphicSize Class::LoadSurface(int library, int resource_id) \
         DeleteDC(CompatibleDC); \
     } \
     if (size.width > 0) \
-        surface->SetColorKey(8, color_key); \
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
     return size; \
 }
 
@@ -308,9 +311,9 @@ GraphicSize Class::LoadSurface(HMODULE library, int resource_id) \
     MainForm->resource_bitmap->Width = 0; \
     MainForm->resource_bitmap->Height = 0; \
     MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id); \
-    surface_desc->Flags = 6; \
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = 2112; \
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
     surface_desc->Width = MainForm->resource_bitmap->Width; \
     surface_desc->Height = MainForm->resource_bitmap->Height; \
     if (!surface) \
@@ -353,7 +356,7 @@ GraphicSize Class::LoadSurface(HMODULE library, int resource_id) \
         { \
             try \
             { \
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376); \
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY); \
             } \
             catch (...) \
             { \
@@ -382,26 +385,26 @@ void Class::UpdateScrollHover(int x, int y) \
     { \
         if (!scroll_up_hovered) \
         { \
-            scroll_up_hovered = 1; \
+            scroll_up_hovered = true; \
             MainForm->redraw_needed = true; \
         } \
     } \
     else if (scroll_up_hovered) \
     { \
-        scroll_up_hovered = 0; \
+        scroll_up_hovered = false; \
         MainForm->redraw_needed = true; \
     } \
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243) \
     { \
         if (!scroll_down_hovered) \
         { \
-            scroll_down_hovered = 1; \
+            scroll_down_hovered = true; \
             MainForm->redraw_needed = true; \
         } \
     } \
     else if (scroll_down_hovered) \
     { \
-        scroll_down_hovered = 0; \
+        scroll_down_hovered = false; \
         MainForm->redraw_needed = true; \
     } \
 }
@@ -438,7 +441,7 @@ void Class::AddText(String text, bool add_blank_line) \
                 } \
                 else \
                 { \
-                    char split_done = 0; \
+                    char split_done = false; \
                     for (int i = 1; i <= text.Length(); i++) \
                     { \
                         if (text[i] != ' ' && i != text.Length()) \
@@ -448,7 +451,7 @@ void Class::AddText(String text, bool add_blank_line) \
                         { \
                             lines->Add(fitted_text); \
                             text.Delete(1, fitted_text.Length()); \
-                            split_done = 1; \
+                            split_done = true; \
                             break; \
                         } \
                         fitted_text = prefix; \
@@ -484,9 +487,9 @@ GraphicSize Class::LoadItemSlot(HMODULE library, int resource_id) \
     MainForm->resource_bitmap->Width = 0; \
     MainForm->resource_bitmap->Height = 0; \
     MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id); \
-    surface_desc->Flags = 6; \
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = 2112; \
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
     surface_desc->Width = MainForm->resource_bitmap->Width; \
     surface_desc->Height = MainForm->resource_bitmap->Height; \
     if (!item_slot_surface) \
@@ -529,7 +532,7 @@ GraphicSize Class::LoadItemSlot(HMODULE library, int resource_id) \
         { \
             try \
             { \
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376); \
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY); \
             } \
             catch (...) \
             { \
@@ -542,7 +545,7 @@ GraphicSize Class::LoadItemSlot(HMODULE library, int resource_id) \
         DeleteDC(CompatibleDC); \
     } \
     if (size.width > 0) \
-        item_slot_surface->SetColorKey(8, color_key); \
+        item_slot_surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
     return size; \
 }
 
@@ -558,9 +561,9 @@ GraphicSize Class::LoadBackground(HMODULE library, int resource_id) \
     MainForm->resource_bitmap->Width = 0; \
     MainForm->resource_bitmap->Height = 0; \
     MainForm->resource_bitmap->LoadFromResourceID((int)library, resource_id); \
-    surface_desc->Flags = 6; \
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = 2112; \
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
     surface_desc->Width = MainForm->resource_bitmap->Width; \
     surface_desc->Height = MainForm->resource_bitmap->Height; \
     if (!background_surface) \
@@ -603,7 +606,7 @@ GraphicSize Class::LoadBackground(HMODULE library, int resource_id) \
         { \
             try \
             { \
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376); \
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY); \
             } \
             catch (...) \
             { \
@@ -623,7 +626,7 @@ GraphicSize Class::LoadBackground(HMODULE library, int resource_id) \
 #define DEFINE_HELP_UPDATE_SCROLL_HOVER(Class) \
 void Class::UpdateScrollHover(int x, int y) \
 { \
-    char changed = 0; \
+    char changed = false; \
     if (x >= 569 && x <= 585) \
     { \
         if (y >= 365 && y <= 432) \
@@ -632,41 +635,41 @@ void Class::UpdateScrollHover(int x, int y) \
         { \
             if (!scroll_up_hovered) \
             { \
-                scroll_up_hovered = 1; \
-                changed = 1; \
+                scroll_up_hovered = true; \
+                changed = true; \
             } \
         } \
         else if (scroll_up_hovered) \
         { \
-            scroll_up_hovered = 0; \
-            scroll_up_held = 0; \
-            changed = 1; \
+            scroll_up_hovered = false; \
+            scroll_up_held = false; \
+            changed = true; \
         } \
         if (y >= 432 && y <= 447) \
         { \
             if (!scroll_down_hovered) \
             { \
-                scroll_down_hovered = 1; \
-                changed = 1; \
+                scroll_down_hovered = true; \
+                changed = true; \
             } \
         } \
         else if (scroll_down_hovered) \
         { \
-            scroll_down_hovered = 0; \
-            scroll_down_held = 0; \
-            changed = 1; \
+            scroll_down_hovered = false; \
+            scroll_down_held = false; \
+            changed = true; \
         } \
     } \
     else if (scroll_up_hovered || scroll_down_hovered) \
     { \
-        scroll_up_hovered = 0; \
-        scroll_down_hovered = 0; \
-        scroll_up_held = 0; \
-        scroll_down_held = 0; \
-        changed = 1; \
+        scroll_up_hovered = false; \
+        scroll_down_hovered = false; \
+        scroll_up_held = false; \
+        scroll_down_held = false; \
+        changed = true; \
     } \
     if (changed) \
-        scroll_dirty = 1; \
+        scroll_dirty = true; \
 }
 
 // Shared body: a class defines its Tick with DEFINE_TICK(TheClass); each class has its own scroll_repeat_delay,
@@ -691,7 +694,7 @@ void Class::Tick() \
 #define DEFINE_SKILL_UPDATE_SCROLL_HOVER(Class) \
 void Class::UpdateScrollHover(int x, int y) \
 { \
-    char changed = 0; \
+    char changed = false; \
     if (x >= 569 && x <= 585) \
     { \
         if (y >= 347 && y <= 430) \
@@ -700,75 +703,75 @@ void Class::UpdateScrollHover(int x, int y) \
         { \
             if (!scroll_up_hovered) \
             { \
-                scroll_up_hovered = 1; \
-                changed = 1; \
+                scroll_up_hovered = true; \
+                changed = true; \
             } \
         } \
         else if (scroll_up_hovered) \
         { \
-            scroll_up_hovered = 0; \
-            scroll_up_held = 0; \
-            changed = 1; \
+            scroll_up_hovered = false; \
+            scroll_up_held = false; \
+            changed = true; \
         } \
         if (y >= 432 && y <= 447) \
         { \
             if (!scroll_down_hovered) \
             { \
-                scroll_down_hovered = 1; \
-                changed = 1; \
+                scroll_down_hovered = true; \
+                changed = true; \
             } \
         } \
         else if (scroll_down_hovered) \
         { \
-            scroll_down_hovered = 0; \
-            scroll_down_held = 0; \
-            changed = 1; \
+            scroll_down_hovered = false; \
+            scroll_down_held = false; \
+            changed = true; \
         } \
     } \
     else if (scroll_up_hovered || scroll_down_hovered) \
     { \
-        scroll_up_hovered = 0; \
-        scroll_down_hovered = 0; \
-        scroll_up_held = 0; \
-        scroll_down_held = 0; \
-        changed = 1; \
+        scroll_up_hovered = false; \
+        scroll_down_hovered = false; \
+        scroll_up_held = false; \
+        scroll_down_held = false; \
+        changed = true; \
     } \
     if (changed) \
-        buttons_dirty = 1; \
+        buttons_dirty = true; \
 }
 
 // Shared body: a class defines its ClipToView with DEFINE_CLIP_TO_VIEW(TheClass); each class has its own clip_left,
 // clip_top, clip_right, clip_bottom, view_left, view_top, view_right, view_bottom.
 #define DEFINE_CLIP_TO_VIEW(Class) \
-Windows::TRect Class::ClipToView(Class *self, Windows::TRect rect) \
+Windows::TRect Class::ClipToView(Windows::TRect rect) \
 { \
     TRect clipped; \
     clipped = rect; \
     int width = rect.right - rect.left; \
     int height = rect.bottom - rect.top; \
-    self->clip_left = 0; \
-    self->clip_top = 0; \
-    self->clip_right = 0; \
-    self->clip_bottom = 0; \
-    if (rect.left < self->view_left) \
+    clip_left = 0; \
+    clip_top = 0; \
+    clip_right = 0; \
+    clip_bottom = 0; \
+    if (rect.left < view_left) \
     { \
-        self->clip_left = self->view_left - rect.left; \
-        clipped.left = self->view_left; \
+        clip_left = view_left - rect.left; \
+        clipped.left = view_left; \
     } \
-    if (rect.top < self->view_top) \
+    if (rect.top < view_top) \
     { \
-        self->clip_top = self->view_top - rect.top; \
-        clipped.top = self->view_top; \
+        clip_top = view_top - rect.top; \
+        clipped.top = view_top; \
     } \
-    if (rect.left + width > self->view_right) \
+    if (rect.left + width > view_right) \
     { \
-        self->clip_right = rect.left + width - self->view_right; \
-        clipped.right = self->view_right; \
+        clip_right = rect.left + width - view_right; \
+        clipped.right = view_right; \
     } \
-    if (rect.top + height > self->view_bottom) \
+    if (rect.top + height > view_bottom) \
     { \
-        self->clip_bottom = rect.top + height - self->view_bottom; \
-        clipped.bottom = self->view_bottom; \
+        clip_bottom = rect.top + height - view_bottom; \
+        clipped.bottom = view_bottom; \
     } \
     return clipped; \
 }
@@ -776,28 +779,28 @@ Windows::TRect Class::ClipToView(Class *self, Windows::TRect rect) \
 // Shared body: a class defines its GetClippedSourceRect with DEFINE_GET_CLIPPED_SOURCE_RECT(TheClass); each class has
 // its own is_mirrored, clip_left, clip_right, clip_top, clip_bottom.
 #define DEFINE_GET_CLIPPED_SOURCE_RECT(Class) \
-Windows::TRect Class::GetClippedSourceRect(Class *self, Windows::TRect rect) \
+Windows::TRect Class::GetClippedSourceRect(Windows::TRect rect) \
 { \
     TRect clipped; \
     clipped = rect; \
-    if (!self->is_mirrored) \
+    if (!is_mirrored) \
     { \
-        if (self->clip_left > 0) \
-            clipped.left += self->clip_left; \
-        if (self->clip_right > 0) \
-            clipped.right -= self->clip_right; \
+        if (clip_left > 0) \
+            clipped.left += clip_left; \
+        if (clip_right > 0) \
+            clipped.right -= clip_right; \
     } \
     else \
     { \
-        if (self->clip_right > 0) \
-            clipped.left += self->clip_right; \
-        if (self->clip_left > 0) \
-            clipped.right -= self->clip_left; \
+        if (clip_right > 0) \
+            clipped.left += clip_right; \
+        if (clip_left > 0) \
+            clipped.right -= clip_left; \
     } \
-    if (self->clip_top > 0) \
-        clipped.top += self->clip_top; \
-    if (self->clip_bottom > 0) \
-        clipped.bottom -= self->clip_bottom; \
+    if (clip_top > 0) \
+        clipped.top += clip_top; \
+    if (clip_bottom > 0) \
+        clipped.bottom -= clip_bottom; \
     return clipped; \
 }
 
@@ -806,11 +809,11 @@ Windows::TRect Class::GetClippedSourceRect(Class *self, Windows::TRect rect) \
 #define DEFINE_TEST_AND_CLEAR_DIRTY(Class) \
 bool Class::TestAndClearDirty() \
 { \
-    bool was_dirty = 0; \
+    bool was_dirty = false; \
     if (is_dirty) \
     { \
-        is_dirty = 0; \
-        was_dirty = 1; \
+        is_dirty = false; \
+        was_dirty = true; \
     } \
     return was_dirty; \
 }
@@ -819,7 +822,7 @@ bool Class::TestAndClearDirty() \
 #define DEFINE_IS_IN_VIEW_RANGE(Class) \
 bool Class::IsInViewRange(int center_x, int center_y, int x, int y) \
 { \
-    bool in_range = 0; \
+    bool in_range = false; \
     int dx = x - center_x; \
     int dy = y - center_y; \
     if (dx < 0) \
@@ -829,12 +832,12 @@ bool Class::IsInViewRange(int center_x, int center_y, int x, int y) \
     if (center_x < x && center_y < y) \
     { \
         if (dx + dy <= 14) \
-            in_range = 1; \
+            in_range = true; \
     } \
     else \
     { \
         if (dx + dy <= 11) \
-            in_range = 1; \
+            in_range = true; \
     } \
     return in_range; \
 }
@@ -861,7 +864,7 @@ void Class::LoadCornerButton(int library, int resource_id) \
         } \
         corner_button->ReleaseDC(dc); \
     } \
-    corner_button->SetColorKey(8, color_key); \
+    corner_button->SetColorKey(DDCKEY_SRCBLT, color_key); \
 }
 
 // Shared body: a class defines its LoadScrollIcons with DEFINE_LOAD_SCROLL_ICONS(TheClass); each class has its own
@@ -893,11 +896,11 @@ void Class::LoadScrollIcons(int library, int resource_id) \
 #define DEFINE_TEST_AND_CLEAR_SCROLL_DIRTY(Class) \
 bool Class::TestAndClearScrollDirty() \
 { \
-    bool was_dirty = 0; \
+    bool was_dirty = false; \
     if (scroll_dirty) \
     { \
-        scroll_dirty = 0; \
-        was_dirty = 1; \
+        scroll_dirty = false; \
+        was_dirty = true; \
     } \
     return was_dirty; \
 }
@@ -911,15 +914,15 @@ void Class::MouseUp() \
     { \
         MouseDown(last_mouse_x, last_mouse_y, 0); \
         drag_delay_ticks = 1000; \
-        drag_started = 0; \
+        drag_started = false; \
     } \
     else \
     { \
         drag_delay_ticks = 1000; \
-        drag_started = 0; \
+        drag_started = false; \
     } \
-    scroll_up_held = 0; \
-    scroll_down_held = 0; \
+    scroll_up_held = false; \
+    scroll_down_held = false; \
 }
 
 // Shared body: a class defines its TestAndClearDragDirty with DEFINE_TEST_AND_CLEAR_DRAG_DIRTY(TheClass); each class
@@ -927,11 +930,11 @@ void Class::MouseUp() \
 #define DEFINE_TEST_AND_CLEAR_DRAG_DIRTY(Class) \
 bool Class::TestAndClearDragDirty() \
 { \
-    bool was_dirty = 0; \
+    bool was_dirty = false; \
     if (drag_dirty) \
     { \
-        drag_dirty = 0; \
-        was_dirty = 1; \
+        drag_dirty = false; \
+        was_dirty = true; \
     } \
     return was_dirty; \
 }
@@ -955,7 +958,7 @@ int Class::GetItemAmount(int item_id) \
 
 // Shared body: a class defines its Capitalize with DEFINE_CAPITALIZE(TheClass).
 #define DEFINE_CAPITALIZE(Class) \
-String Class::Capitalize(Class *self, String text) \
+String Class::Capitalize(String text) \
 { \
     String result; \
     if (text.Length() >= 2) \
@@ -990,11 +993,11 @@ void Class::CloseBalloon() \
 { \
     if (balloon_shown) \
     { \
-        balloon_shown = 0; \
+        balloon_shown = false; \
         balloon_timer = 0; \
         delete balloon; \
     } \
-    redraw = 1; \
+    redraw = true; \
 }
 
 // Shared body: a class defines its TestAndClearButtonsDirty with DEFINE_TEST_AND_CLEAR_BUTTONS_DIRTY(TheClass); each
@@ -1002,11 +1005,11 @@ void Class::CloseBalloon() \
 #define DEFINE_TEST_AND_CLEAR_BUTTONS_DIRTY(Class) \
 bool Class::TestAndClearButtonsDirty() \
 { \
-    bool was_dirty = 0; \
+    bool was_dirty = false; \
     if (buttons_dirty) \
     { \
-        buttons_dirty = 0; \
-        was_dirty = 1; \
+        buttons_dirty = false; \
+        was_dirty = true; \
     } \
     return was_dirty; \
 }
@@ -1016,11 +1019,11 @@ bool Class::TestAndClearButtonsDirty() \
 #define DEFINE_TEST_AND_CLEAR_LIST_DIRTY(Class) \
 bool Class::TestAndClearListDirty() \
 { \
-    bool was_dirty = 0; \
+    bool was_dirty = false; \
     if (list_dirty) \
     { \
-        list_dirty = 0; \
-        was_dirty = 1; \
+        list_dirty = false; \
+        was_dirty = true; \
     } \
     return was_dirty; \
 }
@@ -1041,7 +1044,7 @@ void Class::ClearText() \
 
 // Shared body: a class defines its GetScrollIconRect with DEFINE_GET_SCROLL_ICON_RECT(TheClass).
 #define DEFINE_GET_SCROLL_ICON_RECT(Class) \
-Windows::TRect Class::GetScrollIconRect(Class *self, int icon) \
+Windows::TRect Class::GetScrollIconRect(int icon) \
 { \
     TRect scroll_icon_rect; \
     scroll_icon_rect.left = 0; \

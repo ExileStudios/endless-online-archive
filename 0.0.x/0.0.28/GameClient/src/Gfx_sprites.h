@@ -64,23 +64,23 @@ struct SpriteGraphics
     void BlitFrame(Windows::TRect dest_rect, TDx_DrawSurface *sheet, Windows::TRect source_rect, bool clip, bool keyed);
     void DrawTranslucentBuffer(Windows::TRect dest_rect);
     void DrawNameLabel();
-    static Windows::TRect ClipToView(SpriteGraphics *self, Windows::TRect rect);
-    static Windows::TRect GetClippedSourceRect(SpriteGraphics *self, Windows::TRect rect);
+    Windows::TRect ClipToView(Windows::TRect rect);
+    Windows::TRect GetClippedSourceRect(Windows::TRect rect);
     void ShowNameLabel(String text, int color_index);
     void ShowSpeechBalloon(String text, int player_id, int style);
     void CreateEmoteBuffer();
     void FreeEmoteBuffer();
     void DrawLayerToEmoteBuffer(int x_offset, int y_offset, int library, int resource_id);
     void DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset, int library, int resource_id);
+    Windows::TRect GetStandFrameRect(int gender, int direction, int skin);
+    Windows::TRect GetWalkFrameRect(int gender, int direction, int skin, int frame);
+    Windows::TRect GetAttackFrameRect(int gender, int direction, int skin, int frame);
+    Windows::TRect GetSpellCastCellRect(int gender, int direction, int skin);
+    Windows::TRect GetChairSitFrameRect(int gender, int direction, int skin);
+    Windows::TRect GetFloorSitFrameRect(int gender, int direction, int skin);
+    Windows::TRect GetRangedAttackFrameRect(int gender, int direction, int skin);
+    Windows::TRect GetFaceStripRect(int gender, int skin);
 };
 
-Windows::TRect Gfx_sprites_GetStandFrameRect(SpriteGraphics *self, int gender, int direction, int skin);
-Windows::TRect Gfx_sprites_GetWalkFrameRect(SpriteGraphics *self, int gender, int direction, int skin, int frame);
-Windows::TRect Gfx_sprites_GetAttackFrameRect(SpriteGraphics *self, int gender, int direction, int skin, int frame);
-Windows::TRect Gfx_sprites_GetSpellCastCellRect(SpriteGraphics *self, int gender, int direction, int skin);
-Windows::TRect Gfx_sprites_GetChairSitFrameRect(SpriteGraphics *self, int gender, int direction, int skin);
-Windows::TRect Gfx_sprites_GetFloorSitFrameRect(SpriteGraphics *self, int gender, int direction, int skin);
-Windows::TRect Gfx_sprites_GetRangedAttackFrameRect(SpriteGraphics *self, int gender, int direction, int skin);
-Windows::TRect Gfx_sprites_GetFaceStripRect(SpriteGraphics *self, int gender, int skin);
 
 #endif

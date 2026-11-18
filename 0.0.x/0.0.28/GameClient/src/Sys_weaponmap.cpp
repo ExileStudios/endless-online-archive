@@ -62,9 +62,9 @@ WeaponMapper::~WeaponMapper()
 // True for the weapons drawn with the ranged attack frames.
 bool WeaponMapper::IsRangedWeapon(int weapon)
 {
-    bool ranged = 0;
+    bool ranged = false;
     if (weapon == WeaponGraphic_Bow || weapon == WeaponGraphic_Crossbow || weapon == WeaponGraphic_Harp ||
         weapon == WeaponGraphic_Guitar || weapon == WeaponGraphic_Gun || weapon == WeaponGraphic_ScavBow)
-        ranged = 1;
+        ranged = true;
     return ranged;
 }

@@ -13,7 +13,7 @@ JukeboxController::JukeboxController()
 {
     window_x = 185;
     window_y = 53;
-    is_visible = 0;
+    is_visible = false;
     open_reply_number = -1;
 }
 
@@ -29,7 +29,7 @@ void JukeboxController::Tick()
         play_ticks_left--;
         if (play_ticks_left <= 0)
         {
-            is_playing = 0;
+            is_playing = false;
             MainForm->redraw_needed = true;
         }
     }
@@ -46,7 +46,7 @@ void JukeboxController::Open(int reply_number, char playing_flag, int reserved, 
     if (is_playing)
         play_ticks_left = JUKEBOX_PLAY_TICKS;
     selected_song = 0;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
@@ -54,7 +54,7 @@ void JukeboxController::Open(int reply_number, char playing_flag, int reserved, 
 void JukeboxController::Close()
 {
     MainForm->gfx->FreeJukeboxGraphics();
-    is_visible = 0;
+    is_visible = false;
     MainForm->redraw_needed = true;
 }
 
@@ -62,7 +62,7 @@ void JukeboxController::Close()
 // not; any other click in the window starts moving it.
 void JukeboxController::MouseDown(int x, int y, int button)
 {
-    char handled = 0;
+    char handled = false;
     if (button == 0 || button == 1)
     {
         if (y > window_y + 50 && y < window_y + 170 && window_x + 17 < x)
@@ -76,11 +76,11 @@ void JukeboxController::MouseDown(int x, int y, int button)
                     // After the last song the choice goes back to the first
                     if (selected_song > 19)
                         selected_song = 0;
-                    handled = 1;
+                    handled = true;
                 }
                 if (!--row)
                 {
-                    handled = 1;
+                    handled = true;
                     if (MainForm->animation->interface_controller->status->gold >= 25)
                     {
                         if (!is_playing)
@@ -89,16 +89,17 @@ void JukeboxController::MouseDown(int x, int y, int button)
                             confirm_text = confirm_text + " ";
                             confirm_text = confirm_text + IntToStr(25);
                             confirm_text = confirm_text + " ";
-                            confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(1));
+                            confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                             confirm_text = confirm_text + "?";
                             // A yes in this box sends the request for the picked song
-                            MainForm->animation->game->ShowMessageBox(3, ConfirmAction_JukeboxRequest,
-                                MainForm->strings->GetText(GameText_RequestSong), confirm_text);
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel,
+                                ConfirmAction_JukeboxRequest, MainForm->strings->GetText(GameText_RequestSong),
+                                confirm_text);
                             MainForm->edits->caret_enabled = false;
                         }
                         else
                         {
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 // A song is already playing
                                 MainForm->strings->GetDialogText(DialogText_JukeboxBusy, false),
                                 MainForm->strings->GetDialogText(DialogText_JukeboxBusy, true));
@@ -108,8 +109,8 @@ void JukeboxController::MouseDown(int x, int y, int button)
                     else
                     {
                         String no_gold_text = MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
-                            LowerCase(MainForm->item_values->GetName(1));
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            LowerCase(MainForm->item_values->GetName(ItemId_Gold));
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
                         MainForm->edits->caret_enabled = false;
                     }
@@ -121,7 +122,7 @@ void JukeboxController::MouseDown(int x, int y, int button)
     {
         if (window_x <= x && window_x + 270 >= x && y >= window_y && y <= window_y + 202)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -157,34 +158,28 @@ void JukeboxController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (this->hovered_row >= 0)
-        {
-            this->hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (!(x < this->window_x + 91 || x > this->window_x + 181 || y < this->window_y + 159 || y > this->window_y + 185))
     {
-        if (!this->close_hovered)
+        if (!close_hovered)
         {
-            this->close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (close_hovered)
     {
-        if (close_hovered)
-        {
-            close_hovered = 0;
-            MainForm->redraw_needed = true;
-        }
+        close_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
 // Ends moving the window.
 void JukeboxController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }

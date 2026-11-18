@@ -1,6 +1,11 @@
 #ifndef Ctrl_learnH
 #define Ctrl_learnH
 
+enum SkillListMode
+{
+    SkillListMode_Offered = 1
+};
+
 #include <Classes.hpp>
 #include <vector.h>
 
@@ -31,10 +36,10 @@ struct LearnController
     String npc_name;
     int page;
     int npc_session_id;
-    char pad_0x7c[4];
+    char unused_bytes[4];
     int link_line_index;
     int selected_skill_id;
-    char pad_0x88[8];
+    char second_unused_bytes[8];
     char unused_cleared_flag;
     char scroll_up_hovered;
     char scroll_down_hovered;
@@ -53,7 +58,7 @@ struct LearnController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0xc4[4];
+    char third_unused_bytes[4];
 
     LearnController();
     ~LearnController();

@@ -15,7 +15,7 @@ struct ItemGraphics
     int last_index;
     int pending_count;
     int queue_drained;
-    char pad_0x2c[4];
+    char unused_bytes[4];
     vector<SubItemWrapper> sub_items;
     int sub_item_last_index;
     int sub_item_pending_count;
@@ -23,7 +23,7 @@ struct ItemGraphics
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char pad_0x62[6];
+    char second_unused_bytes[6];
 
     ItemGraphics(char preload);
     ~ItemGraphics();

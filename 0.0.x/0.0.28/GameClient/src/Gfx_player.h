@@ -1,6 +1,21 @@
 #ifndef Gfx_playerH
 #define Gfx_playerH
 
+enum PlayerFrame
+{
+    PlayerFrame_Stand = 0,
+    PlayerFrame_Walk1 = 1,
+    PlayerFrame_Walk2 = 2,
+    PlayerFrame_Walk3 = 3,
+    PlayerFrame_Walk4 = 4,
+    PlayerFrame_Attack1 = 5,
+    PlayerFrame_Attack2 = 6,
+    PlayerFrame_SpellCast = 7,
+    PlayerFrame_ChairSit = 8,
+    PlayerFrame_FloorSit = 9,
+    PlayerFrame_RangedAttack = 10
+};
+
 class TDDBltFX;
 class TDDColorKey;
 class TDDSCaps;
@@ -31,8 +46,8 @@ struct PlayerResources
     void DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
     void DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
     void RenderNameTag(String text, int color_index);
-    Windows::TRect Gfx_player_GetFrameRect(int frame);
-    Windows::TRect Gfx_player_GetEmoteFaceRect(int emote_index);
+    Windows::TRect GetFrameRect(int frame);
+    Windows::TRect GetEmoteFaceRect(int emote_index);
 };
 
 #endif

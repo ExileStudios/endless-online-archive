@@ -12,31 +12,31 @@ Npc::Npc()
 {
     index = 0;
     direction = FacingDirection_Down;
-    hidden = 0;
-    health_bar_start = 0;
-    health_bar_shown = 0;
-    damage_start = 0;
-    damage_shown = 0;
-    effect_start = 0;
-    effect_running = 0;
+    hidden = false;
+    health_bar_start = false;
+    health_bar_shown = false;
+    damage_start = false;
+    damage_shown = false;
+    effect_start = false;
+    effect_running = false;
     effect_frame = 0;
-    effect_id = 0;
-    walk_start = 0;
-    walking = 0;
+    effect_id = SpellEffect_None;
+    walk_start = false;
+    walking = false;
     alt_attack_start = false;
     alt_attacking = false;
-    attack_start = 0;
-    attacking = 0;
-    out_of_range = 0;
-    dying = 0;
-    graphics_pending = 1;
-    reload_requested = 0;
+    attack_start = false;
+    attacking = false;
+    out_of_range = false;
+    dying = false;
+    graphics_pending = true;
+    reload_requested = false;
     load_stage = 0;
-    label_shown = 0;
+    label_shown = false;
     idle_frame = 0;
     balloon_timer = 0;
     queued_balloon_count = 0;
-    balloon_shown = 0;
+    balloon_shown = false;
     frame_width = 0;
     frame_height = 0;
     health_bar_timer = -1;
@@ -49,36 +49,36 @@ Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int 
     index = map_index;
     npc_id = record_id;
     direction = FacingDirection_Down;
-    hidden = 0;
+    hidden = false;
     name = display_name;
     graphic = graphic_id;
     x = tile_x;
     y = tile_y;
     direction = facing;
-    health_bar_start = 0;
-    health_bar_shown = 0;
-    damage_start = 0;
-    damage_shown = 0;
-    effect_start = 0;
-    effect_running = 0;
+    health_bar_start = false;
+    health_bar_shown = false;
+    damage_start = false;
+    damage_shown = false;
+    effect_start = false;
+    effect_running = false;
     effect_frame = 0;
-    effect_id = 0;
-    walk_start = 0;
-    walking = 0;
+    effect_id = SpellEffect_None;
+    walk_start = false;
+    walking = false;
     alt_attack_start = false;
     alt_attacking = false;
-    attack_start = 0;
-    attacking = 0;
-    out_of_range = 0;
-    dying = 0;
-    graphics_pending = 1;
-    reload_requested = 0;
-    label_shown = 0;
+    attack_start = false;
+    attacking = false;
+    out_of_range = false;
+    dying = false;
+    graphics_pending = true;
+    reload_requested = false;
+    label_shown = false;
     load_stage = 0;
-    label_shown = 0;
+    label_shown = false;
     idle_frame = 0;
     balloon_timer = 0;
-    balloon_shown = 0;
+    balloon_shown = false;
     frame_width = 0;
     frame_height = 0;
     health_bar_timer = -1;
@@ -91,49 +91,49 @@ void Npc::CreateResources()
 }
 
 // The screen position adjusted for the current step or attack lunge.
-Windows::TPoint Npc::GetAnimatedPosition(Npc *self, int screen_x, int screen_y)
+Windows::TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
 {
     TPoint position;
     position.x = screen_x;
     position.y = screen_y;
-    if (self->walking)
+    if (walking)
     {
-        if (self->walk_direction == FacingDirection_Left)
+        if (walk_direction == FacingDirection_Left)
         {
-            position.x = position.x + 32 - (8 * self->walk_frame + 8);
-            position.y = position.y + 16 - (4 * self->walk_frame + 4);
+            position.x = position.x + 32 - (8 * walk_frame + 8);
+            position.y = position.y + 16 - (4 * walk_frame + 4);
         }
-        if (self->walk_direction == FacingDirection_Up)
+        if (walk_direction == FacingDirection_Up)
         {
-            position.x = 8 * self->walk_frame + position.x - 24;
-            position.y = position.y + 16 - (4 * self->walk_frame + 4);
+            position.x = 8 * walk_frame + position.x - 24;
+            position.y = position.y + 16 - (4 * walk_frame + 4);
         }
-        if (self->walk_direction == FacingDirection_Right)
+        if (walk_direction == FacingDirection_Right)
         {
-            position.x = 8 * self->walk_frame + position.x - 24;
-            position.y = 4 * self->walk_frame + position.y - 12;
+            position.x = 8 * walk_frame + position.x - 24;
+            position.y = 4 * walk_frame + position.y - 12;
         }
-        if (self->walk_direction == FacingDirection_Down)
+        if (walk_direction == FacingDirection_Down)
         {
-            position.x = position.x + 32 - (8 * self->walk_frame + 8);
-            position.y = 4 * self->walk_frame + position.y - 12;
+            position.x = position.x + 32 - (8 * walk_frame + 8);
+            position.y = 4 * walk_frame + position.y - 12;
         }
     }
-    if (self->attacking)
+    if (attacking)
     {
-        int current_attack_frame = self->attack_frame;
+        int current_attack_frame = attack_frame;
         if (current_attack_frame >= 1 && current_attack_frame <= 3)
         {
-            if (self->attack_direction == FacingDirection_Down)
+            if (attack_direction == FacingDirection_Down)
             {
                 position.x = position.x - 7;
                 position.y += 4;
             }
-            if (self->attack_direction == FacingDirection_Left)
+            if (attack_direction == FacingDirection_Left)
                 position.x = position.x - 7;
-            if (self->attack_direction == FacingDirection_Up)
+            if (attack_direction == FacingDirection_Up)
                 position.x += 7;
-            if (self->attack_direction == FacingDirection_Right)
+            if (attack_direction == FacingDirection_Right)
             {
                 position.x += 7;
                 position.y += 4;
@@ -159,9 +159,9 @@ void Npc::ShowBalloon(String *lines, int width, int height, int tinted)
             text_length += lines[i].Length();
         balloon_width = width;
         balloon_height = height;
-        balloon_shown = 1;
+        balloon_shown = true;
         balloon_timer = text_length / 3 + 24;
-        redraw = 1;
+        redraw = true;
     }
     else if (queued_balloon_count < 5)
     {
@@ -171,7 +171,8 @@ void Npc::ShowBalloon(String *lines, int width, int height, int tinted)
         queued_balloon_lines[3][queued_balloon_count] = lines[3];
         queued_balloon_lines[4][queued_balloon_count] = lines[4];
         queued_balloon_lines[5][queued_balloon_count] = lines[5];
-        queued_balloon_widths[queued_balloon_count] = width; queued_balloon_heights[queued_balloon_count] = height;
+        queued_balloon_widths[queued_balloon_count] = width;
+        queued_balloon_heights[queued_balloon_count] = height;
         queued_balloon_tinted[queued_balloon_count] = tinted;
         queued_balloon_count++;
     }
@@ -180,15 +181,16 @@ void Npc::ShowBalloon(String *lines, int width, int height, int tinted)
 // Draws the balloon centred above the npc, raised by the head height of its graphic.
 void Npc::DrawBalloon()
 {
-    int screen_x = TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
+    int screen_x =
+        TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
     int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 112 - balloon_height;
     screen_y -= MainForm->npcs->head_heights[graphic - 1];
     if (MainForm->animation->interface_controller->is_shaking)
         screen_x += MainForm->animation->interface_controller->shake_offset;
-    MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(this, screen_x, screen_y).x,
-        GetAnimatedPosition(this, screen_x, screen_y).y, balloon->fill_surface, balloon->bubble_rect, 160);
-    MainForm->gfx->game->BlitClipped(GetAnimatedPosition(this, screen_x, screen_y).x,
-        GetAnimatedPosition(this, screen_x, screen_y).y, balloon->text_surface, balloon->bubble_rect);
+    MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
+        GetAnimatedPosition(screen_x, screen_y).y, balloon->fill_surface, balloon->bubble_rect, 160);
+    MainForm->gfx->game->BlitClipped(GetAnimatedPosition(screen_x, screen_y).x,
+        GetAnimatedPosition(screen_x, screen_y).y, balloon->text_surface, balloon->bubble_rect);
 }
 
 // Closes the npc's balloon if one is open, and asks for a redraw.

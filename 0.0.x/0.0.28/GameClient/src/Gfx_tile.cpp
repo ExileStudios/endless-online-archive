@@ -13,7 +13,7 @@ TileResource::TileResource()
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
     color_key = new TDDColorKey(NULL);
-    is_animated = 0;
+    is_animated = false;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
 }
@@ -31,23 +31,23 @@ TileResource::~TileResource()
 }
 
 // One animation frame of a ground tile: a quarter of a wide sheet, or the whole of a narrow one.
-Windows::TRect Gfx_tile_GetFrameRect(TileResource *self, int frame)
+Windows::TRect TileResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
-    if (self->surface_rect.right > 250)
+    if (surface_rect.right > 250)
     {
-        int frame_width = self->surface_rect.right / 4;
+        int frame_width = surface_rect.right / 4;
         frame_rect.left = frame_width * frame;
         frame_rect.top = 0;
         frame_rect.right = frame_width * frame + frame_width;
-        frame_rect.bottom = self->surface_rect.bottom;
+        frame_rect.bottom = surface_rect.bottom;
     }
     else
     {
         frame_rect.left = 0;
         frame_rect.top = 0;
-        frame_rect.right = self->surface_rect.right;
-        frame_rect.bottom = self->surface_rect.bottom;
+        frame_rect.right = surface_rect.right;
+        frame_rect.bottom = surface_rect.bottom;
     }
     return frame_rect;
 }
@@ -63,9 +63,9 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
     MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = MainForm->resource_bitmap->Width;
     surface_desc->Height = MainForm->resource_bitmap->Height;
     if (!surface)
@@ -82,7 +82,7 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
     surface_rect.bottom = MainForm->resource_bitmap->Height;
     // A ground tile sheet this wide holds four animation frames, so the map keeps redrawing it.
     if (MainForm->resource_bitmap->Width >= 250)
-        is_animated = 1;
+        is_animated = true;
     // The ground tile bitmap goes on by a canvas Draw, or by BitBlt if configured.
     if (!MainForm->config->GetUseBitBltDraw())
     {
@@ -112,7 +112,7 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376);
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -126,6 +126,6 @@ GraphicSize TileResource::LoadSurface(int library, int resource_id)
     }
     // The colour key makes black see-through on the ground tile.
     if (size.width > 0)
-        surface->SetColorKey(8, color_key);
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     return size;
 }

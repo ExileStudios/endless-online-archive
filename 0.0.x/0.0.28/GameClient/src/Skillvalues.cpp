@@ -18,9 +18,9 @@
 SkillValues::SkillValues()
 {
     file_prefix = "./pub/dsl";
-    is_downloading = 0;
-    is_loaded = 0;
-    unread_int_at_64 = -1;
+    is_downloading = false;
+    is_loaded = false;
+    unused_value = -1;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
@@ -44,7 +44,7 @@ void SkillValues::ReadHeader()
     String file_name = file_prefix + "001.esf";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), 0);
+        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -77,7 +77,7 @@ void SkillValues::ReadHeader()
             file_name = file_name + "0" + IntToStr(last_file_number) + ".esf";
         try
         {
-            file_handle = FileOpen(file_name.c_str(), 0);
+            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
             file_size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             buffer = new char[file_size + 1];
@@ -145,7 +145,7 @@ void SkillValues::Load()
             {
                 DWORD file_size;
                 char *buffer;
-                hFile = FileOpen(file_path.c_str(), 0);
+                hFile = FileOpen(file_path.c_str(), fmOpenRead);
                 file_size = FileSeek(hFile, 0, 2);
                 FileSeek(hFile, 0, 0);
                 buffer = new char[file_size + 1];
@@ -211,11 +211,11 @@ void SkillValues::Load()
             catch (...)
             {
                 FileClose(hFile);
-                is_loaded = 0;
+                is_loaded = false;
             }
             file_number++;
         } while (loaded_count < record_total);
-        is_loaded = 1;
+        is_loaded = true;
     }
 }
 
@@ -236,7 +236,7 @@ void SkillValues::SaveFilePart(int part_number, String data)
 // Deletes the skill part files from 001 up to the first one missing, 100 at most.
 void SkillValues::DeleteFiles()
 {
-    char file_found = 1;
+    char file_found = true;
     String lpFileName;
     try
     {
@@ -250,7 +250,7 @@ void SkillValues::DeleteFiles()
             if (!access(lpFileName.c_str(), 0))
                 remove(lpFileName.c_str());
             else
-                file_found = 0;
+                file_found = false;
         }
     }
     catch (...)
@@ -259,48 +259,48 @@ void SkillValues::DeleteFiles()
 }
 
 void SkillValues::AddSkill(int skill_id, String name, String shout, short icon, short graphic, short tp_cost,
-    short sp_cost, short cast_time, short category, short skill_record_byte_at_13, short type,
-    short skill_record_byte_at_17, short skill_record_word_at_18, short target_restriction, short target_type,
-    short skill_record_byte_at_22, short skill_record_byte_at_23, short skill_record_word_at_24,
-    short skill_record_word_at_26, short skill_record_word_at_28, short skill_record_word_at_30,
-    short skill_record_word_at_32, short skill_record_word_at_34, short skill_record_byte_at_36,
-    short skill_record_word_at_37, short skill_record_word_at_39, short skill_record_byte_at_41,
-    short skill_record_word_at_42, short skill_record_word_at_44, short skill_record_word_at_46,
-    short skill_record_word_at_48, short skill_record_word_at_50, short skill_record_word_at_52)
+    short sp_cost, short cast_time, short category, short spare_byte, short type,
+    short element, short element_power, short target_restriction, short target_type,
+    short target_time, short area, short max_level,
+    short min_damage, short max_damage, short accuracy,
+    short evade, short armor, short return_damage,
+    short hp_heal, short tp_heal, short sp_heal,
+    short bonus_str, short bonus_int, short bonus_wis,
+    short bonus_agi, short bonus_con, short bonus_cha)
 {
     SkillValue handle(skill_id);
     handle.name = name;
     handle.shout = shout;
     handle.icon = icon;
     handle.graphic = graphic;
-    handle.skill_record_word_at_24 = skill_record_word_at_24;
+    handle.max_level = max_level;
     handle.tp_cost = tp_cost;
     handle.sp_cost = sp_cost;
     handle.cast_time = cast_time;
     handle.category = category;
-    handle.skill_record_byte_at_13 = skill_record_byte_at_13;
+    handle.spare_byte = spare_byte;
     handle.type = type;
-    handle.skill_record_byte_at_17 = skill_record_byte_at_17;
-    handle.skill_record_word_at_18 = skill_record_word_at_18;
+    handle.element = element;
+    handle.element_power = element_power;
     handle.target_restriction = target_restriction;
     handle.target_type = target_type;
-    handle.skill_record_byte_at_22 = skill_record_byte_at_22;
-    handle.skill_record_byte_at_23 = skill_record_byte_at_23;
-    handle.skill_record_word_at_26 = skill_record_word_at_26;
-    handle.skill_record_word_at_28 = skill_record_word_at_28;
-    handle.skill_record_word_at_30 = skill_record_word_at_30;
-    handle.skill_record_word_at_32 = skill_record_word_at_32;
-    handle.skill_record_word_at_34 = skill_record_word_at_34;
-    handle.skill_record_byte_at_36 = skill_record_byte_at_36;
-    handle.skill_record_word_at_37 = skill_record_word_at_37;
-    handle.skill_record_word_at_39 = skill_record_word_at_39;
-    handle.skill_record_byte_at_41 = skill_record_byte_at_41;
-    handle.skill_record_word_at_42 = skill_record_word_at_42;
-    handle.skill_record_word_at_44 = skill_record_word_at_44;
-    handle.skill_record_word_at_46 = skill_record_word_at_46;
-    handle.skill_record_word_at_48 = skill_record_word_at_48;
-    handle.skill_record_word_at_50 = skill_record_word_at_50;
-    handle.skill_record_word_at_52 = skill_record_word_at_52;
+    handle.target_time = target_time;
+    handle.area = area;
+    handle.min_damage = min_damage;
+    handle.max_damage = max_damage;
+    handle.accuracy = accuracy;
+    handle.evade = evade;
+    handle.armor = armor;
+    handle.return_damage = return_damage;
+    handle.hp_heal = hp_heal;
+    handle.tp_heal = tp_heal;
+    handle.sp_heal = sp_heal;
+    handle.bonus_str = bonus_str;
+    handle.bonus_int = bonus_int;
+    handle.bonus_wis = bonus_wis;
+    handle.bonus_agi = bonus_agi;
+    handle.bonus_con = bonus_con;
+    handle.bonus_cha = bonus_cha;
     records.insert(records.end(), handle);
 }
 

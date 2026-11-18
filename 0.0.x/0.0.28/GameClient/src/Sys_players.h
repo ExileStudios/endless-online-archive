@@ -1,6 +1,17 @@
 #ifndef Sys_playersH
 #define Sys_playersH
 
+enum LabelColor
+{
+    LabelColor_White = 0,
+    LabelColor_Gray = 1,
+    LabelColor_Silver = 2,
+    LabelColor_LightBlue = 3,
+    LabelColor_Violet = 4,
+    LabelColor_Gold = 5,
+    LabelColor_Cream = 6
+};
+
 #include <vector.h>
 
 enum PlayerId
@@ -21,7 +32,7 @@ struct Players
 {
     char hover_label_shown;
     char list_changed;
-    char pad_0x2[6];
+    char unused_bytes[6];
     vector<Player> players;
     int current_index;
     bool gender_one_libraries_loaded;
@@ -85,7 +96,7 @@ struct Players
     void SetBadgeLevel(int player_id, int badge_level);
     void SetDisplayNumber(int player_id, int display_number);
     void SetCharacterId(int player_id, int character_id);
-    void SetSlotState(int player_id, int slot_state);
+    void SetDrawGroup(int player_id, int draw_group);
     void SetName(int player_id, String name);
     void SetBoots(int player_id, int boots);
     void SetArmor(int player_id, int armor);
@@ -99,7 +110,7 @@ struct Players
     int GetHairStyle(int player_id);
     int GetSkin(int player_id);
     int GetCharacterId(int player_id);
-    int GetSlotState(int player_id);
+    int GetDrawGroup(int player_id);
     String GetName(int player_id);
     String GetNameByCharacterId(int character_id);
     bool ConsumeRedraw();

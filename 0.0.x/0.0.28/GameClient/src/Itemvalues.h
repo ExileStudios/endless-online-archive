@@ -9,16 +9,16 @@
 struct ItemValues
 {
     char is_downloading;
-    unsigned char unread_flag_at_1;
+    unsigned char download_requested;
     int expected_part_count;
     int received_part_count;
     char is_loaded;
     int checksum_high;
     int checksum_low;
     int record_count;
-    char pad_0x1c[4];
+    char unused_bytes[4];
     vector<ItemValue> records;
-    int unread_int_at_64;
+    int unused_value;
     String file_prefix;
 
     ItemValues();
@@ -28,16 +28,16 @@ struct ItemValues
     void Load();
     void DeleteFiles();
     void AddItem(int item_id, String name, short graphic, short type, short subtype, short special,
-        short item_record_word_at_6, short item_record_word_at_8, short item_record_word_at_10,
-        short item_record_word_at_12, short item_record_word_at_14, short item_record_word_at_16,
-        short item_record_word_at_18, short item_record_byte_at_20, short item_record_byte_at_21,
-        short item_record_byte_at_22, short item_record_byte_at_23, short item_record_byte_at_24,
-        short item_record_byte_at_25, short item_record_byte_at_26, short item_record_byte_at_27,
-        short item_record_byte_at_28, short item_record_byte_at_29, short item_record_byte_at_30,
-        short item_record_byte_at_31, short item_record_byte_at_32, int spec_value, short gender,
-        short item_record_byte_at_37, short required_level, short required_class, short required_str,
+        short hp, short tp, short min_damage,
+        short max_damage, short accuracy, short evade,
+        short armor, short return_damage, short bonus_str,
+        short bonus_int, short bonus_wis, short bonus_agi,
+        short bonus_con, short bonus_cha, short light_resist,
+        short dark_resist, short earth_resist, short air_resist,
+        short water_resist, short fire_resist, int spec_value, short gender,
+        short spec3, short required_level, short required_class, short required_str,
         short required_int, short required_wis, short required_agi, short required_con, short required_cha,
-        short item_record_byte_at_54, short item_record_byte_at_55, short weight, short item_record_byte_at_57,
+        short element, short element_power, short weight, short spare_byte,
         short size);
     void Clear();
     ItemValue GetItem(int item_id);

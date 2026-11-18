@@ -10,12 +10,12 @@ IntroGraphics::IntroGraphics()
 {
     surface = new TDx_DrawSurface(NULL);
     fill_fx = new TDDBltFX(NULL);
-    fill_fx->FillColor = 16777215;
+    fill_fx->FillColor = 0xFFFFFF;
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 358;
     surface_desc->Height = 187;
     surface->GetSurfaceDesc(surface_desc);

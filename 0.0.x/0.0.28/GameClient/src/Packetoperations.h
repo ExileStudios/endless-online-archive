@@ -1,13 +1,19 @@
 #ifndef PacketoperationsH
 #define PacketoperationsH
 
+enum PaperdollSubSlot
+{
+    PaperdollSubSlot_First = 0,
+    PaperdollSubSlot_Second = 1
+};
+
 #define TOKEN_BREAK_BYTE 255
 
 // Builds every request the client sends to the server, one function per request.
 // A request made in an NPC window carries session_value, the id the server sent when that window opened.
 struct PacketOperator
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     PacketOperator();
     ~PacketOperator();

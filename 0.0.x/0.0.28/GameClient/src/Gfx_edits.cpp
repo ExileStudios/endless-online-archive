@@ -25,7 +25,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
         Edit handle = MainForm->edits->GetCurrentEdit();
         if (handle.visible)
         {
-            if ((int)(handle.screen_group == screen_id || screen_id == 240))
+            if ((int)(handle.screen_group == screen_id || screen_id == EditGroup_All))
             {
                 MainForm->text_canvas->Brush->Color = (TColor)(handle.background_color);
                 if (handle.background_visible)
@@ -87,7 +87,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                 int text_width = MainForm->text_canvas->TextWidth(display_text);
                 int line_count = 0;
                 int visible_lines;
-                char ends_on_new_line = 0;
+                char ends_on_new_line = false;
                 int first_line = 0;
                 int row = 0;
                 // A multi-line box wraps at a space or line break to the box width.
@@ -97,7 +97,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                     if (display_text.Length() > 0)
                     {
                         if (display_text[display_text.Length()] == '\r')
-                            ends_on_new_line = 1;
+                            ends_on_new_line = true;
                     }
                     lines->Clear();
                     int line_height = MainForm->text_canvas->TextHeight("T");
@@ -107,7 +107,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                         text_width = MainForm->text_canvas->TextWidth(display_text);
                         if (text_width < handle.width - 18)
                         {
-                            char new_line_found = 0;
+                            char new_line_found = false;
                             if (display_text.Length() > 0)
                             {
                                 for (i = 1; i <= display_text.Length() && !new_line_found; i++)
@@ -119,7 +119,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                                     else
                                         handle.line_buffer = display_text.SubString(1, i - 1);
                                     display_text.Delete(1, i);
-                                    new_line_found = 1;
+                                    new_line_found = true;
                                 }
                             }
                             if (!new_line_found)
@@ -141,7 +141,7 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                                 }
                                 if (display_text[k] != ' ')
                                 {
-                                    char break_found = 0;
+                                    char break_found = false;
                                     for (m = k; m > 0 && !break_found; m--)
                                     {
                                         if (display_text[m] != ' ')
@@ -157,14 +157,14 @@ void EditCanvas::DrawEditBoxes(int screen_id)
                                             {
                                                 handle.line_buffer = display_text.SubString(1, m - 1);
                                                 display_text.Delete(1, m);
-                                                break_found = 1;
+                                                break_found = true;
                                             }
                                         }
                                         else
                                         {
                                             handle.line_buffer = display_text.SubString(1, m);
                                             display_text.Delete(1, m);
-                                            break_found = 1;
+                                            break_found = true;
                                         }
                                     }
                                     if (!break_found)

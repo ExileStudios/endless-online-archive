@@ -39,19 +39,19 @@ MenuGraphics::MenuGraphics()
     surface_caps = new TDDSCaps(NULL);
     color_key = new TDDColorKey(NULL);
     progress_fill_fx = new TDDBltFX(NULL);
-    progress_fill_fx->FillColor = 11853030;
+    progress_fill_fx->FillColor = 0xB4DCE6;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
-    background_desc->Flags = 6;
+    background_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     background_desc->SCaps = background_caps;
-    background_desc->SCaps->Caps = 2112;
+    background_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     background_desc->Width = 640;
     background_desc->Height = 480;
     background->GetSurfaceDesc(background_desc);
     background->Create(background_desc, MainForm->Dx_Draw1);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 360;
     surface_desc->Height = 160;
     main_menu_buttons->GetSurfaceDesc(surface_desc);
@@ -171,7 +171,7 @@ MenuGraphics::MenuGraphics()
 }
 
 // One key of the soft keypad sheet, by column and row, with a one-pixel gap between keys.
-Windows::TRect MenuGraphics::GetKeyRect(MenuGraphics *self, int column, int row)
+Windows::TRect MenuGraphics::GetKeyRect(int column, int row)
 {
     TRect key_rect;
     key_rect.left = 21 * column + column;
@@ -185,29 +185,29 @@ Windows::TRect MenuGraphics::GetKeyRect(MenuGraphics *self, int column, int row)
 DEFINE_GET_SCROLL_ICON_RECT(MenuGraphics)
 
 // One main menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetMainMenuButtonRect(MenuGraphics *self, int button, int state)
+Windows::TRect MenuGraphics::GetMainMenuButtonRect(int button, int state)
 {
     TRect main_menu_button_rect;
     main_menu_button_rect.left = 180 * state;
     main_menu_button_rect.top = MENU_BUTTON_PITCH * button;
     main_menu_button_rect.right = 180 * state + 179;
-    main_menu_button_rect.bottom = 40 * button + 39;
+    main_menu_button_rect.bottom = MENU_BUTTON_PITCH * button + 39;
     return main_menu_button_rect;
 }
 
 // One wide menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetWideButtonRect(MenuGraphics *self, int button, int state)
+Windows::TRect MenuGraphics::GetWideButtonRect(int button, int state)
 {
     TRect wide_button_rect;
     wide_button_rect.left = 120 * state;
     wide_button_rect.top = MENU_BUTTON_PITCH * button;
     wide_button_rect.right = 120 * state + 119;
-    wide_button_rect.bottom = 40 * button + 39;
+    wide_button_rect.bottom = MENU_BUTTON_PITCH * button + 39;
     return wide_button_rect;
 }
 
 // One small menu button from its sheet: the button picks the row, the state the plain or lit column.
-Windows::TRect MenuGraphics::GetSmallButtonRect(MenuGraphics *self, int button, int state)
+Windows::TRect MenuGraphics::GetSmallButtonRect(int button, int state)
 {
     TRect small_button_rect;
     small_button_rect.left = BUTTON_COLUMN_PITCH * state;
@@ -317,7 +317,7 @@ void MenuGraphics::LoadLabelSheet(int library, int resource_id)
         }
         label_sheet->ReleaseDC(dc);
     }
-    label_sheet->SetColorKey(8, color_key);
+    label_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu upper panel bitmap onto its surface.
@@ -430,7 +430,7 @@ void MenuGraphics::LoadArtwork(int library, int resource_id)
         }
         artwork->ReleaseDC(dc);
     }
-    artwork->SetColorKey(8, color_key);
+    artwork->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu main menu buttons bitmap onto its surface, with black see-through.
@@ -453,7 +453,7 @@ void MenuGraphics::LoadMainMenuButtons(int library, int resource_id)
         }
         main_menu_buttons->ReleaseDC(dc);
     }
-    main_menu_buttons->SetColorKey(8, color_key);
+    main_menu_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu wide buttons bitmap onto its surface, with black see-through.
@@ -476,7 +476,7 @@ void MenuGraphics::LoadWideButtons(int library, int resource_id)
         }
         wide_buttons->ReleaseDC(dc);
     }
-    wide_buttons->SetColorKey(8, color_key);
+    wide_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu small buttons bitmap onto its surface, with black see-through.
@@ -499,7 +499,7 @@ void MenuGraphics::LoadSmallButtons(int library, int resource_id)
         }
         small_buttons->ReleaseDC(dc);
     }
-    small_buttons->SetColorKey(8, color_key);
+    small_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu corner button bitmap onto its surface, with black see-through.
@@ -645,7 +645,7 @@ void MenuGraphics::DrawArtworkOnBackground(int x, int y)
     source_rect.top = 0;
     source_rect.right = artwork_width;
     source_rect.bottom = artwork_height;
-    background->BltFast(x, y, artwork, &source_rect, 17);
+    background->BltFast(x, y, artwork, &source_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Copies the upper panel onto the menu backdrop at x, y, opaque.
@@ -656,7 +656,7 @@ void MenuGraphics::DrawUpperPanelOnBackground(int x, int y)
     source_rect.top = 0;
     source_rect.right = 320;
     source_rect.bottom = 259;
-    background->BltFast(x, y, upper_panel, &source_rect, 16);
+    background->BltFast(x, y, upper_panel, &source_rect, DDBLTFAST_WAIT);
 }
 
 // Copies the lower panel onto the menu backdrop at x, y, opaque.
@@ -667,7 +667,7 @@ void MenuGraphics::DrawLowerPanelOnBackground(int x, int y)
     source_rect.top = 0;
     source_rect.right = 320;
     source_rect.bottom = 159;
-    background->BltFast(x, y, lower_panel, &source_rect, 16);
+    background->BltFast(x, y, lower_panel, &source_rect, DDBLTFAST_WAIT);
 }
 
 // Copies one character slot frame onto the menu backdrop at x, y, opaque.
@@ -678,7 +678,7 @@ void MenuGraphics::DrawSlotFrameOnBackground(int x, int y)
     source_rect.top = 0;
     source_rect.right = 276;
     source_rect.bottom = 123;
-    background->BltFast(x, y, slot_frame, &source_rect, 16);
+    background->BltFast(x, y, slot_frame, &source_rect, DDBLTFAST_WAIT);
 }
 
 // Copies the create-account form labels from the label sheet onto the menu backdrop, beside their boxes.
@@ -689,37 +689,37 @@ void MenuGraphics::DrawFormLabels(int origin_x, int origin_y)
     label_left.top = 93;
     label_left.right = 23;
     label_left.bottom = 113;
-    background->BltFast(580, 362, label_sheet, &label_left, 17);
+    background->BltFast(580, 362, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 0;
     label_left.right = 110;
     label_left.bottom = 13;
-    background->BltFast(358, 50, label_sheet, &label_left, 17);
+    background->BltFast(358, 50, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 14;
     label_left.right = 61;
     label_left.bottom = 27;
-    background->BltFast(360, 102, label_sheet, &label_left, 17);
+    background->BltFast(360, 102, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 28;
     label_left.right = 124;
     label_left.bottom = 44;
-    background->BltFast(362, 153, label_sheet, &label_left, 17);
+    background->BltFast(362, 153, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 44;
     label_left.right = 124;
     label_left.bottom = 59;
-    background->BltFast(362, 243, label_sheet, &label_left, 17);
+    background->BltFast(362, 243, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 59;
     label_left.right = 124;
     label_left.bottom = 75;
-    background->BltFast(361, 293, label_sheet, &label_left, 17);
+    background->BltFast(361, 293, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
     label_left.top = 75;
     label_left.right = 70;
     label_left.bottom = 89;
-    background->BltFast(361, 344, label_sheet, &label_left, 17);
+    background->BltFast(361, 344, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the account name and, as stars, the password on the soft keypad login screen.
@@ -737,7 +737,7 @@ void MenuGraphics::DrawLoginText()
         String masked_password = MainForm->animation->menu->password;
         password_length = MainForm->animation->menu->password.Length();
         for (int i = 1; i <= password_length; i++)
-            masked_password[i] = 42;
+            masked_password[i] = '*';
         MainForm->text_canvas->TextOut(450, 305, masked_password);
     }
 }
@@ -757,7 +757,7 @@ void MenuGraphics::DrawCharacterSlotText()
         for (i = 0; i < (int)MainForm->players->GetCount(); i++)
         {
             Player handle = MainForm->players->GetPlayer(i);
-            if (!handle.slot_state)
+            if (!handle.draw_group)
             {
                 name_x = 539 - MainForm->text_canvas->TextWidth(handle.name) / 2;
                 if (handle.player_id == PlayerId_SlotFirst)
@@ -847,7 +847,7 @@ void MenuGraphics::DrawMessageBoxText()
             if (MainForm->draw_canvas->TextWidth(message.SubString(line_start, line_end)) >= wrap_width ||
                 line_end == message.Length())
             {
-                char seeking_break = 1;
+                char seeking_break = true;
                 for (i = line_end; i >= 1 && seeking_break; i--)
                 {
                     if (message[i] != ' ')
@@ -857,12 +857,12 @@ void MenuGraphics::DrawMessageBoxText()
                     }
                     if (line_index <= MESSAGE_BOX_LINE_COUNT && message.SubString(line_start, i).Length() >= 1)
                     {
-                        if (message.SubString(line_start, i)[1] == 32)
+                        if (message.SubString(line_start, i)[1] == ' ')
                             MainForm->animation->menu->message_lines[line_index] = message.SubString(line_start + 1, i);
                         else
                             MainForm->animation->menu->message_lines[line_index] = message.SubString(line_start, i);
                     }
-                    seeking_break = 0;
+                    seeking_break = false;
                     line_start = i;
                     line_end = i;
                     line_end++;
@@ -887,28 +887,30 @@ void MenuGraphics::DrawListBoxControls()
     if (MainForm->animation->menu->text_scroll_up_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 320,
             MainForm->animation->menu->text_window_y + 66, MainForm->gfx->menu->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->menu, 11), 16);
+            &MainForm->gfx->menu->GetScrollIconRect(11), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 320,
             MainForm->animation->menu->text_window_y + 66, MainForm->gfx->menu->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->menu, 10), 16);
+            &MainForm->gfx->menu->GetScrollIconRect(10), DDBLTFAST_WAIT);
     if (MainForm->animation->menu->text_scroll_down_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 320,
             MainForm->animation->menu->text_window_y + 170, MainForm->gfx->menu->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->menu, 9), 16);
+            &MainForm->gfx->menu->GetScrollIconRect(9), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 320,
             MainForm->animation->menu->text_window_y + 170, MainForm->gfx->menu->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->menu, 8), 16);
+            &MainForm->gfx->menu->GetScrollIconRect(8), DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 320,
         MainForm->animation->menu->text_window_y + MainForm->animation->menu->GetScrollbarPosition() + 82,
-        MainForm->gfx->menu->scroll_icons, &GetScrollIconRect(MainForm->gfx->menu, 7), 16);
+        MainForm->gfx->menu->scroll_icons, &MainForm->gfx->menu->GetScrollIconRect(7), DDBLTFAST_WAIT);
     if (MainForm->animation->menu->text_window_ok_button_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 137,
-            MainForm->animation->menu->text_window_y + 196, small_buttons, &GetSmallButtonRect(this, 4, 1), 17);
+            MainForm->animation->menu->text_window_y + 196, small_buttons, &GetSmallButtonRect(4, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->text_window_x + 137,
-            MainForm->animation->menu->text_window_y + 196, small_buttons, &GetSmallButtonRect(this, 4, 0), 17);
+            MainForm->animation->menu->text_window_y + 196, small_buttons, &GetSmallButtonRect(4, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the menu message box buttons, the progress bar of a progress box, and the image of a box that has one.
@@ -934,28 +936,32 @@ void MenuGraphics::DrawMessageBoxControls()
         fill_rect.right = MainForm->animation->menu->message_x + MainForm->animation->GetAccountProgress() / 2 + 16;
         fill_rect.bottom = MainForm->animation->menu->message_y + 101;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 14,
-            MainForm->animation->menu->message_y + 91, progress_bar, &bar_rect, 16);
-        MainForm->OffscreenSurface->Blt(&fill_rect, 0, 0, 16778240, progress_fill_fx);
+            MainForm->animation->menu->message_y + 91, progress_bar, &bar_rect, DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->Blt(&fill_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, progress_fill_fx);
     }
     if (MainForm->animation->menu->message_close_button_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 181,
-            MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(this, ok_button, 1), 17);
+            MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(ok_button, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 181,
-            MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(this, ok_button, 0), 17);
+            MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(ok_button, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->message_kind == MessageBoxKind_Confirm)
     {
         if (MainForm->animation->menu->message_confirm_button_hover)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 88,
-                MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(this, 4, 1), 17);
+                MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(4, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 88,
-                MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(this, 4, 0), 17);
+                MainForm->animation->menu->message_y + 113, small_buttons, &GetSmallButtonRect(4, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->message_shows_image)
     {
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 16,
-            MainForm->animation->menu->message_y + 56, key_sheet, &message_icon_rect, 16);
+            MainForm->animation->menu->message_y + 56, key_sheet, &message_icon_rect, DDBLTFAST_WAIT);
         return;
     }
 }
@@ -981,26 +987,26 @@ void MenuGraphics::DrawCreateCharacterControls()
         icon_left.top = 38;
         icon_left.bottom = 56;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 84, slot_icons, &icon_left, 16);
+            MainForm->animation->menu->form_y + 84, slot_icons, &icon_left, DDBLTFAST_WAIT);
         // Hair styles count from one; the other choices count from zero.
         icon_left.left = 23 * hair_style - 23;
         icon_left.right = 23 * hair_style - 1;
         icon_left.top = 19;
         icon_left.bottom = 38;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 111, slot_icons, &icon_left, 16);
+            MainForm->animation->menu->form_y + 111, slot_icons, &icon_left, DDBLTFAST_WAIT);
         icon_left.left = 23 * hair_color;
         icon_left.right = 23 * hair_color + 22;
         icon_left.top = 0;
         icon_left.bottom = 19;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 138, slot_icons, &icon_left, 16);
+            MainForm->animation->menu->form_y + 138, slot_icons, &icon_left, DDBLTFAST_WAIT);
         icon_left.left = 23 * skin + 46;
         icon_left.right = 23 * skin + 68;
         icon_left.top = 38;
         icon_left.bottom = 56;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 165, slot_icons, &icon_left, 16);
+            MainForm->animation->menu->form_y + 165, slot_icons, &icon_left, DDBLTFAST_WAIT);
         arrow_rect.left = 184;
         arrow_rect.top = 38;
         arrow_rect.right = 204;
@@ -1011,62 +1017,74 @@ void MenuGraphics::DrawCreateCharacterControls()
         arrow_pressed_rect.bottom = 56;
         if (MainForm->animation->menu->gender_arrow_hover)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_pressed_rect, 16);
+                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_rect, 16);
+                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
         if (MainForm->animation->menu->hair_style_arrow_hover)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_pressed_rect, 16);
+                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_rect, 16);
+                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
         if (MainForm->animation->menu->hair_color_arrow_hover)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_pressed_rect, 16);
+                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_rect, 16);
+                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
         if (MainForm->animation->menu->skin_arrow_hover)
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_pressed_rect, 16);
+                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_rect, 16);
+                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->form_ok_button_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 157,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(this, 4, 1), 17);
+            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(4, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 157,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(this, 4, 0), 17);
+            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(4, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->form_cancel_button_hover)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 250,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(this, 1, 1), 17);
+            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 250,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(this, 1, 0), 17);
+            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(1, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the four main menu buttons, each lit under the mouse.
 void MenuGraphics::DrawMainMenuButtons()
 {
     if (MainForm->animation->menu->create_account_button_hover)
-        MainForm->OffscreenSurface->BltFast(25, 280, main_menu_buttons, &GetMainMenuButtonRect(this, 0, 1), 17);
+        MainForm->OffscreenSurface->BltFast(25, 280, main_menu_buttons, &GetMainMenuButtonRect(0, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(25, 280, main_menu_buttons, &GetMainMenuButtonRect(this, 0, 0), 17);
+        MainForm->OffscreenSurface->BltFast(25, 280, main_menu_buttons, &GetMainMenuButtonRect(0, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->play_button_hover)
-        MainForm->OffscreenSurface->BltFast(25, 320, main_menu_buttons, &GetMainMenuButtonRect(this, 1, 1), 17);
+        MainForm->OffscreenSurface->BltFast(25, 320, main_menu_buttons, &GetMainMenuButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(25, 320, main_menu_buttons, &GetMainMenuButtonRect(this, 1, 0), 17);
+        MainForm->OffscreenSurface->BltFast(25, 320, main_menu_buttons, &GetMainMenuButtonRect(1, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->credits_button_hover)
-        MainForm->OffscreenSurface->BltFast(25, 360, main_menu_buttons, &GetMainMenuButtonRect(this, 2, 1), 17);
+        MainForm->OffscreenSurface->BltFast(25, 360, main_menu_buttons, &GetMainMenuButtonRect(2, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(25, 360, main_menu_buttons, &GetMainMenuButtonRect(this, 2, 0), 17);
+        MainForm->OffscreenSurface->BltFast(25, 360, main_menu_buttons, &GetMainMenuButtonRect(2, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->exit_button_hover)
-        MainForm->OffscreenSurface->BltFast(25, 400, main_menu_buttons, &GetMainMenuButtonRect(this, 3, 1), 17);
+        MainForm->OffscreenSurface->BltFast(25, 400, main_menu_buttons, &GetMainMenuButtonRect(3, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(25, 400, main_menu_buttons, &GetMainMenuButtonRect(this, 3, 0), 17);
+        MainForm->OffscreenSurface->BltFast(25, 400, main_menu_buttons, &GetMainMenuButtonRect(3, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the corner close button and the create and cancel buttons of the create-account screen.
@@ -1074,18 +1092,22 @@ void MenuGraphics::DrawAccountCreationButtons()
 {
     if (MainForm->animation->menu->corner_close_hover)
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->menu, 1), 17);
+            &MainForm->gfx->menu->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->menu, 0), 17);
+            &MainForm->gfx->menu->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->account_create_button_hover)
-        MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(this, 0, 1), 17);
+        MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(0, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(this, 0, 0), 17);
+        MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(0, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->account_cancel_button_hover)
-        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(this, 1, 1), 17);
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(this, 1, 0), 17);
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the soft keypad's blinking cursor key and the keys lit by the keyboard.
@@ -1101,23 +1123,24 @@ void MenuGraphics::DrawKeyHighlights()
         key_y = 20 * MainForm->animation->menu->grid_row + 250;
         key_column = MainForm->animation->menu->grid_column;
         key_row = MainForm->animation->menu->grid_row;
-        MainForm->OffscreenSurface->BltFast(key_x, key_y, this->key_sheet, &GetKeyRect(this, key_column, key_row), 16);
+        MainForm->OffscreenSurface->BltFast(key_x, key_y, this->key_sheet, &GetKeyRect(key_column, key_row),
+            DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->up_key_lit)
-        MainForm->OffscreenSurface->BltFast(464, 334, key_sheet, &up_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(464, 334, key_sheet, &up_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->left_key_lit)
-        MainForm->OffscreenSurface->BltFast(441, 354, key_sheet, &left_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(441, 354, key_sheet, &left_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->down_key_lit)
-        MainForm->OffscreenSurface->BltFast(464, 354, key_sheet, &down_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(464, 354, key_sheet, &down_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->right_key_lit)
-        MainForm->OffscreenSurface->BltFast(487, 354, key_sheet, &right_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(487, 354, key_sheet, &right_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->select_key_lit)
-        MainForm->OffscreenSurface->BltFast(514, 354, key_sheet, &lower_wide_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(514, 354, key_sheet, &lower_wide_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->space_key_lit)
-        MainForm->OffscreenSurface->BltFast(514, 334, key_sheet, &upper_wide_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(514, 334, key_sheet, &upper_wide_key_rect, DDBLTFAST_WAIT);
     if (MainForm->animation->menu->delete_key_lit)
     {
-        MainForm->OffscreenSurface->BltFast(548, 283, key_sheet, &small_key_rect, 16);
+        MainForm->OffscreenSurface->BltFast(548, 283, key_sheet, &small_key_rect, DDBLTFAST_WAIT);
         return;
     }
 }
@@ -1128,30 +1151,36 @@ void MenuGraphics::DrawConfirmButtons()
     if (MainForm->config->GetSkipSoftpad())
     {
         if (MainForm->animation->menu->login_ok_button_hover)
-            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(this, 0, 1), 17);
+            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(0, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(this, 0, 0), 17);
+            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(0, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->menu->login_cancel_button_hover)
-            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(this, 1, 1), 17);
+            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(1, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(this, 1, 0), 17);
+            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(1, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     else
     {
         int confirm_button = 4;
         // On the keypad's password step the first button is the login button.
-        if (MainForm->animation->GetSubState() == 8)
+        if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             confirm_button = 2;
         if (MainForm->animation->menu->login_ok_button_hover)
-            MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(this, confirm_button, 1),
-                17);
+            MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(confirm_button, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(this, confirm_button, 0),
-                17);
+            MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(confirm_button, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->menu->login_cancel_button_hover)
-            MainForm->OffscreenSurface->BltFast(474, 391, small_buttons, &GetSmallButtonRect(this, 1, 1), 17);
+            MainForm->OffscreenSurface->BltFast(474, 391, small_buttons, &GetSmallButtonRect(1, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(474, 391, small_buttons, &GetSmallButtonRect(this, 1, 0), 17);
+            MainForm->OffscreenSurface->BltFast(474, 391, small_buttons, &GetSmallButtonRect(1, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
 }
 
@@ -1159,48 +1188,65 @@ void MenuGraphics::DrawConfirmButtons()
 // delete buttons, and each character's badge.
 void MenuGraphics::DrawCharacterSelect()
 {
+    int i;
     if (MainForm->animation->menu->corner_close_hover)
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->menu, 1), 17);
+            &MainForm->gfx->menu->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->menu, 0), 17);
+            &MainForm->gfx->menu->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->change_password_button_hover)
-        MainForm->OffscreenSurface->BltFast(452, 416, wide_buttons, &GetWideButtonRect(this, 3, 1), 17);
+        MainForm->OffscreenSurface->BltFast(452, 416, wide_buttons, &GetWideButtonRect(3, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(452, 416, wide_buttons, &GetWideButtonRect(this, 3, 0), 17);
+        MainForm->OffscreenSurface->BltFast(452, 416, wide_buttons, &GetWideButtonRect(3, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->new_character_button_hover)
-        MainForm->OffscreenSurface->BltFast(332, 416, wide_buttons, &GetWideButtonRect(this, 0, 1), 17);
+        MainForm->OffscreenSurface->BltFast(332, 416, wide_buttons, &GetWideButtonRect(0, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(332, 416, wide_buttons, &GetWideButtonRect(this, 0, 0), 17);
+        MainForm->OffscreenSurface->BltFast(332, 416, wide_buttons, &GetWideButtonRect(0, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->first_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(this, 2, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(2, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(this, 2, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(2, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->second_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(this, 2, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(2, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(this, 2, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(2, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->third_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(this, 2, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(2, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(this, 2, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(2, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->first_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(this, 3, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(3, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(this, 3, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(3, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->second_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(this, 3, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(3, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(this, 3, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(3, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->third_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(this, 3, 1), 17);
+        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(3, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(this, 3, 0), 17);
+        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(3, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
     {
         Player handle = MainForm->players->GetPlayer(i);
-        if (!handle.slot_state)
+        if (!handle.draw_group)
         {
             // Badge level one has a badge of its own; the higher levels share another.
             if (handle.badge_level == 1)
@@ -1210,7 +1256,8 @@ void MenuGraphics::DrawCharacterSelect()
                 single_badge_rect.top = 39;
                 single_badge_rect.right = 269;
                 single_badge_rect.bottom = 55;
-                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &single_badge_rect, 16);
+                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &single_badge_rect,
+                    DDBLTFAST_WAIT);
             }
             if (handle.badge_level > 1)
             {
@@ -1219,7 +1266,8 @@ void MenuGraphics::DrawCharacterSelect()
                 badge_rect.top = 39;
                 badge_rect.right = 250;
                 badge_rect.bottom = 55;
-                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &badge_rect, 16);
+                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &badge_rect,
+                    DDBLTFAST_WAIT);
             }
         }
     }

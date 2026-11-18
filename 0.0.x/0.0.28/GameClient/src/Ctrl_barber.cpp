@@ -12,7 +12,7 @@ BarberController::BarberController()
 {
     window_x = 165;
     window_y = 53;
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
 }
 
@@ -46,14 +46,14 @@ void BarberController::Open(int session_id)
     if (level_price < 200)
         price = 200;
     npc_session_id = session_id;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Closes the window and removes the preview player.
 void BarberController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
     MainForm->gfx->FreeBarberGraphics();
     MainForm->players->RemovePreviewPlayer();
@@ -66,12 +66,12 @@ void BarberController::Close()
 // row 2 = buy, after a yes in the message box, or a message when the gold is short
 void BarberController::MouseDown(int x, int y, int button)
 {
-    bool flag = false;
+    bool handled = false;
     if (button == 0 || button == 1)
     {
         if (y > window_y + 14 && y < window_y + 137 && window_x + 209 < x && window_x + 308 > x)
         {
-            MainForm->sfx->PlaySfx(4);
+            MainForm->sfx->PlaySfx(SfxSound_Select);
             preview_direction++;
             if (preview_direction > FacingDirection_Right)
                 preview_direction = FacingDirection_Down;
@@ -84,7 +84,7 @@ void BarberController::MouseDown(int x, int y, int button)
             int row = (y - window_y - 23) / NPC_LIST_ROW_HEIGHT;
             if (!row)
             {
-                MainForm->sfx->PlaySfx(4);
+                MainForm->sfx->PlaySfx(SfxSound_Select);
                 hair_style++;
                 if (hair_style > 20)
                     hair_style = 0;
@@ -94,7 +94,7 @@ void BarberController::MouseDown(int x, int y, int button)
             }
             if (row == 1)
             {
-                MainForm->sfx->PlaySfx(4);
+                MainForm->sfx->PlaySfx(SfxSound_Select);
                 hair_color++;
                 if (hair_color > 9)
                     hair_color = 0;
@@ -110,28 +110,28 @@ void BarberController::MouseDown(int x, int y, int button)
                     confirm_text = confirm_text + " ";
                     confirm_text = confirm_text + IntToStr(price);
                     confirm_text = confirm_text + " ";
-                    confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(1));
+                    confirm_text = confirm_text + LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                     confirm_text = confirm_text + "?";
-                    MainForm->animation->game->ShowMessageBox(3, ConfirmAction_BuyHairstyle,
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_BuyHairstyle,
                         MainForm->strings->GetText(GameText_BuyHairstyle), confirm_text);
                     MainForm->edits->caret_enabled = false;
                 }
                 else
                 {
                     String no_gold_text = MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
-                        LowerCase(MainForm->item_values->GetName(1));
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        LowerCase(MainForm->item_values->GetName(ItemId_Gold));
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
                     MainForm->edits->caret_enabled = false;
                 }
             }
         }
     }
-    if (!flag)
+    if (!handled)
     {
         if (window_x <= x && window_x + 270 >= x && y >= window_y && y <= window_y + 270)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -166,33 +166,27 @@ void BarberController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (hovered_row >= 0)
-        {
-            hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (!(x < window_x + 215 || x > window_x + 304 || y < window_y + 151 || y > window_y + 178))
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (close_hovered)
     {
-        if (close_hovered)
-        {
-            close_hovered = 0;
-            MainForm->redraw_needed = true;
-        }
+        close_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
 void BarberController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }

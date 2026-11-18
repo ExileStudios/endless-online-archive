@@ -1,6 +1,11 @@
 #ifndef SfxprotectionH
 #define SfxprotectionH
 
+enum Music
+{
+    Music_TitleTheme = 1
+};
+
 struct Dx_MidiPlayer;
 
 // Sound effects on six sound buffers, the looping ambient sound of a map spot, and the music.
@@ -13,8 +18,8 @@ struct SfxController
     int ambient_volume;
     int ambient_target_volume;
     bool fast_fade;
-    char pad_0x15[11];
-    int unread_int_at_32;
+    char unused_bytes[11];
+    int unused_value;
     bool music_pending;
     int queued_music_id;
     int music_retry_countdown;

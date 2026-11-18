@@ -18,22 +18,22 @@ LockerController::LockerController()
 {
     window_x = 49;
     window_y = 13;
-    is_visible = 0;
+    is_visible = false;
     hovered_row = -1;
     reserved_value = -1;
     locker_x = -1;
     locker_y = -1;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
     top_row = 0;
     scroll_thumb_offset = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
-    close_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
+    close_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 LockerController::~LockerController()
@@ -51,12 +51,12 @@ void LockerController::AddItem(int item_id, int amount)
 // Shows the locker at the map tile with an empty list, closing other npc windows.
 void LockerController::Open(String window_title, int reserved, int x, int y)
 {
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->guild->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     items.clear();
@@ -66,14 +66,14 @@ void LockerController::Open(String window_title, int reserved, int x, int y)
     reserved_value = reserved;
     locker_x = x;
     locker_y = y;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void LockerController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     reserved_value = -1;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
@@ -95,7 +95,7 @@ int LockerController::GetTopRow()
 // Empties the list and scrolls back to the top.
 void LockerController::ClearItems()
 {
-    int __slot1;
+    int unused_int;
     items.clear();
     top_row = 0;
     scroll_thumb_offset = 0;
@@ -105,14 +105,14 @@ void LockerController::ClearItems()
 // scroll bar and moving the window.
 void LockerController::MouseDown(int x, int y, int button)
 {
-    bool flag;
+    bool handled;
     TPoint locker_pos;
-    flag = false;
+    handled = false;
     if (button == 1)
     {
         if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252)
         {
-            is_dragging = 0;
+            is_dragging = false;
             locker_pos.x = locker_x;
             locker_pos.y = locker_y;
             int row = top_row + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
@@ -128,7 +128,7 @@ void LockerController::MouseDown(int x, int y, int button)
                     }
                     else
                     {
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetText(GameText_Warning),
                             MainForm->strings->GetText(GameText_ItsTooHeavyYou));
                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -137,7 +137,7 @@ void LockerController::MouseDown(int x, int y, int button)
                 }
                 else
                 {
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetText(GameText_Warning),
                         MainForm->strings->GetText(GameText_YouCouldNotPick));
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -146,32 +146,32 @@ void LockerController::MouseDown(int x, int y, int button)
             }
         }
     }
-    if (!flag)
+    if (!handled)
     {
         if (x >= window_x + 252 && x <= window_x + 267)
         {
             if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
             {
-                thumb_grabbed = 1;
+                thumb_grabbed = true;
                 thumb_grab_offset = y - scroll_thumb_offset - window_y;
                 DragScrollThumb(y);
             }
         }
         if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
         if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 290 && !thumb_grabbed)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -219,7 +219,7 @@ void LockerController::MouseMove(int x, int y)
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -227,7 +227,7 @@ void LockerController::MouseMove(int x, int y)
     {
         if (close_hovered)
         {
-            close_hovered = 0;
+            close_hovered = false;
             MainForm->redraw_needed = true;
         }
     }
@@ -241,8 +241,8 @@ void LockerController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -259,7 +259,7 @@ void LockerController::DragScrollThumb(int y)
                 top_row = new_top_row;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -269,15 +269,15 @@ void LockerController::ScrollUp()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)items.size() > LOCKER_VISIBLE_ROWS && top_row > 0)
     {
         top_row--;
         scroll_fraction = (double)top_row / (double)(items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -287,15 +287,15 @@ void LockerController::ScrollDown()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)items.size() - 5 > top_row)
     {
         top_row++;
         scroll_fraction = (double)top_row / (double)(items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -303,10 +303,10 @@ void LockerController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void LockerController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 // Every item may be stored.

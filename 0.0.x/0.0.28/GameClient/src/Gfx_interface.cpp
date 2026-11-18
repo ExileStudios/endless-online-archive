@@ -60,9 +60,9 @@ InterfaceGraphics::InterfaceGraphics()
     color_key->ColorSpaceLowValue = 0;
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 640;
     surface_desc->Height = 480;
     hud_background->GetSurfaceDesc(surface_desc);
@@ -239,7 +239,7 @@ InterfaceGraphics::InterfaceGraphics()
 }
 
 // One piece of the chat tab strip: the whole strip, or one of the wide, medium or small tabs in pairs.
-Windows::TRect InterfaceGraphics::GetChatTabRect(InterfaceGraphics *self, int tab)
+Windows::TRect InterfaceGraphics::GetChatTabRect(int tab)
 {
     TRect chat_tab_rect;
     if (tab <= 0)
@@ -299,12 +299,10 @@ Windows::TRect Gfx_interface_GetHealthBarRect(int interface_graphics, int color,
 }
 
 // The fill of one HUD status bar for a number of segments; the later bars sit a little further right on the sheet.
-Windows::TRect InterfaceGraphics::GetStatusBarFillRect(InterfaceGraphics *self, int bar, int segments)
+Windows::TRect InterfaceGraphics::GetStatusBarFillRect(int bar, int segments)
 {
     TRect status_bar_fill_rect;
-    int gap;
-    int right;
-    gap = 0;
+    int gap = 0;
     if (bar > 1)
         gap = 2;
     status_bar_fill_rect.left = 109 * bar + gap + 24;
@@ -315,7 +313,7 @@ Windows::TRect InterfaceGraphics::GetStatusBarFillRect(InterfaceGraphics *self, 
 }
 
 // One icon of the list icon sheet, by row and column.
-Windows::TRect InterfaceGraphics::GetListIconRect(InterfaceGraphics *self, int row, int column)
+Windows::TRect InterfaceGraphics::GetListIconRect(int row, int column)
 {
     TRect list_icon_rect;
     list_icon_rect.left = 15 * column;
@@ -326,7 +324,7 @@ Windows::TRect InterfaceGraphics::GetListIconRect(InterfaceGraphics *self, int r
 }
 
 // One side panel tab button, plain or lit.
-Windows::TRect InterfaceGraphics::GetTabButtonRect(InterfaceGraphics *self, int tab, int state)
+Windows::TRect InterfaceGraphics::GetTabButtonRect(int tab, int state)
 {
     TRect tab_button_rect;
     tab_button_rect.left = 36 * state;
@@ -337,7 +335,7 @@ Windows::TRect InterfaceGraphics::GetTabButtonRect(InterfaceGraphics *self, int 
 }
 
 // The settings row marker, plain or lit.
-Windows::TRect InterfaceGraphics::GetSettingMarkerRect(InterfaceGraphics *self, int state)
+Windows::TRect InterfaceGraphics::GetSettingMarkerRect(int state)
 {
     TRect setting_marker_rect;
     setting_marker_rect.left = 19 * state;
@@ -348,7 +346,7 @@ Windows::TRect InterfaceGraphics::GetSettingMarkerRect(InterfaceGraphics *self, 
 }
 
 // The stat raise button of the spell and skill panels, in either blink state.
-Windows::TRect InterfaceGraphics::GetRaiseButtonRect(InterfaceGraphics *self, int state)
+Windows::TRect InterfaceGraphics::GetRaiseButtonRect(int state)
 {
     TRect raise_button_rect;
     raise_button_rect.left = 19 * state + 215;
@@ -362,7 +360,7 @@ Windows::TRect InterfaceGraphics::GetRaiseButtonRect(InterfaceGraphics *self, in
 DEFINE_GET_SCROLL_ICON_RECT(InterfaceGraphics)
 
 // The chat mode icon for one mode.
-Windows::TRect InterfaceGraphics::GetChatModeIconRect(InterfaceGraphics *self, int mode)
+Windows::TRect InterfaceGraphics::GetChatModeIconRect(int mode)
 {
     TRect chat_mode_icon_rect;
     chat_mode_icon_rect.left = 0;
@@ -373,7 +371,7 @@ Windows::TRect InterfaceGraphics::GetChatModeIconRect(InterfaceGraphics *self, i
 }
 
 // One small line icon of the chat and list panels.
-Windows::TRect InterfaceGraphics::GetSmallIconRect(InterfaceGraphics *self, int icon)
+Windows::TRect InterfaceGraphics::GetSmallIconRect(int icon)
 {
     TRect small_icon_rect;
     small_icon_rect.left = 0;
@@ -387,7 +385,7 @@ Windows::TRect InterfaceGraphics::GetSmallIconRect(InterfaceGraphics *self, int 
 DEFINE_GET_CORNER_BUTTON_RECT(InterfaceGraphics)
 
 // One minimap tile edge piece.
-Windows::TRect Gfx_interface_GetMinimapEdgeRect(InterfaceGraphics *self, int edge)
+Windows::TRect InterfaceGraphics::GetMinimapEdgeRect(int edge)
 {
     TRect minimap_edge_rect;
     minimap_edge_rect.left = 27 * edge;
@@ -398,7 +396,7 @@ Windows::TRect Gfx_interface_GetMinimapEdgeRect(InterfaceGraphics *self, int edg
 }
 
 // One weapon effect frame, by effect row and direction column.
-Windows::TRect Gfx_interface_GetWeaponEffectRect(InterfaceGraphics *self, int effect, int direction)
+Windows::TRect InterfaceGraphics::GetWeaponEffectRect(int effect, int direction)
 {
     TRect weapon_effect_rect;
     weapon_effect_rect.left = 58 * direction;
@@ -409,7 +407,7 @@ Windows::TRect Gfx_interface_GetWeaponEffectRect(InterfaceGraphics *self, int ef
 }
 
 // The player list filter icon for one mode, two to a row.
-Windows::TRect InterfaceGraphics::GetListModeIconRect(InterfaceGraphics *self, int mode)
+Windows::TRect InterfaceGraphics::GetListModeIconRect(int mode)
 {
     TRect list_mode_icon_rect;
     int row = 0;
@@ -426,7 +424,7 @@ Windows::TRect InterfaceGraphics::GetListModeIconRect(InterfaceGraphics *self, i
 }
 
 // The part of the tooltip background that a tooltip of a given size uses.
-Windows::TRect Gfx_interface_GetTooltipRect(InterfaceGraphics *self, int width, int height)
+Windows::TRect InterfaceGraphics::GetTooltipRect(int width, int height)
 {
     TRect tooltip_rect;
     tooltip_rect.left = 0;
@@ -437,7 +435,7 @@ Windows::TRect Gfx_interface_GetTooltipRect(InterfaceGraphics *self, int width, 
 }
 
 // One status icon, large from the first row or small from the second.
-Windows::TRect Gfx_interface_GetStatusIconRect(InterfaceGraphics *self, int icon, bool small_icon)
+Windows::TRect InterfaceGraphics::GetStatusIconRect(int icon, bool small_icon)
 {
     TRect status_icon_rect;
     if (!small_icon)
@@ -458,18 +456,18 @@ Windows::TRect Gfx_interface_GetStatusIconRect(InterfaceGraphics *self, int icon
 }
 
 // One frame of the tile cursor.
-Windows::TRect Gfx_interface_GetTileCursorRect(InterfaceGraphics *self, int frame)
+Windows::TRect InterfaceGraphics::GetTileCursorRect(int frame)
 {
     TRect tile_cursor_rect;
-    tile_cursor_rect.left = frame << 6;
-    tile_cursor_rect.right = (frame << 6) + 64;
+    tile_cursor_rect.left = 64 * frame;
+    tile_cursor_rect.right = 64 * frame + 64;
     tile_cursor_rect.top = 0;
     tile_cursor_rect.bottom = 32;
     return tile_cursor_rect;
 }
 
 // One group member state icon.
-Windows::TRect InterfaceGraphics::GetGroupIconRect(InterfaceGraphics *self, int icon)
+Windows::TRect InterfaceGraphics::GetGroupIconRect(int icon)
 {
     TRect group_icon_rect;
     group_icon_rect.left = 0;
@@ -480,12 +478,10 @@ Windows::TRect InterfaceGraphics::GetGroupIconRect(InterfaceGraphics *self, int 
 }
 
 // The part of the progress bar a spell or skill slot shows for its progress out of a hundred.
-Windows::TRect InterfaceGraphics::GetSpellProgressRect(InterfaceGraphics *self, int progress)
+Windows::TRect InterfaceGraphics::GetSpellProgressRect(int progress)
 {
-    double width = progress * HEALTH_BAR_SCALE;
     TRect spell_progress_rect;
-    int __slot1;
-    int __slot2;
+    double width = progress * HEALTH_BAR_SCALE;
     spell_progress_rect.left = 0;
     spell_progress_rect.right = width;
     spell_progress_rect.top = 405;
@@ -494,7 +490,7 @@ Windows::TRect InterfaceGraphics::GetSpellProgressRect(InterfaceGraphics *self, 
 }
 
 // One inventory slot highlight, by highlight state.
-Windows::TRect InterfaceGraphics::GetSlotHighlightRect(InterfaceGraphics *self, int slot)
+Windows::TRect InterfaceGraphics::GetSlotHighlightRect(int slot)
 {
     TRect slot_highlight_rect;
     slot_highlight_rect.left = 0;
@@ -505,7 +501,7 @@ Windows::TRect InterfaceGraphics::GetSlotHighlightRect(InterfaceGraphics *self, 
 }
 
 // The number label of one spell slot.
-Windows::TRect InterfaceGraphics::GetSpellSlotLabelRect(InterfaceGraphics *self, int slot)
+Windows::TRect InterfaceGraphics::GetSpellSlotLabelRect(int slot)
 {
     TRect spell_slot_label_rect;
     spell_slot_label_rect.left = 18 * slot + 148;
@@ -516,29 +512,29 @@ Windows::TRect InterfaceGraphics::GetSpellSlotLabelRect(InterfaceGraphics *self,
 }
 
 // The spell slot hover frame, by frame state.
-Windows::TRect InterfaceGraphics::GetSpellSlotFrameRect(InterfaceGraphics *self, int slot)
+Windows::TRect InterfaceGraphics::GetSpellSlotFrameRect(int slot)
 {
     TRect spell_slot_frame_rect;
     spell_slot_frame_rect.left = SLOT_FRAME_PITCH * slot;
-    spell_slot_frame_rect.right = 49 * slot + 42;
+    spell_slot_frame_rect.right = SLOT_FRAME_PITCH * slot + 42;
     spell_slot_frame_rect.top = 442;
     spell_slot_frame_rect.bottom = 478;
     return spell_slot_frame_rect;
 }
 
 // The skill slot hover frame, by frame state.
-Windows::TRect InterfaceGraphics::GetSkillSlotFrameRect(InterfaceGraphics *self, int slot)
+Windows::TRect InterfaceGraphics::GetSkillSlotFrameRect(int slot)
 {
     TRect skill_slot_frame_rect;
     skill_slot_frame_rect.left = SLOT_FRAME_PITCH * slot;
-    skill_slot_frame_rect.right = 49 * slot + 42;
+    skill_slot_frame_rect.right = SLOT_FRAME_PITCH * slot + 42;
     skill_slot_frame_rect.top = 442;
     skill_slot_frame_rect.bottom = 478;
     return skill_slot_frame_rect;
 }
 
 // One inventory arrow button, plain or lit.
-Windows::TRect InterfaceGraphics::GetInventoryButtonRect(InterfaceGraphics *self, int button, int state)
+Windows::TRect InterfaceGraphics::GetInventoryButtonRect(int button, int state)
 {
     TRect inventory_button_rect;
     inventory_button_rect.left = 0;
@@ -549,23 +545,23 @@ Windows::TRect InterfaceGraphics::GetInventoryButtonRect(InterfaceGraphics *self
 }
 
 // One small tab button of the player list (friends or ignore), plain or lit.
-Windows::TRect InterfaceGraphics::GetSmallTabButtonRect(InterfaceGraphics *self, int tab, int state)
+Windows::TRect InterfaceGraphics::GetSmallTabButtonRect(int state, int tab)
 {
     TRect small_tab_button_rect;
-    small_tab_button_rect.left = 17 * state;
-    small_tab_button_rect.right = 17 * state + 17;
-    small_tab_button_rect.top = 16 * tab + 259;
-    small_tab_button_rect.bottom = 16 * tab + 275;
+    small_tab_button_rect.left = 17 * tab;
+    small_tab_button_rect.right = 17 * tab + 17;
+    small_tab_button_rect.top = 16 * state + 259;
+    small_tab_button_rect.bottom = 16 * state + 275;
     return small_tab_button_rect;
 }
 
 // The inventory paperdoll button, plain or lit.
-Windows::TRect InterfaceGraphics::GetInventoryWideButtonRect(InterfaceGraphics *self, int button)
+Windows::TRect InterfaceGraphics::GetInventoryWideButtonRect(ButtonState state)
 {
     TRect inventory_wide_button_rect;
-    inventory_wide_button_rect.left = 88 * button + 39;
+    inventory_wide_button_rect.left = 88 * state + 39;
     inventory_wide_button_rect.top = 385;
-    inventory_wide_button_rect.right = 88 * button + 126;
+    inventory_wide_button_rect.right = 88 * state + 126;
     inventory_wide_button_rect.bottom = 405;
     return inventory_wide_button_rect;
 }
@@ -657,7 +653,7 @@ void InterfaceGraphics::SaveScreenshot()
                         if (access(lpFileName.c_str(), 0))
                         {
                             MainForm->OffscreenSurface->SaveToFile(MainForm->Dx_Draw1, lpFileName);
-                            MainForm->sfx->PlaySfx(8);
+                            MainForm->sfx->PlaySfx(SfxSound_ScreenCapture);
                             break;
                         }
                     }
@@ -713,7 +709,7 @@ void InterfaceGraphics::LoadWeaponEffects(int library, int resource_id)
         }
         weapon_effects->ReleaseDC(dc);
     }
-    weapon_effects->SetColorKey(8, color_key);
+    weapon_effects->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws a panel background bitmap onto the shared panel surface; every side panel loads into it.
@@ -871,7 +867,7 @@ void InterfaceGraphics::LoadSmallIcons(int library, int resource_id)
         }
         small_icons->ReleaseDC(dc);
     }
-    small_icons->SetColorKey(8, color_key);
+    small_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface HUD sheet bitmap onto its surface, with black see-through.
@@ -894,7 +890,7 @@ void InterfaceGraphics::LoadHudSheet(int library, int resource_id)
         }
         hud_sheet->ReleaseDC(dc);
     }
-    hud_sheet->SetColorKey(8, color_key);
+    hud_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface status icons bitmap onto its surface.
@@ -961,7 +957,7 @@ void InterfaceGraphics::LoadListIcons(int library, int resource_id)
         }
         list_icons->ReleaseDC(dc);
     }
-    list_icons->SetColorKey(8, color_key);
+    list_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface corner button bitmap onto its surface, with black see-through.
@@ -1075,7 +1071,7 @@ void InterfaceGraphics::LoadHudFrame(int library, int resource_id)
         }
         hud_frame->ReleaseDC(dc);
     }
-    hud_frame->SetColorKey(8, color_key);
+    hud_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface HUD left frame bitmap onto its surface, with black see-through.
@@ -1098,7 +1094,7 @@ void InterfaceGraphics::LoadHudLeftFrame(int library, int resource_id)
         }
         hud_left_frame->ReleaseDC(dc);
     }
-    hud_left_frame->SetColorKey(8, color_key);
+    hud_left_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface HUD top frame bitmap onto its surface, with black see-through.
@@ -1121,7 +1117,7 @@ void InterfaceGraphics::LoadHudTopFrame(int library, int resource_id)
         }
         hud_top_frame->ReleaseDC(dc);
     }
-    hud_top_frame->SetColorKey(8, color_key);
+    hud_top_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface tile cursor bitmap onto its surface, with black see-through.
@@ -1144,7 +1140,7 @@ void InterfaceGraphics::LoadTileCursor(int library, int resource_id)
         }
         tile_cursor->ReleaseDC(dc);
     }
-    tile_cursor->SetColorKey(8, color_key);
+    tile_cursor->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the interface control sheet bitmap onto its surface.
@@ -1173,7 +1169,7 @@ void InterfaceGraphics::LoadControlSheet(int library, int resource_id)
 DEFINE_LOAD_SCROLL_ICONS(InterfaceGraphics)
 
 // One frame of the emote sheet.
-Windows::TRect Gfx_interface_GetEmoteFrameRect(InterfaceGraphics *self, int frame)
+Windows::TRect InterfaceGraphics::GetEmoteFrameRect(int frame)
 {
     TRect emote_frame_rect;
     emote_frame_rect.left = 50 * frame;
@@ -1205,11 +1201,11 @@ void InterfaceGraphics::DrawChatModeIcon()
             mode = 2;
         else
         {
-            bool prefix_matched = 0;
+            bool prefix_matched = false;
             if (input_text[1] == '"' || String(input_text[1]) == "'")
             {
                 mode = 4;
-                prefix_matched = 1;
+                prefix_matched = true;
             }
             if (!prefix_matched)
             {
@@ -1217,7 +1213,7 @@ void InterfaceGraphics::DrawChatModeIcon()
                 if (input_text[1] == '@' && MainForm->net_client->GetAdminLevel() > 1)
                 {
                     mode = 3;
-                    prefix_matched = 1;
+                    prefix_matched = true;
                 }
             }
             if (!prefix_matched)
@@ -1225,7 +1221,7 @@ void InterfaceGraphics::DrawChatModeIcon()
                 if (input_text[1] == '+' && MainForm->net_client->GetAdminLevel() > 0)
                 {
                     mode = 5;
-                    prefix_matched = 1;
+                    prefix_matched = true;
                 }
             }
             if (!prefix_matched)
@@ -1235,7 +1231,7 @@ void InterfaceGraphics::DrawChatModeIcon()
                     if (MainForm->animation->interface_controller->status->IsInGuild())
                     {
                         mode = 7;
-                        prefix_matched = 1;
+                        prefix_matched = true;
                     }
                 }
             }
@@ -1252,18 +1248,18 @@ void InterfaceGraphics::DrawChatModeIcon()
                             MainForm->strings->GetText(GameText_YouCannotUseGlobal));
                         MainForm->edits->SetText(EditId_Chat, "");
                         mode = 0;
-                        prefix_matched = 1;
+                        prefix_matched = true;
                     }
                     else if (MainForm->animation->IsGlobalMessageAllowed())
                     {
                         mode = 3;
-                        prefix_matched = 1;
+                        prefix_matched = true;
                     }
                     else
                     {
                         MainForm->edits->SetText(EditId_Chat, "");
                         mode = 0;
-                        prefix_matched = 1;
+                        prefix_matched = true;
                     }
                 }
             }
@@ -1273,14 +1269,15 @@ void InterfaceGraphics::DrawChatModeIcon()
     }
     if (MainForm->edits->chat_locked)
     {
-        MainForm->OffscreenSurface->BltFast(16, 309, chat_mode_icons, &GetChatModeIconRect(this, 6), 16);
+        MainForm->OffscreenSurface->BltFast(16, 309, chat_mode_icons, &GetChatModeIconRect(6), DDBLTFAST_WAIT);
         last_chat_mode = 10;
     }
     else
     {
         // The icon is drawn again only when the mode changes.
         if (last_chat_mode != mode)
-            MainForm->OffscreenSurface->BltFast(16, 309, chat_mode_icons, &GetChatModeIconRect(this, mode), 0);
+            MainForm->OffscreenSurface->BltFast(16, 309, chat_mode_icons, &GetChatModeIconRect(mode),
+                DDBLTFAST_NOCOLORKEY);
         last_chat_mode = mode;
     }
 }
@@ -1290,10 +1287,10 @@ void InterfaceGraphics::DrawCornerButton()
 {
     if (MainForm->animation->interface_controller->corner_button_hover)
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->interface_graphics->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->interface_graphics, 1), 17);
+            &MainForm->gfx->interface_graphics->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->interface_graphics->corner_button,
-            &GetCornerButtonRect(MainForm->gfx->interface_graphics, 0), 17);
+            &MainForm->gfx->interface_graphics->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
 // Draws the player list scroll arrows, lit under the mouse.
@@ -1301,16 +1298,16 @@ void InterfaceGraphics::DrawPlayerListScrollButtons()
 {
     if (MainForm->animation->interface_controller->player_list->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->player_list->scroll_down_hovered)
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the spell panel scroll arrows, lit under the mouse.
@@ -1318,16 +1315,16 @@ void InterfaceGraphics::DrawSpellScrollButtons()
 {
     if (MainForm->animation->interface_controller->spells->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->spells->scroll_down_hovered)
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the skill panel scroll arrows, lit under the mouse.
@@ -1335,16 +1332,16 @@ void InterfaceGraphics::DrawSkillScrollButtons()
 {
     if (MainForm->animation->interface_controller->skills->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->skills->scroll_down_hovered)
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the chat panel scroll arrows, lit under the mouse.
@@ -1352,16 +1349,16 @@ void InterfaceGraphics::DrawChatScrollButtons()
 {
     if (MainForm->animation->interface_controller->chat->scroll_up_hover)
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 332, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->chat->scroll_down_hover)
         MainForm->OffscreenSurface->BltFast(569, 414, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 414, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the side panel tab buttons on both sides and the friends and ignore buttons, each lit under the mouse.
@@ -1369,82 +1366,98 @@ void InterfaceGraphics::DrawTabButtons()
 {
     if (MainForm->animation->interface_controller->inventory_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 330, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 0, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Inventory, ButtonState_Hover),
+            DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 330, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 0, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Inventory, ButtonState_Normal),
+            DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->minimap_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 350, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 1, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Minimap, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 350, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 1, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Minimap, ButtonState_Normal),
+            DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->spells_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 370, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 2, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Spells, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 370, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 2, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Spells, ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->skills_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 390, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 3, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Skills, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 390, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 3, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Skills, ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->chat_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 410, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 4, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Chat, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 410, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 4, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Chat, ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->status_button_hover)
         MainForm->OffscreenSurface->BltFast(62, 430, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 5, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Status, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(62, 430, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 5, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Status, ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->players_button_hover)
         MainForm->OffscreenSurface->BltFast(590, 350, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 6, 1), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Players, ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(590, 350, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 6, 0), 16);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Players, ButtonState_Normal),
+            DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->group_button_hover)
         MainForm->OffscreenSurface->BltFast(590, 370, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 7, 1), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Group, ButtonState_Hover),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(590, 370, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 7, 0), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Group, ButtonState_Normal),
+                DDBLTFAST_NOCOLORKEY);
     if (MainForm->animation->interface_controller->third_right_button_hover)
         MainForm->OffscreenSurface->BltFast(590, 390, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 8, 1), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Unused, ButtonState_Hover),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(590, 390, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 8, 0), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Unused, ButtonState_Normal),
+                DDBLTFAST_NOCOLORKEY);
     if (MainForm->animation->interface_controller->settings_button_hover)
         MainForm->OffscreenSurface->BltFast(590, 410, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 9, 1), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Settings, ButtonState_Hover),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(590, 410, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 9, 0), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Settings, ButtonState_Normal),
+                DDBLTFAST_NOCOLORKEY);
     if (MainForm->animation->interface_controller->help_button_hover)
         MainForm->OffscreenSurface->BltFast(590, 430, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 10, 1), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Help, ButtonState_Hover),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(590, 430, MainForm->gfx->interface_graphics->tab_buttons,
-            &GetTabButtonRect(MainForm->gfx->interface_graphics, 10, 0), 0);
+            &MainForm->gfx->interface_graphics->GetTabButtonRect(HudButton_Help, ButtonState_Normal),
+                DDBLTFAST_NOCOLORKEY);
     if (MainForm->animation->interface_controller->friends_button_hover)
         MainForm->OffscreenSurface->BltFast(592, 311, MainForm->gfx->interface_graphics->control_sheet,
-            &GetSmallTabButtonRect(MainForm->gfx->interface_graphics, 1, 0), 0);
+            &MainForm->gfx->interface_graphics->GetSmallTabButtonRect(ButtonState_Hover, SmallTabButton_Friends),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(592, 311, MainForm->gfx->interface_graphics->control_sheet,
-            &GetSmallTabButtonRect(MainForm->gfx->interface_graphics, 0, 0), 0);
+            &MainForm->gfx->interface_graphics->GetSmallTabButtonRect(ButtonState_Normal, SmallTabButton_Friends),
+                DDBLTFAST_NOCOLORKEY);
     if (MainForm->animation->interface_controller->ignore_button_hover)
         MainForm->OffscreenSurface->BltFast(609, 311, MainForm->gfx->interface_graphics->control_sheet,
-            &GetSmallTabButtonRect(MainForm->gfx->interface_graphics, 1, 1), 0);
+            &MainForm->gfx->interface_graphics->GetSmallTabButtonRect(ButtonState_Hover, SmallTabButton_Ignore),
+                DDBLTFAST_NOCOLORKEY);
     else
         MainForm->OffscreenSurface->BltFast(609, 311, MainForm->gfx->interface_graphics->control_sheet,
-            &GetSmallTabButtonRect(MainForm->gfx->interface_graphics, 0, 1), 0);
+            &MainForm->gfx->interface_graphics->GetSmallTabButtonRect(ButtonState_Normal, SmallTabButton_Ignore),
+                DDBLTFAST_NOCOLORKEY);
 }
 
 // Draws the player list's scroll thumb, filter icon and an icon per visible player by the player's icon type.
@@ -1456,42 +1469,50 @@ void InterfaceGraphics::DrawPlayerList()
     char icon_drawn;
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->player_list->GetScrollThumbOffset() + 366,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(106, 332, control_sheet,
-        &GetListModeIconRect(this, MainForm->animation->interface_controller->player_list->GetFilter()), 16);
+        &GetListModeIconRect(MainForm->animation->interface_controller->player_list->GetFilter()),
+        DDBLTFAST_WAIT);
     top_line = MainForm->animation->interface_controller->player_list->GetTopLine();
     line_count = MainForm->animation->interface_controller->player_list->shown_names->Count;
     row = 0;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
-        icon_drawn = 0;
+        icon_drawn = false;
         if (MainForm->animation->interface_controller->player_list->shown_icon_types->Strings[i] == "4")
         {
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 12), 17);
-            icon_drawn = 1;
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(12),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            icon_drawn = true;
         }
         if (MainForm->animation->interface_controller->player_list->shown_icon_types->Strings[i] == "9")
         {
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 13), 17);
-            icon_drawn = 1;
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(13),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            icon_drawn = true;
         }
         if (MainForm->animation->interface_controller->player_list->shown_icon_types->Strings[i] == "5")
         {
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 14), 17);
-            icon_drawn = 1;
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(14),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            icon_drawn = true;
         }
         if (MainForm->animation->interface_controller->player_list->shown_icon_types->Strings[i] == "10")
         {
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 15), 17);
-            icon_drawn = 1;
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(15),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            icon_drawn = true;
         }
         if (MainForm->animation->interface_controller->player_list->shown_icon_types->Strings[i] == "6")
         {
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 10), 17);
-            icon_drawn = 1;
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(10),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            icon_drawn = true;
         }
         if (!icon_drawn)
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 9), 17);
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(9),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         row++;
     }
 }
@@ -1532,9 +1553,10 @@ void InterfaceGraphics::DrawChatPanel()
 {
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->chat->GetScrollbarPosition() + 348,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(122, 433, MainForm->gfx->interface_graphics->chat_tabs,
-        &GetChatTabRect(MainForm->gfx->interface_graphics, 0), 16);
+        &MainForm->gfx->interface_graphics->GetChatTabRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->chat->active_tab == 1)
     {
         int first_private_top_line = MainForm->animation->interface_controller->chat->GetScrollOffset();
@@ -1544,23 +1566,23 @@ void InterfaceGraphics::DrawChatPanel()
         {
             if (StrToInt(MainForm->animation->interface_controller->chat->private_indents[0]->Strings[i]) == 0)
                 MainForm->OffscreenSurface->BltFast(108, 14 * first_private_row + 332, small_icons,
-                    &GetSmallIconRect(this, 1), 17);
+                    &GetSmallIconRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             first_private_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 2), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(2), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 2)
     {
@@ -1571,23 +1593,23 @@ void InterfaceGraphics::DrawChatPanel()
         {
             if (StrToInt(MainForm->animation->interface_controller->chat->private_indents[1]->Strings[j]) == 0)
                 MainForm->OffscreenSurface->BltFast(108, 14 * second_private_row + 332, small_icons,
-                    &GetSmallIconRect(this, 1), 17);
+                    &GetSmallIconRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             second_private_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 2), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(2), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 3)
     {
@@ -1597,24 +1619,24 @@ void InterfaceGraphics::DrawChatPanel()
         for (int k = local_top_line; k < local_line_count && local_top_line + 7 > k; k++)
         {
             MainForm->OffscreenSurface->BltFast(108, 14 * local_row + 332, small_icons,
-                &GetSmallIconRect(this,
-                StrToInt(MainForm->animation->interface_controller->chat->local_icons->Strings[k])), 17);
+                &GetSmallIconRect(StrToInt(MainForm->animation->interface_controller->chat->local_icons->Strings[k])),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             local_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(4), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 4)
     {
@@ -1624,24 +1646,24 @@ void InterfaceGraphics::DrawChatPanel()
         for (int m = global_top_line; m < global_line_count && global_top_line + 7 > m; m++)
         {
             MainForm->OffscreenSurface->BltFast(108, 14 * global_row + 332, small_icons,
-                &GetSmallIconRect(this,
-                StrToInt(MainForm->animation->interface_controller->chat->global_icons->Strings[m])), 17);
+                &GetSmallIconRect(StrToInt(MainForm->animation->interface_controller->chat->global_icons->Strings[m])),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             global_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(4), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 5)
     {
@@ -1651,24 +1673,24 @@ void InterfaceGraphics::DrawChatPanel()
         for (int n = group_top_line; n < group_line_count && group_top_line + 7 > n; n++)
         {
             MainForm->OffscreenSurface->BltFast(108, 14 * group_row + 332, small_icons,
-                &GetSmallIconRect(this,
-                StrToInt(MainForm->animation->interface_controller->chat->group_icons->Strings[n])), 17);
+                &GetSmallIconRect(StrToInt(MainForm->animation->interface_controller->chat->group_icons->Strings[n])),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             group_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(4), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 6)
     {
@@ -1678,32 +1700,32 @@ void InterfaceGraphics::DrawChatPanel()
         for (int ii = system_top_line; ii < system_line_count && system_top_line + 7 > ii; ii++)
         {
             MainForm->OffscreenSurface->BltFast(108, 14 * system_row + 332, small_icons,
-                &GetSmallIconRect(this,
-                StrToInt(MainForm->animation->interface_controller->chat->system_icons->Strings[ii])), 17);
+                &GetSmallIconRect(StrToInt(MainForm->animation->interface_controller->chat->system_icons->Strings[ii])),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             system_row++;
         }
-        if (MainForm->animation->interface_controller->chat->private_name_1 != "")
+        if (MainForm->animation->interface_controller->chat->first_private_name != "")
             MainForm->OffscreenSurface->BltFast(125, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
-        if (MainForm->animation->interface_controller->chat->private_name_2 != "")
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
+        if (MainForm->animation->interface_controller->chat->second_private_name != "")
             MainForm->OffscreenSurface->BltFast(258, 433, MainForm->gfx->interface_graphics->chat_tabs,
-                &GetChatTabRect(MainForm->gfx->interface_graphics, 1), 16);
+                &MainForm->gfx->interface_graphics->GetChatTabRect(1), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(391, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(435, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(479, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(3), DDBLTFAST_WAIT);
         MainForm->OffscreenSurface->BltFast(523, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(4), DDBLTFAST_WAIT);
     }
     // The last tab piece shows whether the chat scrolls to new lines.
     if (MainForm->animation->interface_controller->chat->auto_scroll)
         MainForm->OffscreenSurface->BltFast(568, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 5), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(5), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(568, 433, MainForm->gfx->interface_graphics->chat_tabs,
-            &GetChatTabRect(MainForm->gfx->interface_graphics, 6), 16);
+            &MainForm->gfx->interface_graphics->GetChatTabRect(6), DDBLTFAST_WAIT);
 }
 
 // Draws the chat tab names and the visible lines of the open tab, each line in its colour and indent.
@@ -1722,7 +1744,7 @@ void InterfaceGraphics::DrawChatText()
     else
         MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->TextOut(141, 434,
-        Client::Capitalize(MainForm->net_client, MainForm->animation->interface_controller->chat->private_name_1));
+        MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->first_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 2)
         MainForm->text_canvas->Font->Color = clWhite;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[1])
@@ -1730,7 +1752,7 @@ void InterfaceGraphics::DrawChatText()
     else
         MainForm->text_canvas->Font->Color = clBlack;
     MainForm->text_canvas->TextOut(273, 434,
-        Client::Capitalize(MainForm->net_client, MainForm->animation->interface_controller->chat->private_name_2));
+        MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->second_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 3)
         MainForm->text_canvas->Font->Color = clWhite;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[2])
@@ -1904,18 +1926,15 @@ void InterfaceGraphics::DrawStatusValues()
     MainForm->text_canvas->TextOut(264, 338, IntToStr(MainForm->animation->interface_controller->status->health));
     MainForm->text_canvas->TextOut(264, 356, IntToStr(MainForm->animation->interface_controller->status->mana));
     MainForm->text_canvas->TextOut(264, 374,
-        IntToStr(MainForm->animation->interface_controller->status->label_413_from) + "-" +
-        IntToStr(MainForm->animation->interface_controller->status->label_413_to));
-    MainForm->text_canvas->TextOut(264, 392,
-        IntToStr(MainForm->animation->interface_controller->status->label_414_value));
-    MainForm->text_canvas->TextOut(264, 410,
-        IntToStr(MainForm->animation->interface_controller->status->label_415_value));
-    MainForm->text_canvas->TextOut(264, 428,
-        IntToStr(MainForm->animation->interface_controller->status->label_416_value));
+        IntToStr(MainForm->animation->interface_controller->status->damage_min) + "-" +
+            IntToStr(MainForm->animation->interface_controller->status->damage_max));
+    MainForm->text_canvas->TextOut(264, 392, IntToStr(MainForm->animation->interface_controller->status->hitrate));
+    MainForm->text_canvas->TextOut(264, 410, IntToStr(MainForm->animation->interface_controller->status->armor));
+    MainForm->text_canvas->TextOut(264, 428, IntToStr(MainForm->animation->interface_controller->status->dodge));
     MainForm->text_canvas->TextOut(385, 338,
-        Client::Capitalize(MainForm->net_client, MainForm->animation->interface_controller->status->character_name));
+        MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->character_name));
     MainForm->text_canvas->TextOut(385, 356,
-        Client::Capitalize(MainForm->net_client, MainForm->animation->interface_controller->status->guild_name));
+        MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->guild_name));
     String weight_text = IntToStr(MainForm->animation->interface_controller->status->weight);
     weight_text = weight_text + " / ";
     weight_text = weight_text + IntToStr(MainForm->animation->interface_controller->status->max_weight);
@@ -1956,16 +1975,16 @@ void InterfaceGraphics::DrawGroupScrollButtons()
 {
     if (MainForm->animation->interface_controller->group->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->group->scroll_down_hovered)
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the news panel scroll arrows; the down arrow also lights while the scroll hint shows.
@@ -1973,17 +1992,17 @@ void InterfaceGraphics::DrawNewsScrollButtons()
 {
     if (MainForm->animation->interface_controller->news->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->news->scroll_down_hovered ||
         MainForm->animation->interface_controller->news->IsScrollHintVisible())
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the help panel scroll arrows, lit under the mouse.
@@ -1991,16 +2010,16 @@ void InterfaceGraphics::DrawHelpScrollButtons()
 {
     if (MainForm->animation->interface_controller->help->scroll_up_hovered)
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 4), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(4), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 350, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 3), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(3), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->help->scroll_down_hovered)
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 2), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(2), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(569, 432, MainForm->gfx->interface_graphics->scroll_icons,
-            &GetScrollIconRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetScrollIconRect(1), DDBLTFAST_WAIT);
 }
 
 // Draws the group panel's scroll thumb and, per visible member, a line icon and a state icon.
@@ -2008,25 +2027,30 @@ void InterfaceGraphics::DrawGroupList()
 {
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->group->GetScrollThumbOffset() + 366,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     int top_row = MainForm->animation->interface_controller->group->GetTopRow();
     int member_count = MainForm->animation->interface_controller->group->members.size();
     int row = 0;
     for (int i = top_row; i < member_count && i < top_row + 7; i++)
     {
         if (MainForm->animation->interface_controller->group->members[i].is_leader >= 1)
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 5), 17);
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(5),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 9), 17);
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(9),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->group->members[i].removable)
         {
             if (MainForm->animation->interface_controller->group->members[i].is_hovered)
-                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(this, 2), 16);
+                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(2),
+                    DDBLTFAST_WAIT);
             else
-                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(this, 0), 16);
+                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(0),
+                    DDBLTFAST_WAIT);
         }
         else
-            MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(this, 1), 16);
+            MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(1), DDBLTFAST_WAIT);
         row++;
     }
 }
@@ -2112,45 +2136,45 @@ void InterfaceGraphics::DrawGroupText()
 void InterfaceGraphics::DrawSettingMarkers()
 {
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Sound)
-        MainForm->OffscreenSurface->BltFast(317, 355, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(317, 355, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(317, 355, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(317, 355, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Music)
-        MainForm->OffscreenSurface->BltFast(317, 373, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(317, 373, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(317, 373, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(317, 373, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Keyboard)
-        MainForm->OffscreenSurface->BltFast(317, 391, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(317, 391, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(317, 391, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(317, 391, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Language)
-        MainForm->OffscreenSurface->BltFast(317, 409, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(317, 409, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(317, 409, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(317, 409, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_PrivateMessages)
-        MainForm->OffscreenSurface->BltFast(317, 427, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(317, 427, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(317, 427, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(317, 427, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Balloons)
-        MainForm->OffscreenSurface->BltFast(557, 355, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(557, 355, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(557, 355, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(557, 355, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Shadows)
-        MainForm->OffscreenSurface->BltFast(557, 373, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(557, 373, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(557, 373, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(557, 373, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Filter)
-        MainForm->OffscreenSurface->BltFast(557, 391, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(557, 391, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(557, 391, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(557, 391, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_LogChat)
-        MainForm->OffscreenSurface->BltFast(557, 409, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(557, 409, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(557, 409, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(557, 409, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_Requests)
-        MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(this, 1), 16);
+        MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(this, 0), 16);
+        MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
 }
 
 // Draws the current value of every setting: on or off, the keyboard layout and the filter level.
@@ -2218,14 +2242,16 @@ void InterfaceGraphics::DrawHelpList()
 {
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->help->GetScrollThumbOffset() + 366,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     int top_line = MainForm->animation->interface_controller->help->GetTopLine();
     int line_count = MainForm->animation->interface_controller->help->lines->Count;
     int row = 0;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         if (MainForm->animation->interface_controller->help->line_icons->Strings[i] != "0")
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 1), 17);
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         row++;
     }
 }
@@ -2265,14 +2291,16 @@ void InterfaceGraphics::DrawNewsList()
 {
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->news->GetScrollThumbOffset() + 366,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     int top_line = MainForm->animation->interface_controller->news->GetTopLine();
     int line_count = MainForm->animation->interface_controller->news->lines->Count;
     int row = 0;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         if (MainForm->animation->interface_controller->news->line_markers->Strings[i] != "0")
-            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(this, 1), 17);
+            MainForm->OffscreenSurface->BltFast(108, 14 * row + 350, small_icons, &GetSmallIconRect(1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         row++;
     }
 }
@@ -2302,22 +2330,26 @@ void InterfaceGraphics::DrawInventoryButtons()
 {
     if (MainForm->animation->interface_controller->inventory->paperdoll_button_hovered)
         MainForm->OffscreenSurface->BltFast(487, 339, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryWideButtonRect(MainForm->gfx->interface_graphics, 1), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryWideButtonRect(ButtonState_Hover), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(487, 339, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryWideButtonRect(MainForm->gfx->interface_graphics, 0), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryWideButtonRect(ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->inventory->left_button_hovered)
         MainForm->OffscreenSurface->BltFast(491, 398, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryButtonRect(MainForm->gfx->interface_graphics, 0, 1), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Left, ButtonState_Hover),
+            DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(491, 398, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryButtonRect(MainForm->gfx->interface_graphics, 0, 0), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Left, ButtonState_Normal),
+            DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->inventory->right_button_hovered)
         MainForm->OffscreenSurface->BltFast(533, 398, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryButtonRect(MainForm->gfx->interface_graphics, 1, 1), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Right, ButtonState_Hover),
+            DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(533, 398, MainForm->gfx->interface_graphics->control_sheet,
-            &GetInventoryButtonRect(MainForm->gfx->interface_graphics, 1, 0), 16);
+            &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Right, ButtonState_Normal),
+            DDBLTFAST_WAIT);
 }
 
 // Draws the selected spell's name, cut to fit, its level and the points left to spend.
@@ -2334,11 +2366,11 @@ void InterfaceGraphics::DrawSpellInfoText()
         MainForm->animation->interface_controller->spells->selected_spell_icon >= 0)
     {
         String spell_name = MainForm->animation->interface_controller->spells->selected_spell_name;
-        truncated = 0;
+        truncated = false;
         while (MainForm->text_canvas->TextWidth(spell_name) > INFO_NAME_MAX_WIDTH)
         {
             spell_name.Delete(spell_name.Length(), 1);
-            truncated = 1;
+            truncated = true;
         }
         if (truncated)
             spell_name = spell_name + "..";
@@ -2368,11 +2400,11 @@ void InterfaceGraphics::DrawSkillInfoText()
         MainForm->animation->interface_controller->skills->selected_skill_icon >= 0)
     {
         String skill_name = MainForm->animation->interface_controller->skills->selected_skill_name;
-        truncated = 0;
+        truncated = false;
         while (MainForm->text_canvas->TextWidth(skill_name) > INFO_NAME_MAX_WIDTH)
         {
             skill_name.Delete(skill_name.Length(), 1);
-            truncated = 1;
+            truncated = true;
         }
         if (truncated)
             skill_name = skill_name + "..";
@@ -2404,7 +2436,8 @@ void InterfaceGraphics::DrawSpellPanel()
     int m;
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->spells->GetScrollThumbOffset() + 348,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->spells->has_hover)
     {
         frame_state = 1;
@@ -2417,23 +2450,24 @@ void InterfaceGraphics::DrawSpellPanel()
         selected_column = spells->hover_col;
         if (selected_column >= 0 && spells->hover_row >= 0 && selected_column <= 7 && spells->hover_row <= 1)
             MainForm->OffscreenSurface->BltFast(PANEL_SLOT_COLUMN_PITCH * selected_column + 203, 52 * spells->hover_row + 339,
-                this->control_sheet, &GetSpellSlotFrameRect(this, frame_state), 16);
+                this->control_sheet, &GetSpellSlotFrameRect(frame_state), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->spells->selected_spell_id >= 0 &&
         MainForm->animation->interface_controller->spells->selected_spell_icon >= 0)
     {
         info_icon_id = MainForm->animation->interface_controller->spells->selected_spell_icon;
         MainForm->OffscreenSurface->BltFast(134, 344, MainForm->gfx->icons->GetGraphic(info_icon_id).resource->surface,
-            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(info_icon_id).resource, 0), 17);
+            &MainForm->gfx->icons->GetGraphic(info_icon_id).resource->GetFrameRect(0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->status->skill_points > 0)
         {
-            blink_on = 0;
+            blink_on = false;
             if (MainForm->animation->interface_controller->spells->GetBlinkPhase() > 5)
-                blink_on = 1;
+                blink_on = true;
             MainForm->OffscreenSurface->BltFast(173, 407, MainForm->gfx->interface_graphics->control_sheet,
-                &GetRaiseButtonRect(MainForm->gfx->interface_graphics, blink_on), 16);
+                &MainForm->gfx->interface_graphics->GetRaiseButtonRect(blink_on), DDBLTFAST_WAIT);
             MainForm->OffscreenSurface->BltFast(173, 425, MainForm->gfx->interface_graphics->control_sheet,
-                &GetRaiseButtonRect(MainForm->gfx->interface_graphics, blink_on), 16);
+                &MainForm->gfx->interface_graphics->GetRaiseButtonRect(blink_on), DDBLTFAST_WAIT);
         }
     }
     for (vector<SpellItem>::iterator it = MainForm->animation->interface_controller->spells->spells.begin();
@@ -2453,16 +2487,18 @@ void InterfaceGraphics::DrawSpellPanel()
                         MainForm->animation->interface_controller->spells->hover_row == slot_row)
                         MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
                             MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(icon_id).resource, 1), 17);
+                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetFrameRect(1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     else
                         MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
                             MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(icon_id).resource, 0), 17);
+                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetFrameRect(0),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if ((unsigned int)it->level > 0)
                     {
                         if ((unsigned int)it->level <= 100)
                             MainForm->blitter->HalfBlendBlt(45 * slot_column + 206, 52 * slot_row + 379,
-                                MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(this, it->level));
+                                MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(it->level));
                     }
                 }
             }
@@ -2475,14 +2511,17 @@ void InterfaceGraphics::DrawSpellPanel()
     if (!MainForm->animation->interface_controller->spells->GetTopRow())
     {
         for (j = 0; j < 8; j++)
-            MainForm->OffscreenSurface->BltFast(45 * j + 202, 338, hud_sheet, &GetSpellSlotLabelRect(this, j), 17);
+            MainForm->OffscreenSurface->BltFast(45 * j + 202, 338, hud_sheet, &GetSpellSlotLabelRect(j),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         for (k = 8; k < 16; k++)
-            MainForm->OffscreenSurface->BltFast(45 * k - 158, 390, hud_sheet, &GetSpellSlotLabelRect(this, k), 17);
+            MainForm->OffscreenSurface->BltFast(45 * k - 158, 390, hud_sheet, &GetSpellSlotLabelRect(k),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->spells->GetTopRow() == 1)
     {
         for (m = 8; m < 16; m++)
-            MainForm->OffscreenSurface->BltFast(45 * m - 158, 338, hud_sheet, &GetSpellSlotLabelRect(this, m), 17);
+            MainForm->OffscreenSurface->BltFast(45 * m - 158, 338, hud_sheet, &GetSpellSlotLabelRect(m),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
 }
 
@@ -2499,7 +2538,8 @@ void InterfaceGraphics::DrawSkillPanel()
     int icon_id;
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->skills->GetScrollThumbOffset() + 348,
-        MainForm->gfx->interface_graphics->scroll_icons, &GetScrollIconRect(MainForm->gfx->interface_graphics, 0), 16);
+        MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
+        DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->skills->has_hover)
     {
         frame_state = 1;
@@ -2512,23 +2552,24 @@ void InterfaceGraphics::DrawSkillPanel()
         selected_column = skills->hover_col;
         if (selected_column >= 0 && skills->hover_row >= 0 && selected_column <= 7 && skills->hover_row <= 1)
             MainForm->OffscreenSurface->BltFast(PANEL_SLOT_COLUMN_PITCH * selected_column + 203, 52 * skills->hover_row + 339,
-                this->control_sheet, &GetSkillSlotFrameRect(this, frame_state), 16);
+                this->control_sheet, &GetSkillSlotFrameRect(frame_state), DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->skills->selected_skill_id >= 0 &&
         MainForm->animation->interface_controller->skills->selected_skill_icon >= 0)
     {
         info_icon_id = MainForm->animation->interface_controller->skills->selected_skill_icon;
         MainForm->OffscreenSurface->BltFast(134, 344, MainForm->gfx->icons->GetGraphic(info_icon_id).resource->surface,
-            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(info_icon_id).resource, 0), 17);
+            &MainForm->gfx->icons->GetGraphic(info_icon_id).resource->GetFrameRect(0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->status->skill_points > 0)
         {
-            blink_on = 0;
+            blink_on = false;
             if (MainForm->animation->interface_controller->skills->GetBlinkPhase() > 5)
-                blink_on = 1;
+                blink_on = true;
             MainForm->OffscreenSurface->BltFast(173, 407, MainForm->gfx->interface_graphics->control_sheet,
-                &GetRaiseButtonRect(MainForm->gfx->interface_graphics, blink_on), 16);
+                &MainForm->gfx->interface_graphics->GetRaiseButtonRect(blink_on), DDBLTFAST_WAIT);
             MainForm->OffscreenSurface->BltFast(173, 425, MainForm->gfx->interface_graphics->control_sheet,
-                &GetRaiseButtonRect(MainForm->gfx->interface_graphics, blink_on), 16);
+                &MainForm->gfx->interface_graphics->GetRaiseButtonRect(blink_on), DDBLTFAST_WAIT);
         }
     }
     for (vector<SkillItem>::iterator it = MainForm->animation->interface_controller->skills->skills.begin();
@@ -2547,16 +2588,18 @@ void InterfaceGraphics::DrawSkillPanel()
                         MainForm->animation->interface_controller->skills->hover_row == slot_row)
                         MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
                             MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(icon_id).resource, 1), 17);
+                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetFrameRect(1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     else
                         MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
                             MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(icon_id).resource, 0), 17);
+                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetFrameRect(0),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if ((unsigned int)it->level > 0)
                     {
                         if ((unsigned int)it->level <= 100)
                             MainForm->blitter->HalfBlendBlt(45 * slot_column + 206, 52 * slot_row + 379,
-                                MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(this, it->level));
+                                MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(it->level));
                     }
                 }
             }
@@ -2609,7 +2652,7 @@ void InterfaceGraphics::DrawInventoryGrid()
                     MainForm->OffscreenSurface->BltFast(26 * i +
                         26 * MainForm->animation->interface_controller->inventory->hover_col + 115,
                         26 * j + 26 * MainForm->animation->interface_controller->inventory->hover_row + 339,
-                        control_sheet, &GetSlotHighlightRect(this, highlight_state), 16);
+                        control_sheet, &GetSlotHighlightRect(highlight_state), DDBLTFAST_WAIT);
             }
         }
     }
@@ -2622,7 +2665,8 @@ void InterfaceGraphics::DrawInventoryGrid()
             if (it->is_visible)
                 MainForm->OffscreenSurface->BltFast(26 * it->grid_x + 114, 26 * it->grid_y + 339,
                     MainForm->gfx->items->GetSubItemGraphic(graphic_index).resource->surface,
-                    &MainForm->gfx->items->GetSubItemGraphic(graphic_index).resource->surface_rect, 17);
+                    &MainForm->gfx->items->GetSubItemGraphic(graphic_index).resource->surface_rect,
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             else
                 MainForm->gfx->items->GetSubItemGraphic(graphic_index);
         }
@@ -2643,7 +2687,7 @@ void InterfaceGraphics::DrawInventoryGrid()
                     87 - MainForm->animation->interface_controller->inventory->hover_text_width,
                     26 * MainForm->animation->interface_controller->inventory->hover_row_end + 342,
                     MainForm->OffscreenSurface, tooltip_background,
-                    &Gfx_interface_GetTooltipRect(this,
+                    &GetTooltipRect(
                     MainForm->animation->interface_controller->inventory->hover_text_width + 20, 18));
         }
         else
@@ -2654,7 +2698,7 @@ void InterfaceGraphics::DrawInventoryGrid()
                     MainForm->animation->interface_controller->inventory->hover_col_end + 145,
                     26 * MainForm->animation->interface_controller->inventory->hover_row_end + 342,
                     MainForm->OffscreenSurface, tooltip_background,
-                    &Gfx_interface_GetTooltipRect(this,
+                    &GetTooltipRect(
                     MainForm->animation->interface_controller->inventory->hover_text_width + 20, 18));
         }
     }
@@ -2747,12 +2791,12 @@ void InterfaceGraphics::DrawDraggedItem()
         drag_width = DRAG_BACKUP_WIDTH;
         if (drag_rect.top < 0)
         {
-            this->drag_height = 102 - (0 - this->drag_rect.top);
+            drag_height = 102 - (0 - drag_rect.top);
             drag_rect.top = 0;
         }
         if (drag_rect.left < 0)
         {
-            this->drag_width = 50 - (0 - this->drag_rect.left);
+            drag_width = 50 - (0 - drag_rect.left);
             drag_rect.left = 0;
         }
         if (drag_rect.right > SCREEN_WIDTH)
@@ -2765,7 +2809,7 @@ void InterfaceGraphics::DrawDraggedItem()
             drag_height -= drag_rect.bottom - 480;
             drag_rect.bottom = SCREEN_HEIGHT;
         }
-        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, 16);
+        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, DDBLTFAST_WAIT);
         if (MainForm->gfx->items->RequestSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic))
         {
             TRect source_rect = MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic).resource->surface_rect;
@@ -2781,10 +2825,10 @@ void InterfaceGraphics::DrawDraggedItem()
                 source_rect.top = 0 - draw_y;
                 draw_y = 0;
             }
-            if (draw_x + source_rect.right > 640)
-                source_rect.right -= draw_x + source_rect.right - 640;
-            if (draw_y + source_rect.bottom > 480)
-                source_rect.bottom -= draw_y + source_rect.bottom - 480;
+            if (source_rect.right + draw_x > 640)
+                source_rect.right -= source_rect.right + draw_x - 640;
+            if (source_rect.bottom + draw_y > 480)
+                source_rect.bottom -= source_rect.bottom + draw_y - 480;
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
                 MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic).resource->surface,
                 &source_rect);
@@ -2807,12 +2851,12 @@ void InterfaceGraphics::DrawDraggedSpell()
         drag_width = DRAG_BACKUP_WIDTH;
         if (drag_rect.top < 0)
         {
-            this->drag_height = 50 - (0 - this->drag_rect.top);
+            drag_height = 50 - (0 - drag_rect.top);
             drag_rect.top = 0;
         }
         if (drag_rect.left < 0)
         {
-            this->drag_width = 50 - (0 - this->drag_rect.left);
+            drag_width = 50 - (0 - drag_rect.left);
             drag_rect.left = 0;
         }
         if (drag_rect.right > SCREEN_WIDTH)
@@ -2825,10 +2869,10 @@ void InterfaceGraphics::DrawDraggedSpell()
             drag_height -= drag_rect.bottom - 480;
             drag_rect.bottom = SCREEN_HEIGHT;
         }
-        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, 16);
+        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, DDBLTFAST_WAIT);
         if (MainForm->gfx->icons->RequestGraphic(MainForm->animation->interface_controller->spells->drag_icon))
         {
-            TRect source_rect = Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon).resource,
+            TRect source_rect = MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon).resource->GetFrameRect(
                 1);
             int draw_x = MainForm->animation->interface_controller->spells->drag_x - icon_half_width;
             int draw_y = MainForm->animation->interface_controller->spells->drag_y - icon_half_height;
@@ -2868,12 +2912,12 @@ void InterfaceGraphics::DrawDraggedSkill()
         drag_width = DRAG_BACKUP_WIDTH;
         if (drag_rect.top < 0)
         {
-            this->drag_height = 50 - (0 - this->drag_rect.top);
+            drag_height = 50 - (0 - drag_rect.top);
             drag_rect.top = 0;
         }
         if (drag_rect.left < 0)
         {
-            this->drag_width = 50 - (0 - this->drag_rect.left);
+            drag_width = 50 - (0 - drag_rect.left);
             drag_rect.left = 0;
         }
         if (drag_rect.right > SCREEN_WIDTH)
@@ -2886,10 +2930,10 @@ void InterfaceGraphics::DrawDraggedSkill()
             drag_height -= drag_rect.bottom - 480;
             drag_rect.bottom = SCREEN_HEIGHT;
         }
-        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, 16);
+        drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, DDBLTFAST_WAIT);
         if (MainForm->gfx->icons->RequestGraphic(MainForm->animation->interface_controller->skills->drag_icon))
         {
-            TRect source_rect = Gfx_icon_GetFrameRect(MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon).resource,
+            TRect source_rect = MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon).resource->GetFrameRect(
                 1);
             int draw_x = MainForm->animation->interface_controller->skills->drag_x - icon_half_width;
             int draw_y = MainForm->animation->interface_controller->skills->drag_y - icon_half_height;
@@ -2919,23 +2963,27 @@ void InterfaceGraphics::DrawDraggedSkill()
 void InterfaceGraphics::DrawStatusBars()
 {
     MainForm->OffscreenSurface->BltFast(55, 0, MainForm->gfx->interface_graphics->hud_sheet,
-        &MainForm->gfx->interface_graphics->status_icon_left_rect, 17);
+        &MainForm->gfx->interface_graphics->status_icon_left_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(77, 0, MainForm->gfx->interface_graphics->hud_sheet,
-        &MainForm->gfx->interface_graphics->status_icon_right_rect, 17);
+        &MainForm->gfx->interface_graphics->status_icon_right_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(101, 0, MainForm->gfx->interface_graphics->hud_sheet,
-        &MainForm->gfx->interface_graphics->status_bars_frame_rect, 17);
+        &MainForm->gfx->interface_graphics->status_bars_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(125, 4, MainForm->gfx->interface_graphics->hud_sheet,
-        &GetStatusBarFillRect(MainForm->gfx->interface_graphics, 0,
-        MainForm->animation->interface_controller->game_bars->GetHealthBarSegments()), 17);
+        &MainForm->gfx->interface_graphics->GetStatusBarFillRect(0,
+            MainForm->animation->interface_controller->game_bars->GetHealthBarSegments()),
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(234, 4, MainForm->gfx->interface_graphics->hud_sheet,
-        &GetStatusBarFillRect(MainForm->gfx->interface_graphics, 1,
-        MainForm->animation->interface_controller->game_bars->GetManaBarSegments()), 17);
+        &MainForm->gfx->interface_graphics->GetStatusBarFillRect(1,
+            MainForm->animation->interface_controller->game_bars->GetManaBarSegments()),
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(345, 4, MainForm->gfx->interface_graphics->hud_sheet,
-        &GetStatusBarFillRect(MainForm->gfx->interface_graphics, 2,
-        MainForm->animation->interface_controller->game_bars->GetStaminaBarSegments()), 17);
+        &MainForm->gfx->interface_graphics->GetStatusBarFillRect(2,
+            MainForm->animation->interface_controller->game_bars->GetStaminaBarSegments()),
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->OffscreenSurface->BltFast(454, 4, MainForm->gfx->interface_graphics->hud_sheet,
-        &GetStatusBarFillRect(MainForm->gfx->interface_graphics, 3,
-        MainForm->animation->interface_controller->game_bars->GetExperienceBarSegments()), 17);
+        &MainForm->gfx->interface_graphics->GetStatusBarFillRect(3,
+            MainForm->animation->interface_controller->game_bars->GetExperienceBarSegments()),
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->game_bars->show_health_text ||
         MainForm->animation->interface_controller->game_bars->show_mana_text ||
         MainForm->animation->interface_controller->game_bars->show_stamina_text ||
@@ -2943,17 +2991,17 @@ void InterfaceGraphics::DrawStatusBars()
     {
         if (MainForm->animation->interface_controller->game_bars->show_health_text)
             MainForm->OffscreenSurface->BltFast(101, 10, MainForm->gfx->interface_graphics->hud_sheet,
-                &MainForm->gfx->interface_graphics->bar_text_box_rect, 17);
+                &MainForm->gfx->interface_graphics->bar_text_box_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->game_bars->show_mana_text)
             MainForm->OffscreenSurface->BltFast(210, 10, MainForm->gfx->interface_graphics->hud_sheet,
-                &MainForm->gfx->interface_graphics->bar_text_box_rect, 17);
+                &MainForm->gfx->interface_graphics->bar_text_box_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->game_bars->show_stamina_text)
             MainForm->OffscreenSurface->BltFast(321, 10, MainForm->gfx->interface_graphics->hud_sheet,
-                &MainForm->gfx->interface_graphics->bar_text_box_rect, 17);
+                &MainForm->gfx->interface_graphics->bar_text_box_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->interface_controller->game_bars->show_experience_text)
         {
             MainForm->OffscreenSurface->BltFast(430, 10, MainForm->gfx->interface_graphics->hud_sheet,
-                &MainForm->gfx->interface_graphics->bar_text_box_rect, 17);
+                &MainForm->gfx->interface_graphics->bar_text_box_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
             return;
         }
     }
@@ -2975,15 +3023,15 @@ void InterfaceGraphics::DrawStatusBarText()
         if (MainForm->animation->interface_controller->game_bars->show_health_text)
             MainForm->text_canvas->TextOut(104, 14,
                 IntToStr(MainForm->animation->interface_controller->status->health) + "/" +
-                IntToStr(MainForm->animation->interface_controller->status->max_health));
+                    IntToStr(MainForm->animation->interface_controller->status->max_health));
         if (MainForm->animation->interface_controller->game_bars->show_mana_text)
             MainForm->text_canvas->TextOut(213, 14,
                 IntToStr(MainForm->animation->interface_controller->status->mana) + "/" +
-                IntToStr(MainForm->animation->interface_controller->status->max_mana));
+                    IntToStr(MainForm->animation->interface_controller->status->max_mana));
         if (MainForm->animation->interface_controller->game_bars->show_stamina_text)
             MainForm->text_canvas->TextOut(324, 14,
                 IntToStr(MainForm->animation->interface_controller->status->stamina) + "/" +
-                IntToStr(MainForm->animation->interface_controller->status->max_stamina));
+                    IntToStr(MainForm->animation->interface_controller->status->max_stamina));
         if (MainForm->animation->interface_controller->game_bars->show_experience_text)
             MainForm->text_canvas->TextOut(433, 14,
                 IntToStr(MainForm->animation->interface_controller->status->experience_to_next_level));
@@ -2998,7 +3046,7 @@ void InterfaceGraphics::RestoreItemDragBackground()
     source_rect.left = 0;
     source_rect.right = drag_width;
     source_rect.bottom = drag_height;
-    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, 16);
+    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, DDBLTFAST_WAIT);
 }
 
 // Puts back the screen saved under the dragged spell.
@@ -3009,7 +3057,7 @@ void InterfaceGraphics::RestoreSpellDragBackground()
     source_rect.left = 0;
     source_rect.right = drag_width;
     source_rect.bottom = drag_height;
-    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, 16);
+    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, DDBLTFAST_WAIT);
 }
 
 // Puts back the screen saved under the dragged skill.
@@ -3020,5 +3068,5 @@ void InterfaceGraphics::RestoreSkillDragBackground()
     source_rect.left = 0;
     source_rect.right = drag_width;
     source_rect.bottom = drag_height;
-    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, 16);
+    MainForm->OffscreenSurface->BltFast(drag_rect.left, drag_rect.top, drag_save_surface, &source_rect, DDBLTFAST_WAIT);
 }

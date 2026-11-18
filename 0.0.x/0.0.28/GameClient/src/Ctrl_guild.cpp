@@ -14,27 +14,25 @@
 
 GuildController::GuildController()
 {
-    int new_list;
-    int new_list_2;
     lines = new TStringList();
     member_rank_titles = new TStringList();
     window_x = 49;
     window_y = 15;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     npc_session_id = -1;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
-    close_hovered = 0;
-    back_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    is_visible = false;
+    close_hovered = false;
+    back_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 GuildController::~GuildController()
@@ -46,12 +44,12 @@ DEFINE_ADD_TEXT(GuildController)
 // Shows the guild master's window on its menu page with no text, closing the other npc windows.
 void GuildController::Open(String window_title, int session_id)
 {
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->learn->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     lines->Clear();
@@ -62,14 +60,14 @@ void GuildController::Open(String window_title, int session_id)
     page = GuildPage_Main;
     guild_bank_gold = 0;
     link_line_index = 0;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void GuildController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
@@ -93,44 +91,44 @@ int GuildController::GetTopLine()
 // management rows also check the guild rank. Otherwise the scroll bar and moving the window.
 void GuildController::MouseDown(int x, int y, int button)
 {
-    char row_handled = 0;
+    char row_handled = false;
     if (button == 0 || button == 1)
     {
         if (window_y + 43 < y && window_y + 243 > y && window_x + 17 < x && window_x + 252 > x)
         {
-            is_dragging = 0;
+            is_dragging = false;
             int row = top_line + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
             if (page >= GuildPage_Join)
             {
                 row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
                 if (row == link_line_index)
                 {
-                    MainForm->sfx->PlaySfx(4);
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
                     if (page == GuildPage_Join)
                     {
                         if (!MainForm->animation->interface_controller->status->IsInGuild())
                         {
-                            MainForm->animation->game->OpenInputForm(FormKind_GuildJoin, 2, 4, 12,
+                            MainForm->animation->game->OpenInputForm(FormKind_GuildJoin, 2, EditCharFilter_Letters, 12,
                                 MainForm->strings->GetDialogText(DialogText_JoinGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_JoinGuild, true));
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildTag),
-                                "", 4, 3, 1, 0);
+                                "", EditCharFilter_Letters, 3, EditCaseMode_Upper, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Recruiter),
-                                "", 4, 12, 0, 0);
+                                "", EditCharFilter_Letters, 12, EditCaseMode_None, false);
                         }
                         else
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, true));
                     }
                     if (page == GuildPage_Leave)
                     {
                         if (MainForm->animation->interface_controller->status->IsInGuild())
-                            MainForm->animation->game->ShowMessageBox(3, ConfirmAction_LeaveGuild,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_LeaveGuild,
                                 MainForm->strings->GetDialogText(DialogText_LeaveGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_LeaveGuild, true));
                         else
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_NotInGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_NotInGuild, true));
                     }
@@ -138,34 +136,34 @@ void GuildController::MouseDown(int x, int y, int button)
                     {
                         if (!MainForm->animation->interface_controller->status->IsInGuild())
                         {
-                            MainForm->animation->game->OpenInputForm(FormKind_GuildCreate, 3, 3, 12,
-                                MainForm->strings->GetText(GameText_RegisterGuild),
+                            MainForm->animation->game->OpenInputForm(FormKind_GuildCreate, 3,
+                                EditCharFilter_LettersSpaces, 12, MainForm->strings->GetText(GameText_RegisterGuild),
                                 MainForm->strings->GetText(GameText_EnterYourGuildDetails));
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildTag),
-                                "", 4, 3, 1, 0);
+                                "", EditCharFilter_Letters, 3, EditCaseMode_Upper, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildName),
-                                "", 3, 24, 0, 0);
+                                "", EditCharFilter_LettersSpaces, 24, EditCaseMode_None, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Description),
-                                "", 1, 240, 0, 0);
+                                "", EditCharFilter_NoPunctuation, 240, EditCaseMode_None, false);
                         }
                         else
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, true));
                     }
                     if (page == GuildPage_Description)
                     {
                         MainForm->animation->game->OpenInputBox(InputBoxKind_GuildDescription,
-                            MainForm->strings->GetText(GameText_Description), 4, 12);
-                        MainForm->edits->SetCharFilter(12, 1);
-                        MainForm->edits->SetMaxLength(12, 240);
-                        MainForm->edits->SetCaseMode(12, 0);
+                            MainForm->strings->GetText(GameText_Description), EditCharFilter_Letters, 12);
+                        MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_NoPunctuation);
+                        MainForm->edits->SetMaxLength(EditId_InputBox, 240);
+                        MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_None);
                     }
                     if (page == GuildPage_RemoveMember)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_RemoveGuildMember,
-                            MainForm->strings->GetText(GameText_WhoDoYouWantToRemove), 4, 12);
+                            MainForm->strings->GetText(GameText_WhoDoYouWantToRemove), EditCharFilter_Letters, 12);
                     if (page == GuildPage_Disband)
-                        MainForm->animation->game->ShowMessageBox(3, ConfirmAction_DisbandGuild,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_DisbandGuild,
                             MainForm->strings->GetDialogText(DialogText_DisbandGuild, false),
                             MainForm->strings->GetDialogText(DialogText_DisbandGuild, true));
                     if (page == GuildPage_Bank)
@@ -174,24 +172,24 @@ void GuildController::MouseDown(int x, int y, int button)
                         // The amount box opens only with at least this much gold carried
                         if (gold >= 1000)
                         {
-                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_GuildDeposit, gold, 1, 0);
+                            MainForm->animation->game->OpenAmountBox(AmountBoxKind_GuildDeposit, gold, ItemId_Gold, 0);
                             MainForm->animation->interface_controller->inventory->input_enabled = true;
                         }
                         else
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_DepositMinimum, false),
                                 MainForm->strings->GetDialogText(DialogText_DepositMinimum, true) + " " +
-                                MainForm->item_values->GetName(1));
+                                    MainForm->item_values->GetName(ItemId_Gold));
                     }
                     if (page == GuildPage_Rank)
                     {
-                        MainForm->animation->game->OpenInputForm(FormKind_GuildMemberRank, 2, 3, 12,
-                            MainForm->strings->GetText(GameText_Ranking),
+                        MainForm->animation->game->OpenInputForm(FormKind_GuildMemberRank, 2,
+                            EditCharFilter_LettersSpaces, 12, MainForm->strings->GetText(GameText_Ranking),
                             MainForm->strings->GetText(GameText_AssignRankToMember));
-                        MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Name), "", 4, 12,
-                            0, 0);
-                        MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Rank), "", 4, 1,
-                            0, 0);
+                        MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Name), "",
+                            EditCharFilter_Letters, 12, EditCaseMode_None, false);
+                        MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Rank), "",
+                            EditCharFilter_Letters, 1, EditCaseMode_None, false);
                         MainForm->edits->SetNumericRange(EditId_FormSecondRow, 1, 9);
                     }
                 }
@@ -201,18 +199,18 @@ void GuildController::MouseDown(int x, int y, int button)
                 if (!row)
                 {
                     MainForm->animation->game->OpenInputBox(InputBoxKind_GuildInfo,
-                        MainForm->strings->GetText(GameText_ToViewInformationAbout), 4, 12);
-                    MainForm->edits->SetCharFilter(12, 3);
-                    MainForm->edits->SetMaxLength(12, 24);
-                    MainForm->edits->SetCaseMode(12, 4);
+                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Letters, 12);
+                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_LettersSpaces);
+                    MainForm->edits->SetMaxLength(EditId_InputBox, 24);
+                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_GuildTag);
                 }
                 if (row == 1)
                 {
                     MainForm->animation->game->OpenInputBox(InputBoxKind_GuildMemberList,
-                        MainForm->strings->GetText(GameText_ToViewInformationAbout), 4, 12);
-                    MainForm->edits->SetCharFilter(12, 3);
-                    MainForm->edits->SetMaxLength(12, 24);
-                    MainForm->edits->SetCaseMode(12, 4);
+                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Letters, 12);
+                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_LettersSpaces);
+                    MainForm->edits->SetMaxLength(EditId_InputBox, 24);
+                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_GuildTag);
                 }
             }
             if (this->page == GuildPage_Manage && row >= 0 && row <= 4)
@@ -260,12 +258,12 @@ void GuildController::MouseDown(int x, int y, int button)
                         }
                     }
                     else
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_RefusedRanking, false),
                             MainForm->strings->GetDialogText(DialogText_RefusedRanking, true));
                 }
                 else
-                    MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetDialogText(DialogText_NotInGuild, false),
                         MainForm->strings->GetDialogText(DialogText_NotInGuild, true));
             }
@@ -302,13 +300,13 @@ void GuildController::MouseDown(int x, int y, int button)
                         AddText(MainForm->strings->GetText(GameText_YouAreAboutToCreate), true);
                         AddText(MainForm->strings->GetText(GameText_YouNeedToHave), true);
                         AddText(MainForm->strings->GetText(GameText_GuildMasterWillAsk) + " " +
-                            MainForm->item_values->GetName(1), true);
+                            MainForm->item_values->GetName(ItemId_Gold), true);
                         AddText(MainForm->strings->GetText(GameText_ClickHereToRegister), true);
                         page = GuildPage_Create;
                         MainForm->redraw_needed = true;
                     }
                     else
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, false),
                             MainForm->strings->GetDialogText(DialogText_AlreadyInGuild, true));
                 }
@@ -335,7 +333,7 @@ void GuildController::MouseDown(int x, int y, int button)
                     if (MainForm->animation->interface_controller->status->IsInGuild())
                         MainForm->net_client->sender->RequestGuildBank(npc_session_id);
                     else
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_NotInGuild, false),
                             MainForm->strings->GetDialogText(DialogText_NotInGuild, true));
                 }
@@ -352,7 +350,7 @@ void GuildController::MouseDown(int x, int y, int button)
                 {
                     if (this->window_y + this->scroll_thumb_offset + 73 >= y)
                     {
-                        this->thumb_grabbed = 1;
+                        this->thumb_grabbed = true;
                         this->thumb_grab_offset = y - this->scroll_thumb_offset - this->window_y;
                         this->DragScrollThumb(y);
                     }
@@ -367,7 +365,7 @@ void GuildController::MouseDown(int x, int y, int button)
                 {
                     if (this->window_y + 59 >= y)
                     {
-                        this->scroll_up_held = 1;
+                        this->scroll_up_held = true;
                         this->scroll_repeat_delay = 4;
                         this->ScrollUp();
                     }
@@ -382,7 +380,7 @@ void GuildController::MouseDown(int x, int y, int button)
                 {
                     if (this->window_y + 243 >= y)
                     {
-                        this->scroll_down_held = 1;
+                        this->scroll_down_held = true;
                         this->scroll_repeat_delay = 4;
                         this->ScrollDown();
                     }
@@ -392,7 +390,7 @@ void GuildController::MouseDown(int x, int y, int button)
         if (this->window_x <= x && this->window_x + 284 >= x && y >= this->window_y && this->window_y + 290 >= y &&
             !this->thumb_grabbed)
         {
-            this->is_dragging = 1;
+            this->is_dragging = true;
             this->drag_offset_x = x - this->window_x;
             this->drag_offset_y = y - this->window_y;
         }
@@ -459,32 +457,26 @@ void GuildController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (this->hovered_row >= 0)
-        {
-            this->hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (page == GuildPage_Main)
     {
         if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
     else
@@ -492,36 +484,30 @@ void GuildController::MouseMove(int x, int y)
         if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
         if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->back_hovered)
+            if (!back_hovered)
             {
-                this->back_hovered = 1;
+                back_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (back_hovered)
         {
-            if (back_hovered)
-            {
-                back_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            back_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
 }
@@ -534,7 +520,7 @@ void GuildController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset - window_y;
@@ -555,7 +541,7 @@ void GuildController::DragScrollThumb(int y)
             }
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -574,7 +560,7 @@ void GuildController::ScrollUp()
             scroll_fraction = (double)top_line / (double)(line_count - 12);
             thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
             scroll_thumb_offset = thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -594,7 +580,7 @@ void GuildController::ScrollDown()
             scroll_fraction = (double)top_line / (double)(line_count - 12);
             thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
             scroll_thumb_offset = thumb_pos;
-            scroll_changed = 1;
+            scroll_changed = true;
             MainForm->redraw_needed = true;
         }
     }
@@ -603,10 +589,10 @@ void GuildController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void GuildController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 // Empties the text page and its rank titles and scrolls back to the top.

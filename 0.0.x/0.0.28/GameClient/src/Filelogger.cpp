@@ -14,7 +14,7 @@
 // Opens the log at once when open_now, the LogChat setting.
 FFileLog::FFileLog(char open_now, String log_path)
 {
-    is_open = 0;
+    is_open = false;
     file_path = log_path;
     if (open_now)
         Open(file_path);
@@ -32,11 +32,11 @@ void FFileLog::Open(String path)
     try
     {
         file = fopen(file_path.c_str(), "a");
-        is_open = 1;
+        is_open = true;
     }
     catch (...)
     {
-        is_open = 0;
+        is_open = false;
     }
 }
 
@@ -45,7 +45,7 @@ void FFileLog::Close()
     if (is_open)
     {
         fclose(file);
-        is_open = 0;
+        is_open = false;
     }
 }
 

@@ -23,7 +23,7 @@ struct MsgBoardGraphics
 
     MsgBoardGraphics();
     ~MsgBoardGraphics();
-    static Windows::TRect GetFrameRect(MsgBoardGraphics *self, int frame);
+    Windows::TRect GetFrameRect(int frame);
     GraphicSize LoadSurface(HMODULE library, int resource_id);
 };
 

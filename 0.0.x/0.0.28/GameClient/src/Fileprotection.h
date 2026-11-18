@@ -1,6 +1,10 @@
 #ifndef FileprotectionH
 #define FileprotectionH
 
+#include "Datafile.h"
+
+#define GFX_LIBRARY_COUNT 25
+
 #include <Classes.hpp>
 
 // The start-up file check: the files the client needs, each with an expected size, and the error text of a failure.
@@ -19,8 +23,8 @@ struct FileController
     String GetSoundPath(int file_number);
     String GetMusicPath(int file_number);
     String GetDataFilePath(int file_number);
-    static String RestorePathSeparators(FileController *self, String path);
-    static String UnscrambleString(FileController *self, int divisor, unsigned char *data_begin,
+    String RestorePathSeparators(String path);
+    String UnscrambleString(int divisor, unsigned char *data_begin,
         unsigned char *data_end);
 };
 

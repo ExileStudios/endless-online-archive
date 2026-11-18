@@ -24,8 +24,8 @@ Edits::~Edits()
 
 void Edits::Clear()
 {
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (GetCount() >= 1)
     {
         edits.clear();
@@ -49,12 +49,12 @@ void Edits::TimerTick()
         {
             if (chat_locked && !lock_countdown && it->id == EditId_Chat)
             {
-                it->visible = 1;
-                it->editable = 1;
+                it->visible = true;
+                it->editable = true;
             }
             if (it->change_notify && caret_enabled)
                 text_changed = true;
-            it->dirty = 1;
+            it->dirty = true;
             break;
         }
     }
@@ -66,11 +66,11 @@ void Edits::TimerTick()
 
 bool Edits::ConsumeTickRedraw()
 {
-    bool redraw = 0;
+    bool redraw = false;
     if (tick_redraw)
     {
         tick_redraw = false;
-        redraw = 1;
+        redraw = true;
     }
     return redraw;
 }
@@ -90,7 +90,7 @@ void Edits::TypeText(String text)
             String old_text = it->text;
             if (text.Length() >= 1)
             {
-                it->dirty = 1;
+                it->dirty = true;
                 if (it->multi_line)
                     it->scroll_offset = 0;
             }
@@ -132,25 +132,22 @@ void Edits::TypeText(String text)
             else
             {
                 // Case modes: 1 upper case, 2 lower case, 3 a capital first letter.
-                if (it->case_mode == 1)
+                if (it->case_mode == EditCaseMode_Upper)
                     text = UpperCase(text);
-                if (it->case_mode == 2)
+                if (it->case_mode == EditCaseMode_Lower)
                     text = LowerCase(text);
-                if (it->case_mode == 3)
-                {
-                    if (it->text.Length() <= 0)
-                        text = UpperCase(text);
-                }
+                if (it->case_mode == EditCaseMode_CapitalFirst && it->text.Length() <= 0)
+                    text = UpperCase(text);
                 if (!it->char_filter)
                     it->AppendText(text);
                 else
                 {
-                    allowed = 1;
-                    char saved_v90 = allowed;
+                    allowed = true;
+                    char allowed_copy = allowed;
                     String filter_text = text;
                     // Each filter level refuses more: punctuation, quotes and accented letters,
                     // then the marks . _ - ~ @, then digits, then spaces.
-                    if (it->char_filter >= 1)
+                    if (it->char_filter >= EditCharFilter_NoPunctuation)
                     {
                         if (filter_text == "'" || filter_text == "," || filter_text == "<" || filter_text == ">" ||
                             filter_text == ";" || filter_text == ":" || filter_text == "!" || filter_text == "=" ||
@@ -163,25 +160,25 @@ void Edits::TypeText(String text)
                             filter_text == (char)(-60) || text == (char)34 || filter_text == (char)(-89) ||
                             filter_text == (char)(-24) || filter_text == (char)(-25) || filter_text == (char)(-32) ||
                             filter_text == (char)(-23))
-                            allowed = 0;
+                            allowed = false;
                     }
-                    if (it->char_filter >= 2)
+                    if (it->char_filter >= EditCharFilter_AlphanumericSpaces)
                     {
                         if (filter_text == "." || filter_text == "_" || filter_text == "-" || filter_text == "~" ||
                             filter_text == "@")
-                            allowed = 0;
+                            allowed = false;
                     }
-                    if (it->char_filter >= 3)
+                    if (it->char_filter >= EditCharFilter_LettersSpaces)
                     {
                         if (filter_text == "0" || filter_text == "1" || filter_text == "2" || filter_text == "3" ||
                             filter_text == "4" || filter_text == "5" || filter_text == "6" || filter_text == "7" ||
                             filter_text == "8" || filter_text == "9")
-                            allowed = 0;
+                            allowed = false;
                     }
-                    if (it->char_filter >= 4)
+                    if (it->char_filter >= EditCharFilter_Letters)
                     {
                         if (filter_text == " ")
-                            allowed = 0;
+                            allowed = false;
                     }
                     if (allowed)
                         it->AppendText(text);
@@ -223,7 +220,7 @@ void Edits::ClearFocusedText()
         if (it->focused && it->editable)
         {
             if (it->text.Length() >= 1)
-                it->dirty = 1;
+                it->dirty = true;
             if (it->multi_line)
                 it->scroll_offset = 0;
             if (it->change_notify)
@@ -244,7 +241,7 @@ void Edits::Backspace()
         if (it->focused && it->editable)
         {
             if (it->text.Length() >= 1)
-                it->dirty = 1;
+                it->dirty = true;
             if (it->multi_line)
                 it->scroll_offset = 0;
             if (it->change_notify)
@@ -280,7 +277,7 @@ void Edits::RemoveEdit(int id)
 void Edits::UnfocusAll()
 {
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
-        it->focused = 0;
+        it->focused = false;
 }
 
 // Moves the focus to the box that was clicked.
@@ -291,7 +288,7 @@ void Edits::FocusClickedEdit(Edit edit_x)
     {
         if (it->id == String(edit_x.id))
         {
-            it->focused = 1;
+            it->focused = true;
             break;
         }
     }
@@ -304,7 +301,7 @@ void Edits::FocusEdit(int id)
     {
         if (id == it->id)
         {
-            it->focused = 1;
+            it->focused = true;
             return;
         }
     }
@@ -312,12 +309,12 @@ void Edits::FocusEdit(int id)
 
 bool Edits::HasDirtyEdit()
 {
-    bool dirty = 0;
+    bool dirty = false;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (it->dirty)
         {
-            dirty = 1;
+            dirty = true;
             break;
         }
     }
@@ -333,7 +330,7 @@ char Edits::ConsumeTextChanged()
 
 bool Edits::IsFocused(int id)
 {
-    bool focused = 0;
+    bool focused = false;
     vector<Edit>::iterator it;
     for (it = edits.begin(); it != edits.end(); it++)
     {
@@ -341,7 +338,7 @@ bool Edits::IsFocused(int id)
             continue;
         if (it->focused)
         {
-            focused = 1;
+            focused = true;
             break;
         }
     }
@@ -350,13 +347,13 @@ bool Edits::IsFocused(int id)
 
 bool Edits::ConsumeDirty(int id)
 {
-    bool dirty = 0;
+    bool dirty = false;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (id == it->id && it->dirty)
         {
-            it->dirty = 0;
-            dirty = 1;
+            it->dirty = false;
+            dirty = true;
             break;
         }
     }
@@ -366,23 +363,23 @@ bool Edits::ConsumeDirty(int id)
 // Moves the focus to the next box, round to the first after the last.
 void Edits::FocusNext()
 {
-    char focus_next = 0;
+    char focus_next = false;
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         if (focus_next)
         {
-            it->focused = 1;
-            focus_next = 0;
+            it->focused = true;
+            focus_next = false;
             break;
         }
         if (it->focused)
         {
-            it->focused = 0;
-            focus_next = 1;
+            it->focused = false;
+            focus_next = true;
         }
     }
     if (focus_next)
-        edits[0].focused = 1;
+        edits[0].focused = true;
 }
 
 Edit Edits::GetCurrentEdit()
@@ -412,9 +409,9 @@ void Edits::MoveFirst()
 
 bool Edits::IsAtEnd()
 {
-    bool at_end = 0;
+    bool at_end = false;
     if (GetCount() == (unsigned int)current_index || !GetCount())
-        at_end = 1;
+        at_end = true;
     return at_end;
 }
 
@@ -816,41 +813,34 @@ int Edits::GetTextLength(int id)
 // Whether the text uses fewer than three different characters; account names and passwords like that are refused.
 bool Edits::HasFewDistinctChars(String text)
 {
+    int i;
     bool few_distinct;
     char first_char;
     char second_char;
-    int i = 0;
     int distinct_count = 0;
-    few_distinct = 1;
+    few_distinct = true;
     if (text.Length() >= 1)
     {
-        for (i = 1; i <= text.Length(); i++)
+        i = 1;
+        while (i <= text.Length())
         {
-            if (distinct_count == 2)
+            if (distinct_count == 2 && text[i] != first_char && text[i] != second_char)
+                distinct_count++;
+            if (distinct_count == 1 && text[i] != first_char)
             {
-                if (text[i] != first_char)
-                {
-                    if (text[i] != second_char)
-                        distinct_count++;
-                }
-            }
-            if (distinct_count == 1)
-            {
-                if (text[i] != first_char)
-                {
-                    second_char = text[i];
-                    distinct_count++;
-                }
+                second_char = text[i];
+                distinct_count++;
             }
             if (!distinct_count)
             {
                 first_char = text[i];
                 distinct_count++;
             }
+            i++;
         }
     }
     if (distinct_count >= 3)
-        few_distinct = 0;
+        few_distinct = false;
     i = 0;
     return few_distinct;
 }
@@ -859,16 +849,16 @@ bool Edits::HasFewDistinctChars(String text)
 bool Edits::IsValidEmail(String address)
 {
     bool valid;
-    char has_at = 0;
-    valid = 0;
+    char has_at = false;
+    valid = false;
     if (address.Length() >= 5)
     {
         for (int i = 2; i <= address.Length(); i++)
         {
             if (address[i] == '@')
-                has_at = 1;
+                has_at = true;
             if (address[i] == '.' && has_at)
-                valid = 1;
+                valid = true;
         }
     }
     return valid;
@@ -881,8 +871,8 @@ void Edits::LockChatInput()
     {
         if (it->id == EditId_Chat)
         {
-            it->editable = 0;
-            it->visible = 0;
+            it->editable = false;
+            it->visible = false;
             break;
         }
     }

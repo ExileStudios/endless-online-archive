@@ -18,7 +18,7 @@ struct LawController
     int reset_value;
     int link_line_index;
     int npc_session_id;
-    char pad_0x24[1];
+    char unused_bytes[1];
     char scroll_up_hovered;
     char scroll_down_hovered;
     char unused_flag;
@@ -36,7 +36,7 @@ struct LawController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x58[4];
+    char second_unused_bytes[4];
 
     LawController();
     ~LawController();

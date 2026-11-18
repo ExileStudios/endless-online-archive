@@ -17,7 +17,7 @@ struct BarberController
     char is_dragging;
     int drag_offset_x;
     int drag_offset_y;
-    char pad_0x30[4];
+    char unused_bytes[4];
 
     BarberController();
     ~BarberController();

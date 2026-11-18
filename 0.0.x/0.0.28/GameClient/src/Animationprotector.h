@@ -23,7 +23,9 @@ enum MenuScreen
     MenuScreen_Login = 4,
     MenuScreen_CharacterSelect = 5,
     MenuScreen_GridAccountName = 7,
-    MenuScreen_PasswordGrid = 8
+    MenuScreen_PasswordGrid = 8,
+    MenuScreen_PasswordReset = 9,
+    MenuScreen_SignupCode = 10
 };
 
 struct BankController;

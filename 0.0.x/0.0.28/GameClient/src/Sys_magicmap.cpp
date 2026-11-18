@@ -12,40 +12,108 @@
 
 MagicMapper::MagicMapper()
 {
-    base_layer[0] = 1; blend_layer[0] = 1; solid_layer[0] = 1;
-    base_layer[1] = 0; blend_layer[1] = 0; solid_layer[1] = 1;
-    base_layer[2] = 0; blend_layer[2] = 1; solid_layer[2] = 1;
-    base_layer[3] = 0; blend_layer[3] = 0; solid_layer[3] = 1;
-    base_layer[4] = 0; blend_layer[4] = 0; solid_layer[4] = 1;
-    base_layer[5] = 0; blend_layer[5] = 1; solid_layer[5] = 1;
-    base_layer[6] = 1; blend_layer[6] = 0; solid_layer[6] = 0;
-    base_layer[7] = 1; blend_layer[7] = 0; solid_layer[7] = 0;
-    base_layer[8] = 1; blend_layer[8] = 0; solid_layer[8] = 0;
-    base_layer[9] = 0; blend_layer[9] = 1; solid_layer[9] = 1;
-    base_layer[10] = 0; blend_layer[10] = 0; solid_layer[10] = 1;
-    base_layer[11] = 0; blend_layer[11] = 0; solid_layer[11] = 1;
-    base_layer[12] = 1; blend_layer[12] = 1; solid_layer[12] = 0;
-    base_layer[13] = 1; blend_layer[13] = 1; solid_layer[13] = 0;
-    base_layer[14] = 0; blend_layer[14] = 1; solid_layer[14] = 1;
-    base_layer[15] = 1; blend_layer[15] = 0; solid_layer[15] = 1;
-    base_layer[16] = 0; blend_layer[16] = 1; solid_layer[16] = 1;
-    base_layer[17] = 0; blend_layer[17] = 0; solid_layer[17] = 1;
-    base_layer[18] = 1; blend_layer[18] = 1; solid_layer[18] = 1;
-    base_layer[19] = 0; blend_layer[19] = 1; solid_layer[19] = 0;
-    base_layer[20] = 0; blend_layer[20] = 0; solid_layer[20] = 1;
-    base_layer[21] = 1; blend_layer[21] = 1; solid_layer[21] = 0;
-    base_layer[22] = 1; blend_layer[22] = 1; solid_layer[22] = 0;
-    base_layer[23] = 1; blend_layer[23] = 1; solid_layer[23] = 0;
-    base_layer[24] = 0; blend_layer[24] = 0; solid_layer[24] = 1;
-    base_layer[25] = 1; blend_layer[25] = 1; solid_layer[25] = 0;
-    base_layer[26] = 1; blend_layer[26] = 1; solid_layer[26] = 0;
-    base_layer[27] = 0; blend_layer[27] = 0; solid_layer[27] = 1;
-    base_layer[28] = 0; blend_layer[28] = 0; solid_layer[28] = 1;
-    base_layer[29] = 1; blend_layer[29] = 0; solid_layer[29] = 1;
-    base_layer[30] = 1; blend_layer[30] = 0; solid_layer[30] = 1;
-    base_layer[31] = 1; blend_layer[31] = 1; solid_layer[31] = 0;
-    base_layer[32] = 1; blend_layer[32] = 1; solid_layer[32] = 0;
-    base_layer[33] = 1; blend_layer[33] = 1; solid_layer[33] = 0;
+    base_layer[0] = true;
+    blend_layer[0] = true;
+    solid_layer[0] = true;
+    base_layer[1] = false;
+    blend_layer[1] = false;
+    solid_layer[1] = true;
+    base_layer[2] = false;
+    blend_layer[2] = true;
+    solid_layer[2] = true;
+    base_layer[3] = false;
+    blend_layer[3] = false;
+    solid_layer[3] = true;
+    base_layer[4] = false;
+    blend_layer[4] = false;
+    solid_layer[4] = true;
+    base_layer[5] = false;
+    blend_layer[5] = true;
+    solid_layer[5] = true;
+    base_layer[6] = true;
+    blend_layer[6] = false;
+    solid_layer[6] = false;
+    base_layer[7] = true;
+    blend_layer[7] = false;
+    solid_layer[7] = false;
+    base_layer[8] = true;
+    blend_layer[8] = false;
+    solid_layer[8] = false;
+    base_layer[9] = false;
+    blend_layer[9] = true;
+    solid_layer[9] = true;
+    base_layer[10] = false;
+    blend_layer[10] = false;
+    solid_layer[10] = true;
+    base_layer[11] = false;
+    blend_layer[11] = false;
+    solid_layer[11] = true;
+    base_layer[12] = true;
+    blend_layer[12] = true;
+    solid_layer[12] = false;
+    base_layer[13] = true;
+    blend_layer[13] = true;
+    solid_layer[13] = false;
+    base_layer[14] = false;
+    blend_layer[14] = true;
+    solid_layer[14] = true;
+    base_layer[15] = true;
+    blend_layer[15] = false;
+    solid_layer[15] = true;
+    base_layer[16] = false;
+    blend_layer[16] = true;
+    solid_layer[16] = true;
+    base_layer[17] = false;
+    blend_layer[17] = false;
+    solid_layer[17] = true;
+    base_layer[18] = true;
+    blend_layer[18] = true;
+    solid_layer[18] = true;
+    base_layer[19] = false;
+    blend_layer[19] = true;
+    solid_layer[19] = false;
+    base_layer[20] = false;
+    blend_layer[20] = false;
+    solid_layer[20] = true;
+    base_layer[21] = true;
+    blend_layer[21] = true;
+    solid_layer[21] = false;
+    base_layer[22] = true;
+    blend_layer[22] = true;
+    solid_layer[22] = false;
+    base_layer[23] = true;
+    blend_layer[23] = true;
+    solid_layer[23] = false;
+    base_layer[24] = false;
+    blend_layer[24] = false;
+    solid_layer[24] = true;
+    base_layer[25] = true;
+    blend_layer[25] = true;
+    solid_layer[25] = false;
+    base_layer[26] = true;
+    blend_layer[26] = true;
+    solid_layer[26] = false;
+    base_layer[27] = false;
+    blend_layer[27] = false;
+    solid_layer[27] = true;
+    base_layer[28] = false;
+    blend_layer[28] = false;
+    solid_layer[28] = true;
+    base_layer[29] = true;
+    blend_layer[29] = false;
+    solid_layer[29] = true;
+    base_layer[30] = true;
+    blend_layer[30] = false;
+    solid_layer[30] = true;
+    base_layer[31] = true;
+    blend_layer[31] = true;
+    solid_layer[31] = false;
+    base_layer[32] = true;
+    blend_layer[32] = true;
+    solid_layer[32] = false;
+    base_layer[33] = true;
+    blend_layer[33] = true;
+    solid_layer[33] = false;
 }
 
 MagicMapper::~MagicMapper()
@@ -56,23 +124,23 @@ MagicMapper::~MagicMapper()
 int MagicMapper::GetFrameCount(int effect_id)
 {
     int frame_count = 4;
-    if (effect_id == 2)
+    if (effect_id == SpellEffect_WarpDepart)
         frame_count = 8;
-    if (effect_id == 3)
+    if (effect_id == SpellEffect_WarpArrive)
         frame_count = 8;
-    if (effect_id == 4)
+    if (effect_id == SpellEffect_Confetti)
         frame_count = 7;
-    if (effect_id == 5)
+    if (effect_id == SpellEffect_Sparkles)
         frame_count = 5;
-    if (effect_id == 8)
+    if (effect_id == SpellEffect_WaterSplash)
         frame_count = 6;
-    if (effect_id == 9)
+    if (effect_id == SpellEffect_Heal)
         frame_count = 5;
     if (effect_id == SpellEffect_FireBall)
         frame_count = 6;
-    if (effect_id == 14)
+    if (effect_id == SpellEffect_MagicShield)
         frame_count = 6;
-    if (effect_id == 16)
+    if (effect_id == SpellEffect_IceBlast)
         frame_count = 7;
     if (effect_id == SpellEffect_EnergyBall)
         frame_count = 7;
@@ -82,7 +150,7 @@ int MagicMapper::GetFrameCount(int effect_id)
         frame_count = 7;
     if (effect_id == SpellEffect_Heaven)
         frame_count = 5;
-    if (effect_id == 22)
+    if (effect_id == SpellEffect_IceBall)
         frame_count = 6;
     if (effect_id == SpellEffect_DarkBeam)
         frame_count = 5;
@@ -109,33 +177,33 @@ int MagicMapper::GetFrameCount(int effect_id)
 int MagicMapper::GetLoopCount(int effect_id)
 {
     int loop_count = 2;
-    if (effect_id == 1)
+    if (effect_id == SpellEffect_Hearts)
         loop_count = 4;
-    if (effect_id == 2)
+    if (effect_id == SpellEffect_WarpDepart)
         loop_count = 1;
-    if (effect_id == 3)
+    if (effect_id == SpellEffect_WarpArrive)
         loop_count = 1;
-    if (effect_id == 5)
+    if (effect_id == SpellEffect_Sparkles)
         loop_count = 1;
-    if (effect_id == 6)
+    if (effect_id == SpellEffect_Pentagram)
         loop_count = 4;
-    if (effect_id == 7)
+    if (effect_id == SpellEffect_LargePentagram)
         loop_count = 4;
-    if (effect_id == 8)
+    if (effect_id == SpellEffect_WaterSplash)
         loop_count = 1;
-    if (effect_id == 9)
+    if (effect_id == SpellEffect_Heal)
         loop_count = 1;
-    if (effect_id == 11)
+    if (effect_id == SpellEffect_Twinkle)
         loop_count = 8;
     if (effect_id == SpellEffect_UltimaBlast)
         loop_count = 3;
     if (effect_id == SpellEffect_FireBall)
         loop_count = 1;
-    if (effect_id == 14)
+    if (effect_id == SpellEffect_MagicShield)
         loop_count = 1;
     if (effect_id == SpellEffect_RingFire)
         loop_count = 3;
-    if (effect_id == 16)
+    if (effect_id == SpellEffect_IceBlast)
         loop_count = 1;
     if (effect_id == SpellEffect_EnergyBall)
         loop_count = 1;
@@ -145,11 +213,11 @@ int MagicMapper::GetLoopCount(int effect_id)
         loop_count = 1;
     if (effect_id == SpellEffect_Heaven)
         loop_count = 4;
-    if (effect_id == 22)
+    if (effect_id == SpellEffect_IceBall)
         loop_count = 1;
     if (effect_id == SpellEffect_DarkBeam)
         loop_count = 4;
-    if (effect_id == 24)
+    if (effect_id == SpellEffect_Vanish)
         loop_count = 2;
     if (effect_id == SpellEffect_FireBlast)
         loop_count = 1;

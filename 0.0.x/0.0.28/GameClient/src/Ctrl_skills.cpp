@@ -19,14 +19,14 @@ SkillController::SkillController()
     hover_row = -1;
     hover_message_delay = -1;
     hover_alt_frame = 0;
-    has_hover = 0;
-    is_dragging = 0;
+    has_hover = false;
+    is_dragging = false;
     top_row = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
-    unused_reset_flag = 1;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
+    unused_reset_flag = true;
     train_confirm_ticks = 0;
 }
 
@@ -57,15 +57,15 @@ void SkillController::Tick()
             blink_phase++;
             if (blink_phase == 6)
             {
-                buttons_dirty = 1;
-                is_dirty = 1;
+                buttons_dirty = true;
+                is_dirty = true;
             }
         }
         else
         {
             blink_phase = 0;
-            buttons_dirty = 1;
-            is_dirty = 1;
+            buttons_dirty = true;
+            is_dirty = true;
         }
     }
     if (click_ticks < 10)
@@ -78,7 +78,7 @@ void SkillController::Tick()
         {
             drag_delay_ticks++;
             if (drag_delay_ticks > 1)
-                drag_started = 1;
+                drag_started = true;
         }
     }
     if (scroll_repeat_delay > 0)
@@ -124,19 +124,19 @@ void SkillController::UpdateHover(int x, int y)
             last_hover_col = col;
             last_hover_row = result;
             hover_text_width = 0;
-            has_hover = 1;
-            selection_dirty = 1;
-            is_dirty = 1;
+            has_hover = true;
+            selection_dirty = true;
+            is_dirty = true;
         }
         else
         {
-            found = 0;
+            found = false;
             for (vector<SkillItem>::iterator it = skills.begin(); it != skills.end(); it++)
             {
                 int grid_row = result + top_row;
                 if (col == it->grid_x && grid_row == it->grid_y && it->is_visible)
                 {
-                    found = 1;
+                    found = true;
                     if (hover_col != it->grid_x || hover_row != it->grid_y)
                     {
                         hover_skill_id = it->skill_id;
@@ -149,9 +149,9 @@ void SkillController::UpdateHover(int x, int y)
                         if (hover_message_delay < 1)
                             MainForm->animation->interface_controller->ShowStatusMessage(message_type, hover_text);
                         hover_alt_frame = 0;
-                        has_hover = 1;
-                        selection_dirty = 1;
-                        is_dirty = 1;
+                        has_hover = true;
+                        selection_dirty = true;
+                        is_dirty = true;
                         hover_text_width = 0;
                         if (MainForm->OffscreenSurface->GetDC(&dc))
                         {
@@ -174,15 +174,15 @@ void SkillController::UpdateHover(int x, int y)
             {
                 if (has_hover)
                 {
-                    selection_dirty = 1;
-                    is_dirty = 1;
+                    selection_dirty = true;
+                    is_dirty = true;
                     hover_col = -1;
                     hover_row = -1;
                     hover_skill_id = -1;
                     hover_text = "";
                 }
                 hover_alt_frame = 0;
-                has_hover = 0;
+                has_hover = false;
             }
         }
     }
@@ -190,15 +190,15 @@ void SkillController::UpdateHover(int x, int y)
     {
         if (has_hover)
         {
-            selection_dirty = 1;
-            is_dirty = 1;
+            selection_dirty = true;
+            is_dirty = true;
             hover_col = -1;
             hover_row = -1;
             hover_skill_id = -1;
             hover_text = "";
         }
         hover_alt_frame = 0;
-        has_hover = 0;
+        has_hover = false;
     }
 }
 
@@ -214,7 +214,7 @@ void SkillController::MouseDown(int x, int y, int button)
     int col;
     int row;
     int drag_col;
-    cancel_drag = 0;
+    cancel_drag = false;
     if (x >= 201 && x <= 560)
     {
         if (y >= 339 && y <= 440)
@@ -242,14 +242,14 @@ void SkillController::MouseDown(int x, int y, int button)
                                     clicked_skill_id = it->skill_id;
                                     clicked_col = it->grid_x;
                                     clicked_row = it->grid_y;
-                                    selection_dirty = 1;
-                                    is_dirty = 1;
+                                    selection_dirty = true;
+                                    is_dirty = true;
                                     break;
                                 }
                             }
                         }
                         vector<SkillItem>::iterator it;
-                        swapped = 0;
+                        swapped = false;
                         drag_row = -1;
                         drag_col = -1;
                         row += top_row;
@@ -267,8 +267,8 @@ void SkillController::MouseDown(int x, int y, int button)
                             {
                                 it->grid_x = drag_col;
                                 it->grid_y = drag_row;
-                                it->is_visible = 1;
-                                swapped = 1;
+                                it->is_visible = true;
+                                swapped = true;
                                 break;
                             }
                         }
@@ -281,8 +281,8 @@ void SkillController::MouseDown(int x, int y, int button)
                                     continue;
                                 it->grid_x = col;
                                 it->grid_y = row;
-                                it->is_visible = 1;
-                                cancel_drag = 1;
+                                it->is_visible = true;
+                                cancel_drag = true;
                             }
                         }
                         else
@@ -294,8 +294,8 @@ void SkillController::MouseDown(int x, int y, int button)
                                     continue;
                                 it->grid_x = col;
                                 it->grid_y = row;
-                                it->is_visible = 1;
-                                cancel_drag = 1;
+                                it->is_visible = true;
+                                cancel_drag = true;
                             }
                         }
                         SaveLayout();
@@ -307,15 +307,15 @@ void SkillController::MouseDown(int x, int y, int button)
                         click_col = col;
                         click_row = row;
                         row += top_row;
-                        found = 0;
+                        found = false;
                         for (it = skills.begin(); it != skills.end(); it++)
                         {
                             if (col == it->grid_x && row == it->grid_y)
                             {
-                                MainForm->sfx->PlaySfx(20);
-                                found = 1;
-                                is_dragging = 1;
-                                drag_started = 0;
+                                MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                                found = true;
+                                is_dragging = true;
+                                drag_started = false;
                                 drag_delay_ticks = 0;
                                 drag_x = x;
                                 drag_y = y;
@@ -330,11 +330,12 @@ void SkillController::MouseDown(int x, int y, int button)
                                 clicked_skill_id = it->skill_id;
                                 clicked_col = it->grid_x;
                                 clicked_row = it->grid_y;
-                                it->is_visible = 0;
+                                it->is_visible = false;
                                 MainForm->dragging = true;
-                                selection_dirty = 1;
-                                is_dirty = 1;
+                                selection_dirty = true;
+                                is_dirty = true;
                                 selected_text_width = 0;
+                                HDC dc;
                                 if (MainForm->OffscreenSurface->GetDC(&dc))
                                 {
                                     try
@@ -356,28 +357,28 @@ void SkillController::MouseDown(int x, int y, int button)
                             has_selection = false;
                             selected_skill_id = -1;
                             selected_skill_icon = -1;
-                            selection_dirty = 1;
-                            is_dirty = 1;
+                            selection_dirty = true;
+                            is_dirty = true;
                             selected_text_width = 0;
                         }
                     }
                 }
                 else if (is_dragging)
-                    cancel_drag = 1;
+                    cancel_drag = true;
             }
         }
         else
-            cancel_drag = 1;
+            cancel_drag = true;
     }
     else
     {
         // Outside the grid a drag is cancelled, except over the scroll bar
         if (x > 585)
-            cancel_drag = 1;
+            cancel_drag = true;
         if (y < 339 || y > 440)
-            cancel_drag = 1;
+            cancel_drag = true;
         if (x >= 569 && x <= 585 && y >= 332 && y <= 447)
-            cancel_drag = 0;
+            cancel_drag = false;
     }
     if (cancel_drag && is_dragging)
     {
@@ -388,19 +389,19 @@ void SkillController::MouseDown(int x, int y, int button)
     {
         if (scroll_thumb_offset + 348 <= y && scroll_thumb_offset + 363 >= y)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset;
             DragScrollThumb(y);
         }
         if (y >= 332 && y <= 347)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (y >= 432 && y <= 447)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
@@ -418,7 +419,8 @@ void SkillController::MouseDown(int x, int y, int button)
             // Asks first, unless a training was sent recently
             if (train_confirm_ticks <= 0)
             {
-                MainForm->animation->game->ShowMessageBox(3, ConfirmAction_TrainSkill, "Skill training", "Do you want to train?");
+                MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_TrainSkill,
+                    "Skill training", "Do you want to train?");
                 MainForm->edits->caret_enabled = false;
             }
             else
@@ -441,33 +443,33 @@ DEFINE_TEST_AND_CLEAR_DRAG_DIRTY(SkillController)
 
 void SkillController::MarkSelectionDirty()
 {
-    selection_dirty = 1;
+    selection_dirty = true;
 }
 
 void SkillController::MarkDirty()
 {
-    is_dirty = 1;
+    is_dirty = true;
 }
 
 void SkillController::MarkDragDirty()
 {
-    drag_dirty = 1;
+    drag_dirty = true;
 }
 
 // Ends a drag and marks every skill as back in its cell.
 void SkillController::CancelDrag()
 {
-    MainForm->sfx->PlaySfx(21);
-    is_dragging = 0;
-    drag_started = 0;
+    MainForm->sfx->PlaySfx(SfxSound_ItemPlace);
+    is_dragging = false;
+    drag_started = false;
     drag_delay_ticks = 0;
     hover_col = -1;
     hover_row = -1;
-    is_dirty = 1;
-    selection_dirty = 1;
+    is_dirty = true;
+    selection_dirty = true;
     MainForm->dragging = false;
     for (vector<SkillItem>::iterator it = skills.begin(); it != skills.end(); it++)
-        it->is_visible = 1;
+        it->is_visible = true;
 }
 
 // Writes the skill in each grid cell, or 0 for an empty one, to the registry.
@@ -489,7 +491,7 @@ void SkillController::SaveLayout()
                 }
             }
             int slot = j + 8 * i;
-            MainForm->registry->WriteSlotValue(3, slot, slot_skill_id);
+            MainForm->registry->WriteSlotValue(LayoutKey_Skills, slot, slot_skill_id);
         }
     }
 }
@@ -503,8 +505,8 @@ bool SkillController::SetSkillLevel(int skill_id, int level)
     {
         if (skill_id == it->skill_id)
         {
-            selection_dirty = 1;
-            is_dirty = 1;
+            selection_dirty = true;
+            is_dirty = true;
             it->level = level;
             return true;
         }
@@ -531,9 +533,9 @@ char SkillController::HasSkill(int skill_id)
     for (vector<SkillItem>::iterator it = skills.begin(); it != skills.end(); it++)
     {
         if (skill_id == it->skill_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 int SkillController::GetBlinkPhase()
@@ -553,16 +555,16 @@ void SkillController::Reset()
     hover_row = -1;
     hover_message_delay = -1;
     hover_alt_frame = 0;
-    has_hover = 0;
-    is_dragging = 0;
+    has_hover = false;
+    is_dragging = false;
     top_row = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
-    unused_reset_flag = 1;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
+    unused_reset_flag = true;
     train_confirm_ticks = 0;
     skills.clear();
-    unused_items_a.clear();
-    unused_items_b.clear();
+    unused_items.clear();
+    second_unused_items.clear();
 }

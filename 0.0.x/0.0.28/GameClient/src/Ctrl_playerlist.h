@@ -61,7 +61,7 @@ struct PlayerlistController
     void MouseMove(int x, int y);
     bool TestAndClearScrollDirty();
     bool TestAndClearListDirty();
-    static String Capitalize(PlayerlistController *self, String text);
+    String Capitalize(String text);
     void MarkListDirty();
 };
 

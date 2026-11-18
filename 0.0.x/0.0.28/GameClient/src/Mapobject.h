@@ -13,14 +13,26 @@ enum TileSpec
     TileSpec_Door = 7,
     TileSpec_Chest = 8,
     TileSpec_OpenDoor = 9,
+    TileSpec_PassableDoor = 10,
     TileSpec_Passable = 11,
     TileSpec_Locker = 15,
+    TileSpec_NpcBoundary = 16,
+    TileSpec_Board1 = 19,
+    TileSpec_Board2 = 20,
+    TileSpec_Board3 = 21,
+    TileSpec_Board4 = 22,
+    TileSpec_Board5 = 23,
+    TileSpec_Board6 = 24,
+    TileSpec_Board7 = 25,
+    TileSpec_Board8 = 26,
     TileSpec_Jukebox = 27,
     TileSpec_Jump = 28,
     TileSpec_Splash = 29,
     TileSpec_CountdownSpot = 31,
     TileSpec_AmbientSource = 32,
-    TileSpec_Trap = 33
+    TileSpec_Trap = 33,
+    TileSpec_Spikes = 34,
+    TileSpec_HiddenSpikes = 35
 };
 
 // A map tile and its spec.

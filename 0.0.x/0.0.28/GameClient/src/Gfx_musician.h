@@ -19,7 +19,7 @@ struct MusicianGraphics
 
     MusicianGraphics();
     ~MusicianGraphics();
-    static Windows::TRect GetCellRect(MusicianGraphics *self, int column, int row);
+    Windows::TRect GetCellRect(int column, int row);
     GraphicSize LoadBackground(HMODULE library, int resource_id);
     GraphicSize LoadCellSheet(HMODULE library, int resource_id);
 };

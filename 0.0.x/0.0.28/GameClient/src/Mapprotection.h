@@ -1,6 +1,12 @@
 #ifndef MapprotectionH
 #define MapprotectionH
 
+enum WarpTimeoutAction
+{
+    WarpTimeoutAction_AcceptWarp = 1,
+    WarpTimeoutAction_ConfirmWarp = 2
+};
+
 #include <vector.h>
 
 enum MusicMode
@@ -53,7 +59,7 @@ struct MapController
     int trap_reveal_timer;
     int tile_frame;
     bool has_animated_tiles;
-    char pad_0x14fb41[7];
+    char unused_bytes[7];
     vector<MapObject> tile_specs;
     vector<MapObject> chest_keys;
     vector<MapDoor> doors;
@@ -95,12 +101,12 @@ struct MapController
     int path_marker_x;
     int path_marker_y;
     int path_marker_timer;
-    char pad_0x14fc6c[4];
+    char second_unused_bytes[4];
 
     MapController();
     ~MapController();
     void AdvanceTileFrame();
-    static String ReadMapName(MapController *self, int map_number);
+    String ReadMapName(int map_number);
     void ReadMapChecksum(int map_number);
     void SaveMapFile(int map_number);
     void LoadMap(int map_number);
@@ -117,12 +123,12 @@ struct MapController
     void StopWarpTimeout();
     void ClearTileObjects();
     void ClearSigns();
-    static String FindSignTextAt(MapController *self, int x, int y);
-    static Windows::TPoint FindLockerAt(MapController *self, int x, int y);
-    static Windows::TPoint FindChestAt(MapController *self, int x, int y);
-    static Windows::TPoint FindBoardAt(MapController *self, int x, int y);
-    static Windows::TPoint FindJukeboxAt(MapController *self, int x, int y);
-    static Windows::TPoint FindDoorAt(MapController *self, int x, int y);
+    String FindSignTextAt(int x, int y);
+    Windows::TPoint FindLockerAt(int x, int y);
+    Windows::TPoint FindChestAt(int x, int y);
+    Windows::TPoint FindBoardAt(int x, int y);
+    Windows::TPoint FindJukeboxAt(int x, int y);
+    Windows::TPoint FindDoorAt(int x, int y);
     int GetWarpLevel(int x, int y);
     int GetChairSpec(int x, int y);
     int GetChestKey(int x, int y);

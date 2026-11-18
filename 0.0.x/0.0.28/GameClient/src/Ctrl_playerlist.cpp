@@ -26,14 +26,14 @@ PlayerlistController::PlayerlistController()
     all_second_texts = new TStringList();
     all_guild_tags = new TStringList();
     all_class_names = new TStringList();
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_dirty = 0;
-    list_dirty = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_dirty = false;
+    list_dirty = false;
     top_line = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
 }
 
 // Moves to the next filter; the guild filter is offered only to a character in a guild. Scrolls back to the top.
@@ -42,10 +42,10 @@ void PlayerlistController::CycleFilter()
     filter_mode++;
     if (MainForm->animation->interface_controller->status->IsInGuild())
     {
-        if (filter_mode > 3)
+        if (filter_mode > PlayerFilter_Guild)
             filter_mode = PlayerFilter_All;
     }
-    else if (filter_mode > 2)
+    else if (filter_mode > PlayerFilter_Marked)
         filter_mode = PlayerFilter_All;
     top_line = 0;
     scroll_thumb_offset = 0;
@@ -109,18 +109,18 @@ void PlayerlistController::ApplyFilter()
         String entry_value = "";
         String name = all_names->Strings[i];
         prefix_length = name.Length() + 1;
-        social_match = 0;
-        icon_match = 0;
-        same_guild = 0;
+        social_match = false;
+        icon_match = false;
+        same_guild = false;
         if (filter_mode == PlayerFilter_Friends && MainForm->animation->social->IsFriend(name))
-            social_match = 1;
+            social_match = true;
         // This filter keeps players with certain icons
         if (filter_mode == PlayerFilter_Marked)
         {
             entry_value = all_icon_types->Strings[i];
             entry_value.Delete(1, prefix_length);
             if (entry_value == "4" || entry_value == "5" || entry_value == "9" || entry_value == "10")
-                icon_match = 1;
+                icon_match = true;
         }
         if (filter_mode == PlayerFilter_Guild)
         {
@@ -140,7 +140,7 @@ void PlayerlistController::ApplyFilter()
                     own_guild_tag = own_guild_tag.SubString(1, 2);
             }
             if (guild_tag == own_guild_tag)
-                same_guild = 1;
+                same_guild = true;
         }
         if ((filter_mode == PlayerFilter_All) || social_match || icon_match || same_guild)
         {
@@ -181,17 +181,17 @@ void PlayerlistController::AddPlayer(String record_value, int icon_type, String 
 {
     all_record_values->Add(name + " " + record_value);
     all_icon_types->Add(name + " " + IntToStr(icon_type));
-    all_names->Add(Capitalize(this, name));
+    all_names->Add(Capitalize(name));
     if (second_text.Length() >= 1)
-        this->all_second_texts->Add(name + " " + PlayerlistController::Capitalize(this, second_text));
+        this->all_second_texts->Add(name + " " + Capitalize(second_text));
     else
         all_second_texts->Add(name + " -");
     if (guild_tag.Length() >= 1)
-        this->all_guild_tags->Add(name + " " + PlayerlistController::Capitalize(this, guild_tag));
+        this->all_guild_tags->Add(name + " " + Capitalize(guild_tag));
     else
         all_guild_tags->Add(name + " -");
     if (class_name.Length() >= 1)
-        this->all_class_names->Add(name + " " + PlayerlistController::Capitalize(this, class_name));
+        this->all_class_names->Add(name + " " + Capitalize(class_name));
     else
         all_class_names->Add(name + " -");
 }
@@ -229,8 +229,8 @@ void PlayerlistController::ScrollUp()
         double scroll_fraction = (double)top_line / (double)(shown_names->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -243,8 +243,8 @@ void PlayerlistController::ScrollDown()
         double scroll_fraction = (double)top_line / (double)(shown_names->Count - 7);
         double thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -253,7 +253,7 @@ void PlayerlistController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_line;
-    int __slot1;
+    int unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -270,8 +270,8 @@ void PlayerlistController::DragScrollThumb(int y)
                 top_line = new_top_line;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -298,27 +298,27 @@ void PlayerlistController::MouseDown(int x, int y, int button)
     {
         CycleFilter();
         ApplyFilter();
-        scroll_dirty = 1;
-        list_dirty = 1;
-        MainForm->sfx->PlaySfx(3);
+        scroll_dirty = true;
+        list_dirty = true;
+        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
     }
     if (x >= 569 && x <= 585)
     {
         if (y >= scroll_thumb_offset + 366 && y <= scroll_thumb_offset + 381)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset;
             DragScrollThumb(y);
         }
         if (y >= 350 && y <= 365)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (y >= 432 && y <= 447)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
@@ -331,9 +331,9 @@ DEFINE_HELP_UPDATE_SCROLL_HOVER(PlayerlistController)
 // Lets go of the held scroll arrows and the grabbed thumb.
 void PlayerlistController::MouseUp()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 void PlayerlistController::MouseMove(int x, int y)
@@ -350,5 +350,5 @@ DEFINE_CAPITALIZE(PlayerlistController)
 
 void PlayerlistController::MarkListDirty()
 {
-    list_dirty = 1;
+    list_dirty = true;
 }

@@ -9,7 +9,7 @@
 
 MapItems::MapItems()
 {
-    hover_label_shown = 0;
+    hover_label_shown = false;
 }
 
 MapItems::~MapItems()
@@ -21,7 +21,7 @@ void MapItems::UpdateHoverLabel()
 {
     if (!MainForm->players->hover_label_shown && !MainForm->npcs->hover_label_shown)
     {
-        char first_match = 1;
+        char first_match = true;
         for (vector<MapItem>::reverse_iterator it(items.end()); it != vector<MapItem>::reverse_iterator(items.begin());
             it++)
         {
@@ -35,7 +35,7 @@ void MapItems::UpdateHoverLabel()
                         if ((*it).amount > 1)
                         {
                             // Gold, item 1, shows its amount first; other stacks show it after the name.
-                            if ((*it).item_id == 1)
+                            if ((*it).item_id == ItemId_Gold)
                             {
                                 String label_text = IntToStr((*it).amount) + " " + handle.name;
                                 MainForm->gfx->sprites->ShowNameLabel(label_text, handle.special + 2);
@@ -46,34 +46,34 @@ void MapItems::UpdateHoverLabel()
                                 MainForm->gfx->sprites->ShowNameLabel(stack_label, handle.special + 2);
                             }
                         }
-                        else if ((*it).item_id == 1)
+                        else if ((*it).item_id == ItemId_Gold)
                         {
                             String single_gold_label = "1 " + handle.name;
                             MainForm->gfx->sprites->ShowNameLabel(single_gold_label, handle.special + 2);
                         }
                         else
                             MainForm->gfx->sprites->ShowNameLabel(handle.name, handle.special + 2);
-                        (*it).label_shown = 1;
+                        (*it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }
-                    first_match = 0;
+                    first_match = false;
                 }
                 else if ((*it).label_shown)
                 {
-                    (*it).label_shown = 0;
+                    (*it).label_shown = false;
                     MainForm->redraw_needed = true;
                 }
             }
             else if ((*it).label_shown)
             {
-                (*it).label_shown = 0;
+                (*it).label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
         if (first_match)
-            hover_label_shown = 0;
+            hover_label_shown = false;
         else
-            hover_label_shown = 1;
+            hover_label_shown = true;
     }
     else
     {
@@ -82,25 +82,25 @@ void MapItems::UpdateHoverLabel()
         {
             if ((*it).label_shown)
             {
-                (*it).label_shown = 0;
+                (*it).label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
-        hover_label_shown = 0;
+        hover_label_shown = false;
     }
 }
 
 // Counts protection down, and drops items that stay out of view; the out-of-view count waits during a warp.
 void MapItems::RemoveDistantItems(int center_x, int center_y)
 {
-    list_changed = 0;
+    list_changed = false;
     vector<MapItem>::iterator it;
     for (it = protected_items.begin(); it != protected_items.end(); it++)
     {
         if (it->protection_ticks > 0)
         {
             it->protection_ticks--;
-            list_changed = 1;
+            list_changed = true;
         }
     }
     if (!list_changed)
@@ -110,7 +110,7 @@ void MapItems::RemoveDistantItems(int center_x, int center_y)
     }
     do
     {
-        list_changed = 0;
+        list_changed = false;
         for (it = items.begin(); it != items.end(); it++)
         {
             if (it->protection_ticks > 0)
@@ -119,7 +119,7 @@ void MapItems::RemoveDistantItems(int center_x, int center_y)
             {
                 if (!it->out_of_range)
                 {
-                    it->out_of_range = 1;
+                    it->out_of_range = true;
                     it->removal_countdown = 4;
                 }
                 else
@@ -129,13 +129,13 @@ void MapItems::RemoveDistantItems(int center_x, int center_y)
                     if (it->removal_countdown <= 0)
                     {
                         items.erase(it);
-                        list_changed = 1;
+                        list_changed = true;
                         break;
                     }
                 }
             }
             else
-                it->out_of_range = 0;
+                it->out_of_range = false;
         }
     } while (list_changed);
 }
@@ -146,7 +146,7 @@ void MapItems::SortByPosition()
     char swapped;
     do
     {
-        swapped = 0;
+        swapped = false;
         for (int i = 0; i < (int)GetCount() - 1; i++)
         {
             MapItem handle;
@@ -155,14 +155,14 @@ void MapItems::SortByPosition()
                 handle = items[i];
                 items[i] = items[i + 1];
                 items[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
             if (items[i].y > items[i + 1].y)
             {
                 handle = items[i];
                 items[i] = items[i + 1];
                 items[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
         }
     } while (swapped);
@@ -224,7 +224,7 @@ int MapItems::GetProtectionOwnerAt(int x, int y)
                 owner_id = it->owner_id;
         }
     }
-    if (owner_id == -1)
+    if (owner_id == PlayerId_None)
     {
         for (it = protected_items.begin(); it != protected_items.end(); it++)
         {
@@ -249,7 +249,7 @@ int MapItems::GetProtectionOwner(int uid)
             break;
         }
     }
-    if (owner_id == -1)
+    if (owner_id == PlayerId_None)
     {
         for (it = protected_items.begin(); it != protected_items.end(); it++)
         {
@@ -262,12 +262,12 @@ int MapItems::GetProtectionOwner(int uid)
 
 bool MapItems::HasItem(int uid)
 {
-    bool found = 0;
+    bool found = false;
     for (vector<MapItem>::iterator it = items.begin(); it != items.end(); it++)
     {
         if (uid == it->uid)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -276,7 +276,7 @@ bool MapItems::HasItem(int uid)
 
 bool MapItems::HasItemAt(int x, int y)
 {
-    bool found = 0;
+    bool found = false;
     vector<MapItem>::iterator it;
     for (it = items.begin(); it != items.end(); it++)
     {
@@ -284,7 +284,7 @@ bool MapItems::HasItemAt(int x, int y)
             continue;
         if (y == it->y)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -349,7 +349,7 @@ unsigned int MapItems::GetCount()
 // True when the tile is within the item view range of the centre.
 bool MapItems::IsInViewRange(int center_x, int center_y, int x, int y)
 {
-    bool in_range = 0;
+    bool in_range = false;
     int dx = x - center_x;
     int dy = y - center_y;
     if (dx < 0)
@@ -357,7 +357,7 @@ bool MapItems::IsInViewRange(int center_x, int center_y, int x, int y)
     if (dy < 0)
         dy = 0 - dy;
     if (dx + dy <= 12)
-        in_range = 1;
+        in_range = true;
     return in_range;
 }
 

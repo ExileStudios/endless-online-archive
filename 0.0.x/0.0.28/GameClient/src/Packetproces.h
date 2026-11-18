@@ -61,6 +61,7 @@ enum AccountReply
     AccountReply_FieldsDialog27 = 5,
     AccountReply_ResetDialog28 = 6,
     AccountReply_Disconnect = 7,
+    AccountReply_WrongPin = 8,
     AccountReply_SessionBase = 10
 };
 
@@ -68,7 +69,9 @@ enum AppearanceChange
 {
     AppearanceChange_Equipment = 1,
     AppearanceChange_Hair = 2,
-    AppearanceChange_HairColor = 3
+    AppearanceChange_HairColor = 3,
+    AppearanceChange_Skin = 4,
+    AppearanceChange_Gender = 5
 };
 
 enum CharacterReply
@@ -89,7 +92,9 @@ enum LoginReply
     LoginReply_Ok = 3,
     LoginReply_Banned = 4,
     LoginReply_RefusedDialog23 = 5,
-    LoginReply_RetryLater = 6
+    LoginReply_RetryLater = 6,
+    LoginReply_LookupsRefused = 7,
+    LoginReply_ServerBusy = 8
 };
 
 enum WelcomeReply
@@ -99,6 +104,10 @@ enum WelcomeReply
     WelcomeReply_RejectedDialog19 = 3,
     WelcomeReply_RejectedDialog20 = 4
 };
+#define CHAT_COLOR_DEFAULT 0
+#define CHAT_COLOR_PRIVATE 1
+#define CHAT_COLOR_SYSTEM 2
+#define CHAT_COLOR_WARNING 3
 #define CHAT_COLOR_ADMIN 5
 #define CHAT_COLOR_NOTICE 4
 #define MINUTES_PER_HOUR 60
@@ -108,7 +117,7 @@ enum WelcomeReply
 // Reads every packet from the server and hands its contents to the controllers.
 struct PacketProcessor
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     PacketProcessor();
     ~PacketProcessor();
@@ -124,7 +133,7 @@ struct PacketProcessor
     void ParseOnlinePlayers(String packet);
     void ParsePartyMembers(String packet);
     void ParseCharacterList(String packet);
-    static String EncodeNumber(PacketProcessor *self, unsigned int value, int min_length);
+    String EncodeNumber(unsigned int value, int min_length);
     unsigned int DecodeNumber(String encoded);
     char ByteToChar(unsigned char value);
 };

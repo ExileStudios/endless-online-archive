@@ -53,7 +53,7 @@ struct TradeController
     int drag_offset_y;
     int partner_scroll_repeat_delay;
     int own_scroll_repeat_delay;
-    char pad_0xb4[4];
+    char unused_bytes[4];
 
     TradeController();
     ~TradeController();
@@ -88,7 +88,7 @@ void Class::DragScrollThumb(int y) \
 { \
     double thumb_fraction; \
     double scaled_line; \
-    int __slot1; \
+    int unused_int; \
     if (thumb_grabbed) \
     { \
         int thumb_offset = y - thumb_grab_offset - window_y; \
@@ -109,7 +109,7 @@ void Class::DragScrollThumb(int y) \
             } \
         } \
         scroll_thumb_offset = thumb_offset; \
-        scroll_changed = 1; \
+        scroll_changed = true; \
         MainForm->redraw_needed = true; \
     } \
 }
@@ -122,7 +122,7 @@ void Class::DragScrollThumb(int y) \
 { \
     double thumb_fraction; \
     double scaled_line; \
-    int __slot1; \
+    int unused_int; \
     if (thumb_grabbed) \
     { \
         int thumb_offset = y - thumb_grab_offset - window_y; \
@@ -140,7 +140,7 @@ void Class::DragScrollThumb(int y) \
                 top_line = new_top_line; \
         } \
         scroll_thumb_offset = thumb_offset; \
-        scroll_changed = 1; \
+        scroll_changed = true; \
         MainForm->redraw_needed = true; \
     } \
 }
@@ -162,7 +162,7 @@ void Class::ScrollDown() \
             scroll_fraction = (double)top_line / (double)(line_count - 12); \
             thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
             scroll_thumb_offset = thumb_pos; \
-            scroll_changed = 1; \
+            scroll_changed = true; \
             MainForm->redraw_needed = true; \
         } \
     } \
@@ -185,7 +185,7 @@ void Class::ScrollUp() \
             scroll_fraction = (double)top_line / (double)(line_count - 12); \
             thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
             scroll_thumb_offset = thumb_pos; \
-            scroll_changed = 1; \
+            scroll_changed = true; \
             MainForm->redraw_needed = true; \
         } \
     } \
@@ -205,7 +205,7 @@ void Class::ScrollDown() \
         scroll_fraction = (double)top_line / (double)(result - 12); \
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
         scroll_thumb_offset = thumb_pos; \
-        scroll_changed = 1; \
+        scroll_changed = true; \
         MainForm->redraw_needed = true; \
     } \
 }
@@ -224,7 +224,7 @@ void Class::ScrollUp() \
         scroll_fraction = (double)top_line / (double)(line_count - 12); \
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction; \
         scroll_thumb_offset = thumb_pos; \
-        scroll_changed = 1; \
+        scroll_changed = true; \
         MainForm->redraw_needed = true; \
     } \
 }

@@ -12,8 +12,8 @@ MusicianController::MusicianController()
 {
     window_x = 15;
     window_y = 176;
-    is_visible = 0;
-    is_dragging = 0;
+    is_visible = false;
+    is_dragging = false;
     hovered_note_col = -1;
     hovered_note_row = -1;
     unused_index = -1;
@@ -38,7 +38,7 @@ void MusicianController::Open()
     MainForm->gfx->LoadMusicianGraphics();
     window_x = 15;
     window_y = 176;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
@@ -46,7 +46,7 @@ void MusicianController::Open()
 void MusicianController::Close()
 {
     MainForm->gfx->FreeMusicianGraphics();
-    is_visible = 0;
+    is_visible = false;
     MainForm->redraw_needed = true;
 }
 
@@ -54,7 +54,9 @@ void MusicianController::Close()
 // any other click in the window starts moving it.
 void MusicianController::MouseDown(int x, int y, int button)
 {
-    char handled = 0;
+    int row_base;
+    int note_col;
+    char handled = false;
     if (x >= window_x + 16 && x <= window_x + 253 && y >= window_y + 15 && y <= window_y + 73 && note_cooldown <= 0)
     {
         if (MainForm->net_client->CanAct())
@@ -72,9 +74,9 @@ void MusicianController::MouseDown(int x, int y, int button)
                     note = 36;
                 MainForm->sfx->PlayInstrumentNote(instrument_id, note);
                 MainForm->net_client->sender->SendPlayInstrument(instrument_id, note);
-                MainForm->animation->game->Attack(1);
+                MainForm->animation->game->Attack(true);
                 note_cooldown = 2;
-                handled = 1;
+                handled = true;
             }
         }
     }
@@ -82,7 +84,7 @@ void MusicianController::MouseDown(int x, int y, int button)
     {
         if (x >= window_x && x <= window_x + 270 && y >= window_y && y <= window_y + 125)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -92,6 +94,7 @@ void MusicianController::MouseDown(int x, int y, int button)
 // Moves a dragged window, kept on screen, and tracks the hovered note and the close button.
 void MusicianController::MouseMove(int x, int y)
 {
+    int note_row;
     if (is_dragging)
     {
         window_x = x - drag_offset_x;
@@ -127,13 +130,13 @@ void MusicianController::MouseMove(int x, int y)
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
     else if (close_hovered)
     {
-        close_hovered = 0;
+        close_hovered = false;
         MainForm->redraw_needed = true;
     }
 }
@@ -141,5 +144,5 @@ void MusicianController::MouseMove(int x, int y)
 // Ends moving the window.
 void MusicianController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }

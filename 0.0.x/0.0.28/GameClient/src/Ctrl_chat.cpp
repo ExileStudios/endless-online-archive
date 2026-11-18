@@ -18,12 +18,12 @@ ChatController::ChatController()
     active_tab = 3;
     auto_scroll = true;
     global_chat_open = false;
-    private_name_1 = "";
-    private_name_2 = "";
-    scroll_up_hover = 0;
-    scroll_down_hover = 0;
+    first_private_name = "";
+    second_private_name = "";
+    scroll_up_hover = false;
+    scroll_down_hover = false;
     scrollbar_dirty = false;
-    text_dirty = 0;
+    text_dirty = false;
     drunk_ticks = 0;
     system_lines = new TStringList();
     system_colors = new TStringList();
@@ -52,20 +52,22 @@ ChatController::ChatController()
     private_indents[1] = new TStringList();
     for (int i = 0; i <= 5; i++)
     {
-        scroll_offsets[i] = 0; scrollbar_positions[i] = 50; tab_has_unread[i] = 0;
+        scroll_offsets[i] = 0;
+        scrollbar_positions[i] = 50;
+        tab_has_unread[i] = false;
     }
-    scrolling_up = 0;
-    scrolling_down = 0;
-    is_dragging_thumb = 0;
+    scrolling_up = false;
+    scrolling_down = false;
+    is_dragging_thumb = false;
 }
 
 // 0 or 1 for the private tab talking with the name (in any case), or -1.
 int ChatController::FindPrivateTab(String name)
 {
     int tab_index = -1;
-    if (LowerCase(private_name_1) == LowerCase(name))
+    if (LowerCase(first_private_name) == LowerCase(name))
         tab_index = 0;
-    if (LowerCase(private_name_2) == LowerCase(name))
+    if (LowerCase(second_private_name) == LowerCase(name))
         tab_index = 1;
     return tab_index;
 }
@@ -73,22 +75,19 @@ int ChatController::FindPrivateTab(String name)
 // Opens a private tab for the name in the first free one of the two, unless one is open for it already.
 void ChatController::OpenPrivateTab(String name)
 {
-    if (private_name_1 != name && private_name_2 != name)
+    if (first_private_name != name && second_private_name != name)
     {
-        if (private_name_1 == "")
+        if (first_private_name == "")
         {
-            private_name_1 = name;
+            first_private_name = name;
             scrollbar_dirty = true;
-            text_dirty = 1;
+            text_dirty = true;
         }
-        else
+        else if (second_private_name == "")
         {
-            if (private_name_2 == "")
-            {
-                private_name_2 = name;
-                scrollbar_dirty = true;
-                text_dirty = 1;
-            }
+            second_private_name = name;
+            scrollbar_dirty = true;
+            text_dirty = true;
         }
     }
 }
@@ -98,31 +97,33 @@ void ChatController::ClosePrivateTab(int tab)
 {
     if (tab == 1)
     {
-        private_name_1 = "";
+        first_private_name = "";
         private_lines[1]->Clear();
         private_colors[0]->Clear();
         private_indents[0]->Clear();
-        scroll_offsets[0] = 0; scrollbar_positions[0] = 50;
-        if (private_name_2 != "")
+        scroll_offsets[0] = 0;
+        scrollbar_positions[0] = 50;
+        if (second_private_name != "")
             active_tab = 2;
         else
             active_tab = 3;
         scrollbar_dirty = true;
-        text_dirty = 1;
+        text_dirty = true;
     }
     if (tab == 2)
     {
-        private_name_2 = "";
+        second_private_name = "";
         private_lines[2]->Clear();
         private_colors[1]->Clear();
         private_indents[1]->Clear();
-        scroll_offsets[1] = 0; scrollbar_positions[1] = 50;
-        if (private_name_1 != "")
+        scroll_offsets[1] = 0;
+        scrollbar_positions[1] = 50;
+        if (first_private_name != "")
             active_tab = 1;
         else
             active_tab = 3;
         scrollbar_dirty = true;
-        text_dirty = 1;
+        text_dirty = true;
     }
 }
 
@@ -131,12 +132,12 @@ void ChatController::ResetChat()
 {
     active_tab = 3;
     auto_scroll = true;
-    private_name_1 = "";
-    private_name_2 = "";
-    scroll_up_hover = 0;
-    scroll_down_hover = 0;
+    first_private_name = "";
+    second_private_name = "";
+    scroll_up_hover = false;
+    scroll_down_hover = false;
     scrollbar_dirty = false;
-    text_dirty = 0;
+    text_dirty = false;
     system_lines->Clear();
     system_colors->Clear();
     system_icons->Clear();
@@ -164,10 +165,11 @@ void ChatController::ResetChat()
     private_indents[1]->Clear();
     for (int tab = 0; tab <= 5; tab++)
     {
-        scroll_offsets[tab] = 0; scrollbar_positions[tab] = 50;
+        scroll_offsets[tab] = 0;
+        scrollbar_positions[tab] = 50;
     }
-    scrolling_up = 0;
-    scrolling_down = 0;
+    scrolling_up = false;
+    scrolling_down = false;
 }
 
 ChatController::~ChatController()
@@ -189,9 +191,9 @@ void ChatController::OnTimer()
 {
     if (drunk_ticks > 0 && !(--drunk_ticks % 5))
     {
-        int r = random(10);
-        if (r <= 3)
-            MainForm->animation->game->PlayEmote(11);
+        int roll = random(10);
+        if (roll <= 3)
+            MainForm->animation->game->PlayEmote(Emote_Drunk);
     }
     if (scroll_repeat_delay > 0)
         scroll_repeat_delay--;
@@ -229,7 +231,7 @@ void ChatController::ScrollUp()
         thumb_position = PANEL_THUMB_TRAVEL * offset_ratio;
         scrollbar_positions[active_tab - 1] = thumb_position;
         scrollbar_dirty = true;
-        text_dirty = 1;
+        text_dirty = true;
     }
 }
 
@@ -258,7 +260,7 @@ void ChatController::ScrollDown()
         thumb_position = PANEL_THUMB_TRAVEL * offset_ratio;
         scrollbar_positions[active_tab - 1] = thumb_position;
         scrollbar_dirty = true;
-        text_dirty = 1;
+        text_dirty = true;
     }
 }
 
@@ -267,7 +269,7 @@ void ChatController::DragScrollbar(int mouse_y)
 {
     double thumb_ratio;
     double scaled_offset;
-    int __slot1;
+    int unused_int;
     int thumb_position;
     int line_count;
     if (is_dragging_thumb)
@@ -297,7 +299,7 @@ void ChatController::DragScrollbar(int mouse_y)
         }
         scrollbar_positions[active_tab - 1] = thumb_position;
         scrollbar_dirty = true;
-        text_dirty = 1;
+        text_dirty = true;
     }
 }
 
@@ -331,11 +333,11 @@ void ChatController::AddSystemMessage(int icon, int color, String text, bool sil
             scrollbar_positions[5] = 0;
     }
     if (active_tab == 6)
-        text_dirty = 1;
+        text_dirty = true;
     else if (!tab_has_unread[5] && !silent)
     {
-        tab_has_unread[5] = 1;
-        text_dirty = 1;
+        tab_has_unread[5] = true;
+        text_dirty = true;
     }
     MainForm->chat_log->WriteLine(3, text);
 }
@@ -372,7 +374,7 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
             MainForm->draw_canvas->Font->Color = clBlack;
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(Client::Capitalize(MainForm->net_client, sender) + "  ");
+            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
             if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
@@ -381,7 +383,7 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
                         continue;
                     line_count++;
                     line_start = next_start;
-                    char searching = 1;
+                    char searching = true;
                     for (j = next_start; j <= text.Length() && searching; j++)
                     {
                         int indent = 0;
@@ -399,13 +401,13 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                             else
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1) + "-";
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                         }
                     }
@@ -445,14 +447,14 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
     {
         scroll_offsets[tab_index]--;
         if (scroll_offsets[tab_index] == 0)
-            scrollbar_positions[tab_index] = 0;
+            scrollbar_positions[tab_index] = false;
     }
     if (active_tab == tab_index + 1)
-        text_dirty = 1;
+        text_dirty = true;
     else if (!tab_has_unread[tab_index] && !silent)
     {
-        tab_has_unread[tab_index] = 1;
-        text_dirty = 1;
+        tab_has_unread[tab_index] = true;
+        text_dirty = true;
     }
     MainForm->chat_log->WriteLine(1, text);
 }
@@ -491,7 +493,7 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
             MainForm->draw_canvas->Font->Color = clBlack;
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(Client::Capitalize(MainForm->net_client, sender) + "  ");
+            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
             if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
@@ -500,7 +502,7 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
                         continue;
                     line_count++;
                     line_start = next_start;
-                    char searching = 1;
+                    char searching = true;
                     for (j = next_start; j <= text.Length() && searching; j++)
                     {
                         int indent = 0;
@@ -517,13 +519,13 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                             else
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1) + "-";
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                         }
                     }
@@ -572,11 +574,11 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
             scrollbar_positions[2] = 0;
     }
     if (active_tab == 3)
-        text_dirty = 1;
+        text_dirty = true;
     else if (!tab_has_unread[2] && !silent)
     {
-        tab_has_unread[2] = 1;
-        text_dirty = 1;
+        tab_has_unread[2] = true;
+        text_dirty = true;
     }
     if (icon == ChatIcon_Announce)
         MainForm->chat_log->WriteLine(LOG_CHANNEL_GLOBAL, text);
@@ -618,7 +620,7 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
             MainForm->draw_canvas->Font->Color = clBlack;
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(Client::Capitalize(MainForm->net_client, sender) + "  ");
+            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
             if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
@@ -627,7 +629,7 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
                         continue;
                     line_count++;
                     line_start = next_start;
-                    char searching = 1;
+                    char searching = true;
                     for (j = next_start; j <= text.Length() && searching; j++)
                     {
                         int indent = 0;
@@ -644,13 +646,13 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                             else
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1) + "-";
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                         }
                     }
@@ -699,11 +701,11 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
             scrollbar_positions[4] = 0;
     }
     if (active_tab == 5)
-        text_dirty = 1;
+        text_dirty = true;
     else if (!tab_has_unread[4] && !silent)
     {
-        tab_has_unread[4] = 1;
-        text_dirty = 1;
+        tab_has_unread[4] = true;
+        text_dirty = true;
     }
     MainForm->chat_log->WriteLine(LOG_CHANNEL_GLOBAL, text);
 }
@@ -744,7 +746,7 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
             MainForm->draw_canvas->Font->Color = clBlack;
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(Client::Capitalize(MainForm->net_client, sender) + "  ");
+            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
             if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
@@ -753,7 +755,7 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
                         continue;
                     line_count++;
                     line_start = next_start;
-                    char searching = 1;
+                    char searching = true;
                     for (j = next_start; j <= text.Length() && searching; j++)
                     {
                         int indent = 0;
@@ -770,13 +772,13 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                             else
                             {
                                 wrapped_lines[i] = text.SubString(line_start, j - line_start + 1) + "-";
                                 next_start = j + 1;
-                                searching = 0;
+                                searching = false;
                             }
                         }
                     }
@@ -789,13 +791,13 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
             }
             for (int line_index = 0; line_index < line_count; line_index++)
             {
-                char already_listed = 0;
+                char already_listed = false;
                 if (skip_duplicates)
                 {
                     for (m = 0; m < global_lines->Count; m++)
                     {
                         if (global_lines->Strings[m] == wrapped_lines[line_index])
-                            already_listed = 1;
+                            already_listed = true;
                     }
                 }
                 if (!already_listed)
@@ -837,11 +839,11 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
             scrollbar_positions[3] = 0;
     }
     if (active_tab == 4)
-        text_dirty = 1;
+        text_dirty = true;
     else if (!tab_has_unread[3] && !silent)
     {
-        tab_has_unread[3] = 1;
-        text_dirty = 1;
+        tab_has_unread[3] = true;
+        text_dirty = true;
     }
     MainForm->chat_log->WriteLine(LOG_CHANNEL_GLOBAL, text);
 }
@@ -855,7 +857,7 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
     int dirty_edit_result;
     if (mouse_y >= 435 && mouse_y <= 451)
     {
-        if (mouse_x >= 125 && mouse_x <= 256 && private_name_1 != "")
+        if (mouse_x >= 125 && mouse_x <= 256 && first_private_name != "")
         {
             UnsubscribeGlobalChat();
             if (mouse_x <= 138)
@@ -863,11 +865,11 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
             else
             {
                 active_tab = 1;
-                tab_has_unread[0] = 0;
-                text_dirty = 1;
+                tab_has_unread[0] = false;
+                text_dirty = true;
             }
         }
-        if (mouse_x >= 258 && mouse_x <= 389 && private_name_2 != "")
+        if (mouse_x >= 258 && mouse_x <= 389 && second_private_name != "")
         {
             UnsubscribeGlobalChat();
             if (mouse_x <= 271)
@@ -875,37 +877,37 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
             else
             {
                 active_tab = 2;
-                tab_has_unread[1] = 0;
-                text_dirty = 1;
+                tab_has_unread[1] = false;
+                text_dirty = true;
             }
         }
         if (mouse_x >= 391 && mouse_x <= 433)
         {
             UnsubscribeGlobalChat();
             active_tab = 3;
-            tab_has_unread[2] = 0;
-            text_dirty = 1;
+            tab_has_unread[2] = false;
+            text_dirty = true;
         }
         if (mouse_x >= 435 && mouse_x <= 476)
         {
             SubscribeGlobalChat();
             active_tab = 4;
-            tab_has_unread[3] = 0;
-            text_dirty = 1;
+            tab_has_unread[3] = false;
+            text_dirty = true;
         }
         if (mouse_x >= 479 && mouse_x <= 521)
         {
             UnsubscribeGlobalChat();
             active_tab = 5;
-            tab_has_unread[4] = 0;
-            text_dirty = 1;
+            tab_has_unread[4] = false;
+            text_dirty = true;
         }
         if (mouse_x >= 523 && mouse_x <= 565)
         {
             UnsubscribeGlobalChat();
             active_tab = 6;
-            tab_has_unread[5] = 0;
-            text_dirty = 1;
+            tab_has_unread[5] = false;
+            text_dirty = true;
         }
         if (mouse_x >= 573 && mouse_x <= 587)
         {
@@ -913,7 +915,7 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
                 auto_scroll = false;
             else
                 auto_scroll = true;
-            text_dirty = 1;
+            text_dirty = true;
         }
     }
     if (active_tab == 3 && button == 1 && mouse_x >= 127 && mouse_x <= 560 && mouse_y >= 333 && mouse_y <= 430)
@@ -924,7 +926,7 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
             if (local_senders->Strings[local_row] != "")
             {
                 MainForm->edits->SetText(EditId_Chat, "!" + local_senders->Strings[local_row] + " ");
-                dirty_edit_result = MainForm->edits->HasDirtyEdit();
+                MainForm->edits->HasDirtyEdit();
             }
         }
     }
@@ -936,7 +938,7 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
             if (global_senders->Strings[global_row] != "")
             {
                 MainForm->edits->SetText(EditId_Chat, "!" + global_senders->Strings[global_row] + " ");
-                dirty_edit_result = MainForm->edits->HasDirtyEdit();
+                MainForm->edits->HasDirtyEdit();
             }
         }
     }
@@ -948,7 +950,7 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
             if (group_senders->Strings[group_row] != "")
             {
                 MainForm->edits->SetText(EditId_Chat, "!" + group_senders->Strings[group_row] + " ");
-                dirty_edit_result = MainForm->edits->HasDirtyEdit();
+                MainForm->edits->HasDirtyEdit();
             }
         }
     }
@@ -957,19 +959,19 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
         if (scrollbar_positions[active_tab - 1] + 348 <= mouse_y &&
             scrollbar_positions[active_tab - 1] + 363 >= mouse_y)
         {
-            is_dragging_thumb = 1;
+            is_dragging_thumb = true;
             drag_grab_offset = mouse_y - scrollbar_positions[active_tab - 1];
             DragScrollbar(mouse_y);
         }
         if (mouse_y >= 332 && mouse_y <= 347)
         {
-            scrolling_up = 1;
+            scrolling_up = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (mouse_y >= 414 && mouse_y <= 429)
         {
-            scrolling_down = 1;
+            scrolling_down = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
@@ -978,9 +980,9 @@ void ChatController::OnMouseClick(int mouse_x, int mouse_y, int button)
 
 void ChatController::StopScrolling()
 {
-    scrolling_up = 0;
-    scrolling_down = 0;
-    is_dragging_thumb = 0;
+    scrolling_up = false;
+    scrolling_down = false;
+    is_dragging_thumb = false;
 }
 
 void ChatController::OnMouseMove(int mouse_x, int mouse_y)
@@ -991,7 +993,7 @@ void ChatController::OnMouseMove(int mouse_x, int mouse_y)
 // Lights the scroll arrows under the mouse; leaving an arrow stops its scrolling.
 void ChatController::UpdateScrollbarHover(int mouse_x, int mouse_y)
 {
-    char changed = 0;
+    char changed = false;
     if (mouse_x >= 569 && mouse_x <= 585)
     {
         if (mouse_y >= 347 && mouse_y <= 414)
@@ -1000,37 +1002,37 @@ void ChatController::UpdateScrollbarHover(int mouse_x, int mouse_y)
         {
             if (!scroll_up_hover)
             {
-                scroll_up_hover = 1;
-                changed = 1;
+                scroll_up_hover = true;
+                changed = true;
             }
         }
         else if (scroll_up_hover)
         {
-            scroll_up_hover = 0;
-            scrolling_up = 0;
-            changed = 1;
+            scroll_up_hover = false;
+            scrolling_up = false;
+            changed = true;
         }
         if (mouse_y >= 414 && mouse_y <= 429)
         {
             if (!scroll_down_hover)
             {
-                scroll_down_hover = 1;
-                changed = 1;
+                scroll_down_hover = true;
+                changed = true;
             }
         }
         else if (scroll_down_hover)
         {
-            scroll_down_hover = 0;
-            scrolling_down = 0;
-            changed = 1;
+            scroll_down_hover = false;
+            scrolling_down = false;
+            changed = true;
         }
     }
     else if (scroll_up_hover || scroll_down_hover)
     {
-        scroll_up_hover = 0;
-        scroll_down_hover = 0;
-        scrolling_up = 0;
-        scrolling_down = 0;
+        scroll_up_hover = false;
+        scroll_down_hover = false;
+        scrolling_up = false;
+        scrolling_down = false;
         changed = 1;
     }
     if (changed)
@@ -1040,11 +1042,11 @@ void ChatController::UpdateScrollbarHover(int mouse_x, int mouse_y)
 // True once when the scroll bar has to be drawn again.
 bool ChatController::TakeScrollbarDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (scrollbar_dirty)
     {
         scrollbar_dirty = false;
-        was_dirty = 1;
+        was_dirty = true;
     }
     return was_dirty;
 }
@@ -1052,18 +1054,18 @@ bool ChatController::TakeScrollbarDirty()
 // True once when the chat text has to be drawn again.
 bool ChatController::TakeTextDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (text_dirty)
     {
-        text_dirty = 0;
-        was_dirty = 1;
+        text_dirty = false;
+        was_dirty = true;
     }
     return was_dirty;
 }
 
 void ChatController::Invalidate()
 {
-    text_dirty = 1;
+    text_dirty = true;
 }
 
 // Drunk for 10 ticks per unit of the item's value, plus 100.
@@ -1110,8 +1112,8 @@ void ChatController::UnsubscribeGlobalChat()
 
 bool ChatController::IsDrunk()
 {
-    bool is_drunk = 0;
+    bool is_drunk = false;
     if (drunk_ticks > 0)
-        is_drunk = 1;
+        is_drunk = true;
     return is_drunk;
 }

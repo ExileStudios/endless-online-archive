@@ -13,14 +13,14 @@ ItemGraphics::ItemGraphics(char preload)
     sub_item_last_index = -1;
     pending_count = 0;
     sub_item_pending_count = 0;
-    queue_drained = 0;
-    sub_items_drained = 0;
-    library_open = 0;
+    queue_drained = false;
+    sub_items_drained = false;
+    library_open = false;
     keep_library_open = preload;
     if (keep_library_open)
     {
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(23).c_str());
-        library_open = 1;
+        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
+        library_open = true;
     }
 }
 
@@ -41,7 +41,7 @@ void ItemGraphics::ReopenLibrary()
             pending_count = 0;
     }
     if (keep_library_open || sub_item_pending_count > 0)
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(23).c_str());
+        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
 }
 
 // Counts, per loaded map item picture, the frames in a row in which GetGraphic did not fetch it.
@@ -53,7 +53,7 @@ void ItemGraphics::AgeGraphics()
             it->idle_ticks++;
         else
             it->idle_ticks = 0;
-        it->was_used = 0;
+        it->was_used = false;
     }
 }
 
@@ -66,7 +66,7 @@ void ItemGraphics::AgeSubItemGraphics()
             it->idle_ticks++;
         else
             it->idle_ticks = 0;
-        it->was_used = 0;
+        it->was_used = false;
     }
 }
 
@@ -80,17 +80,17 @@ void ItemGraphics::LoadPendingGraphics()
         if (library_open && !keep_library_open)
         {
             FreeLibrary(library);
-            library_open = 0;
+            library_open = false;
         }
-        queue_drained = 0;
-        sub_items_drained = 0;
+        queue_drained = false;
+        sub_items_drained = false;
     }
     if (pending_count > 0)
     {
         if (!library_open && !keep_library_open)
         {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(23).c_str());
-            library_open = 1;
+            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
+            library_open = true;
         }
         vector<ItemWrapper>::iterator it;
         for (it = items.begin(); it != items.end(); it++)
@@ -105,12 +105,12 @@ void ItemGraphics::LoadPendingGraphics()
                 it->height = size.height;
                 if (size.width != -1 && size.height != 1)
                 {
-                    it->is_loaded = 1;
+                    it->is_loaded = true;
                     it->idle_ticks = 0;
                     pending_count--;
                 }
                 if (pending_count <= 0 && sub_item_pending_count <= 0)
-                    queue_drained = 1;
+                    queue_drained = true;
                 break;
             }
         }
@@ -119,8 +119,8 @@ void ItemGraphics::LoadPendingGraphics()
     {
         if (!library_open && !keep_library_open)
         {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(23).c_str());
-            library_open = 1;
+            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapItems).c_str());
+            library_open = true;
         }
         vector<SubItemWrapper>::iterator it;
         for (it = sub_items.begin(); it != sub_items.end(); it++)
@@ -134,12 +134,12 @@ void ItemGraphics::LoadPendingGraphics()
                 it->height = sub_item_size.height;
                 if (sub_item_size.width != -1 && sub_item_size.height != 1)
                 {
-                    it->is_loaded = 1;
+                    it->is_loaded = true;
                     it->idle_ticks = 0;
                     sub_item_pending_count--;
                 }
                 if (pending_count <= 0 && sub_item_pending_count <= 0)
-                    sub_items_drained = 1;
+                    sub_items_drained = true;
                 break;
             }
         }
@@ -155,14 +155,14 @@ bool ItemGraphics::PurgeUnusedGraphics()
     do
     {
         vector<ItemWrapper>::iterator it;
-        purged = 0;
+        purged = false;
         for (it = items.begin(); it != items.end(); it++)
         {
             if (it->idle_ticks >= 40)
             {
                 it->FreeResource();
                 items.erase(it);
-                purged = 1;
+                purged = true;
                 break;
             }
         }
@@ -170,14 +170,14 @@ bool ItemGraphics::PurgeUnusedGraphics()
     do
     {
         vector<SubItemWrapper>::iterator it;
-        result = 0;
+        result = false;
         for (it = sub_items.begin(); it != sub_items.end(); it++)
         {
             if (it->idle_ticks >= 50)
             {
                 it->FreeResource();
                 sub_items.erase(it);
-                result = 1;
+                result = true;
                 break;
             }
         }
@@ -214,16 +214,16 @@ void ItemGraphics::ReleaseSubItemGraphics()
 // Whether a map item picture is loaded; the first request for it puts it in the queue.
 bool ItemGraphics::RequestGraphic(int graphic_id)
 {
-    bool is_loaded = 0;
-    char not_queued = 1;
     vector<ItemWrapper>::iterator it;
+    bool is_loaded = false;
+    char not_queued = true;
     for (it = items.begin(); it != items.end(); it++)
     {
         if (graphic_id != it->graphic_id)
             continue;
-        not_queued = 0;
+        not_queued = false;
         if (it->is_loaded)
-            is_loaded = 1;
+            is_loaded = true;
     }
     // No map item picture is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -234,16 +234,16 @@ bool ItemGraphics::RequestGraphic(int graphic_id)
 // Whether a window item picture is loaded; the first request for it puts it in the queue.
 bool ItemGraphics::RequestSubItemGraphic(int graphic_id)
 {
-    bool is_loaded = 0;
-    char not_queued = 1;
     vector<SubItemWrapper>::iterator it;
+    bool is_loaded = false;
+    char not_queued = true;
     for (it = sub_items.begin(); it != sub_items.end(); it++)
     {
         if (graphic_id != it->graphic_id)
             continue;
-        not_queued = 0;
+        not_queued = false;
         if (it->is_loaded)
-            is_loaded = 1;
+            is_loaded = true;
     }
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
         QueueSubItemGraphic(graphic_id);
@@ -258,7 +258,7 @@ ItemWrapper ItemGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = 1;
+            i->was_used = true;
             break;
         }
     }
@@ -273,7 +273,7 @@ SubItemWrapper ItemGraphics::GetSubItemGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = 1;
+            i->was_used = true;
             break;
         }
     }

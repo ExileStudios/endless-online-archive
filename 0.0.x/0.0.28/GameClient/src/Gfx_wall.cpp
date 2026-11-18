@@ -13,7 +13,7 @@ WallResource::WallResource()
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
     color_key = new TDDColorKey(NULL);
-    is_animated = 0;
+    is_animated = false;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
 }
@@ -31,23 +31,23 @@ WallResource::~WallResource()
 }
 
 // One animation frame of a wall graphic: a quarter of a wide sheet, or the whole of a narrow one.
-Windows::TRect Gfx_wall_GetFrameRect(WallResource *self, int frame)
+Windows::TRect WallResource::GetFrameRect(int frame)
 {
     TRect frame_rect;
-    if (self->sheet_width > 120)
+    if (sheet_width > 120)
     {
-        int frame_width = self->sheet_width / 4;
+        int frame_width = sheet_width / 4;
         frame_rect.left = frame_width * frame;
         frame_rect.top = 0;
         frame_rect.right = frame_width * frame + frame_width;
-        frame_rect.bottom = self->sheet_height;
+        frame_rect.bottom = sheet_height;
     }
     else
     {
         frame_rect.left = 0;
         frame_rect.top = 0;
-        frame_rect.right = self->sheet_width;
-        frame_rect.bottom = self->sheet_height;
+        frame_rect.right = sheet_width;
+        frame_rect.bottom = sheet_height;
     }
     return frame_rect;
 }
@@ -63,9 +63,9 @@ GraphicSize WallResource::LoadSurface(int library, int resource_id)
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
     MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = MainForm->resource_bitmap->Width;
     surface_desc->Height = MainForm->resource_bitmap->Height;
     if (!surface)
@@ -82,7 +82,7 @@ GraphicSize WallResource::LoadSurface(int library, int resource_id)
     sheet_height = MainForm->resource_bitmap->Height;
     // A wall graphic sheet this wide holds four animation frames, so the map keeps redrawing it.
     if (MainForm->resource_bitmap->Width >= 120)
-        is_animated = 1;
+        is_animated = true;
     // The wall graphic bitmap goes on by a canvas Draw, or by BitBlt if configured.
     if (!MainForm->config->GetUseBitBltDraw())
     {
@@ -112,7 +112,7 @@ GraphicSize WallResource::LoadSurface(int library, int resource_id)
         {
             try
             {
-                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, 13369376);
+                BitBlt(dc, 0, 0, size.width, size.height, CompatibleDC, 0, 0, SRCCOPY);
             }
             catch (...)
             {
@@ -126,6 +126,6 @@ GraphicSize WallResource::LoadSurface(int library, int resource_id)
     }
     // The colour key makes black see-through on the wall graphic.
     if (size.width > 0)
-        surface->SetColorKey(8, color_key);
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     return size;
 }

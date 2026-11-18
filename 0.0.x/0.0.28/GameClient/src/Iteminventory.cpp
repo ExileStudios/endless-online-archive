@@ -13,8 +13,8 @@
 InventoryItem::InventoryItem(int id)
 {
     item_id = id;
-    is_visible = 1;
-    is_placed = 0;
+    is_visible = true;
+    is_placed = false;
 }
 
 InventoryItem::~InventoryItem()

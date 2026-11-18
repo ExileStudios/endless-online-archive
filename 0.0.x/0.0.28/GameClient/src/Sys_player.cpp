@@ -16,41 +16,41 @@ Player::Player()
     player_id = PlayerId_Unset;
     record_value_d = 0;
     direction = FacingDirection_Down;
-    slot_state = 0;
-    effect_start = 0;
-    effect_running = 0;
+    draw_group = CharacterSlotState_Empty;
+    effect_start = false;
+    effect_running = false;
     pending_effect = -1;
     effect_frame = 0;
-    effect_id = 0;
-    health_bar_start = 0;
-    health_bar_shown = 0;
-    damage_start = 0;
-    damage_shown = 0;
+    effect_id = SpellEffect_None;
+    health_bar_start = false;
+    health_bar_shown = false;
+    damage_start = false;
+    damage_shown = false;
     emote_start = false;
-    emoting = 0;
-    walk_start = 0;
-    walking = 0;
+    emoting = false;
+    walk_start = false;
+    walking = false;
     jump_start = false;
     jumping = false;
     cast_start = false;
-    casting = 0;
-    attack_start = 0;
-    attacking = 0;
-    silent_attack = 0;
-    dying = 0;
+    casting = false;
+    attack_start = false;
+    attacking = false;
+    silent_attack = false;
+    dying = false;
     hiding = false;
     unhiding = false;
     stand_up_start = false;
     chair_sit_start = false;
     floor_sit_start = false;
-    recenter_view = 0;
+    recenter_view = false;
     sitting_on_chair = false;
     sitting_on_floor = false;
     balloon_timer = 0;
-    balloon_shown = 0;
-    out_of_range = 0;
-    graphics_pending = 1;
-    reload_requested = 0;
+    balloon_shown = false;
+    out_of_range = false;
+    graphics_pending = true;
+    reload_requested = false;
     load_progress = 0;
     sheets_cleared = false;
     walk_sheets_loaded = false;
@@ -61,11 +61,11 @@ Player::Player()
     extra_sheets_loaded = false;
     cast_sheets_loaded = false;
     emote_sheets_loaded = false;
-    hover_label_shown = 0;
+    hover_label_shown = false;
     text_label_shown = false;
     text_label_shown = false;
     level_up_pending = false;
-    hidden = 0;
+    hidden = false;
     badge_level = 0;
     health_bar_timer = -1;
     damage_timer = -1;
@@ -79,45 +79,45 @@ Player::Player(int tile_x, int tile_y, String player_name, int player_gender, in
     x = tile_x;
     y = tile_y;
     direction = FacingDirection_Down;
-    slot_state = 0;
+    draw_group = CharacterSlotState_Empty;
     name = player_name;
     gender = player_gender;
     skin = player_skin;
     hair_style = player_hair_style;
     hair_color = player_hair_color;
-    effect_start = 0;
-    effect_running = 0;
+    effect_start = false;
+    effect_running = false;
     pending_effect = -1;
     effect_frame = 0;
-    effect_id = 0;
-    health_bar_start = 0;
-    health_bar_shown = 0;
-    damage_start = 0;
-    damage_shown = 0;
+    effect_id = SpellEffect_None;
+    health_bar_start = false;
+    health_bar_shown = false;
+    damage_start = false;
+    damage_shown = false;
     emote_start = false;
-    emoting = 0;
-    walk_start = 0;
-    walking = 0;
+    emoting = false;
+    walk_start = false;
+    walking = false;
     jump_start = false;
     jumping = false;
     cast_start = false;
-    casting = 0;
-    attack_start = 0;
-    attacking = 0;
-    dying = 0;
+    casting = false;
+    attack_start = false;
+    attacking = false;
+    dying = false;
     unhiding = false;
     hiding = false;
     stand_up_start = false;
     chair_sit_start = false;
     floor_sit_start = false;
-    recenter_view = 0;
+    recenter_view = false;
     sitting_on_chair = false;
     sitting_on_floor = false;
     balloon_timer = 0;
-    balloon_shown = 0;
-    out_of_range = 0;
+    balloon_shown = false;
+    out_of_range = false;
     graphics_pending = start_pending;
-    reload_requested = 0;
+    reload_requested = false;
     load_progress = 0;
     sheets_cleared = false;
     walk_sheets_loaded = false;
@@ -128,10 +128,10 @@ Player::Player(int tile_x, int tile_y, String player_name, int player_gender, in
     extra_sheets_loaded = false;
     cast_sheets_loaded = false;
     emote_sheets_loaded = false;
-    hover_label_shown = 0;
+    hover_label_shown = false;
     text_label_shown = false;
     level_up_pending = false;
-    hidden = 0;
+    hidden = false;
     badge_level = 0;
     health_bar_timer = -1;
     damage_timer = -1;
@@ -155,9 +155,9 @@ void Player::ShowBalloon(String *lines, int width, int height, int tinted)
         text_length += lines[i].Length();
     balloon_width = width;
     balloon_height = height;
-    balloon_shown = 1;
+    balloon_shown = true;
     balloon_timer = text_length / 3 + 24;
-    redraw = 1;
+    redraw = true;
 }
 
 // The screen position adjusted for the current step, jump, sitting pose or attack lunge.
@@ -298,24 +298,25 @@ void Player::DrawEmote()
     if (emote_step < 2)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            Gfx_interface_GetEmoteFrameRect(MainForm->gfx->interface_graphics, emote_first_frame + emote_frame - 1),
+            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
             170);
     if (emote_step == 2)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            Gfx_interface_GetEmoteFrameRect(MainForm->gfx->interface_graphics, emote_first_frame + emote_frame - 1),
+            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
             150);
     if (emote_step == 3)
         MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
             GetAnimatedPosition(screen_x, screen_y).y, MainForm->gfx->interface_graphics->emote_sheet,
-            Gfx_interface_GetEmoteFrameRect(MainForm->gfx->interface_graphics, emote_first_frame + emote_frame - 1),
+            MainForm->gfx->interface_graphics->GetEmoteFrameRect(emote_first_frame + emote_frame - 1),
             130);
 }
 
 // Draws the balloon centred above the player.
 void Player::DrawBalloon()
 {
-    int screen_x = TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
+    int screen_x =
+        TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
     int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 76 - balloon_height - 2 * gender;
     if (MainForm->animation->interface_controller->is_shaking)
         screen_x += MainForm->animation->interface_controller->shake_offset;
@@ -328,10 +329,10 @@ void Player::DrawBalloon()
 // Draws the shared name label centred above the player.
 void Player::DrawHoverLabel()
 {
-    int screen_x = 32 * x - 32 * y + MainForm->map->GetScrollOffsetX() + 306 -
-        (MainForm->gfx->hover_label->text_width - 4) / 2;
-    int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 90 - MainForm->gfx->hover_label->text_height -
-        2 * gender;
+    int screen_x =
+        32 * x - 32 * y + MainForm->map->GetScrollOffsetX() + 306 - (MainForm->gfx->hover_label->text_width - 4) / 2;
+    int screen_y =
+        16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 90 - MainForm->gfx->hover_label->text_height - 2 * gender;
     if (MainForm->animation->interface_controller->is_shaking)
         screen_x += MainForm->animation->interface_controller->shake_offset;
     MainForm->gfx->game->BlitClipped(GetAnimatedPosition(screen_x, screen_y).x,
@@ -344,10 +345,11 @@ void Player::DrawTextLabel()
 {
     if (resources)
     {
-        int screen_x = 32 * x - 32 * y + MainForm->map->GetScrollOffsetX() + 308 -
-            (resources->name_tag_text_rect.right - 4) / 2;
-        int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 84 - resources->name_tag_text_rect.bottom -
-            2 * gender;
+        int screen_x =
+            32 * x - 32 * y + MainForm->map->GetScrollOffsetX() + 308 - (resources->name_tag_text_rect.right - 4) / 2;
+        int screen_y =
+            16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 84 - resources->name_tag_text_rect.bottom -
+                2 * gender;
         if (MainForm->animation->interface_controller->is_shaking)
             screen_x += MainForm->animation->interface_controller->shake_offset;
         MainForm->gfx->game->BlitClipped(GetAnimatedPosition(screen_x, screen_y).x,

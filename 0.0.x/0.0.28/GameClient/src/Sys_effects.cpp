@@ -49,13 +49,13 @@ void Effects::RemoveFinished()
     int removed_one;
     do
     {
-        removed_one = 0;
+        removed_one = false;
         for (vector<MapEffect>::iterator it = effects.begin(); it != effects.end(); it++)
         {
             if (it->finished)
             {
                 effects.erase(it);
-                removed_one = 1;
+                removed_one = true;
                 break;
             }
         }
@@ -70,7 +70,7 @@ void Effects::AddEffect(int x, int y, int effect_id)
     char swapped;
     do
     {
-        swapped = 0;
+        swapped = false;
         for (int i = 0; i < GetCount() - 1; i++)
         {
             MapEffect handle;
@@ -79,14 +79,14 @@ void Effects::AddEffect(int x, int y, int effect_id)
                 handle = effects[i];
                 effects[i] = effects[i + 1];
                 effects[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
             if (effects[i].y > effects[i + 1].y)
             {
                 handle = effects[i];
                 effects[i] = effects[i + 1];
                 effects[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
         }
     } while (swapped);

@@ -10,27 +10,25 @@
 
 LawController::LawController()
 {
-    int new_list;
-    int new_list_2;
     lines = new TStringList();
     unused_lines = new TStringList();
     window_x = 49;
     window_y = 15;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     npc_session_id = -1;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
-    close_hovered = 0;
-    back_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    is_visible = false;
+    close_hovered = false;
+    back_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 LawController::~LawController()
@@ -42,11 +40,11 @@ DEFINE_ADD_TEXT(LawController)
 // Shows the law window on its menu page with no text, closing other npc windows.
 void LawController::Open(int session_id)
 {
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->learn->is_visible = 0;
-    MainForm->animation->guild->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     lines->Clear();
@@ -56,14 +54,14 @@ void LawController::Open(int session_id)
     page = 0;
     reset_value = 0;
     link_line_index = 0;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void LawController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
@@ -86,25 +84,25 @@ int LawController::GetTopLine()
 // for that request. Otherwise the scroll bar and moving the window.
 void LawController::MouseDown(int x, int y, int button)
 {
-    bool flag = false;
+    bool handled = false;
     if (button == 0 || button == 1)
     {
         if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252)
         {
-            is_dragging = 0;
+            is_dragging = false;
             int row = top_line + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
             if (page >= 6)
             {
                 row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
                 if (row == link_line_index)
                 {
-                    MainForm->sfx->PlaySfx(4);
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
                     if (page == 6)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_LawOption1,
-                            MainForm->strings->GetText(GameText_EnterNameOfPerson), 4, 12);
+                            MainForm->strings->GetText(GameText_EnterNameOfPerson), EditCharFilter_Letters, 12);
                     if (page == 7)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_LawOption2,
-                            MainForm->strings->GetText(GameText_EnterNameOfPersonYou), 4, 12);
+                            MainForm->strings->GetText(GameText_EnterNameOfPersonYou), EditCharFilter_Letters, 12);
                 }
             }
             if (page == 1)
@@ -136,32 +134,32 @@ void LawController::MouseDown(int x, int y, int button)
             }
         }
     }
-    if (!flag)
+    if (!handled)
     {
         if (x >= window_x + 252 && x <= window_x + 267)
         {
             if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
             {
-                thumb_grabbed = 1;
+                thumb_grabbed = true;
                 thumb_grab_offset = y - scroll_thumb_offset - window_y;
                 DragScrollThumb(y);
             }
         }
         if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
         if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 290 && !thumb_grabbed)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -216,32 +214,26 @@ void LawController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (this->hovered_row >= 0)
-        {
-            this->hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (!page)
     {
         if (!(x < this->window_x + 92 || x > this->window_x + 182 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
     else
@@ -249,36 +241,30 @@ void LawController::MouseMove(int x, int y)
         if (!(x < this->window_x + 144 || x > this->window_x + 234 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->close_hovered)
+            if (!close_hovered)
             {
-                this->close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (close_hovered)
         {
-            if (close_hovered)
-            {
-                close_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            close_hovered = false;
+            MainForm->redraw_needed = true;
         }
         if (!(x < this->window_x + 48 || x > this->window_x + 138 || y < this->window_y + 253 ||
             y > this->window_y + 279))
         {
-            if (!this->back_hovered)
+            if (!back_hovered)
             {
-                this->back_hovered = 1;
+                back_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
-        else
+        else if (back_hovered)
         {
-            if (back_hovered)
-            {
-                back_hovered = 0;
-                MainForm->redraw_needed = true;
-            }
+            back_hovered = false;
+            MainForm->redraw_needed = true;
         }
     }
 }
@@ -295,10 +281,10 @@ DEFINE_SCROLL_DOWN(LawController)
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void LawController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 DEFINE_CLEAR_TEXT(LawController)

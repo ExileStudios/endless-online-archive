@@ -10,13 +10,13 @@ struct MapItems
 {
     char hover_label_shown;
     char list_changed;
-    char pad_0x2[6];
+    char unused_bytes[6];
     vector<MapItem> items;
     vector<MapItem> protected_items;
     int current_index;
     int mouse_x;
     int mouse_y;
-    char pad_0x54[4];
+    char second_unused_bytes[4];
 
     MapItems();
     ~MapItems();

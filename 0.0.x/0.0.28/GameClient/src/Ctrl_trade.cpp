@@ -13,13 +13,13 @@ TradeController::TradeController()
 {
     window_x = 49;
     window_y = 13;
-    unused_flag = 1;
+    unused_flag = true;
     accept_delay = 0;
     partner_scroll_up_hovered = false;
     partner_scroll_down_hovered = false;
     own_scroll_up_hovered = false;
     own_scroll_down_hovered = false;
-    scroll_changed = 0;
+    scroll_changed = false;
     unused_index = -1;
     hovered_row = -1;
     own_player_id = -1;
@@ -31,14 +31,14 @@ TradeController::TradeController()
     own_scroll_thumb_offset = 0;
     own_status_text = "ok";
     partner_status_text = "ok";
-    is_visible = 0;
+    is_visible = false;
     agree_hovered = false;
     cancel_hovered = false;
     partner_scroll_up_held = false;
     partner_scroll_down_held = false;
     own_scroll_up_held = false;
     own_scroll_down_held = false;
-    is_dragging = 0;
+    is_dragging = false;
 }
 
 TradeController::~TradeController()
@@ -63,9 +63,9 @@ void TradeController::SetAcceptDelay(int delay_ticks)
 
 bool TradeController::IsAcceptDelayed()
 {
-    bool is_delayed = 0;
+    bool is_delayed = false;
     if (accept_delay > 0)
-        is_delayed = 1;
+        is_delayed = true;
     return is_delayed;
 }
 
@@ -113,7 +113,7 @@ void TradeController::Open(String my_name, String their_name, int my_player_id, 
     partner_status_text = MainForm->strings->GetText(GameText_Trading);
     partner_items.clear();
     own_items.clear();
-    is_visible = 1;
+    is_visible = true;
     own_agreed = false;
     trade_locked = false;
     MainForm->redraw_needed = true;
@@ -122,7 +122,7 @@ void TradeController::Open(String my_name, String their_name, int my_player_id, 
 // Hides the window and frees its graphics.
 void TradeController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     own_player_id = -1;
     partner_player_id = -1;
     MainForm->gfx->FreeTradeGraphics();
@@ -162,13 +162,13 @@ void TradeController::ResetScroll()
 // and moving the window.
 void TradeController::MouseDown(int x, int y, int button)
 {
-    char handled = 0;
+    char handled = false;
     if (button == 1)
     {
         if (y > window_y + 43 && y < window_y + 243 && x > window_x + 280 && x < window_x + 515)
         {
-            handled = 1;
-            is_dragging = 0;
+            handled = true;
+            is_dragging = false;
             // Removing works only while the own offer fits on one page
             if (own_items.size() < 6)
             {
@@ -184,7 +184,7 @@ void TradeController::MouseDown(int x, int y, int button)
             }
             else
             {
-                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                     MainForm->strings->GetDialogText(DialogText_CannotRemove, false),
                     MainForm->strings->GetDialogText(DialogText_CannotRemove, true));
                 MainForm->edits->caret_enabled = false;
@@ -238,7 +238,7 @@ void TradeController::MouseDown(int x, int y, int button)
         if (x >= window_x && x <= window_x + 500 && y >= window_y && y <= window_y + 280 && !partner_thumb_grabbed &&
             !own_thumb_grabbed)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -319,13 +319,16 @@ void TradeController::MouseMove(int x, int y)
 // Lights the scroll arrows under the mouse on both lists and drags a grabbed thumb.
 void TradeController::UpdateScrollHover(int x, int y)
 {
-    if (x >= this->window_x + 252 && x <= this->window_x + 267)
+    if (x >= window_x + 252 && x <= window_x + 267)
     {
-        if (y >= this->window_y + 58 && y <= this->window_y + 229)
-            this->DragPartnerScrollThumb(y);
+        if (y >= window_y + 58 && y <= window_y + 229)
+            DragPartnerScrollThumb(y);
     }
-    if (x >= window_x + 518 && x <= window_x + 533 && (y >= window_y + 58 && y <= window_y + 229))
-        DragOwnScrollThumb(y);
+    if (x >= window_x + 518 && x <= window_x + 533)
+    {
+        if (y >= window_y + 58 && y <= window_y + 229)
+            DragOwnScrollThumb(y);
+    }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
     {
         if (!partner_scroll_up_hovered)
@@ -385,8 +388,8 @@ void TradeController::DragPartnerScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (partner_thumb_grabbed)
     {
         int thumb_offset = y - partner_thumb_grab_offset - window_y;
@@ -403,7 +406,7 @@ void TradeController::DragPartnerScrollThumb(int y)
                 partner_top_row = new_top_row;
         }
         partner_scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -413,8 +416,8 @@ void TradeController::DragOwnScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (own_thumb_grabbed)
     {
         int thumb_offset = y - own_thumb_grab_offset - window_y;
@@ -431,7 +434,7 @@ void TradeController::DragOwnScrollThumb(int y)
                 own_top_row = new_top_row;
         }
         own_scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -441,15 +444,15 @@ void TradeController::ScrollPartnerUp()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)partner_items.size() > TRADE_VISIBLE_ROWS && partner_top_row > 0)
     {
         partner_top_row--;
         scroll_fraction = (double)partner_top_row / (double)(partner_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         partner_scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -459,15 +462,15 @@ void TradeController::ScrollPartnerDown()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)partner_items.size() - 5 > partner_top_row)
     {
         partner_top_row++;
         scroll_fraction = (double)partner_top_row / (double)(partner_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         partner_scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -477,15 +480,15 @@ void TradeController::ScrollOwnUp()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)own_items.size() > TRADE_VISIBLE_ROWS && own_top_row > 0)
     {
         own_top_row--;
         scroll_fraction = (double)own_top_row / (double)(own_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         own_scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -495,15 +498,15 @@ void TradeController::ScrollOwnDown()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)own_items.size() - 5 > own_top_row)
     {
         own_top_row++;
         scroll_fraction = (double)own_top_row / (double)(own_items.size() - 5);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         own_scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -511,7 +514,7 @@ void TradeController::ScrollOwnDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumbs.
 void TradeController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
     partner_scroll_up_held = false;
     partner_scroll_down_held = false;
     own_scroll_up_held = false;

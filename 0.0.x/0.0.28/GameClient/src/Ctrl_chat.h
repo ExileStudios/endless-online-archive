@@ -6,11 +6,26 @@
 
 enum ChatIcon
 {
+    ChatIcon_None = -1,
+    ChatIcon_Speech = 0,
+    ChatIcon_Server = 1,
+    ChatIcon_Error = 2,
+    ChatIcon_MapNotice = 3,
     ChatIcon_Announce = 4,
+    ChatIcon_Experience = 5,
+    ChatIcon_Warning = 6,
+    ChatIcon_Lookup = 7,
+    ChatIcon_PartyJoined = 10,
     ChatIcon_Party = 11,
     ChatIcon_Admin = 12,
+    ChatIcon_ItemDropped = 16,
+    ChatIcon_ItemPickedUp = 17,
+    ChatIcon_OutOfRange = 18,
     ChatIcon_Guild = 19,
-    ChatIcon_HelpRequest = 22
+    ChatIcon_ArenaKill = 20,
+    ChatIcon_ArenaWinner = 21,
+    ChatIcon_HelpRequest = 22,
+    ChatIcon_SystemNotice = 23
 };
 #define PANEL_THUMB_TRAVEL 50.0
 
@@ -42,8 +57,8 @@ struct ChatController
     bool global_chat_open;
     bool auto_scroll;
     int active_tab;
-    String private_name_1;
-    String private_name_2;
+    String first_private_name;
+    String second_private_name;
     char scroll_up_hover;
     char scroll_down_hover;
     bool scrollbar_dirty;

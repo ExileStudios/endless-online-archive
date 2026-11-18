@@ -73,7 +73,7 @@ void KeyBoard::PollKeyboard()
                 {
                     if (MainForm->animation->menu->is_message_open && (MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
                     {
-                        MainForm->sfx->PlaySfx(3);
+                        MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                         MainForm->animation->menu->is_message_open = false;
                         MainForm->edits->caret_enabled = true;
                     }
@@ -82,33 +82,33 @@ void KeyBoard::PollKeyboard()
                     {
                         if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 &&
                             !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetSlotState(PlayerId_SlotFirst) &&
+                            !MainForm->players->GetDrawGroup(PlayerId_SlotFirst) &&
                             !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
                             !MainForm->animation->menu->is_loading_world)
                         {
-                            MainForm->sfx->PlaySfx(2);
+                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                             MainForm->animation->menu->is_form_open = false;
                             MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
                             MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotFirst));
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0 &&
                             !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetSlotState(PlayerId_SlotSecond) &&
+                            !MainForm->players->GetDrawGroup(PlayerId_SlotSecond) &&
                             !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
                             !MainForm->animation->menu->is_loading_world)
                         {
-                            MainForm->sfx->PlaySfx(2);
+                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                             MainForm->animation->menu->is_form_open = false;
                             MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
                             MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotSecond));
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0 &&
                             !MainForm->animation->menu->character_select_cooldown &&
-                            !MainForm->players->GetSlotState(PlayerId_SlotThird) &&
+                            !MainForm->players->GetDrawGroup(PlayerId_SlotThird) &&
                             !MainForm->animation->menu->is_message_open && !MainForm->animation->menu->is_form_open &&
                             !MainForm->animation->menu->is_loading_world)
                         {
-                            MainForm->sfx->PlaySfx(2);
+                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                             MainForm->animation->menu->is_form_open = false;
                             MainForm->animation->menu->character_select_cooldown = CHARACTER_SELECT_COOLDOWN_TICKS;
                             MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotThird));
@@ -120,10 +120,10 @@ void KeyBoard::PollKeyboard()
                     // Typing a letter or digit brings up the message box that clicking the grid shows.
                     if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && !MainForm->animation->menu->is_message_open)
                     {
-                        bool key_flag = 1;
+                        bool key_flag = true;
                         if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 12;
@@ -134,11 +134,11 @@ void KeyBoard::PollKeyboard()
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 12;
-                                MainForm->sfx->PlaySfx(19);
+                                MainForm->sfx->PlaySfx(SfxSound_Send);
                                 MainForm->animation->menu->DeleteLastLetter();
                             }
                             else
@@ -146,13 +146,13 @@ void KeyBoard::PollKeyboard()
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 8;
                                 if (MainForm->animation->menu->grid_column > 0)
                                 {
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     MainForm->animation->menu->grid_column--;
                                     MainForm->animation->menu->cursor_blink = 5;
                                 }
@@ -160,13 +160,13 @@ void KeyBoard::PollKeyboard()
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 8;
                                 if (MainForm->animation->menu->grid_column < 5)
                                 {
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     MainForm->animation->menu->grid_column++;
                                     MainForm->animation->menu->cursor_blink = 5;
                                 }
@@ -174,13 +174,13 @@ void KeyBoard::PollKeyboard()
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 8;
                                 if (MainForm->animation->menu->grid_row > 0)
                                 {
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     MainForm->animation->menu->grid_row--;
                                     MainForm->animation->menu->cursor_blink = 5;
                                 }
@@ -188,13 +188,13 @@ void KeyBoard::PollKeyboard()
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0)
                         {
-                            key_flag = 0;
+                            key_flag = false;
                             if (key_delay <= 0)
                             {
                                 key_delay = 8;
                                 if (MainForm->animation->menu->grid_row < 5)
                                 {
-                                    MainForm->sfx->PlaySfx(20);
+                                    MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
                                     MainForm->animation->menu->grid_row++;
                                     MainForm->animation->menu->cursor_blink = 5;
                                 }
@@ -301,7 +301,7 @@ void KeyBoard::PollKeyboard()
                             else if (MainForm->net_client->CanAct())
                             {
                                 MainForm->map->path_finder->CancelPath();
-                                MainForm->animation->game->Attack(0);
+                                MainForm->animation->game->Attack(false);
                                 ctrl_attacked = true;
                             }
                         }
@@ -311,29 +311,29 @@ void KeyBoard::PollKeyboard()
                             (MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0) && !ctrl_attacked)
                         {
                             arrow_held = true;
-                            bool key_flag = 0;
-                            char up_held = 0;
-                            char right_held = 0;
-                            char down_held = 0;
+                            bool key_flag = false;
+                            char up_held = false;
+                            char right_held = false;
+                            char down_held = false;
                             arrows_held = 0;
                             if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
                             {
-                                key_flag = 1;
+                                key_flag = true;
                                 arrows_held++;
                             }
                             if ((MainForm->DIKeyboardState1->Keys[DIK_UP] & 0x80) != 0)
                             {
-                                up_held = 1;
+                                up_held = true;
                                 arrows_held++;
                             }
                             if ((MainForm->DIKeyboardState1->Keys[DIK_RIGHT] & 0x80) != 0)
                             {
-                                right_held = 1;
+                                right_held = true;
                                 arrows_held++;
                             }
                             if ((MainForm->DIKeyboardState1->Keys[DIK_DOWN] & 0x80) != 0)
                             {
-                                down_held = 1;
+                                down_held = true;
                                 arrows_held++;
                             }
                             // With two arrows down, the walk follows the one pressed second.
@@ -508,27 +508,27 @@ void KeyBoard::PollKeyboard()
                         }
                         // The number pad keys play the emotes.
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD1] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(1);
+                            MainForm->animation->game->PlayEmote(Emote_Happy);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD2] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(2);
+                            MainForm->animation->game->PlayEmote(Emote_Depressed);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD3] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(3);
+                            MainForm->animation->game->PlayEmote(Emote_Sad);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD4] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(4);
+                            MainForm->animation->game->PlayEmote(Emote_Angry);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD5] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(5);
+                            MainForm->animation->game->PlayEmote(Emote_Confused);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD6] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(6);
+                            MainForm->animation->game->PlayEmote(Emote_Surprised);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD7] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(7);
+                            MainForm->animation->game->PlayEmote(Emote_Hearts);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD8] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(8);
+                            MainForm->animation->game->PlayEmote(Emote_Moon);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD9] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(9);
+                            MainForm->animation->game->PlayEmote(Emote_Suicidal);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_DECIMAL] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(10);
+                            MainForm->animation->game->PlayEmote(Emote_Embarrassed);
                         if ((MainForm->DIKeyboardState1->Keys[DIK_NUMPAD0] & 0x80) != 0)
-                            MainForm->animation->game->PlayEmote(14);
+                            MainForm->animation->game->PlayEmote(Emote_Playful);
                     }
                 }
                 if (MainForm->edits->GetCount() >= 1)
@@ -542,7 +542,7 @@ void KeyBoard::PollKeyboard()
                             MainForm->edits->GetCount() >= 2)
                         {
                             MainForm->edits->FocusNext();
-                            MainForm->sfx->PlaySfx(4);
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
                             tab_delay = 32;
                         }
                         if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
@@ -569,7 +569,7 @@ void KeyBoard::PollKeyboard()
                                                 MainForm->edits->GetText(EditId_Chat)[1] != 38 &&
                                                 String(MainForm->edits->GetText(EditId_Chat)[1]) != "'")
                                             {
-                                                bool key_flag = 0;
+                                                bool key_flag = false;
                                                 if (MainForm->edits->GetText(EditId_Chat).Length() > 1)
                                                 {
                                                     if (MainForm->edits->GetText(EditId_Chat)[1] == 36 &&
@@ -582,13 +582,13 @@ void KeyBoard::PollKeyboard()
                                                     }
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "h8l,X|"))
+                                                    MainForm->net_client->DeobfuscateString("h8l,X|"))
                                                 {
-                                                    key_flag = 1;
-                                                    MainForm->sfx->PlaySfx(5);
-                                                    TDateTime now1 = Now();
+                                                    key_flag = true;
+                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
+                                                    TDateTime now = Now();
                                                     TTimeStamp login_stamp = DateTimeToTimeStamp(MainForm->animation->interface_controller->status->usage_start_time);
-                                                    TTimeStamp now_stamp = DateTimeToTimeStamp(now1);
+                                                    TTimeStamp now_stamp = DateTimeToTimeStamp(now);
                                                     int days = now_stamp.Date - login_stamp.Date;
                                                     int milliseconds = now_stamp.Time - login_stamp.Time;
                                                     played_minutes = milliseconds / 60000 + 1440 * days;
@@ -596,20 +596,20 @@ void KeyBoard::PollKeyboard()
                                                     int hours = played_minutes / 60;
                                                     int minutes = played_minutes % MINUTES_PER_HOUR;
                                                     String played_text = IntToStr(hours) +
-                                                        Client::DeobfuscateString(MainForm->net_client, " qZ-e") +
+                                                        MainForm->net_client->DeobfuscateString(" qZ-e") +
                                                         IntToStr(minutes) +
-                                                        Client::DeobfuscateString(MainForm->net_client, "C1d2");
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(7,
-                                                        0, Client::DeobfuscateString(MainForm->net_client, "`:Y,TL"),
-                                                        Client::DeobfuscateString(MainForm->net_client,
+                                                        MainForm->net_client->DeobfuscateString("C1d2");
+                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                                        MainForm->net_client->DeobfuscateString(
                                                         " e :f>Z* BUD") + played_text, true);
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat).Length() > 6)
                                                 {
                                                     if (MainForm->edits->GetText(EditId_Chat).SubString(1, 5) ==
-                                                        Client::DeobfuscateString(MainForm->net_client, "i1d9N"))
+                                                        MainForm->net_client->DeobfuscateString("i1d9N"))
                                                     {
-                                                        key_flag = 1;
+                                                        key_flag = true;
                                                         String find_name = MainForm->edits->GetText(EditId_Chat);
                                                         find_name.Delete(1, 6);
                                                         if (find_name.Length() > 3)
@@ -620,72 +620,72 @@ void KeyBoard::PollKeyboard()
                                                     }
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "j0a|") ||
+                                                    MainForm->net_client->DeobfuscateString("j0a|") ||
                                                     MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "_0d+l<^3N"))
+                                                    MainForm->net_client->DeobfuscateString("_0d+l<^3N"))
                                                 {
-                                                    key_flag = 1;
+                                                    key_flag = true;
                                                     String location_text = MainForm->strings->GetText(GameText_YourCurrentLocationIs) +
                                                         IntToStr(MainForm->map->GetMapId()) + "  x:";
                                                     location_text = location_text +
                                                         IntToStr(MainForm->map->GetCenterX()) + "  y:";
                                                     location_text = location_text +
                                                         IntToStr(MainForm->map->GetCenterY());
-                                                    MainForm->sfx->PlaySfx(5);
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(7,
-                                                        0, Client::DeobfuscateString(MainForm->net_client, "`:Y,TL"),
+                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
+                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
                                                         location_text, true);
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "f1d/N"))
+                                                    MainForm->net_client->DeobfuscateString("f1d/N"))
                                                 {
-                                                    key_flag = 1;
-                                                    MainForm->sfx->PlaySfx(4);
+                                                    key_flag = true;
+                                                    MainForm->sfx->PlaySfx(SfxSound_Select);
                                                     MainForm->animation->interface_controller->status->ping_sent_time = Now();
                                                     MainForm->net_client->sender->SendPingRequest();
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "a3l(^1N"))
+                                                    MainForm->net_client->DeobfuscateString("a3l(^1N"))
                                                 {
-                                                    key_flag = 1;
-                                                    MainForm->sfx->PlaySfx(4);
+                                                    key_flag = true;
+                                                    MainForm->sfx->PlaySfx(SfxSound_Select);
                                                     MainForm->animation->game->ToggleGhostWalk();
                                                 }
                                                 if (MainForm->edits->GetText(EditId_Chat) ==
-                                                    Client::DeobfuscateString(MainForm->net_client, "h1d8_:N"))
+                                                    MainForm->net_client->DeobfuscateString("h1d8_:N"))
                                                 {
-                                                    key_flag = 1;
-                                                    MainForm->sfx->PlaySfx(5);
+                                                    key_flag = true;
+                                                    MainForm->sfx->PlaySfx(SfxSound_Notice);
                                                     String draw_mode_name = "VDACL";
                                                     draw_mode_name.Delete(2, 2);
                                                     if (MainForm->config->GetUseBitBltDraw())
-                                                        draw_mode_name = Client::DeobfuscateString(MainForm->net_client,
+                                                        draw_mode_name = MainForm->net_client->DeobfuscateString(
                                                             "([*");
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(7,
-                                                        0, Client::DeobfuscateString(MainForm->net_client, "`:Y,TL"),
-                                                        Client::DeobfuscateString(MainForm->net_client,
+                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                                        MainForm->net_client->DeobfuscateString(
                                                         " e 1^6Z-h) +_:d3j p'r") +
                                                         MainForm->VersionString(MainForm->version_major,
                                                         MainForm->version_minor, MainForm->version_build), true);
-                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(7,
-                                                        0, Client::DeobfuscateString(MainForm->net_client, "`:Y,TL"),
-                                                        Client::DeobfuscateString(MainForm->net_client,
+                                                    MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
+                                                        CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
+                                                        MainForm->net_client->DeobfuscateString(
                                                         " e :_6f1h [:i1h- BUD") + draw_mode_name, true);
                                                 }
                                                 if (!key_flag)
                                                 {
                                                     String public_text = MainForm->edits->GetText(EditId_Chat);
                                                     if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                        public_text = Client::MakeDrunkText(MainForm->net_client,
+                                                        public_text = MainForm->net_client->MakeDrunkText(
                                                             public_text);
-                                                    String public_censored = Client::CensorText(MainForm->net_client,
+                                                    String public_censored = MainForm->net_client->CensorText(
                                                         public_text);
                                                     if (public_censored.Length() >= 1)
                                                     {
                                                         MainForm->net_client->sender->SendPublicChat(public_text);
-                                                        MainForm->animation->interface_controller->chat->AddLocalMessage(-1,
-                                                            0,
-                                                            Client::Capitalize(MainForm->net_client,
+                                                        MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                                            CHAT_COLOR_DEFAULT,
+                                                            MainForm->net_client->Capitalize(
                                                             MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                             public_censored, true);
                                                         MainForm->gfx->sprites->ShowSpeechBalloon(public_censored,
@@ -703,16 +703,16 @@ void KeyBoard::PollKeyboard()
                                                     if (MainForm->net_client->GetAdminLevel() > 0)
                                                     {
                                                         String admin_text = MainForm->edits->GetText(EditId_Chat);
-                                                        String admin_censored = Client::CensorText(MainForm->net_client,
+                                                        String admin_censored = MainForm->net_client->CensorText(
                                                             admin_text.SubString(2, admin_text.Length() - 1));
                                                         if (admin_censored.Length() >= 1)
                                                         {
                                                             MainForm->net_client->sender->SendAdminChat(admin_text.SubString(2,
                                                                 admin_text.Length() - 1));
-                                                            MainForm->sfx->PlaySfx(29);
+                                                            MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
                                                             MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Admin,
                                                                 CHAT_COLOR_ADMIN,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 admin_censored, true);
                                                         }
@@ -724,16 +724,16 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String non_admin_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            non_admin_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            non_admin_text = MainForm->net_client->MakeDrunkText(
                                                                 non_admin_text);
-                                                        String non_admin_censored = Client::CensorText(MainForm->net_client,
+                                                        String non_admin_censored = MainForm->net_client->CensorText(
                                                             non_admin_text);
                                                         if (non_admin_censored.Length() >= 1)
                                                         {
                                                             MainForm->net_client->sender->SendPublicChat(non_admin_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(-1,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 non_admin_censored, true);
                                                             MainForm->gfx->sprites->ShowSpeechBalloon(non_admin_censored,
@@ -752,17 +752,17 @@ void KeyBoard::PollKeyboard()
                                                             MainForm->animation->RecordGlobalMessage();
                                                         String global_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            global_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            global_text = MainForm->net_client->MakeDrunkText(
                                                                 global_text);
-                                                        String global_censored = Client::CensorText(MainForm->net_client,
+                                                        String global_censored = MainForm->net_client->CensorText(
                                                             global_text.SubString(2, global_text.Length() - 1));
                                                         if (global_censored.Length() >= 1)
                                                         {
                                                             MainForm->net_client->sender->SendGlobalChat(global_text.SubString(2,
                                                                 global_text.Length() - 1));
-                                                            MainForm->animation->interface_controller->chat->AddGlobalMessage(-1,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                            MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_None,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 global_censored, true, false);
                                                         }
@@ -777,28 +777,28 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String announce_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            announce_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            announce_text = MainForm->net_client->MakeDrunkText(
                                                                 announce_text);
-                                                        String announce_censored = Client::CensorText(MainForm->net_client,
+                                                        String announce_censored = MainForm->net_client->CensorText(
                                                             announce_text.SubString(2, announce_text.Length() - 1));
                                                         if (announce_censored.Length() >= 1)
                                                         {
-                                                            MainForm->sfx->PlaySfx(14);
+                                                            MainForm->sfx->PlaySfx(SfxSound_AnnounceReceived);
                                                             MainForm->net_client->sender->SendAnnouncement(announce_text.SubString(2,
                                                                 announce_text.Length() - 1));
                                                             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Announce,
                                                                 CHAT_COLOR_NOTICE,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 announce_censored, true);
                                                             MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Announce,
                                                                 CHAT_COLOR_NOTICE,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 announce_censored, true);
                                                             MainForm->animation->interface_controller->chat->AddGlobalMessage(ChatIcon_Announce,
                                                                 CHAT_COLOR_NOTICE,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 announce_censored, true, false);
                                                             MainForm->gfx->sprites->ShowSpeechBalloon(announce_censored,
@@ -812,16 +812,16 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String non_announcer_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            non_announcer_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            non_announcer_text = MainForm->net_client->MakeDrunkText(
                                                                 non_announcer_text);
-                                                        String non_announcer_censored = Client::CensorText(MainForm->net_client,
+                                                        String non_announcer_censored = MainForm->net_client->CensorText(
                                                             non_announcer_text);
                                                         if (non_announcer_censored.Length() >= 1)
                                                         {
                                                             MainForm->net_client->sender->SendPublicChat(non_announcer_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(-1,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 non_announcer_censored, true);
                                                             MainForm->gfx->sprites->ShowSpeechBalloon(non_announcer_censored,
@@ -838,18 +838,18 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String guild_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            guild_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            guild_text = MainForm->net_client->MakeDrunkText(
                                                                 guild_text);
-                                                        String guild_censored = Client::CensorText(MainForm->net_client,
+                                                        String guild_censored = MainForm->net_client->CensorText(
                                                             guild_text.SubString(2, guild_text.Length() - 1));
                                                         if (guild_censored.Length() >= 1)
                                                         {
-                                                            MainForm->sfx->PlaySfx(29);
+                                                            MainForm->sfx->PlaySfx(SfxSound_ChannelMessage);
                                                             MainForm->net_client->sender->SendGuildChat(guild_text.SubString(2,
                                                                 guild_text.Length() - 1));
                                                             MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Guild,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 guild_censored, true);
                                                         }
@@ -861,16 +861,16 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String guildless_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            guildless_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            guildless_text = MainForm->net_client->MakeDrunkText(
                                                                 guildless_text);
-                                                        String guildless_censored = Client::CensorText(MainForm->net_client,
+                                                        String guildless_censored = MainForm->net_client->CensorText(
                                                             guildless_text);
                                                         if (guildless_censored.Length() >= 1)
                                                         {
                                                             MainForm->net_client->sender->SendPublicChat(guildless_text);
-                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(-1,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                            MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_None,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 guildless_censored, true);
                                                             MainForm->gfx->sprites->ShowSpeechBalloon(guildless_censored,
@@ -888,9 +888,9 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String party_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            party_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            party_text = MainForm->net_client->MakeDrunkText(
                                                                 party_text);
-                                                        String party_censored = Client::CensorText(MainForm->net_client,
+                                                        String party_censored = MainForm->net_client->CensorText(
                                                             party_text.SubString(2, party_text.Length() - 1));
                                                         if (party_censored.Length() >= 1)
                                                         {
@@ -899,13 +899,13 @@ void KeyBoard::PollKeyboard()
                                                             MainForm->gfx->sprites->ShowSpeechBalloon(party_censored,
                                                                 MainForm->net_client->GetPlayerId(), 1);
                                                             MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party,
-                                                                0,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                CHAT_COLOR_DEFAULT,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 party_censored, true);
                                                             MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Party,
-                                                                1,
-                                                                Client::Capitalize(MainForm->net_client,
+                                                                CHAT_COLOR_PRIVATE,
+                                                                MainForm->net_client->Capitalize(
                                                                 MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                 party_censored, true);
                                                         }
@@ -923,33 +923,33 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String tab_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            tab_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            tab_text = MainForm->net_client->MakeDrunkText(
                                                                 tab_text);
                                                         String tab_partner = "";
                                                         String tab_message = tab_text.SubString(2,
                                                             tab_text.Length() - 1);
-                                                        String tab_censored = Client::CensorText(MainForm->net_client,
+                                                        String tab_censored = MainForm->net_client->CensorText(
                                                             tab_message);
                                                         if (tab_censored.Length() >= 1)
                                                         {
                                                             if (MainForm->animation->interface_controller->chat->active_tab ==
                                                                 1)
-                                                                tab_partner = MainForm->animation->interface_controller->chat->private_name_1;
+                                                                tab_partner = MainForm->animation->interface_controller->chat->first_private_name;
                                                             else
-                                                                tab_partner = MainForm->animation->interface_controller->chat->private_name_2;
+                                                                tab_partner = MainForm->animation->interface_controller->chat->second_private_name;
                                                             if (tab_message.Length() >= 2)
                                                             {
                                                                 if (tab_partner != "")
                                                                 {
-                                                                    MainForm->sfx->PlaySfx(19);
+                                                                    MainForm->sfx->PlaySfx(SfxSound_Send);
                                                                     MainForm->net_client->sender->SendPrivateMessage(LowerCase(tab_partner),
                                                                         tab_message);
                                                                     MainForm->animation->interface_controller->chat->OpenPrivateTab(tab_partner);
                                                                     int tab_index = MainForm->animation->interface_controller->chat->FindPrivateTab(tab_partner);
                                                                     if (tab_index != -1)
                                                                         MainForm->animation->interface_controller->chat->AddPrivateMessage(tab_index,
-                                                                            1,
-                                                                            Client::Capitalize(MainForm->net_client,
+                                                                            CHAT_COLOR_PRIVATE,
+                                                                            MainForm->net_client->Capitalize(
                                                                             MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                             tab_censored, true);
                                                                 }
@@ -963,7 +963,7 @@ void KeyBoard::PollKeyboard()
                                                     {
                                                         String private_text = MainForm->edits->GetText(EditId_Chat);
                                                         if (MainForm->animation->interface_controller->chat->IsDrunk())
-                                                            private_text = Client::MakeDrunkText(MainForm->net_client,
+                                                            private_text = MainForm->net_client->MakeDrunkText(
                                                                 private_text);
                                                         int space_pos = private_text.Pos(" ");
                                                         if (space_pos >= 3)
@@ -971,7 +971,7 @@ void KeyBoard::PollKeyboard()
                                                             String recipient = private_text.SubString(2, space_pos - 2);
                                                             String private_message = private_text.SubString(space_pos +
                                                                 1, private_text.Length() - space_pos);
-                                                            String private_censored = Client::CensorText(MainForm->net_client,
+                                                            String private_censored = MainForm->net_client->CensorText(
                                                                 private_message);
                                                             if (private_censored.Length() >= 1)
                                                             {
@@ -984,15 +984,15 @@ void KeyBoard::PollKeyboard()
                                                                             if (LowerCase(recipient) !=
                                                                                 LowerCase(MainForm->players->GetName(MainForm->net_client->GetPlayerId())))
                                                                             {
-                                                                                MainForm->sfx->PlaySfx(19);
+                                                                                MainForm->sfx->PlaySfx(SfxSound_Send);
                                                                                 MainForm->net_client->sender->SendPrivateMessage(LowerCase(recipient),
                                                                                     private_message);
                                                                                 MainForm->animation->interface_controller->chat->OpenPrivateTab(recipient);
                                                                                 int private_tab = MainForm->animation->interface_controller->chat->FindPrivateTab(recipient);
                                                                                 if (private_tab != -1)
                                                                                     MainForm->animation->interface_controller->chat->AddPrivateMessage(private_tab,
-                                                                                        1,
-                                                                                        Client::Capitalize(MainForm->net_client,
+                                                                                        CHAT_COLOR_PRIVATE,
+                                                                                        MainForm->net_client->Capitalize(
                                                                                         MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                                                                         private_censored, true);
                                                                             }
@@ -1015,30 +1015,31 @@ void KeyBoard::PollKeyboard()
                                     }
                                 }
                             }
-                            if (MainForm->edits->IsFocused(2) &&
+                            if (MainForm->edits->IsFocused(EditId_Password) &&
                                 MainForm->animation->GetScreenMode() == ScreenMode_Menu &&
                                 MainForm->animation->GetSubState() == MenuScreen_Login && MainForm->animation->menu->login_enabled)
                             {
-                                if (MainForm->edits->GetText(1) != "" && MainForm->edits->GetText(2) != "")
+                                if (MainForm->edits->GetText(EditId_AccountName) != "" &&
+                                    MainForm->edits->GetText(EditId_Password) != "")
                                 {
                                     MainForm->animation->menu->login_enabled = false;
-                                    MainForm->registry->SetAccountName(MainForm->edits->GetText(1));
-                                    MainForm->sfx->PlaySfx(2);
-                                    MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(1),
-                                        MainForm->edits->GetText(2));
+                                    MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
+                                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                                    MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
+                                        MainForm->edits->GetText(EditId_Password));
                                 }
                             }
                             // Enter on the account name opens the password grid with the cursor on a random cell.
-                            if (MainForm->edits->IsFocused(1))
+                            if (MainForm->edits->IsFocused(EditId_AccountName))
                             {
                                 if (MainForm->animation->GetScreenMode() == ScreenMode_Menu &&
                                     MainForm->animation->GetSubState() == MenuScreen_GridAccountName)
                                 {
-                                    if (MainForm->edits->GetText(1) != "")
+                                    if (MainForm->edits->GetText(EditId_AccountName) != "")
                                     {
-                                        MainForm->registry->SetAccountName(MainForm->edits->GetText(1));
-                                        MainForm->animation->menu->account_name = MainForm->edits->GetText(1);
-                                        MainForm->animation->menu->account_name = Client::Capitalize(MainForm->net_client,
+                                        MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
+                                        MainForm->animation->menu->account_name = MainForm->edits->GetText(EditId_AccountName);
+                                        MainForm->animation->menu->account_name = MainForm->net_client->Capitalize(
                                             MainForm->animation->menu->account_name);
                                         MainForm->animation->menu->grid_column = random(4) + 1;
                                         MainForm->animation->menu->grid_row = random(4) + 1;
@@ -1064,10 +1065,10 @@ void KeyBoard::PollKeyboard()
                         // The typed character, from the key state and the keyboard layout setting.
                         // Layouts 1 to 3 move symbols to other keys.
                         // Layout 3 also swaps A with Q and Z with W, as AZERTY does.
-                        char shift_held = 0;
+                        char shift_held = false;
                         if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                             (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0)
-                            shift_held = 1;
+                            shift_held = true;
                         if (MainForm->animation->CanSendChat())
                         {
                             if ((MainForm->DIKeyboardState1->Keys[DIK_SPACE] & 0x80) != 0)

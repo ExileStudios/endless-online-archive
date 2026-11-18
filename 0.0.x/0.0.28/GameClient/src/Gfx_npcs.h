@@ -28,7 +28,7 @@ struct NpcGraphics
     int alpha;
     int buffer_width;
     int buffer_height;
-    char pad_0x40[8];
+    char unused_bytes[8];
     Windows::TRect dest_rect;
 
     NpcGraphics();
@@ -36,8 +36,8 @@ struct NpcGraphics
     void DrawNpc(Npc npc, int draw_alpha, int x_offset);
     void BlitFrame(Windows::TRect screen_rect, TDx_DrawSurface *sheet, Windows::TRect source_rect, bool keyed);
     void DrawTranslucentBuffer(Windows::TRect screen_rect);
-    static Windows::TRect ClipToView(NpcGraphics *self, Windows::TRect rect);
-    static Windows::TRect GetClippedSourceRect(NpcGraphics *self, Windows::TRect rect);
+    Windows::TRect ClipToView(Windows::TRect rect);
+    Windows::TRect GetClippedSourceRect(Windows::TRect rect);
     void ShowSpeechBalloon(String text, int npc_index, int style);
 };
 

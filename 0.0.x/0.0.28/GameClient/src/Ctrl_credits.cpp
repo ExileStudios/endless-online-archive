@@ -67,7 +67,7 @@ void CreditsController::LoadCredits()
     TStringList *lines = new Classes::TStringList();
     try
     {
-        hFile = FileOpen(MainForm->strings->GetDataFilePath(1), 0);
+        hFile = FileOpen(MainForm->strings->GetDataFilePath(DataFile_Credits), fmOpenRead);
         file_size = FileSeek(hFile, 0, 2);
         FileSeek(hFile, 0, 0);
         buffer = new char[file_size + 1];
@@ -117,11 +117,11 @@ void CreditsController::LoadCredits()
     {
         credit_texts->Add(lines->Strings[0]);
         credit_styles->Add("head");
-        char next_is_title = 0;
+        char next_is_title = false;
         for (int j = 1; j < lines->Count; j++)
         {
             if (lines->Strings[j] == "")
-                next_is_title = 1;
+                next_is_title = true;
             else
             {
                 credit_texts->Add(lines->Strings[j]);
@@ -129,7 +129,7 @@ void CreditsController::LoadCredits()
                     credit_styles->Add("title");
                 else
                     credit_styles->Add("name");
-                next_is_title = 0;
+                next_is_title = false;
             }
         }
     }
@@ -151,11 +151,11 @@ bool CreditsController::VerifyCredits()
     char *buffer;
     int colon_count;
     int i;
-    valid = 1;
+    valid = true;
     String file_text;
     try
     {
-        hFile = FileOpen(MainForm->strings->GetDataFilePath(2), 0);
+        hFile = FileOpen(MainForm->strings->GetDataFilePath(DataFile_CreditsCheck), fmOpenRead);
         file_size = FileSeek(hFile, 0, 2);
         FileSeek(hFile, 0, 0);
         buffer = new char[file_size + 1];
@@ -170,11 +170,11 @@ bool CreditsController::VerifyCredits()
         FileClose(hFile);
     }
     if (file_text.Length() <= 14)
-        valid = 0;
+        valid = false;
     if (valid)
     {
         if (UpperCase(file_text.SubString(1, 10)) != "DAT001.ID{")
-            valid = 0;
+            valid = false;
     }
     String size_code = "";
     String vowel_code = "";
@@ -201,22 +201,22 @@ bool CreditsController::VerifyCredits()
             }
         }
         if (colon_count != 3)
-            valid = 0;
+            valid = false;
     }
     if (valid)
     {
         try
         {
             if ((StrToInt(size_code) + 11) / 3013 != data_file_size)
-                valid = 0;
+                valid = false;
             if (StrToInt(vowel_code) != vowel_count)
-                valid = 0;
+                valid = false;
             if (StrToInt(size_check_code) / 21 != data_file_size)
-                valid = 0;
+                valid = false;
         }
         catch (...)
         {
-            valid = 0;
+            valid = false;
         }
     }
     return valid;

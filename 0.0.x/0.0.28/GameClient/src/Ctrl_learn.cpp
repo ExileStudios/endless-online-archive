@@ -17,22 +17,22 @@ LearnController::LearnController()
     line_right_texts = new TStringList();
     window_x = 49;
     window_y = 13;
-    unused_flag = 1;
+    unused_flag = true;
     unused_value = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_changed = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
     npc_session_id = -1;
     page = LearnPage_Menu;
     top_line = 0;
     scroll_thumb_offset = 0;
     hovered_row = -1;
-    is_visible = 0;
-    close_hovered = 0;
-    back_hovered = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    is_dragging = 0;
+    is_visible = false;
+    close_hovered = false;
+    back_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
 }
 
 LearnController::~LearnController()
@@ -57,12 +57,12 @@ void LearnController::RemoveSkill(int skill_id)
 // Shows the skill master's window for the npc on its menu page with an empty list, closing the other npc windows.
 void LearnController::Open(String npc, int session_id)
 {
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->locker->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->guild->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
     MainForm->gfx->CreateShopGraphics();
     MainForm->gfx->LoadShopGraphics();
     npc_name = npc;
@@ -73,38 +73,39 @@ void LearnController::Open(String npc, int session_id)
     shown_skills.clear();
     offered_skills.clear();
     unused_items.clear();
-    is_visible = 1;
-    unused_cleared_flag = 0;
+    is_visible = true;
+    unused_cleared_flag = false;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window and frees its graphics.
 void LearnController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     npc_session_id = -1;
     MainForm->gfx->FreeShopGraphics();
     MainForm->redraw_needed = true;
 }
 
 // Adds a skill on offer with its requirements, unless it is listed already or the character knows it.
-void LearnController::AddSkill(int add_mode, int skill_id, int required_level, int required_class, int price, int first_required_skill, int second_required_skill, int third_required_skill, int fourth_required_skill, int required_str,
-    int required_wis, int required_int, int required_agi, int required_con, int required_cha)
+void LearnController::AddSkill(int add_mode, int skill_id, int required_level, int required_class, int price,
+    int first_required_skill, int second_required_skill, int third_required_skill, int fourth_required_skill,
+    int required_str, int required_wis, int required_int, int required_agi, int required_con, int required_cha)
 {
-    if (add_mode == 1)
+    if (add_mode == SkillListMode_Offered)
     {
-        char known = 0;
+        char known = false;
         for (vector<LearnItem>::iterator it = offered_skills.begin(); it != offered_skills.end(); it++)
         {
             if (skill_id == it->skill_id)
             {
-                known = 1;
+                known = true;
                 break;
             }
         }
         if (MainForm->animation->interface_controller->skills->HasSkill(skill_id) ||
             MainForm->animation->interface_controller->spells->HasSpell(skill_id))
-            known = 1;
+            known = true;
         if (!known)
         {
             LearnItem handle(skill_id);
@@ -157,20 +158,20 @@ void LearnController::MouseDown(int x, int y, int button)
 {
     char handled;
     int row = 0;
-    handled = 0;
+    handled = false;
     if ((button == 0 || button == 1) && this->window_y + 43 < y && this->window_y + 243 > y)
     {
         if (window_x + 17 < x && window_x + 252 > x)
         {
-            is_dragging = 0;
+            is_dragging = false;
             row = top_line + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
             if (page == LearnPage_Reset)
             {
                 row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
                 if (row == link_line_index)
                 {
-                    MainForm->sfx->PlaySfx(4);
-                    MainForm->animation->game->ShowMessageBox(3, ConfirmAction_SkillReset,
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                    MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_SkillReset,
                         MainForm->strings->GetDialogText(DialogText_ResetCharacterStats, false),
                         MainForm->strings->GetDialogText(DialogText_ResetCharacterStats, true));
                     MainForm->edits->caret_enabled = false;
@@ -189,7 +190,7 @@ void LearnController::MouseDown(int x, int y, int button)
                         if (class_name == "")
                             class_name = "All";
                         ClearText();
-                        AddText(Client::Capitalize(MainForm->net_client, skill_name) + " [" + class_name + "]", false);
+                        AddText(MainForm->net_client->Capitalize(skill_name) + " [" + class_name + "]", false);
                         AddText("", false);
                         if (offered_skills[row].required_skill > 0 || offered_skills[row].second_required_skill > 0 ||
                             offered_skills[row].third_required_skill > 0 ||
@@ -230,67 +231,68 @@ void LearnController::MouseDown(int x, int y, int button)
                         AddText("", false);
                         AddText(IntToStr(offered_skills[row].required_level) + " " +
                             MainForm->strings->GetText(GameText_Level), false);
-                        AddText(IntToStr(offered_skills[row].price) + " " + MainForm->item_values->GetName(1), false);
+                        AddText(IntToStr(offered_skills[row].price) + " " + MainForm->item_values->GetName(ItemId_Gold),
+                            false);
                         page = LearnPage_SkillInfo;
                         MainForm->redraw_needed = true;
                     }
                     else
                     {
-                        char can_learn = 1;
-                        char class_ok = 0;
+                        char can_learn = true;
+                        char class_ok = false;
                         // A skill with no class requirement suits every class
                         if (!this->offered_skills[row].required_class)
-                            class_ok = 1;
+                            class_ok = true;
                         else
                         {
                             if (MainForm->class_values->IsDescendantOf(MainForm->animation->interface_controller->status->class_id,
                                 offered_skills[row].required_class))
-                                class_ok = 1;
+                                class_ok = true;
                         }
                         if (MainForm->animation->interface_controller->inventory->GetItemAmount(1) <
                             offered_skills[row].price)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->level <
                             offered_skills[row].required_level)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_str <
                             offered_skills[row].required_str)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_int <
                             offered_skills[row].required_int)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_wis <
                             offered_skills[row].required_wis)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_agi <
                             offered_skills[row].required_agi)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_con <
                             offered_skills[row].required_con)
-                            can_learn = 0;
+                            can_learn = false;
                         if (MainForm->animation->interface_controller->status->stat_cha <
                             offered_skills[row].required_cha)
-                            can_learn = 0;
+                            can_learn = false;
                         if (offered_skills[row].required_skill > 0 &&
                             !MainForm->animation->interface_controller->skills->HasSkill(offered_skills[row].required_skill) &&
                             !MainForm->animation->interface_controller->spells->HasSpell(offered_skills[row].required_skill))
-                            can_learn = 0;
+                            can_learn = false;
                         if (offered_skills[row].second_required_skill > 0 &&
                             !MainForm->animation->interface_controller->skills->HasSkill(offered_skills[row].second_required_skill) &&
                             !MainForm->animation->interface_controller->spells->HasSpell(offered_skills[row].second_required_skill))
-                            can_learn = 0;
+                            can_learn = false;
                         if (offered_skills[row].third_required_skill > 0 &&
                             !MainForm->animation->interface_controller->skills->HasSkill(offered_skills[row].third_required_skill) &&
                             !MainForm->animation->interface_controller->spells->HasSpell(offered_skills[row].third_required_skill))
-                            can_learn = 0;
+                            can_learn = false;
                         if (offered_skills[row].fourth_required_skill > 0 &&
                             !MainForm->animation->interface_controller->skills->HasSkill(offered_skills[row].fourth_required_skill) &&
                             !MainForm->animation->interface_controller->spells->HasSpell(offered_skills[row].fourth_required_skill))
-                            can_learn = 0;
+                            can_learn = false;
                         if (!class_ok)
                         {
                             String required_class_name = MainForm->class_values->GetName(offered_skills[row].required_class);
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_WrongClass, false),
                                 MainForm->strings->GetDialogText(DialogText_WrongClass, true) + " " +
                                 required_class_name + ".");
@@ -300,7 +302,8 @@ void LearnController::MouseDown(int x, int y, int button)
                         {
                             if (can_learn)
                             {
-                                MainForm->animation->game->ShowMessageBox(3, ConfirmAction_LearnSkill,
+                                MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel,
+                                    ConfirmAction_LearnSkill,
                                     MainForm->strings->GetDialogText(DialogText_LearnConfirmation, false),
                                     MainForm->strings->GetDialogText(DialogText_LearnConfirmation, true) + " " +
                                     skill_name + "?");
@@ -308,7 +311,7 @@ void LearnController::MouseDown(int x, int y, int button)
                             }
                             else
                             {
-                                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                     MainForm->strings->GetDialogText(DialogText_CannotLearn, false),
                                     MainForm->strings->GetDialogText(DialogText_CannotLearn, true));
                                 MainForm->edits->caret_enabled = false;
@@ -321,9 +324,9 @@ void LearnController::MouseDown(int x, int y, int button)
             {
                 if (!row)
                 {
-                    handled = 1;
+                    handled = true;
                     if (this->offered_skills.size() <= 0)
-                        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_NothingToLearn, false),
                             MainForm->strings->GetDialogText(DialogText_NothingToLearn, true));
                     else
@@ -336,7 +339,8 @@ void LearnController::MouseDown(int x, int y, int button)
                 }
                 if (row == 1)
                     MainForm->animation->game->OpenInputBox(InputBoxKind_FindSkill,
-                        MainForm->strings->GetDialogText(DialogText_ForgetSkill, true), 3, 32);
+                        MainForm->strings->GetDialogText(DialogText_ForgetSkill, true), EditCharFilter_LettersSpaces,
+                        32);
                 if (row == 2)
                 {
                     ClearText();
@@ -353,23 +357,22 @@ void LearnController::MouseDown(int x, int y, int button)
     }
     if (!handled)
     {
-        if (this->window_x + 252 <= x && this->window_x + 267 >= x &&
-            this->window_y + this->scroll_thumb_offset + 58 <= y &&
-            this->window_y + this->scroll_thumb_offset + 73 >= y)
+        if (window_x + 252 <= x && window_x + 267 >= x && window_y + scroll_thumb_offset + 58 <= y &&
+            window_y + scroll_thumb_offset + 73 >= y)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset - window_y;
             DragScrollThumb(y);
         }
         if (window_x + 252 <= x && window_x + 267 >= x && window_y + 44 <= y && window_y + 59 >= y)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (window_x + 252 <= x && window_x + 267 >= x && window_y + 228 <= y && window_y + 243 >= y)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
@@ -377,7 +380,7 @@ void LearnController::MouseDown(int x, int y, int button)
         {
             if (window_y + 290 >= y && !thumb_grabbed)
             {
-                is_dragging = 1;
+                is_dragging = true;
                 drag_offset_x = x - window_x;
                 drag_offset_y = y - window_y;
             }
@@ -431,8 +434,8 @@ void LearnController::MouseMove(int x, int y)
         {
             if (row != -1 && page == LearnPage_SkillList)
             {
-                String tooltip_text = Client::Capitalize(MainForm->net_client,
-                    MainForm->skill_values->GetName(offered_skills[row].skill_id));
+                String tooltip_text =
+                    MainForm->net_client->Capitalize(MainForm->skill_values->GetName(offered_skills[row].skill_id));
                 tooltip_text = tooltip_text + " ";
                 tooltip_text = tooltip_text + IntToStr(offered_skills[row].required_level);
                 tooltip_text = tooltip_text + " LVL, ";
@@ -449,7 +452,7 @@ void LearnController::MouseMove(int x, int y)
                 if (offered_skills[row].required_cha > 0)
                     tooltip_text = tooltip_text + IntToStr(offered_skills[row].required_cha) + " CHA, ";
                 tooltip_text = tooltip_text + IntToStr(offered_skills[row].price) + " " +
-                    MainForm->item_values->GetName(1) + ", ";
+                    MainForm->item_values->GetName(ItemId_Gold) + ", ";
                 tooltip_text = tooltip_text + MainForm->class_values->GetName(offered_skills[row].required_class);
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, tooltip_text);
             }
@@ -471,7 +474,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (!close_hovered)
             {
-                close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -479,7 +482,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (close_hovered)
             {
-                close_hovered = 0;
+                close_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -490,7 +493,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (!close_hovered)
             {
-                close_hovered = 1;
+                close_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -498,7 +501,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (close_hovered)
             {
-                close_hovered = 0;
+                close_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -506,7 +509,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (!back_hovered)
             {
-                back_hovered = 1;
+                back_hovered = true;
                 MainForm->redraw_needed = true;
             }
         }
@@ -514,7 +517,7 @@ void LearnController::MouseMove(int x, int y)
         {
             if (back_hovered)
             {
-                back_hovered = 0;
+                back_hovered = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -529,7 +532,7 @@ void LearnController::DragScrollThumb(int y)
 {
     double scaled_line;
     double scaled_top_line;
-    int __slot1;
+    int unused_int;
     int line_count = shown_skills.size();
     int thumb_fraction = 5;
     if (page >= LearnPage_SkillInfo)
@@ -553,7 +556,7 @@ void LearnController::DragScrollThumb(int y)
                 top_line = line_count;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -576,7 +579,7 @@ void LearnController::ScrollUp()
         scroll_fraction = (double)top_line / (double)(result - visible_rows);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -599,7 +602,7 @@ void LearnController::ScrollDown()
         scroll_fraction = (double)top_line / (double)(result - visible_rows);
         thumb_pos = NPC_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_changed = 1;
+        scroll_changed = true;
         MainForm->redraw_needed = true;
     }
 }
@@ -607,8 +610,8 @@ void LearnController::ScrollDown()
 // Ends moving the window, the held scroll arrows and the grabbed thumb.
 void LearnController::MouseUp()
 {
-    is_dragging = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }

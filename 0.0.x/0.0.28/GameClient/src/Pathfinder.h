@@ -16,7 +16,7 @@ struct PathFinder
     int current_step;
     int step_count;
     char is_active;
-    char pad_0xb5[3];
+    char unused_bytes[3];
 
     PathFinder();
     ~PathFinder();
@@ -25,7 +25,7 @@ struct PathFinder
     void FollowPath();
     char IsPathActive();
     void CancelPath();
-    static Windows::TPoint GetCurrentStep(PathFinder *self);
+    Windows::TPoint GetCurrentStep();
     void AdvanceStep();
 };
 

@@ -18,9 +18,9 @@
 NpcValues::NpcValues()
 {
     file_prefix = "./pub/dtn";
-    is_downloading = 0;
-    is_loaded = 0;
-    unread_int_at_64 = -1;
+    is_downloading = false;
+    is_loaded = false;
+    unused_value = -1;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
@@ -44,7 +44,7 @@ void NpcValues::ReadHeader()
     String file_name = file_prefix + "001.enf";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), 0);
+        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -77,7 +77,7 @@ void NpcValues::ReadHeader()
             file_name = file_name + "0" + IntToStr(last_file_number) + ".enf";
         try
         {
-            file_handle = FileOpen(file_name.c_str(), 0);
+            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
             file_size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             buffer = new char[file_size + 1];
@@ -159,7 +159,7 @@ void NpcValues::Load()
             {
                 DWORD file_size;
                 char *buffer;
-                hFile = FileOpen(file_path.c_str(), 0);
+                hFile = FileOpen(file_path.c_str(), fmOpenRead);
                 file_size = FileSeek(hFile, 0, 2);
                 FileSeek(hFile, 0, 0);
                 buffer = new char[file_size + 1];
@@ -207,12 +207,12 @@ void NpcValues::Load()
                     loaded_count++;
                     file_text.Delete(1, name_end + 39);
                 }
-                is_loaded = 1;
+                is_loaded = true;
             }
             catch (...)
             {
                 FileClose(hFile);
-                is_loaded = 0;
+                is_loaded = false;
             }
             file_number++;
         } while (loaded_count < record_total);
@@ -222,7 +222,7 @@ void NpcValues::Load()
 // Deletes the NPC part files from 001 up to the first one missing, 100 at most.
 void NpcValues::DeleteFiles()
 {
-    char file_found = 1;
+    char file_found = true;
     String lpFileName;
     try
     {
@@ -236,7 +236,7 @@ void NpcValues::DeleteFiles()
             if (!access(lpFileName.c_str(), 0))
                 remove(lpFileName.c_str());
             else
-                file_found = 0;
+                file_found = false;
         }
     }
     catch (...)
@@ -244,36 +244,36 @@ void NpcValues::DeleteFiles()
     }
 }
 
-void NpcValues::AddNpc(int npc_id, String name, short graphic, short npc_record_byte_at_3, short npc_record_word_at_4,
-    short npc_record_word_at_6, short npc_type, short npc_record_word_at_10, int npc_record_triple_at_12,
-    short npc_record_word_at_15, short npc_record_word_at_17, short npc_record_word_at_19, short npc_record_word_at_21,
-    short npc_record_word_at_23, short npc_record_word_at_25, short npc_record_byte_at_27, short npc_record_word_at_28,
-    short npc_record_word_at_30, short npc_record_word_at_32, short npc_record_word_at_34, short npc_record_byte_at_36,
-    int npc_record_triple_at_37)
+void NpcValues::AddNpc(int npc_id, String name, short graphic, short race, short boss,
+    short child, short npc_type, short behavior_id, int hp,
+    short tp, short min_damage, short max_damage, short accuracy,
+    short evade, short armor, short return_damage, short element,
+    short element_damage, short element_weakness, short element_weakness_damage, short level,
+    int experience)
 {
     NpcValue handle(npc_id);
     handle.npc_id = npc_id;
     handle.name = name;
     handle.graphic = graphic;
-    handle.npc_record_byte_at_3 = npc_record_byte_at_3;
-    handle.npc_record_word_at_4 = npc_record_word_at_4;
-    handle.npc_record_word_at_6 = npc_record_word_at_6;
+    handle.race = race;
+    handle.boss = boss;
+    handle.child = child;
     handle.npc_type = npc_type;
-    handle.npc_record_word_at_10 = npc_record_word_at_10;
-    handle.npc_record_triple_at_12 = npc_record_triple_at_12;
-    handle.npc_record_word_at_15 = npc_record_word_at_15;
-    handle.npc_record_word_at_17 = npc_record_word_at_17;
-    handle.npc_record_word_at_19 = npc_record_word_at_19;
-    handle.npc_record_word_at_21 = npc_record_word_at_21;
-    handle.npc_record_word_at_23 = npc_record_word_at_23;
-    handle.npc_record_word_at_25 = npc_record_word_at_25;
-    handle.npc_record_byte_at_27 = npc_record_byte_at_27;
-    handle.npc_record_word_at_28 = npc_record_word_at_28;
-    handle.npc_record_word_at_30 = npc_record_word_at_30;
-    handle.npc_record_word_at_32 = npc_record_word_at_32;
-    handle.npc_record_word_at_34 = npc_record_word_at_34;
-    handle.npc_record_byte_at_36 = npc_record_byte_at_36;
-    handle.npc_record_triple_at_37 = npc_record_triple_at_37;
+    handle.behavior_id = behavior_id;
+    handle.hp = hp;
+    handle.tp = tp;
+    handle.min_damage = min_damage;
+    handle.max_damage = max_damage;
+    handle.accuracy = accuracy;
+    handle.evade = evade;
+    handle.armor = armor;
+    handle.return_damage = return_damage;
+    handle.element = element;
+    handle.element_damage = element_damage;
+    handle.element_weakness = element_weakness;
+    handle.element_weakness_damage = element_weakness_damage;
+    handle.level = level;
+    handle.experience = experience;
     records.insert(records.end(), handle);
 }
 
@@ -313,14 +313,14 @@ NpcTypeInfo NpcValues::GetType(int npc_id)
 {
     NpcTypeInfo type_pair;
     type_pair.npc_type = NpcType_Friendly;
-    type_pair.npc_record_word_at_10 = 0;
+    type_pair.behavior_id = 0;
     vector<NpcValue>::iterator it;
     for (it = records.begin(); it != records.end(); it++)
     {
         if (npc_id == it->npc_id)
         {
             type_pair.npc_type = it->npc_type;
-            type_pair.npc_record_word_at_10 = it->npc_record_word_at_10;
+            type_pair.behavior_id = it->behavior_id;
             break;
         }
     }

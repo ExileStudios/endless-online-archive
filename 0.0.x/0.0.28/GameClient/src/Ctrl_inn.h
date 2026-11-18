@@ -19,7 +19,7 @@ struct InnController
     int link_line_index;
     int npc_session_id;
     int is_citizen;
-    char pad_0x28[1];
+    char unused_bytes[1];
     char scroll_up_hovered;
     char scroll_down_hovered;
     char unused_flag;
@@ -41,7 +41,7 @@ struct InnController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x7c[4];
+    char second_unused_bytes[4];
 
     InnController();
     ~InnController();

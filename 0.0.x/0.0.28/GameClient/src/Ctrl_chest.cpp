@@ -12,7 +12,7 @@ ChestController::ChestController()
 {
     window_x = 35;
     window_y = 23;
-    is_visible = 0;
+    is_visible = false;
     hovered_row = -1;
     reserved_value = -1;
     chest_x = -1;
@@ -34,28 +34,26 @@ void ChestController::AddItem(int item_id, int amount)
 // Empties the item list.
 void ChestController::ClearItems()
 {
-    int __slot1;
     items.clear();
 }
 
 // Shows the chest at the map tile with an empty list.
 void ChestController::Open(int reserved, int x, int y)
 {
-    int __slot1;
     MainForm->gfx->CreateChestGraphics();
     MainForm->gfx->LoadChestGraphics();
     items.clear();
     reserved_value = reserved;
     chest_x = x;
     chest_y = y;
-    is_visible = 1;
+    is_visible = true;
     MainForm->redraw_needed = true;
 }
 
 // Hides the window, forgets the chest's tile and frees its graphics.
 void ChestController::Close()
 {
-    is_visible = 0;
+    is_visible = false;
     reserved_value = -1;
     chest_x = -1;
     chest_y = -1;
@@ -69,14 +67,14 @@ void ChestController::MouseDown(int x, int y, int button)
 {
     char handled;
     TPoint chest_pos;
-    handled = 0;
+    handled = false;
     if (button == 1)
     {
         if (y > window_y + 24 && y < window_y + 243 && window_x + 17 < x)
         {
             if (window_x + 252 > x)
             {
-                handled = 1;
+                handled = true;
                 chest_pos.x = chest_x;
                 chest_pos.y = chest_y;
                 int result = (y - window_y - 18) / NPC_LIST_ROW_HEIGHT;
@@ -94,7 +92,7 @@ void ChestController::MouseDown(int x, int y, int button)
                             }
                             else
                             {
-                                MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                     MainForm->strings->GetText(GameText_Warning),
                                     MainForm->strings->GetText(GameText_ItsTooHeavyYou));
                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -103,7 +101,7 @@ void ChestController::MouseDown(int x, int y, int button)
                         }
                         else
                         {
-                            MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetText(GameText_Warning),
                                 MainForm->strings->GetText(GameText_YouCouldNotPick));
                             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -118,7 +116,7 @@ void ChestController::MouseDown(int x, int y, int button)
     {
         if (window_x <= x && window_x + 270 >= x && y >= window_y && y <= window_y + 270)
         {
-            is_dragging = 1;
+            is_dragging = true;
             drag_offset_x = x - window_x;
             drag_offset_y = y - window_y;
         }
@@ -153,34 +151,28 @@ void ChestController::MouseMove(int x, int y)
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (hovered_row >= 0)
     {
-        if (hovered_row >= 0)
-        {
-            hovered_row = -1;
-            MainForm->redraw_needed = true;
-        }
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
     }
     if (!(x < window_x + 92 || x > window_x + 182 || y < window_y + 231 || y > window_y + 254))
     {
         if (!close_hovered)
         {
-            close_hovered = 1;
+            close_hovered = true;
             MainForm->redraw_needed = true;
         }
     }
-    else
+    else if (close_hovered)
     {
-        if (close_hovered)
-        {
-            close_hovered = 0;
-            MainForm->redraw_needed = true;
-        }
+        close_hovered = false;
+        MainForm->redraw_needed = true;
     }
 }
 
 // Ends moving the window.
 void ChestController::MouseUp()
 {
-    is_dragging = 0;
+    is_dragging = false;
 }

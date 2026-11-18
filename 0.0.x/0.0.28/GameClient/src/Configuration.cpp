@@ -19,7 +19,7 @@ Config::Config()
     skip_intro = false;
     skip_softpad = false;
     use_page_flip = true;
-    use_bit_blt_draw = 0;
+    use_bit_blt_draw = false;
     music_enabled = 1;
     sound_enabled = 1;
     stay_on_top = false;
@@ -29,13 +29,13 @@ Config::Config()
     preload_tile_gfx = false;
     language = 0;
     keyboard_layout = 0;
-    filter_enabled = 1;
-    strict_filter = 0;
-    log_chat = 0;
-    accept_private_messages = 1;
-    accept_requests = 1;
-    show_balloons = 1;
-    show_shadows = 1;
+    filter_enabled = true;
+    strict_filter = false;
+    log_chat = false;
+    accept_private_messages = true;
+    accept_requests = true;
+    show_balloons = true;
+    show_shadows = true;
     chat_log_path = "chatlog.txt";
     LoadSettings();
     music_available = music_enabled;
@@ -75,7 +75,7 @@ void Config::LoadSettings()
     TStringList *lines = new Classes::TStringList();
     try
     {
-        hFile = FileOpen("./config/setup.ini", 0);
+        hFile = FileOpen("./config/setup.ini", fmOpenRead);
         nNumberOfBytesToRead = FileSeek(hFile, 0, 2);
         FileSeek(hFile, 0, 0);
         FileHandle = new char[nNumberOfBytesToRead + 1];
@@ -145,10 +145,11 @@ void Config::LoadSettings()
                     }
                     if (key_name == "FULLSCREEN")
                     {
-                        for (int ii = k + 1; ii <= config_line.Length(); ii++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[ii] == 'O' || config_line[ii] == 'N' || config_line[ii] == 'F')
-                                value_text = value_text + config_line[ii];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
                             fullscreen = false;
@@ -185,60 +186,66 @@ void Config::LoadSettings()
                     }
                     if (key_name == "BLOCKTRANSFER")
                     {
-                        for (int nn = k + 1; nn <= config_line.Length(); nn++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[nn] == 'O' || config_line[nn] == 'N' || config_line[nn] == 'F')
-                                value_text = value_text + config_line[nn];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
-                            use_bit_blt_draw = 1;
+                            use_bit_blt_draw = true;
                     }
                     if (key_name == "STAYONTOP")
                     {
-                        for (int i1 = k + 1; i1 <= config_line.Length(); i1++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i1] == 'O' || config_line[i1] == 'N' || config_line[i1] == 'F')
-                                value_text = value_text + config_line[i1];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
                             stay_on_top = true;
                     }
                     if (key_name == "SIZEABLE")
                     {
-                        for (int i2 = k + 1; i2 <= config_line.Length(); i2++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i2] == 'O' || config_line[i2] == 'N' || config_line[i2] == 'F')
-                                value_text = value_text + config_line[i2];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
                             sizeable = false;
                     }
                     if (key_name == "STATICSPRITES")
                     {
-                        for (int i3 = k + 1; i3 <= config_line.Length(); i3++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i3] == 'O' || config_line[i3] == 'N' || config_line[i3] == 'F')
-                                value_text = value_text + config_line[i3];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
                             preload_character_gfx = true;
                     }
                     if (key_name == "STATICOBJECTS")
                     {
-                        for (int i4 = k + 1; i4 <= config_line.Length(); i4++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i4] == 'O' || config_line[i4] == 'N' || config_line[i4] == 'F')
-                                value_text = value_text + config_line[i4];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
                             preload_map_gfx = true;
                     }
                     if (key_name == "STATICTILES")
                     {
-                        for (int i5 = k + 1; i5 <= config_line.Length(); i5++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i5] == 'O' || config_line[i5] == 'N' || config_line[i5] == 'F')
-                                value_text = value_text + config_line[i5];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
                             preload_tile_gfx = true;
@@ -246,8 +253,8 @@ void Config::LoadSettings()
                     // Language and keyboard are 0 to 3; anything else is 0.
                     if (key_name == "LANGUAGE")
                     {
-                        for (int i6 = k + 1; i6 <= config_line.Length(); i6++)
-                            value_text = value_text + config_line[i6];
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
+                            value_text = value_text + config_line[value_pos];
                         try
                         {
                             language = StrToInt(value_text);
@@ -261,8 +268,8 @@ void Config::LoadSettings()
                     }
                     if (key_name == "KEYBOARD")
                     {
-                        for (int i7 = k + 1; i7 <= config_line.Length(); i7++)
-                            value_text = value_text + config_line[i7];
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
+                            value_text = value_text + config_line[value_pos];
                         try
                         {
                             keyboard_layout = StrToInt(value_text);
@@ -276,98 +283,107 @@ void Config::LoadSettings()
                     }
                     if (key_name == "FILTER")
                     {
-                        for (int i8 = k + 1; i8 <= config_line.Length(); i8++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i8] == 'O' || config_line[i8] == 'N' || config_line[i8] == 'F')
-                                value_text = value_text + config_line[i8];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
-                            filter_enabled = 0;
+                            filter_enabled = false;
                     }
                     if (key_name == "FILTERALL")
                     {
-                        for (int i9 = k + 1; i9 <= config_line.Length(); i9++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i9] == 'O' || config_line[i9] == 'N' || config_line[i9] == 'F')
-                                value_text = value_text + config_line[i9];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
-                            strict_filter = 1;
+                            strict_filter = true;
                     }
                     if (key_name == "SOUND")
                     {
-                        for (int i10 = k + 1; i10 <= config_line.Length(); i10++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i10] == 'O' || config_line[i10] == 'N' || config_line[i10] == 'F')
-                                value_text = value_text + config_line[i10];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
                             sound_enabled = 0;
                     }
                     if (key_name == "MUSIC")
                     {
-                        for (int i11 = k + 1; i11 <= config_line.Length(); i11++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i11] == 'O' || config_line[i11] == 'N' || config_line[i11] == 'F')
-                                value_text = value_text + config_line[i11];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
                             music_enabled = 0;
                     }
                     if (key_name == "SHOWBALOONS")
                     {
-                        for (int i12 = k + 1; i12 <= config_line.Length(); i12++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i12] == 'O' || config_line[i12] == 'N' || config_line[i12] == 'F')
-                                value_text = value_text + config_line[i12];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
-                            show_balloons = 0;
+                            show_balloons = false;
                     }
                     if (key_name == "SHOWSHADOWS")
                     {
-                        for (int i13 = k + 1; i13 <= config_line.Length(); i13++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i13] == 'O' || config_line[i13] == 'N' || config_line[i13] == 'F')
-                                value_text = value_text + config_line[i13];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
-                            show_shadows = 0;
+                            show_shadows = false;
                     }
                     if (key_name == "HEARWHISPER")
                     {
-                        for (int i14 = k + 1; i14 <= config_line.Length(); i14++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i14] == 'O' || config_line[i14] == 'N' || config_line[i14] == 'F')
-                                value_text = value_text + config_line[i14];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
-                            accept_private_messages = 0;
+                            accept_private_messages = false;
                     }
                     if (key_name == "INTERACTION")
                     {
-                        for (int i15 = k + 1; i15 <= config_line.Length(); i15++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i15] == 'O' || config_line[i15] == 'N' || config_line[i15] == 'F')
-                                value_text = value_text + config_line[i15];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "OFF")
-                            accept_requests = 0;
+                            accept_requests = false;
                     }
                     if (key_name == "LOGCHAT")
                     {
-                        for (int i16 = k + 1; i16 <= config_line.Length(); i16++)
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
                         {
-                            if (config_line[i16] == 'O' || config_line[i16] == 'N' || config_line[i16] == 'F')
-                                value_text = value_text + config_line[i16];
+                            if (config_line[value_pos] == 'O' || config_line[value_pos] == 'N'
+                                || config_line[value_pos] == 'F')
+                                value_text = value_text + config_line[value_pos];
                         }
                         if (value_text == "ON")
-                            log_chat = 1;
+                            log_chat = true;
                     }
                     if (key_name == "LOGFILE")
                     {
-                        for (int i17 = k + 1; i17 <= config_line.Length(); i17++)
-                            value_text = value_text + config_line[i17];
+                        for (int value_pos = k + 1; value_pos <= config_line.Length(); value_pos++)
+                            value_text = value_text + config_line[value_pos];
                         chat_log_path = value_text;
                     }
                 }

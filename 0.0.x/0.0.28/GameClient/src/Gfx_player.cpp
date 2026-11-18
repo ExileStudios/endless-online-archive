@@ -20,9 +20,9 @@ PlayerResources::PlayerResources()
     color_key->ColorSpaceLowValue = 0;
     fill_fx = new TDDBltFX(NULL);
     fill_fx->FillColor = 0;
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = 748;
     surface_desc->Height = 84;
     front_sheet->GetSurfaceDesc(surface_desc);
@@ -51,9 +51,9 @@ PlayerResources::PlayerResources()
     name_tag_rect.bottom = 26;
     name_tag_text_rect.left = 0;
     name_tag_text_rect.top = 0;
-    front_sheet->SetColorKey(8, color_key);
-    back_sheet->SetColorKey(8, color_key);
-    emote_strip->SetColorKey(8, color_key);
+    front_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
+    back_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
+    emote_strip->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 PlayerResources::~PlayerResources()
@@ -79,8 +79,8 @@ PlayerResources::~PlayerResources()
 // Clears both player sheets to black, the see-through colour, before the layers are drawn again.
 void PlayerResources::ClearSheets()
 {
-    front_sheet->Blt(&sheet_rect, 0, 0, 16778240, fill_fx);
-    back_sheet->Blt(&sheet_rect, 0, 0, 16778240, fill_fx);
+    front_sheet->Blt(&sheet_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
+    back_sheet->Blt(&sheet_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
 }
 
 // Draws one layer bitmap into a frame slot of the front player sheet at an offset; its black stays see-through.
@@ -288,7 +288,7 @@ void PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int 
 void PlayerResources::RenderNameTag(String text, int color_index)
 {
     HDC dc;
-    name_tag_surface->Blt(&name_tag_rect, 0, 0, 16778240, fill_fx);
+    name_tag_surface->Blt(&name_tag_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
     if (name_tag_surface->GetDC(&dc))
     {
         try
@@ -301,32 +301,32 @@ void PlayerResources::RenderNameTag(String text, int color_index)
                 MainForm->draw_canvas->Pen->Color = clWhite;
                 MainForm->draw_canvas->Font->Color = clWhite;
             }
-            if (color_index == 1)
+            if (color_index == LabelColor_Gray)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xB9B9B9;
                 MainForm->draw_canvas->Font->Color = (TColor)0xB9B9B9;
             }
-            if (color_index == 2)
+            if (color_index == LabelColor_Silver)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xE1E1E1;
                 MainForm->draw_canvas->Font->Color = (TColor)0xE1E1E1;
             }
-            if (color_index == 3)
+            if (color_index == LabelColor_LightBlue)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
                 MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
             }
-            if (color_index == 4)
+            if (color_index == LabelColor_Violet)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
                 MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
             }
-            if (color_index == 5)
+            if (color_index == LabelColor_Gold)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xA5F0FF;
                 MainForm->draw_canvas->Font->Color = (TColor)0xA5F0FF;
             }
-            if (color_index == 6)
+            if (color_index == LabelColor_Cream)
             {
                 MainForm->draw_canvas->Pen->Color = (TColor)0xD2FAFA;
                 MainForm->draw_canvas->Font->Color = (TColor)0xD2FAFA;
@@ -347,11 +347,11 @@ void PlayerResources::RenderNameTag(String text, int color_index)
         }
         name_tag_surface->ReleaseDC(dc);
     }
-    name_tag_surface->SetColorKey(8, color_key);
+    name_tag_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // One frame of a player sheet.
-Windows::TRect PlayerResources::Gfx_player_GetFrameRect(int frame)
+Windows::TRect PlayerResources::GetFrameRect(int frame)
 {
     TRect frame_rect;
     frame_rect.left = 68 * frame;
@@ -362,7 +362,7 @@ Windows::TRect PlayerResources::Gfx_player_GetFrameRect(int frame)
 }
 
 // One face of the emote strip.
-Windows::TRect PlayerResources::Gfx_player_GetEmoteFaceRect(int emote_index)
+Windows::TRect PlayerResources::GetEmoteFaceRect(int emote_index)
 {
     TRect emote_face_rect;
     emote_face_rect.left = 13 * emote_index;

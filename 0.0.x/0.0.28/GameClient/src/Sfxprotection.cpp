@@ -12,7 +12,7 @@ SfxController::SfxController(char sound_on)
     sound_enabled = sound_on;
     play_from_jukebox = false;
     music_pending = false;
-    unread_int_at_32 = -1;
+    unused_value = -1;
     music_retry_countdown = -1;
     ambient_sound_id = 0;
     fast_fade = false;
@@ -51,39 +51,39 @@ void SfxController::PlaySoundFile(String file_path)
 {
     if (sound_enabled && !MainForm->minimized)
     {
-        char is_played = 0;
+        char is_played = false;
         if (!is_played && !MainForm->Dx_SoundBuffer2->Created)
         {
             if (MainForm->Dx_SoundBuffer2->CreateFromFile(file_path.c_str(), MainForm->DSBufferDesc2,
                 MainForm->Dx_Sound1))
             {
                 MainForm->Dx_SoundBuffer2->Play(0, 0);
-                is_played = 1;
+                is_played = true;
             }
         }
         if (!is_played && !MainForm->Dx_SoundBuffer3->Created &&
             MainForm->Dx_SoundBuffer3->CreateFromFile(file_path, MainForm->DSBufferDesc3, MainForm->Dx_Sound1))
         {
             MainForm->Dx_SoundBuffer3->Play(0, 0);
-            is_played = 1;
+            is_played = true;
         }
         if (!is_played && !MainForm->Dx_SoundBuffer4->Created &&
             MainForm->Dx_SoundBuffer4->CreateFromFile(file_path, MainForm->DSBufferDesc4, MainForm->Dx_Sound1))
         {
             MainForm->Dx_SoundBuffer4->Play(0, 0);
-            is_played = 1;
+            is_played = true;
         }
         if (!is_played && !MainForm->Dx_SoundBuffer5->Created &&
             MainForm->Dx_SoundBuffer5->CreateFromFile(file_path, MainForm->DSBufferDesc5, MainForm->Dx_Sound1))
         {
             MainForm->Dx_SoundBuffer5->Play(0, 0);
-            is_played = 1;
+            is_played = true;
         }
         if (!is_played && !MainForm->Dx_SoundBuffer6->Created &&
             MainForm->Dx_SoundBuffer6->CreateFromFile(file_path, MainForm->DSBufferDesc6, MainForm->Dx_Sound1))
         {
             MainForm->Dx_SoundBuffer6->Play(0, 0);
-            is_played = 1;
+            is_played = true;
         }
         if (!is_played && !MainForm->Dx_SoundBuffer7->Created &&
             MainForm->Dx_SoundBuffer7->CreateFromFile(file_path, MainForm->DSBufferDesc7, MainForm->Dx_Sound1))
@@ -144,7 +144,7 @@ int SfxController::GetQueuedMusic()
 
 char SfxController::IsMusicPlaying()
 {
-    char is_playing = 0;
+    char is_playing = false;
     if (MainForm->config->GetMusicEnabled())
         is_playing = midi_player->IsSegmentPlaying();
     return is_playing;
@@ -181,7 +181,7 @@ void SfxController::PlayAmbientSound(int sound_id, int distance)
                 ambient_volume = -100 * distance;
                 fast_fade = false;
                 MainForm->Dx_SoundBuffer1->SetVolume(ambient_volume);
-                MainForm->Dx_SoundBuffer1->Play(0, 1);
+                MainForm->Dx_SoundBuffer1->Play(0, DSBPLAY_LOOPING);
                 MainForm->Dx_SoundBuffer1->SetVolume(ambient_volume);
             }
         }
@@ -257,9 +257,9 @@ void SfxController::UpdateSounds()
 
 bool SfxController::IsMusicRetryReady()
 {
-    bool is_ready = 1;
+    bool is_ready = true;
     if (music_retry_countdown > 0)
-        is_ready = 0;
+        is_ready = false;
     return is_ready;
 }
 

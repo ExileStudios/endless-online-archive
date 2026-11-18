@@ -4,6 +4,7 @@
 #include <Classes.hpp>
 #define DIALOG_BUTTON_OK_FRAME 4
 #define DIALOG_MAX_LINKS 10
+#define QUEST_DEFAULT_DIALOG 0
 #define QUEST_REQUEST_COOLDOWN_TICKS 16
 
 // The quest dialog window: the pages of an npc's dialog with previous and next buttons, the reply links on the last
@@ -41,7 +42,7 @@ struct DialogController
     TStringList *link_texts;
     int link_ids[DIALOG_MAX_LINKS];
     int link_line_indices[DIALOG_MAX_LINKS];
-    char pad_0xd8[40];
+    char unused_bytes[40];
     char scroll_changed;
     int unused_value;
     int top_line;
@@ -54,7 +55,7 @@ struct DialogController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x128[4];
+    char second_unused_bytes[4];
 
     DialogController();
     ~DialogController();

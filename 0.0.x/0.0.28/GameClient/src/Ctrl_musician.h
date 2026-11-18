@@ -6,7 +6,7 @@ struct MusicianController
 {
     char close_hovered;
     char is_visible;
-    char pad_0x2[6];
+    char unused_bytes[6];
     int window_x;
     int window_y;
     int hovered_note_col;
@@ -16,7 +16,7 @@ struct MusicianController
     char is_dragging;
     int drag_offset_x;
     int drag_offset_y;
-    char pad_0x2c[4];
+    char second_unused_bytes[4];
 
     MusicianController();
     ~MusicianController();

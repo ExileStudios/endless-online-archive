@@ -11,7 +11,7 @@ struct GroupController
 {
     char scroll_up_hovered;
     char scroll_down_hovered;
-    char pad_0x2[6];
+    char unused_bytes[6];
     vector<GroupMember> members;
     char is_leader;
     int requester_id;

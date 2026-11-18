@@ -9,10 +9,10 @@ struct FFileLog
     FILE *file;
     char is_open;
     String file_path;
-    String unused_text_at_12;
-    String unused_text_at_16;
-    String unused_text_at_20;
-    String unused_text_at_24;
+    String unused_text;
+    String second_unused_text;
+    String third_unused_text;
+    String fourth_unused_text;
 
     FFileLog(char open_now, String log_path);
     ~FFileLog();

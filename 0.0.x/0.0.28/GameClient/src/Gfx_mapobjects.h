@@ -16,7 +16,7 @@ struct ObjectGraphics
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char pad_0x32[6];
+    char unused_bytes[6];
 
     ObjectGraphics(char preload);
     ~ObjectGraphics();

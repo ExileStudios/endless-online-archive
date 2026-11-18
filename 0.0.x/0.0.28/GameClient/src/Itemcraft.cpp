@@ -15,7 +15,8 @@ CraftItem::CraftItem(int id)
     item_id = id;
     for (int i = 0; i < MAX_CRAFT_INGREDIENTS; i++)
     {
-        ingredient_ids[i] = 0; ingredient_amounts[i] = 0;
+        ingredient_ids[i] = 0;
+        ingredient_amounts[i] = 0;
     }
 }
 

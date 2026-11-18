@@ -13,7 +13,7 @@ struct InventoryController
     bool left_button_hovered;
     bool right_button_hovered;
     bool paperdoll_button_hovered;
-    char pad_0x3[5];
+    char unused_bytes[5];
     vector<InventoryItem> items;
     vector<InventoryItem> layout_backup;
     vector<InventoryItem> trial_backup;
@@ -45,11 +45,11 @@ struct InventoryController
     int last_mouse_y;
     int drag_delay_ticks;
     bool input_enabled;
-    char pad_0x105[23];
+    char equip_pending[23];
     bool hover_dirty;
     bool items_dirty;
     char drag_dirty;
-    char pad_0x11f[5];
+    char third_unused_bytes[5];
     int click_ticks;
     int click_col;
     int click_row;
@@ -59,7 +59,7 @@ struct InventoryController
     int change_rows[20];
     int change_count;
     bool changes_overflowed;
-    char pad_0x229[7];
+    char fourth_unused_bytes[7];
 
     InventoryController();
     ~InventoryController();

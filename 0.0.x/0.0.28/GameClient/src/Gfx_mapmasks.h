@@ -16,7 +16,7 @@ struct MaskGraphics
     HMODULE library;
     char library_open;
     char keep_library_open;
-    char pad_0x32[6];
+    char unused_bytes[6];
 
     MaskGraphics(char preload);
     ~MaskGraphics();

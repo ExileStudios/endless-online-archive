@@ -21,11 +21,11 @@ StatusController::StatusController()
     max_mana = 0;
     stamina = 20;
     max_stamina = 20;
-    label_413_from = 0;
-    label_413_to = 0;
-    label_414_value = 0;
-    label_416_value = 0;
-    label_415_value = 0;
+    damage_min = 0;
+    damage_max = 0;
+    hitrate = 0;
+    dodge = 0;
+    armor = 0;
     stamina_check_text = IntToStr(stamina);
     max_stamina_check_text = IntToStr(max_stamina);
     unused_value = 0;
@@ -52,7 +52,7 @@ void StatusController::Tick()
     if (max_weight > 255)
     {
         max_stamina = 0;
-        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
             MainForm->strings->GetDialogText(DialogText_HelloHax0r, false),
             MainForm->strings->GetDialogText(DialogText_HelloHax0r, true));
         MainForm->edits->caret_enabled = false;
@@ -63,7 +63,7 @@ void StatusController::Tick()
     {
         Sleep(500);
         max_stamina = 0;
-        MainForm->animation->game->ShowMessageBox(1, ConfirmAction_None,
+        MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
             MainForm->strings->GetDialogText(DialogText_HelloHax0r, false),
             MainForm->strings->GetDialogText(DialogText_HelloHax0r, true));
         MainForm->edits->caret_enabled = false;
@@ -94,7 +94,7 @@ void StatusController::Tick()
                     stamina = 0;
                 }
                 MainForm->animation->interface_controller->game_bars->SetStaminaBar(stamina, max_stamina);
-                is_dirty = 1;
+                is_dirty = true;
             }
         }
         stamina_check_text = IntToStr(stamina);
@@ -103,12 +103,12 @@ void StatusController::Tick()
         {
             blink_phase++;
             if (blink_phase == 6)
-                is_dirty = 1;
+                is_dirty = true;
         }
         else
         {
             blink_phase = 0;
-            is_dirty = 1;
+            is_dirty = true;
         }
     }
 }
@@ -137,7 +137,8 @@ void StatusController::MouseDown(int x, int y, int button)
             // Asks first, unless a training was sent recently
             if (train_confirm_ticks <= 0)
             {
-                MainForm->animation->game->ShowMessageBox(3, ConfirmAction_TrainStat, "Character training", "Do you want to train?");
+                MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_TrainStat,
+                    "Character training", "Do you want to train?");
                 MainForm->edits->caret_enabled = false;
             }
             else
@@ -158,7 +159,7 @@ int StatusController::GetBlinkPhase()
 void StatusController::SetHealth(int new_health)
 {
     health = new_health;
-    is_dirty = 1;
+    is_dirty = true;
     if (health < 0)
         health = 0;
     MainForm->animation->interface_controller->game_bars->SetHealthBar(health, max_health);
@@ -168,7 +169,7 @@ void StatusController::SetHealth(int new_health)
 void StatusController::SetMana(int new_mana)
 {
     mana = new_mana;
-    is_dirty = 1;
+    is_dirty = true;
     if (mana < 0)
         mana = 0;
     MainForm->animation->interface_controller->game_bars->SetManaBar(mana, max_mana);
@@ -178,7 +179,7 @@ void StatusController::SetMana(int new_mana)
 void StatusController::SetStamina(int new_stamina)
 {
     stamina = new_stamina;
-    is_dirty = 1;
+    is_dirty = true;
     if (stamina < 0)
         stamina = 0;
     MainForm->animation->interface_controller->game_bars->SetStaminaBar(stamina, max_stamina);
@@ -345,15 +346,15 @@ void StatusController::SetLevel(int new_level)
 // True when the guild tag is a real tag: blank tags and tags starting with a zero do not count.
 bool StatusController::IsInGuild()
 {
-    bool in_guild = 1;
+    bool in_guild = true;
     if (guild_tag.Length() < 2)
-        in_guild = 0;
+        in_guild = false;
     else
     {
         if (guild_tag[1] == '0' || guild_tag[1] == ' ')
-            in_guild = 0;
+            in_guild = false;
         if (guild_tag[2] == ' ')
-            in_guild = 0;
+            in_guild = false;
     }
     return in_guild;
 }
@@ -362,5 +363,5 @@ DEFINE_TEST_AND_CLEAR_DIRTY(StatusController)
 
 void StatusController::MarkDirty()
 {
-    is_dirty = 1;
+    is_dirty = true;
 }

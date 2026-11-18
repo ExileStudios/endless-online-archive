@@ -13,15 +13,15 @@
 #include <DBTables.hpp>
 #pragma package(smart_init)
 
-IDirectMusicPerformance *g_658380 = NULL;
-HWND g_6CB468;
-IDirectMusicSegment *g_6CB46C;
-IDirectMusicLoader *g_6CB470;
+IDirectMusicPerformance *music_performance = NULL;
+HWND music_window;
+IDirectMusicSegment *music_segment;
+IDirectMusicLoader *music_loader;
 
 Dx_MidiPlayer::Dx_MidiPlayer()
 {
     is_initialized = InitDirectMusic();
-    is_playing = 0;
+    is_playing = false;
 }
 
 Dx_MidiPlayer::~Dx_MidiPlayer()
@@ -37,12 +37,12 @@ void Dx_MidiPlayer::Play(String music_path)
     file_path = music_path;
     LoadSegment(file_path.c_str());
     PlaySegment();
-    is_playing = 1;
+    is_playing = true;
 }
 
 void Dx_MidiPlayer::Stop()
 {
-    is_playing = 0;
+    is_playing = false;
     if (IsSegmentPlaying())
         StopSegment();
 }
@@ -51,13 +51,14 @@ void Dx_MidiPlayer::Stop()
 bool Dx_MidiPlayer::InitDirectMusic()
 {
     CoInitialize(0);
-    if (CoCreateInstance(CLSID_DirectMusicPerformance, 0, 3, IID_IDirectMusicPerformance, (void **)&g_658380) < 0)
+    if (CoCreateInstance(CLSID_DirectMusicPerformance, 0, CLSCTX_INPROC, IID_IDirectMusicPerformance,
+        (void **)&music_performance) < 0)
         return false;
-    if (g_658380->Init(0, 0, g_6CB468) < 0)
+    if (music_performance->Init(0, 0, music_window) < 0)
         return false;
-    if (g_658380->AddPort(0) < 0)
+    if (music_performance->AddPort(0) < 0)
         return false;
-    if (CoCreateInstance(CLSID_DirectMusicLoader, 0, 3, IID_IDirectMusicLoader, (void **)&g_6CB470) < 0)
+    if (CoCreateInstance(CLSID_DirectMusicLoader, 0, CLSCTX_INPROC, IID_IDirectMusicLoader, (void **)&music_loader) < 0)
         return false;
     return true;
 }
@@ -65,22 +66,22 @@ bool Dx_MidiPlayer::InitDirectMusic()
 // Unloads and releases the segment, then the loader and the performance.
 void Dx_MidiPlayer::ReleaseDirectMusic()
 {
-    if (g_6CB46C)
+    if (music_segment)
     {
-        g_6CB46C->SetParam(GUID_Unload, -1, 0, 0, g_658380);
-        g_6CB46C->Release();
-        g_6CB46C = 0;
+        music_segment->SetParam(GUID_Unload, -1, 0, 0, music_performance);
+        music_segment->Release();
+        music_segment = 0;
     }
-    if (g_6CB470)
+    if (music_loader)
     {
-        g_6CB470->Release();
-        g_6CB470 = 0;
+        music_loader->Release();
+        music_loader = 0;
     }
-    if (g_658380)
+    if (music_performance)
     {
-        g_658380->CloseDown();
-        g_658380->Release();
-        g_658380 = 0;
+        music_performance->CloseDown();
+        music_performance->Release();
+        music_performance = 0;
     }
     CoUninitialize();
 }
@@ -89,45 +90,45 @@ void Dx_MidiPlayer::ReleaseDirectMusic()
 bool Dx_MidiPlayer::LoadSegment(LPCSTR file_name)
 {
     DMUS_OBJECTDESC object_desc;
-    char Buffer[260];
-    WCHAR WideCharStr[260];
-    WCHAR Source[260];
-    if (!GetCurrentDirectoryA(260, Buffer))
+    char Buffer[MAX_PATH];
+    WCHAR WideCharStr[MAX_PATH];
+    WCHAR Source[MAX_PATH];
+    if (!GetCurrentDirectoryA(MAX_PATH, Buffer))
         return false;
-    MultiByteToWideChar(0, 1, Buffer, -1, WideCharStr, 260);
-    if (g_6CB470->SetSearchDirectory(GUID_DirectMusicAllTypes, WideCharStr, 0) < 0)
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, Buffer, -1, WideCharStr, MAX_PATH);
+    if (music_loader->SetSearchDirectory(GUID_DirectMusicAllTypes, WideCharStr, 0) < 0)
         return false;
     memset(&object_desc, 0, sizeof(object_desc));
     object_desc.dwSize = 848;
-    MultiByteToWideChar(0, 1, file_name, -1, Source, 260);
+    MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, file_name, -1, Source, MAX_PATH);
     object_desc.guidClass = CLSID_DirectMusicSegment;
     wcscpy(object_desc.wszFileName, Source);
     object_desc.dwValidData = 18;
-    if (g_6CB470->GetObject(&object_desc, IID_IDirectMusicSegment, (void **)&g_6CB46C) < 0)
+    if (music_loader->GetObject(&object_desc, IID_IDirectMusicSegment, (void **)&music_segment) < 0)
         return false;
-    if (g_6CB46C->SetParam(GUID_StandardMIDIFile, -1, 0, 0, g_658380) < 0)
+    if (music_segment->SetParam(GUID_StandardMIDIFile, -1, 0, 0, music_performance) < 0)
         return false;
-    if (g_6CB46C->SetParam(GUID_Download, -1, 0, 0, g_658380) < 0)
+    if (music_segment->SetParam(GUID_Download, -1, 0, 0, music_performance) < 0)
         return false;
     return true;
 }
 
 void Dx_MidiPlayer::PlaySegment()
 {
-    if (g_658380->PlaySegment(g_6CB46C, 0, 0, 0) < 0)
+    if (music_performance->PlaySegment(music_segment, 0, 0, 0) < 0)
         return;
 }
 
 void Dx_MidiPlayer::StopSegment()
 {
-    if (g_658380->Stop(g_6CB46C, 0, 0, 0) < 0)
+    if (music_performance->Stop(music_segment, 0, 0, 0) < 0)
         return;
 }
 
 // True while the segment plays.
 char Dx_MidiPlayer::IsSegmentPlaying()
 {
-    if (g_658380->IsPlaying(g_6CB46C, 0) == 0)
-        return 1;
-    return 0;
+    if (music_performance->IsPlaying(music_segment, 0) == 0)
+        return true;
+    return false;
 }

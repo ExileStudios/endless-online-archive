@@ -18,24 +18,24 @@ Players::Players(char preload_option)
     current_index = -1;
     gender_one_libraries_loaded = false;
     gender_zero_libraries_loaded = false;
-    hover_label_shown = 0;
+    hover_label_shown = false;
     preload_graphics = preload_option;
     if (preload_graphics)
     {
-        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_TalkTell).c_str());
-        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(11).c_str());
-        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(13).c_str());
-        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(15).c_str());
-        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(17).c_str());
-        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(19).c_str());
+        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
+        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
+        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
+        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
+        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
+        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
         gender_one_libraries_loaded = true;
         gender_one_idle_ticks = 0;
-        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(10).c_str());
-        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_ApplyAppearanceChange).c_str());
-        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(14).c_str());
-        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(16).c_str());
-        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(18).c_str());
-        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(20).c_str());
+        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
+        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
+        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
+        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
+        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
+        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
         gender_zero_libraries_loaded = true;
         gender_zero_idle_ticks = 0;
     }
@@ -90,20 +90,20 @@ void Players::ReloadGraphicsLibraries()
     }
     if (preload_graphics)
     {
-        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_TalkTell).c_str());
-        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(11).c_str());
-        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(13).c_str());
-        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(15).c_str());
-        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(17).c_str());
-        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(19).c_str());
+        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
+        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
+        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
+        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
+        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
+        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
         gender_one_libraries_loaded = true;
         gender_one_idle_ticks = 0;
-        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(10).c_str());
-        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_ApplyAppearanceChange).c_str());
-        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(14).c_str());
-        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(16).c_str());
-        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(18).c_str());
-        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(20).c_str());
+        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
+        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
+        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
+        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
+        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
+        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
         gender_zero_libraries_loaded = true;
         gender_zero_idle_ticks = 0;
     }
@@ -117,8 +117,8 @@ void Players::Animate()
     char no_hover_yet;
     int screen_x = 0;
     int screen_y;
-    position_changed = 0;
-    recenter_view = 0;
+    position_changed = false;
+    recenter_view = false;
     for (vector<Player>::iterator i = players.begin(); i != players.end(); i++)
     {
         // A text label counts down; a blinking one redraws on odd counts.
@@ -127,7 +127,7 @@ void Players::Animate()
             i->text_label_timer--;
             if (i->text_label_blinking && i->text_label_timer % 2 == 1)
             {
-                i->redraw = 1;
+                i->redraw = true;
                 MainForm->redraw_needed = true;
             }
             if (i->text_label_timer < 1)
@@ -138,7 +138,7 @@ void Players::Animate()
             i->emote_start = false;
             i->emote_frame = -1;
             i->emote_step = 0;
-            i->emoting = 1;
+            i->emoting = true;
         }
         if (i->emoting)
         {
@@ -151,15 +151,15 @@ void Players::Animate()
             else
             {
                 i->emote_step = 0;
-                i->emoting = 0;
+                i->emoting = false;
             }
             if (i->emote_frame_count > 0 || !i->emote_step)
-                i->redraw = 1;
+                i->redraw = true;
         }
         if (i->effect_start)
         {
-            i->effect_start = 0;
-            i->effect_running = 1;
+            i->effect_start = false;
+            i->effect_running = true;
             i->effect_frame = 0;
             MainForm->sound_mapper->PlayEffectSound(i->effect_id);
         }
@@ -172,15 +172,15 @@ void Players::Animate()
                 i->effect_loops_left--;
                 i->effect_frame = 0;
                 if (i->effect_loops_left <= 0)
-                    i->effect_running = 0;
+                    i->effect_running = false;
             }
-            i->redraw = 1;
+            i->redraw = true;
         }
         // A pending effect, set when the player was added, starts here.
         if (i->pending_effect >= 0)
         {
-            i->effect_start = 1;
-            i->effect_running = 0;
+            i->effect_start = true;
+            i->effect_running = false;
             i->effect_id = i->pending_effect;
             i->effect_loops_left = 1;
             i->effect_frame = 0;
@@ -194,7 +194,7 @@ void Players::Animate()
         if (i->dying)
         {
             i->death_countdown--;
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->hiding)
         {
@@ -202,9 +202,9 @@ void Players::Animate()
             if (i->hide_countdown <= 0)
             {
                 i->hiding = false;
-                i->hidden = 1;
+                i->hidden = true;
             }
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->unhiding)
         {
@@ -212,9 +212,9 @@ void Players::Animate()
             if ((int)i->unhide_countdown <= 0)
             {
                 i->unhiding = false;
-                i->hidden = 0;
+                i->hidden = false;
             }
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->jump_start && i->walk_sheets_loaded)
         {
@@ -225,26 +225,26 @@ void Players::Animate()
             i->direction = i->target_direction;
             i->jump_frame = -1;
             i->jumping = true;
-            position_changed = 1;
+            position_changed = true;
         }
         // A step waits for its cells; the player is placed on the new tile as it starts.
         if (i->walk_start && i->walk_sheets_loaded)
         {
-            i->walk_start = 0;
+            i->walk_start = false;
             i->x = i->target_x;
             i->y = i->target_y;
             i->walk_direction = i->walk_target_direction;
             i->direction = i->target_direction;
             i->walk_frame = -1;
-            i->walking = 1;
-            position_changed = 1;
+            i->walking = true;
+            position_changed = true;
         }
         if (i->jumping)
         {
             if (i->jump_frame <= 2)
             {
                 if (!i->jump_frame)
-                    MainForm->sfx->PlaySfx(41);
+                    MainForm->sfx->PlaySfx(SfxSound_Jump);
                 i->jump_frame++;
             }
             else
@@ -253,7 +253,7 @@ void Players::Animate()
                 i->jumping = false;
             }
             i->sitting_on_floor = false;
-            i->redraw = 1;
+            i->redraw = true;
         }
         // Four frames, one per pass from the pass the step starts; the fifth pass ends it.
         if (i->walking)
@@ -263,17 +263,17 @@ void Players::Animate()
             else
             {
                 i->walk_frame = 0;
-                i->walking = 0;
+                i->walking = false;
             }
             i->sitting_on_floor = false;
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->attack_start && i->attack_sheets_loaded)
         {
-            i->attack_start = 0;
+            i->attack_start = false;
             i->attack_direction = i->direction;
             i->attack_frame = -1;
-            i->attacking = 1;
+            i->attacking = true;
         }
         if (i->chair_sit_start)
         {
@@ -286,12 +286,12 @@ void Players::Animate()
                 i->x = i->target_x;
                 i->y = i->target_y;
                 i->direction = i->target_direction;
-                i->redraw = 1;
-                position_changed = 1;
+                i->redraw = true;
+                position_changed = true;
                 if (i->recenter_view)
                 {
-                    i->recenter_view = 0;
-                    recenter_view = 1;
+                    i->recenter_view = false;
+                    recenter_view = true;
                 }
             }
         }
@@ -304,8 +304,8 @@ void Players::Animate()
             i->x = i->target_x;
             i->y = i->target_y;
             i->direction = i->target_direction;
-            i->redraw = 1;
-            position_changed = 1;
+            i->redraw = true;
+            position_changed = true;
         }
         if (i->stand_up_start)
         {
@@ -316,12 +316,12 @@ void Players::Animate()
                 i->stand_up_start = false;
                 i->x = i->target_x;
                 i->y = i->target_y;
-                i->redraw = 1;
-                position_changed = 1;
+                i->redraw = true;
+                position_changed = true;
                 if (i->recenter_view)
                 {
-                    i->recenter_view = 0;
-                    recenter_view = 1;
+                    i->recenter_view = false;
+                    recenter_view = true;
                 }
             }
         }
@@ -334,11 +334,11 @@ void Players::Animate()
                 {
                     if (!i->silent_attack)
                         MainForm->sound_mapper->PlayWeaponSound(i->weapon);
-                    i->silent_attack = 0;
+                    i->silent_attack = false;
                     if (i->weapon == 49 || i->weapon == 50)
                     {
                         i->emote_start = true;
-                        i->emoting = 0;
+                        i->emoting = false;
                         i->emote_id = 15;
                         i->emote_first_frame = 57;
                         i->emote_frame_count = EMOTE_FRAME_COUNT;
@@ -348,16 +348,16 @@ void Players::Animate()
             else
             {
                 i->attack_frame = 0;
-                i->attacking = 0;
+                i->attacking = false;
             }
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->cast_start && i->cast_sheets_loaded)
         {
             i->cast_start = false;
             i->cast_direction = i->direction;
             i->cast_frame = -1;
-            i->casting = 1;
+            i->casting = true;
         }
         if (i->casting)
         {
@@ -366,17 +366,17 @@ void Players::Animate()
             else
             {
                 i->cast_frame = 0;
-                i->casting = 0;
+                i->casting = false;
             }
-            i->redraw = 1;
+            i->redraw = true;
         }
         if (i->health_bar_start)
         {
-            i->health_bar_start = 0;
+            i->health_bar_start = false;
             if (i->health_bar_timer > 0)
             {
-                i->health_bar_shown = 1;
-                i->redraw = 1;
+                i->health_bar_shown = true;
+                i->redraw = true;
             }
         }
         if (i->health_bar_shown)
@@ -384,27 +384,27 @@ void Players::Animate()
             i->health_bar_timer--;
             if (i->health_bar_timer <= 0)
             {
-                i->health_bar_shown = 0;
-                i->redraw = 1;
+                i->health_bar_shown = false;
+                i->redraw = true;
             }
         }
         if (i->damage_start)
         {
-            i->damage_start = 0;
+            i->damage_start = false;
             if (i->damage_timer > 0)
             {
-                i->damage_shown = 1;
-                i->redraw = 1;
+                i->damage_shown = true;
+                i->redraw = true;
             }
         }
         if (i->damage_shown)
         {
             i->damage_timer--;
-            i->redraw = 1;
+            i->redraw = true;
             if (i->damage_timer <= 0)
             {
-                i->damage_shown = 0;
-                i->redraw = 1;
+                i->damage_shown = false;
+                i->redraw = true;
             }
         }
         // The level-up emote waits until no step, jump, attack, cast or emote runs.
@@ -412,10 +412,10 @@ void Players::Animate()
             !i->attacking && !i->cast_start && !i->casting && !i->emote_start && !i->emoting)
         {
             i->level_up_pending = false;
-            MainForm->sfx->PlaySfx(39);
+            MainForm->sfx->PlaySfx(SfxSound_LevelUp);
             MainForm->map->BlockActionsBriefly();
             i->emote_start = true;
-            i->emoting = 0;
+            i->emoting = false;
             i->emote_id = 13;
             i->emote_first_frame = 49;
             i->emote_frame_count = EMOTE_FRAME_COUNT;
@@ -427,7 +427,7 @@ void Players::Animate()
                 i->CloseBalloon();
         }
     }
-    no_hover_yet = 1;
+    no_hover_yet = true;
     // From the end of the list back; only the first player found under the mouse gets the label.
     for (vector<Player>::reverse_iterator it(players.end()); it != vector<Player>::reverse_iterator(players.begin());
         it++)
@@ -470,30 +470,30 @@ void Players::Animate()
                         }
                     }
                     MainForm->gfx->sprites->ShowNameLabel(label_text, label_style);
-                    (*it).hover_label_shown = 1;
-                    (*it).redraw = 1;
+                    (*it).hover_label_shown = true;
+                    (*it).redraw = true;
                 }
-                no_hover_yet = 0;
+                no_hover_yet = false;
             }
             else if ((*it).hover_label_shown)
             {
-                (*it).hover_label_shown = 0;
-                (*it).redraw = 1;
+                (*it).hover_label_shown = false;
+                (*it).redraw = true;
             }
         }
         else
         {
             if ((*it).hover_label_shown)
             {
-                (*it).hover_label_shown = 0;
-                (*it).redraw = 1;
+                (*it).hover_label_shown = false;
+                (*it).redraw = true;
             }
         }
     }
     if (no_hover_yet)
-        hover_label_shown = 0;
+        hover_label_shown = false;
     else
-        hover_label_shown = 1;
+        hover_label_shown = true;
     if (position_changed)
         SortByPosition();
     if (recenter_view)
@@ -506,7 +506,7 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
     // Starts over after each erase: an erase moves the rest of the list.
     do
     {
-        list_changed = 0;
+        list_changed = false;
         for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
         {
             if (it->dying)
@@ -516,7 +516,7 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
                     it->FreeResources();
                     it->CloseBalloon();
                     players.erase(it);
-                    list_changed = 1;
+                    list_changed = true;
                     break;
                 }
             }
@@ -526,7 +526,7 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
                 {
                     if (!it->out_of_range)
                     {
-                        it->out_of_range = 1;
+                        it->out_of_range = true;
                         it->removal_countdown = 4;
                     }
                     else
@@ -537,13 +537,13 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
                             it->FreeResources();
                             it->CloseBalloon();
                             players.erase(it);
-                            list_changed = 1;
+                            list_changed = true;
                             break;
                         }
                     }
                 }
                 else
-                    it->out_of_range = 0;
+                    it->out_of_range = false;
             }
         }
     } while (list_changed);
@@ -558,12 +558,12 @@ void Players::LoadGraphicsLibraries(int gender)
         {
             if (!gender_one_libraries_loaded)
             {
-                hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_TalkTell).c_str());
-                boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(11).c_str());
-                armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(13).c_str());
-                hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(15).c_str());
-                weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(17).c_str());
-                shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(19).c_str());
+                hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
+                boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
+                armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
+                hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
+                weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
+                shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
             }
             gender_one_libraries_loaded = true;
             gender_one_idle_ticks = 0;
@@ -572,12 +572,12 @@ void Players::LoadGraphicsLibraries(int gender)
         {
             if (!gender_zero_libraries_loaded)
             {
-                hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(10).c_str());
-                boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(SfxSound_ApplyAppearanceChange).c_str());
-                armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(14).c_str());
-                hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(16).c_str());
-                weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(18).c_str());
-                shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(20).c_str());
+                hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
+                boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
+                armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
+                hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
+                weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
+                shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
             }
             gender_zero_libraries_loaded = true;
             gender_zero_idle_ticks = 0;
@@ -600,8 +600,8 @@ void Players::LoadPendingGraphics()
         {
             i->FreeResources();
             i->CreateResources();
-            i->reload_requested = 0;
-            i->graphics_pending = 1;
+            i->reload_requested = false;
+            i->graphics_pending = true;
             i->sheets_cleared = false;
             i->walk_sheets_loaded = false;
             i->walk_tail_sheets_loaded = false;
@@ -623,9 +623,9 @@ void Players::LoadPendingGraphics()
             int hat_resource = 10 * i->hat + 91;
             int weapon_resource = 100 * i->weapon + 1;
             int shield_resource = 50 * i->shield + 51;
-            char hair_hidden = 0;
-            char hair_over_hat = 0;
-            char back_shield = 0;
+            char hair_hidden = false;
+            char hair_over_hat = false;
+            char back_shield = false;
             if (hair_resource < MIN_PAPERDOLL_RESOURCE || hair_resource > 10000)
                 hair_resource = 0;
             if (boots_resource < MIN_PAPERDOLL_RESOURCE || boots_resource > 10000)
@@ -638,25 +638,25 @@ void Players::LoadPendingGraphics()
                 weapon_resource = 0;
             if (shield_resource < MIN_PAPERDOLL_RESOURCE || shield_resource > 10000)
                 shield_resource = 0;
-            if (i->hat >= 7 && i->hat <= HatGraphic_DragonMask)
-                hair_over_hat = 1;
+            if (i->hat >= HatGraphic_FirstHairOverHat && i->hat <= HatGraphic_DragonMask)
+                hair_over_hat = true;
             if (i->hat == HatGraphic_FrogHead || i->hat == HatGraphic_Pilotte || i->hat == HatGraphic_Glasses ||
                 i->hat == HatGraphic_MedicCap)
-                hair_over_hat = 1;
+                hair_over_hat = true;
             if (i->hat >= HatGraphic_BlackHood && i->hat <= HatGraphic_ChainmailHat)
-                hair_hidden = 1;
+                hair_hidden = true;
             if (i->hat == HatGraphic_HornedHat || i->hat == HatGraphic_MerchantHat || i->hat == HatGraphic_Helmy ||
                 i->hat == HatGraphic_EloffHelmet || i->hat == HatGraphic_AirHat || i->hat == HatGraphic_Beruta ||
                 i->hat == HatGraphic_PirateHat || i->hat == HatGraphic_LotusHelmet || i->hat == HatGraphic_KittyHat ||
                 i->hat == HatGraphic_HulaHulaHat || i->hat == HatGraphic_GobHelm ||
                 i->hat == HatGraphic_HornedGobHelm || i->hat == HatGraphic_HelmetDarkness ||
                 i->hat == HatGraphic_FladHat || i->hat == HatGraphic_CookHat)
-                hair_hidden = 1;
+                hair_hidden = true;
             if (i->shield == ShieldGraphic_GoodWings || i->shield == ShieldGraphic_Bag ||
                 i->shield == ShieldGraphic_NormalArrows || i->shield == ShieldGraphic_FrostArrows ||
                 i->shield == ShieldGraphic_FireArrows || i->shield == ShieldGraphic_GoodForceWings ||
                 i->shield == ShieldGraphic_FireForceWings)
-                back_shield = 1;
+                back_shield = true;
             int hair_library;
             int boots_library;
             int armor_library;
@@ -694,64 +694,66 @@ void Players::LoadPendingGraphics()
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawFrontLayer(0, 18, 0, shield_library, shield_resource);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 18, 0, shield_library, shield_resource);
                     if (((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                         weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(0, 0, 0, weapon_library, weapon_resource);
-                        i->resources->DrawBackLayer(0, 0, 0, weapon_library, weapon_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 0, 0, weapon_library, weapon_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 0, 0, weapon_library, weapon_resource + 1);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                     {
-                        i->resources->DrawFrontLayer(0, 28, 7, hair_library, hair_resource);
-                        i->resources->DrawBackLayer(0, 28, 7, hair_library, hair_resource + 2);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 2);
                     }
                     if (!i->resources->front_sheet->BltFast(34, gender + 19, MainForm->gfx->sprites->stand_sheet,
-                        &Gfx_sprites_GetStandFrameRect(MainForm->gfx->sprites, gender, 0, skin), 17) ||
+                        &MainForm->gfx->sprites->GetStandFrameRect(gender, FacingDirection_Down, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT) ||
                         !i->resources->back_sheet->BltFast(34, gender + 19, MainForm->gfx->sprites->stand_sheet,
-                        &Gfx_sprites_GetStandFrameRect(MainForm->gfx->sprites, gender, 1, skin), 17))
-                        i->reload_requested = 1;
+                            &MainForm->gfx->sprites->GetStandFrameRect(gender, FacingDirection_Left, skin),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT))
+                        i->reload_requested = true;
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(0, 26, 56, boots_library, boots_resource);
-                        i->resources->DrawBackLayer(0, 26, 56, boots_library, boots_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 26, 56, boots_library, boots_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 26, 56, boots_library, boots_resource + 1);
                     }
                     if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                         armor_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(0, 26, 7, armor_library, armor_resource);
-                        i->resources->DrawBackLayer(0, 26, 7, armor_library, armor_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 26, 7, armor_library, armor_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 26, 7, armor_library, armor_resource + 1);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(0, 28, 7, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(0, 28, 7, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 3);
                     }
                     if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                         hat_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayerPixelKeyed(0, 28, 4, hat_library, hat_resource);
-                        i->resources->DrawBackLayerPixelKeyed(0, 28, 4, hat_library, hat_resource + 2);
+                        i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_Stand, 28, 4, hat_library, hat_resource);
+                        i->resources->DrawBackLayerPixelKeyed(PlayerFrame_Stand, 28, 4, hat_library, hat_resource + 2);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(0, 28, 7, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(0, 28, 7, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 3);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
-                        i->resources->DrawFrontLayer(0, 19, 34, shield_library, shield_resource);
-                        i->resources->DrawBackLayer(0, 19, 34, shield_library, shield_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_Stand, 19, 34, shield_library, shield_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 19, 34, shield_library, shield_resource + 1);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawBackLayer(0, 18, 0, shield_library, shield_resource + 1);
-                    i->redraw = 1;
+                        i->resources->DrawBackLayer(PlayerFrame_Stand, 18, 0, shield_library, shield_resource + 1);
+                    i->redraw = true;
                     i->stand_sheet_loaded = true;
                     loaded_count++;
                 }
@@ -772,99 +774,110 @@ void Players::LoadPendingGraphics()
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawFrontLayer(8, 18, 6, shield_library, shield_resource);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 18, 6, shield_library, shield_resource);
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                     {
-                        i->resources->DrawFrontLayer(8, 28, 13, hair_library, hair_resource);
-                        i->resources->DrawBackLayer(8, 28, 13, hair_library, hair_resource + 2);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 2);
                     }
                     i->resources->front_sheet->BltFast(573 - gender, 27 - gender,
                         MainForm->gfx->sprites->chair_sit_sheet,
-                        &Gfx_sprites_GetChairSitFrameRect(MainForm->gfx->sprites, gender, 0, skin), 17);
+                        &MainForm->gfx->sprites->GetChairSitFrameRect(gender, FacingDirection_Down, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(572, 27 - gender, MainForm->gfx->sprites->chair_sit_sheet,
-                        &Gfx_sprites_GetChairSitFrameRect(MainForm->gfx->sprites, gender, 1, skin), 17);
+                        &MainForm->gfx->sprites->GetChairSitFrameRect(gender, FacingDirection_Left, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(8, 26, 55, boots_library, boots_resource + 12);
-                        i->resources->DrawBackLayer(8, 26, 48, boots_library, boots_resource + 13);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 26, 55, boots_library, boots_resource + 12);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 26, 48, boots_library, boots_resource + 13);
                     }
                     if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                         armor_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(8, 26, 7, armor_library, armor_resource + 16);
-                        i->resources->DrawBackLayer(8, 26, 7, armor_library, armor_resource + 17);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 26, 7, armor_library, armor_resource + 16);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 26, 7, armor_library, armor_resource + 17);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(8, 28, 13, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(8, 28, 13, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 3);
                     }
                     if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                         hat_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayerPixelKeyed(8, 28, 10, hat_library, hat_resource);
-                        i->resources->DrawBackLayerPixelKeyed(8, 28, 10, hat_library, hat_resource + 2);
+                        i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_ChairSit, 28, 10, hat_library, hat_resource);
+                        i->resources->DrawBackLayerPixelKeyed(PlayerFrame_ChairSit, 28, 10, hat_library, hat_resource +
+                            2);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(8, 28, 13, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(8, 28, 13, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 3);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawBackLayer(8, 18, 6, shield_library, shield_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_ChairSit, 18, 6, shield_library, shield_resource + 1);
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawFrontLayer(9, 18, 6, shield_library, shield_resource);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, 18, 6, shield_library, shield_resource);
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                     {
-                        i->resources->DrawFrontLayer(9, 28, 13, hair_library, hair_resource);
-                        i->resources->DrawBackLayer(9, gender + 30, 13, hair_library, hair_resource + 2);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, 28, 13, hair_library, hair_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, gender + 30, 13, hair_library, hair_resource +
+                            2);
                     }
                     i->resources->front_sheet->BltFast(641 - gender, 27 - gender,
                         MainForm->gfx->sprites->floor_sit_sheet,
-                        &Gfx_sprites_GetFloorSitFrameRect(MainForm->gfx->sprites, gender, 0, skin), 17);
+                        &MainForm->gfx->sprites->GetFloorSitFrameRect(gender, FacingDirection_Down, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(641, 27 - gender, MainForm->gfx->sprites->floor_sit_sheet,
-                        &Gfx_sprites_GetFloorSitFrameRect(MainForm->gfx->sprites, gender, 1, skin), 17);
+                        &MainForm->gfx->sprites->GetFloorSitFrameRect(gender, FacingDirection_Left, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(9, gender + 25, gender + 48, boots_library, boots_resource + 14);
-                        i->resources->DrawBackLayer(9, 27, 41, boots_library, boots_resource + 15);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, gender + 25, gender + 48, boots_library,
+                            boots_resource + 14);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, 27, 41, boots_library, boots_resource + 15);
                     }
                     if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                         armor_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(9, gender + 25, 7, armor_library, armor_resource + 18);
-                        i->resources->DrawBackLayer(9, 27, 7, armor_library, armor_resource + 19);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, gender + 25, 7, armor_library,
+                            armor_resource + 18);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, 27, 7, armor_library, armor_resource + 19);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(9, 28, 13, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(9, gender + 30, 13, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, 28, 13, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, gender + 30, 13, hair_library, hair_resource +
+                            3);
                     }
                     if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                         hat_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayerPixelKeyed(9, 28, 10, hat_library, hat_resource);
-                        i->resources->DrawBackLayerPixelKeyed(9, gender + 30, 10, hat_library, hat_resource + 2);
+                        i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_FloorSit, 28, 10, hat_library, hat_resource);
+                        i->resources->DrawBackLayerPixelKeyed(PlayerFrame_FloorSit, gender + 30, 10, hat_library,
+                            hat_resource + 2);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(9, 28, 13, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(9, gender + 30, 13, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_FloorSit, 28, 13, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, gender + 30, 13, hair_library, hair_resource +
+                            3);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawBackLayer(9, 18, 6, shield_library, shield_resource + 2);
-                    i->redraw = 1;
+                        i->resources->DrawBackLayer(PlayerFrame_FloorSit, 18, 6, shield_library, shield_resource + 2);
+                    i->redraw = true;
                     i->sit_sheets_loaded = true;
                     loaded_count++;
                 }
@@ -918,14 +931,18 @@ void Players::LoadPendingGraphics()
                             }
                         }
                         i->resources->front_sheet->BltFast(98 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 0, skin, 0), 17);
+                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 0, skin, 0),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         i->resources->front_sheet->BltFast(166 - gender, gender + 19,
                             MainForm->gfx->sprites->walk_sheet,
-                            &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 0, skin, 1), 17);
+                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 0, skin, 1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         i->resources->back_sheet->BltFast(98, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 1, skin, 0), 17);
+                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 1, skin, 0),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         i->resources->back_sheet->BltFast(166, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                            &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 1, skin, 1), 17);
+                            &MainForm->gfx->sprites->GetWalkFrameRect(gender, 1, skin, 1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
                         {
                             if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1008,7 +1025,7 @@ void Players::LoadPendingGraphics()
                                         shield_resource + 1);
                             }
                         }
-                        i->redraw = 1;
+                        i->redraw = true;
                         i->walk_sheets_loaded = true;
                         loaded_count++;
                     }
@@ -1059,13 +1076,17 @@ void Players::LoadPendingGraphics()
                         }
                     }
                     i->resources->front_sheet->BltFast(234 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 0, skin, 2), 17);
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 2),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->front_sheet->BltFast(302 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 0, skin, 3), 17);
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 3),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(234, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 1, skin, 2), 17);
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 2),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(302, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &Gfx_sprites_GetWalkFrameRect(MainForm->gfx->sprites, gender, 1, skin, 3), 17);
+                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 3),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
                     {
                         if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1152,7 +1173,7 @@ void Players::LoadPendingGraphics()
                                     shield_resource + 1);
                         }
                     }
-                    i->redraw = 1;
+                    i->redraw = true;
                     i->walk_tail_sheets_loaded = true;
                     loaded_count++;
                 }
@@ -1175,88 +1196,106 @@ void Players::LoadPendingGraphics()
                     {
                         if (back_shield)
                         {
-                            i->resources->DrawFrontLayer(5, 18, 0, shield_library, shield_resource + 2);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource +
+                                2);
                             if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                                i->resources->DrawFrontLayer(6, 18, 0, shield_library, shield_resource + 2);
+                                i->resources->DrawFrontLayer(PlayerFrame_Attack2, 18, 0, shield_library,
+                                    shield_resource + 2);
                         }
                     }
                     if (((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                         weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(5, 0, 0, weapon_library, weapon_resource + 12);
-                        i->resources->DrawBackLayer(5, 0, 0, weapon_library, weapon_resource + 14);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 0, 0, weapon_library, weapon_resource + 12);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 0, 0, weapon_library, weapon_resource + 14);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 0, 0, weapon_library, weapon_resource + 13);
-                            i->resources->DrawBackLayer(6, 0, 0, weapon_library, weapon_resource + 15);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 0, 0, weapon_library, weapon_resource +
+                                13);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 0, 0, weapon_library, weapon_resource +
+                                15);
                         }
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                     {
-                        i->resources->DrawFrontLayer(5, 28, 7, hair_library, hair_resource);
-                        i->resources->DrawBackLayer(5, 28, 7, hair_library, hair_resource + 2);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 2);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 26, 12 - gender, hair_library, hair_resource);
-                            i->resources->DrawBackLayer(6, 2 * gender + 26, 8, hair_library, hair_resource + 2);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 12 - gender, hair_library,
+                                hair_resource);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 2 * gender + 26, 8, hair_library,
+                                hair_resource + 2);
                         }
                     }
                     i->resources->front_sheet->BltFast(370 - gender, gender + 19, MainForm->gfx->sprites->attack_sheet,
-                        &Gfx_sprites_GetAttackFrameRect(MainForm->gfx->sprites, gender, 0, skin, 0), 17);
+                        &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Down, skin, 0),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(370 - gender, gender + 19, MainForm->gfx->sprites->attack_sheet,
-                        &Gfx_sprites_GetAttackFrameRect(MainForm->gfx->sprites, gender, 1, skin, 0), 17);
+                        &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Left, skin, 0),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                     {
                         i->resources->front_sheet->BltFast(gender + 440, gender + 19,
                             MainForm->gfx->sprites->attack_sheet,
-                            &Gfx_sprites_GetAttackFrameRect(MainForm->gfx->sprites, gender, 0, skin, 1), 17);
+                            &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Down, skin, 1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         i->resources->back_sheet->BltFast(gender + 440, gender + 19,
                             MainForm->gfx->sprites->attack_sheet,
-                            &Gfx_sprites_GetAttackFrameRect(MainForm->gfx->sprites, gender, 1, skin, 1), 17);
+                            &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Left, skin, 1),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     }
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(5, 26, 56, boots_library, boots_resource);
-                        i->resources->DrawBackLayer(5, 26, 56, boots_library, boots_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 26, 56, boots_library, boots_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 26, 56, boots_library, boots_resource + 1);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 26, 56, boots_library, boots_resource + 10);
-                            i->resources->DrawBackLayer(6, 26, 56, boots_library, boots_resource + 11);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 56, boots_library, boots_resource +
+                                10);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 26, 56, boots_library, boots_resource +
+                                11);
                         }
                     }
                     if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                         armor_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(5, 26, 7, armor_library, armor_resource + 12);
-                        i->resources->DrawBackLayer(5, 26, 7, armor_library, armor_resource + 14);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 26, 7, armor_library, armor_resource + 12);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 26, 7, armor_library, armor_resource + 14);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 26, 7, armor_library, armor_resource + 13);
-                            i->resources->DrawBackLayer(6, 26, 7, armor_library, armor_resource + 15);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 7, armor_library, armor_resource +
+                                13);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 26, 7, armor_library, armor_resource + 15);
                         }
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(5, 28, 7, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(5, 28, 7, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 3);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 26, 12 - gender, hair_library, hair_resource + 1);
-                            i->resources->DrawBackLayer(6, 2 * gender + 26, 8, hair_library, hair_resource + 3);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 12 - gender, hair_library,
+                                hair_resource + 1);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 2 * gender + 26, 8, hair_library,
+                                hair_resource + 3);
                         }
                     }
                     if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                         hat_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayerPixelKeyed(5, 28, 4, hat_library, hat_resource);
-                        i->resources->DrawBackLayerPixelKeyed(5, 28, 4, hat_library, hat_resource + 2);
+                        i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_Attack1, 28, 4, hat_library, hat_resource);
+                        i->resources->DrawBackLayerPixelKeyed(PlayerFrame_Attack1, 28, 4, hat_library, hat_resource +
+                            2);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayerPixelKeyed(6, 26, 9 - gender, hat_library, hat_resource);
-                            i->resources->DrawBackLayerPixelKeyed(6, 2 * gender + 26, 5, hat_library, hat_resource + 2);
+                            i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_Attack2, 26, 9 - gender, hat_library,
+                                hat_resource);
+                            i->resources->DrawBackLayerPixelKeyed(PlayerFrame_Attack2, 2 * gender + 26, 5, hat_library,
+                                hat_resource + 2);
                         }
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
@@ -1264,24 +1303,28 @@ void Players::LoadPendingGraphics()
                     {
                         if (hair_over_hat)
                         {
-                            i->resources->DrawFrontLayer(5, 28, 7, hair_library, hair_resource + 1);
-                            i->resources->DrawBackLayer(5, 28, 7, hair_library, hair_resource + 3);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 1);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack1, 28, 7, hair_library, hair_resource + 3);
                             if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                             {
-                                i->resources->DrawFrontLayer(6, 26, 12 - gender, hair_library, hair_resource + 1);
-                                i->resources->DrawBackLayer(6, 2 * gender + 26, 8, hair_library, hair_resource + 3);
+                                i->resources->DrawFrontLayer(PlayerFrame_Attack2, 26, 12 - gender, hair_library,
+                                    hair_resource + 1);
+                                i->resources->DrawBackLayer(PlayerFrame_Attack2, 2 * gender + 26, 8, hair_library,
+                                    hair_resource + 3);
                             }
                         }
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
-                        i->resources->DrawFrontLayer(5, 19, 34, shield_library, shield_resource + 12);
-                        i->resources->DrawBackLayer(5, 19, 34, shield_library, shield_resource + 14);
+                        i->resources->DrawFrontLayer(PlayerFrame_Attack1, 19, 34, shield_library, shield_resource + 12);
+                        i->resources->DrawBackLayer(PlayerFrame_Attack1, 19, 34, shield_library, shield_resource + 14);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                         {
-                            i->resources->DrawFrontLayer(6, 19, 34, shield_library, shield_resource + 13);
-                            i->resources->DrawBackLayer(6, 19, 34, shield_library, shield_resource + 15);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 19, 34, shield_library, shield_resource +
+                                13);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 19, 34, shield_library, shield_resource +
+                                15);
                         }
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
@@ -1289,81 +1332,97 @@ void Players::LoadPendingGraphics()
                     {
                         if (back_shield)
                         {
-                            i->resources->DrawBackLayer(5, 18, 0, shield_library, shield_resource + 3);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource +
+                                3);
                             if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                                i->resources->DrawBackLayer(6, 18, 0, shield_library, shield_resource + 3);
+                                i->resources->DrawBackLayer(PlayerFrame_Attack2, 18, 0, shield_library,
+                                    shield_resource + 3);
                         }
                     }
                     if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                     {
                         if (((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                             weapon_resource >= MIN_PAPERDOLL_RESOURCE)
-                            i->resources->DrawFrontLayer(6, 0, 0, weapon_library, weapon_resource + 16);
+                            i->resources->DrawFrontLayer(PlayerFrame_Attack2, 0, 0, weapon_library, weapon_resource +
+                                16);
                     }
                     else
                     {
                         if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                             shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                            i->resources->DrawFrontLayer(10, 18, 0, shield_library, shield_resource + 2);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 18, 0, shield_library,
+                                shield_resource + 2);
                         if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                             hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                         {
-                            i->resources->DrawFrontLayer(10, 2 - 2 * gender + 31, 7 - (1 - gender), hair_library,
-                                hair_resource);
-                            i->resources->DrawBackLayer(10, 2 - 2 * gender + 29, 7, hair_library, hair_resource + 2);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 31, 7 - (1 -
+                                gender), hair_library, hair_resource);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 29, 7, hair_library,
+                                hair_resource + 2);
                         }
                         if (MainForm->weapon_mapper->IsRangedWeapon(i->weapon) &&
                             ((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                             weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            i->resources->DrawFrontLayer(10, 0, 0, weapon_library, weapon_resource + 17);
-                            i->resources->DrawBackLayer(10, 0, 0, weapon_library, weapon_resource + 18);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 0, 0, weapon_library,
+                                weapon_resource + 17);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 0, 0, weapon_library,
+                                weapon_resource + 18);
                         }
                         i->resources->front_sheet->BltFast(710 - gender, gender + 19,
                             MainForm->gfx->sprites->ranged_attack_sheet,
-                            &Gfx_sprites_GetRangedAttackFrameRect(MainForm->gfx->sprites, gender, 0, skin), 17);
+                            &MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Down, skin),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         i->resources->back_sheet->BltFast(710 - gender, gender + 19,
                             MainForm->gfx->sprites->ranged_attack_sheet,
-                            &Gfx_sprites_GetRangedAttackFrameRect(MainForm->gfx->sprites, gender, 1, skin), 17);
+                            &MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Left, skin),
+                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                             boots_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            i->resources->DrawFrontLayer(10, 27 - gender, 56, boots_library, boots_resource + 10);
-                            i->resources->DrawBackLayer(10, 27 - 4 * gender, 56, boots_library, boots_resource + 11);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 27 - gender, 56, boots_library,
+                                boots_resource + 10);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 27 - 4 * gender, 56, boots_library,
+                                boots_resource + 11);
                         }
                         if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                             armor_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            i->resources->DrawFrontLayer(10, 26, 7, armor_library, armor_resource + 20);
-                            i->resources->DrawBackLayer(10, 26, 7, armor_library, armor_resource + 21);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 26, 7, armor_library,
+                                armor_resource + 20);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 26, 7, armor_library, armor_resource +
+                                21);
                         }
                         if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                             hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                         {
-                            i->resources->DrawFrontLayer(10, 2 - 2 * gender + 31, 7 - (1 - gender), hair_library,
-                                hair_resource + 1);
-                            i->resources->DrawBackLayer(10, 2 - 2 * gender + 29, 7, hair_library, hair_resource + 3);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 31, 7 - (1 -
+                                gender), hair_library, hair_resource + 1);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 29, 7, hair_library,
+                                hair_resource + 3);
                         }
                         if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                             hat_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
-                            i->resources->DrawFrontLayerPixelKeyed(10, 33 - 2 * gender, gender + 3, hat_library,
-                                hat_resource);
-                            i->resources->DrawBackLayerPixelKeyed(10, 31 - 4 * gender + 2 * gender, 4, hat_library,
-                                hat_resource + 2);
+                            i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_RangedAttack, 33 - 2 * gender, gender +
+                                3, hat_library, hat_resource);
+                            i->resources->DrawBackLayerPixelKeyed(PlayerFrame_RangedAttack, 31 - 4 * gender + 2 *
+                                gender, 4, hat_library, hat_resource + 2);
                         }
                         if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                             hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                         {
-                            i->resources->DrawFrontLayer(10, 2 - 2 * gender + 31, 7 - (1 - gender), hair_library,
-                                hair_resource + 1);
-                            i->resources->DrawBackLayer(10, 2 - 2 * gender + 29, 7, hair_library, hair_resource + 3);
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 31, 7 - (1 -
+                                gender), hair_library, hair_resource + 1);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 2 - 2 * gender + 29, 7, hair_library,
+                                hair_resource + 3);
                         }
                         if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                             shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                            i->resources->DrawBackLayer(10, 18, 0, shield_library, shield_resource + 3);
+                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 18, 0, shield_library,
+                                shield_resource + 3);
                     }
-                    i->redraw = 1;
+                    i->redraw = true;
                     i->attack_sheets_loaded = true;
                     loaded_count++;
                 }
@@ -1383,63 +1442,68 @@ void Players::LoadPendingGraphics()
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawFrontLayer(7, 18, 0, shield_library, shield_resource);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 18, 0, shield_library, shield_resource);
                     if (((!gender && weapon_library_gender_zero) || (gender == 1 && weapon_library_gender_one)) &&
                         weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(7, 0, 0, weapon_library, weapon_resource + 10);
-                        i->resources->DrawBackLayer(7, 0, 0, weapon_library, weapon_resource + 11);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 0, 0, weapon_library, weapon_resource + 10);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 0, 0, weapon_library, weapon_resource + 11);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
                     {
-                        i->resources->DrawFrontLayer(7, 28, 7, hair_library, hair_resource);
-                        i->resources->DrawBackLayer(7, 28, 7, hair_library, hair_resource + 2);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 2);
                     }
                     i->resources->front_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &Gfx_sprites_GetSpellCastCellRect(MainForm->gfx->sprites, gender, 0, skin), 17);
+                        &MainForm->gfx->sprites->GetSpellCastCellRect(gender, 0, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     i->resources->back_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &Gfx_sprites_GetSpellCastCellRect(MainForm->gfx->sprites, gender, 1, skin), 17);
+                        &MainForm->gfx->sprites->GetSpellCastCellRect(gender, 1, skin),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(7, 26, 56, boots_library, boots_resource);
-                        i->resources->DrawBackLayer(7, 26, 56, boots_library, boots_resource + 1);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 26, 56, boots_library, boots_resource);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 26, 56, boots_library, boots_resource + 1);
                     }
                     if (((!gender && armor_library_gender_zero) || (gender == 1 && armor_library_gender_one)) &&
                         armor_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayer(7, 26, 7, armor_library, armor_resource + 10);
-                        i->resources->DrawBackLayer(7, 26, 7, armor_library, armor_resource + 11);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 26, 7, armor_library, armor_resource + 10);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 26, 7, armor_library, armor_resource + 11);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden && !hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(7, 28, 7, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(7, 28, 7, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 3);
                     }
                     if (((!gender && hat_library_gender_zero) || (gender == 1 && hat_library_gender_one)) &&
                         hat_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
-                        i->resources->DrawFrontLayerPixelKeyed(7, 28, 4, hat_library, hat_resource);
-                        i->resources->DrawBackLayerPixelKeyed(7, 28, 4, hat_library, hat_resource + 2);
+                        i->resources->DrawFrontLayerPixelKeyed(PlayerFrame_SpellCast, 28, 4, hat_library, hat_resource);
+                        i->resources->DrawBackLayerPixelKeyed(PlayerFrame_SpellCast, 28, 4, hat_library, hat_resource +
+                            2);
                     }
                     if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                         hair_resource >= MIN_PAPERDOLL_RESOURCE && hair_over_hat)
                     {
-                        i->resources->DrawFrontLayer(7, 28, 7, hair_library, hair_resource + 1);
-                        i->resources->DrawBackLayer(7, 28, 7, hair_library, hair_resource + 3);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 1);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 3);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
-                        i->resources->DrawFrontLayer(7, 19, 34, shield_library, shield_resource + 10);
-                        i->resources->DrawBackLayer(7, 19, 34, shield_library, shield_resource + 11);
+                        i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 19, 34, shield_library, shield_resource +
+                            10);
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 19, 34, shield_library, shield_resource +
+                            11);
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                        i->resources->DrawBackLayer(7, 18, 0, shield_library, shield_resource + 1);
-                    i->redraw = 1;
+                        i->resources->DrawBackLayer(PlayerFrame_SpellCast, 18, 0, shield_library, shield_resource + 1);
+                    i->redraw = true;
                     i->cast_sheets_loaded = true;
                     loaded_count++;
                 }
@@ -1474,16 +1538,17 @@ void Players::LoadPendingGraphics()
                     if (MainForm->gfx->sprites->emote_buffer_created)
                     {
                         i->resources->emote_strip->BltFast(0, 0, MainForm->gfx->sprites->face_sheet,
-                            &Gfx_sprites_GetFaceStripRect(MainForm->gfx->sprites, gender, skin), 16);
+                            &MainForm->gfx->sprites->GetFaceStripRect(gender, skin), DDBLTFAST_WAIT);
                         for (int face_index = 0; face_index < 11; face_index++)
                         {
                             i->resources->emote_strip->BltFast(13 * face_index, 0,
                                 MainForm->gfx->sprites->emote_buffer->surface,
-                                &MainForm->gfx->sprites->emote_buffer->surface_rect, 17);
+                                &MainForm->gfx->sprites->emote_buffer->surface_rect,
+                                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                         }
                         MainForm->gfx->sprites->FreeEmoteBuffer();
                     }
-                    i->redraw = 1;
+                    i->redraw = true;
                     i->emote_sheets_loaded = true;
                     loaded_count++;
                 }
@@ -1495,8 +1560,8 @@ void Players::LoadPendingGraphics()
                 i->sit_sheets_loaded && i->attack_sheets_loaded && i->extra_sheets_loaded && i->cast_sheets_loaded &&
                 i->emote_sheets_loaded)
             {
-                i->graphics_pending = 0;
-                i->redraw = 1;
+                i->graphics_pending = false;
+                i->redraw = true;
             }
         }
     }
@@ -1579,7 +1644,7 @@ void Players::ReloadGraphics(int player_id)
     {
         if (player_id == it->player_id)
         {
-            it->graphics_pending = 1;
+            it->graphics_pending = true;
             it->sheets_cleared = false;
             it->walk_sheets_loaded = false;
             it->walk_tail_sheets_loaded = false;
@@ -1604,18 +1669,18 @@ void Players::SortByPosition()
     char swapped;
     do
     {
-        swapped = 0;
+        swapped = false;
         for (int i = 0; i < (int)GetCount() - 1; i++)
         {
             Player handle;
             if (this->players[i].y == this->players[i + 1].y)
             {
-                if (this->players[i].x > this->players[i + 1].x)
+                if (players[i].x > players[i + 1].x)
                 {
-                    handle = this->players[i];
-                    this->players[i] = this->players[i + 1];
-                    this->players[i + 1] = handle;
-                    swapped = 1;
+                    handle = players[i];
+                    players[i] = players[i + 1];
+                    players[i + 1] = handle;
+                    swapped = true;
                 }
             }
             if (players[i].y > players[i + 1].y)
@@ -1623,7 +1688,7 @@ void Players::SortByPosition()
                 handle = players[i];
                 players[i] = players[i + 1];
                 players[i + 1] = handle;
-                swapped = 1;
+                swapped = true;
             }
         }
     } while (swapped);
@@ -1634,14 +1699,14 @@ void Players::AddPreviewPlayer(int x, int y)
 {
     if (!HasPlayer(PlayerId_Preview))
     {
-        Player handle(x, y, "template", 0, 0, 1, 0, (char)1);
+        Player handle(x, y, "template", 0, 0, 1, 0, true);
         handle.CreateResources();
         handle.boots = 0;
-        handle.hat = 0;
-        handle.shield = 0;
+        handle.hat = HatGraphic_None;
+        handle.shield = ShieldGraphic_None;
         handle.weapon = 0;
         handle.player_id = PlayerId_Preview;
-        handle.slot_state = 1;
+        handle.draw_group = CharacterSlotState_Preview;
         players.insert(players.end(), handle);
     }
 }
@@ -1651,26 +1716,26 @@ void Players::AddCharacterSlots()
 {
     if (!HasPlayer(PlayerId_SlotFirst))
     {
-        Player handle(401, 71, "", 0, 0, 0, 0, (char)0);
+        Player handle(401, 71, "", 0, 0, 0, 0, false);
         handle.CreateResources();
         handle.player_id = PlayerId_SlotFirst;
-        handle.slot_state = 2;
+        handle.draw_group = CharacterSlotState_Taken;
         players.insert(players.end(), handle);
     }
     if (!HasPlayer(PlayerId_SlotSecond))
     {
-        Player second_slot(401, 195, "", 0, 0, 0, 0, (char)0);
+        Player second_slot(401, 195, "", 0, 0, 0, 0, false);
         second_slot.CreateResources();
         second_slot.player_id = PlayerId_SlotSecond;
-        second_slot.slot_state = 2;
+        second_slot.draw_group = CharacterSlotState_Taken;
         players.insert(players.end(), second_slot);
     }
     if (!HasPlayer(PlayerId_SlotThird))
     {
-        Player third_slot(401, 319, "", 0, 0, 0, 0, (char)0);
+        Player third_slot(401, 319, "", 0, 0, 0, 0, false);
         third_slot.CreateResources();
         third_slot.player_id = PlayerId_SlotThird;
-        third_slot.slot_state = 2;
+        third_slot.draw_group = CharacterSlotState_Taken;
         players.insert(players.end(), third_slot);
     }
 }
@@ -1756,13 +1821,15 @@ void Players::SetPreviewHairColor(int hair_color)
 
 // Adds a player from the nearby-entities packet, unless one with the id is on the list.
 // The parameters come in the order of the player's record; the name is the token before it.
-void Players::AddPlayer(int player_id, String name, String secondary_name, int position_extra, int x, int y, int direction, int record_value_a, String guild_tag, int unused_value,
-    int gender, int hair_style, int hair_color, int skin, int equip_slot_a, int equip_slot_b, int equip_slot_c, int equip_slot_d, int boots, int equip_after_boots_a, int equip_after_boots_b, int equip_after_armor, int armor,
-    int equip_before_hat, int hat, int shield, int weapon, int sit_state, int hidden, int arrival_type)
+void Players::AddPlayer(int player_id, String name, String secondary_name, int position_extra, int x, int y,
+    int direction, int record_value_a, String guild_tag, int unused_value, int gender, int hair_style, int hair_color,
+    int skin, int equip_slot_a, int equip_slot_b, int equip_slot_c, int equip_slot_d, int boots,
+    int equip_after_boots_a, int equip_after_boots_b, int equip_after_armor, int armor, int equip_before_hat, int hat,
+    int shield, int weapon, int sit_state, int hidden, int arrival_type)
 {
     if (!HasPlayer(player_id))
     {
-        Player handle(x, y, name, gender, skin, hair_style, hair_color, (char)1);
+        Player handle(x, y, name, gender, skin, hair_style, hair_color, true);
         handle.player_id = player_id;
         handle.secondary_name = secondary_name;
         handle.position_extra = position_extra;
@@ -1786,9 +1853,9 @@ void Players::AddPlayer(int player_id, String name, String secondary_name, int p
         handle.shield = shield;
         handle.weapon = weapon;
         if (!hidden)
-            handle.hidden = 0;
+            handle.hidden = false;
         if (hidden == 1)
-            handle.hidden = 1;
+            handle.hidden = true;
         // A sit_state of 1 is a chair, 2 the floor.
         if (sit_state == 1)
             handle.sitting_on_chair = true;
@@ -1799,7 +1866,7 @@ void Players::AddPlayer(int player_id, String name, String secondary_name, int p
             handle.pending_effect = 3;
         else
             handle.pending_effect = -1;
-        handle.slot_state = 0;
+        handle.draw_group = CharacterSlotState_Empty;
         handle.CreateResources();
         players.insert(players.end(), handle);
         SortByPosition();
@@ -1841,7 +1908,7 @@ void Players::KillPlayer(int player_id)
     {
         if (player_id == it->player_id)
         {
-            it->dying = 1;
+            it->dying = true;
             it->death_countdown = 9;
             return;
         }
@@ -1904,7 +1971,7 @@ void Players::StartWalk(int player_id, int x, int y, int direction)
                 if (it->text_label_blinking)
                     it->text_label_shown = false;
             }
-            it->walk_start = 1;
+            it->walk_start = true;
             it->target_x = x;
             it->target_y = y;
             it->walk_target_direction = direction;
@@ -1926,7 +1993,7 @@ void Players::SetDirection(int player_id, int direction)
                 if (it->text_label_blinking)
                     it->text_label_shown = false;
             }
-            it->redraw = 1;
+            it->redraw = true;
             it->direction = direction;
             it->sitting_on_chair = false;
             it->sitting_on_floor = false;
@@ -2034,13 +2101,13 @@ void Players::SetCharacterId(int player_id, int character_id)
     }
 }
 
-void Players::SetSlotState(int player_id, int slot_state)
+void Players::SetDrawGroup(int player_id, int draw_group)
 {
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            it->slot_state = slot_state;
+            it->draw_group = draw_group;
             return;
         }
     }
@@ -2217,18 +2284,18 @@ int Players::GetCharacterId(int player_id)
     return character_id;
 }
 
-int Players::GetSlotState(int player_id)
+int Players::GetDrawGroup(int player_id)
 {
-    int slot_state = 0;
+    int draw_group = CharacterSlotState_Empty;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            slot_state = it->slot_state;
+            draw_group = it->draw_group;
             break;
         }
     }
-    return slot_state;
+    return draw_group;
 }
 
 String Players::GetName(int player_id)
@@ -2262,13 +2329,13 @@ String Players::GetNameByCharacterId(int character_id)
 // True when any player needs a redraw; clears their flags.
 bool Players::ConsumeRedraw()
 {
-    bool any_redraw = 0;
+    bool any_redraw = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (it->redraw)
         {
-            it->redraw = 0;
-            any_redraw = 1;
+            it->redraw = false;
+            any_redraw = true;
         }
     }
     return any_redraw;
@@ -2276,13 +2343,13 @@ bool Players::ConsumeRedraw()
 
 bool Players::HasPlayer(int player_id)
 {
-    bool found = 0;
+    bool found = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -2347,13 +2414,13 @@ int Players::GetWeapon(int player_id)
 
 bool Players::HasBalloon(int player_id)
 {
-    bool has_balloon = 0;
+    bool has_balloon = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
             if (it->balloon_shown)
-                has_balloon = 1;
+                has_balloon = true;
             break;
         }
     }
@@ -2379,14 +2446,14 @@ int Players::FindPlayerAt(int x, int y)
 // True when the first player found on the tile is not hidden.
 bool Players::HasVisiblePlayerAt(int x, int y)
 {
-    bool found = 0;
+    bool found = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
         if ((unsigned int)x == it->x && (unsigned int)y == it->y)
         {
             if (!it->hidden)
-                found = 1;
+                found = true;
             break;
         }
     }
@@ -2395,13 +2462,13 @@ bool Players::HasVisiblePlayerAt(int x, int y)
 
 bool Players::HasPlayerAt(int x, int y)
 {
-    bool found = 0;
+    bool found = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
         if ((unsigned int)x == it->x && (unsigned int)y == it->y)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -2420,8 +2487,8 @@ void Players::ShowDamage(int player_id, int amount, char heal)
                 String amount_text = IntToStr(amount);
                 it->damage_digits = amount_text.Length();
             }
-            it->damage_start = 1;
-            it->damage_shown = 0;
+            it->damage_start = true;
+            it->damage_shown = false;
             it->damage_timer = 8;
             it->damage_amount = amount;
             it->damage_heal = heal;
@@ -2440,8 +2507,8 @@ void Players::ShowHealthBar(int player_id, int percent, int duration)
         if (player_id == it->player_id)
         {
             bar_width = percent * HEALTH_BAR_SCALE;
-            it->health_bar_start = 1;
-            it->health_bar_shown = 0;
+            it->health_bar_start = true;
+            it->health_bar_shown = false;
             it->health_bar_timer = duration;
             it->health_bar_width = bar_width;
             return;
@@ -2457,8 +2524,8 @@ void Players::StartEffect(int player_id, int effect_id)
     {
         if (player_id == it->player_id)
         {
-            it->effect_start = 1;
-            it->effect_running = 0;
+            it->effect_start = true;
+            it->effect_running = false;
             it->effect_id = effect_id;
             it->effect_frame = 0;
             it->effect_base_layer = MainForm->magic_mapper->base_layer[effect_id];
@@ -2473,7 +2540,7 @@ void Players::StartEffect(int player_id, int effect_id)
 
 char Players::IsEffectPlaying(int player_id)
 {
-    char playing = 0;
+    char playing = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2504,7 +2571,7 @@ void Players::StartEmote(int player_id, int emote_id)
         if (player_id == it->player_id)
         {
             it->emote_start = true;
-            it->emoting = 0;
+            it->emoting = false;
             it->emote_id = emote_id;
             if (emote_id == 14)
                 it->emote_id = 11;
@@ -2548,7 +2615,7 @@ void Players::StartEmote(int player_id, int emote_id)
 
 char Players::IsEmoting(int player_id)
 {
-    char emoting = 0;
+    char emoting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2562,7 +2629,7 @@ char Players::IsEmoting(int player_id)
 
 char Players::IsWalking(int player_id)
 {
-    char walking = 0;
+    char walking = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2582,7 +2649,7 @@ void Players::StartAttack(int player_id, int direction, char silent)
     {
         if (player_id == it->player_id)
         {
-            it->attack_start = 1;
+            it->attack_start = true;
             it->silent_attack = silent;
             it->direction = direction;
             return;
@@ -2592,7 +2659,7 @@ void Players::StartAttack(int player_id, int direction, char silent)
 
 char Players::IsAttacking(int player_id)
 {
-    char attacking = 0;
+    char attacking = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2613,7 +2680,7 @@ void Players::StartSpellCast(int player_id, int direction)
         if (player_id == it->player_id)
         {
             it->cast_start = true;
-            if (direction > 0)
+            if (direction > FacingDirection_Down)
                 it->direction = direction;
             return;
         }
@@ -2622,7 +2689,7 @@ void Players::StartSpellCast(int player_id, int direction)
 
 char Players::IsCasting(int player_id)
 {
-    char casting = 0;
+    char casting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2646,7 +2713,7 @@ void Players::StartStandUp(int player_id, int x, int y)
             it->target_x = x;
             it->target_y = y;
             if (player_id == MainForm->net_client->GetPlayerId())
-                it->recenter_view = 1;
+                it->recenter_view = true;
             return;
         }
     }
@@ -2691,7 +2758,7 @@ void Players::StartSitOnChair(int player_id, int x, int y, int direction)
             it->target_y = y;
             it->target_direction = direction;
             if (player_id == MainForm->net_client->GetPlayerId())
-                it->recenter_view = 1;
+                it->recenter_view = true;
             return;
         }
     }
@@ -2699,7 +2766,7 @@ void Players::StartSitOnChair(int player_id, int x, int y, int direction)
 
 char Players::IsSittingOnFloor(int player_id)
 {
-    char sitting = 0;
+    char sitting = false;
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
@@ -2714,7 +2781,7 @@ char Players::IsSittingOnFloor(int player_id)
 
 char Players::IsSittingOnChair(int player_id)
 {
-    char sitting = 0;
+    char sitting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2746,8 +2813,8 @@ Player Players::GetPlayer(int index)
 // Frees every player's cells and balloon, then empties the list.
 void Players::Clear()
 {
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         it->FreeResources();

@@ -1,6 +1,55 @@
 #ifndef Gfx_interfaceH
 #define Gfx_interfaceH
 
+enum ButtonState
+{
+    ButtonState_Normal = 0,
+    ButtonState_Hover = 1
+};
+
+enum DamageDigitStyle
+{
+    DamageDigitStyle_Damage = 0,
+    DamageDigitStyle_Heal = 1
+};
+
+enum SmallTabButton
+{
+    SmallTabButton_Friends = 0,
+    SmallTabButton_Ignore = 1
+};
+
+enum InventoryButton
+{
+    InventoryButton_Left = 0,
+    InventoryButton_Right = 1
+};
+
+enum StatusIcon
+{
+    StatusIcon_Weapon = 0,
+    StatusIcon_Shield = 1,
+    StatusIcon_SpellTarget = 2,
+    StatusIcon_Pvp = 3,
+    StatusIcon_Boss = 4,
+    StatusIcon_Drain = 5
+};
+
+enum HudButton
+{
+    HudButton_Inventory = 0,
+    HudButton_Minimap = 1,
+    HudButton_Spells = 2,
+    HudButton_Skills = 3,
+    HudButton_Chat = 4,
+    HudButton_Status = 5,
+    HudButton_Players = 6,
+    HudButton_Group = 7,
+    HudButton_Unused = 8,
+    HudButton_Settings = 9,
+    HudButton_Help = 10
+};
+
 enum PanelBackground
 {
     PanelBackground_Chat = 128,
@@ -78,26 +127,26 @@ struct InterfaceGraphics
 
     InterfaceGraphics();
     ~InterfaceGraphics();
-    static Windows::TRect GetChatTabRect(InterfaceGraphics *self, int tab);
-    static Windows::TRect GetStatusBarFillRect(InterfaceGraphics *self, int bar, int segments);
-    static Windows::TRect GetListIconRect(InterfaceGraphics *self, int row, int column);
-    static Windows::TRect GetTabButtonRect(InterfaceGraphics *self, int tab, int state);
-    static Windows::TRect GetSettingMarkerRect(InterfaceGraphics *self, int state);
-    static Windows::TRect GetRaiseButtonRect(InterfaceGraphics *self, int state);
-    static Windows::TRect GetScrollIconRect(InterfaceGraphics *self, int icon);
-    static Windows::TRect GetChatModeIconRect(InterfaceGraphics *self, int mode);
-    static Windows::TRect GetSmallIconRect(InterfaceGraphics *self, int icon);
-    static Windows::TRect GetCornerButtonRect(InterfaceGraphics *self, int state);
-    static Windows::TRect GetListModeIconRect(InterfaceGraphics *self, int mode);
-    static Windows::TRect GetGroupIconRect(InterfaceGraphics *self, int icon);
-    static Windows::TRect GetSpellProgressRect(InterfaceGraphics *self, int progress);
-    static Windows::TRect GetSlotHighlightRect(InterfaceGraphics *self, int slot);
-    static Windows::TRect GetSpellSlotLabelRect(InterfaceGraphics *self, int slot);
-    static Windows::TRect GetSpellSlotFrameRect(InterfaceGraphics *self, int slot);
-    static Windows::TRect GetSkillSlotFrameRect(InterfaceGraphics *self, int slot);
-    static Windows::TRect GetInventoryButtonRect(InterfaceGraphics *self, int button, int state);
-    static Windows::TRect GetSmallTabButtonRect(InterfaceGraphics *self, int tab, int state);
-    static Windows::TRect GetInventoryWideButtonRect(InterfaceGraphics *self, int button);
+    Windows::TRect GetChatTabRect(int tab);
+    Windows::TRect GetStatusBarFillRect(int bar, int segments);
+    Windows::TRect GetListIconRect(int row, int column);
+    Windows::TRect GetTabButtonRect(int tab, int state);
+    Windows::TRect GetSettingMarkerRect(int state);
+    Windows::TRect GetRaiseButtonRect(int state);
+    Windows::TRect GetScrollIconRect(int icon);
+    Windows::TRect GetChatModeIconRect(int mode);
+    Windows::TRect GetSmallIconRect(int icon);
+    Windows::TRect GetCornerButtonRect(int state);
+    Windows::TRect GetListModeIconRect(int mode);
+    Windows::TRect GetGroupIconRect(int icon);
+    Windows::TRect GetSpellProgressRect(int progress);
+    Windows::TRect GetSlotHighlightRect(int slot);
+    Windows::TRect GetSpellSlotLabelRect(int slot);
+    Windows::TRect GetSpellSlotFrameRect(int slot);
+    Windows::TRect GetSkillSlotFrameRect(int slot);
+    Windows::TRect GetInventoryButtonRect(int button, int state);
+    Windows::TRect GetSmallTabButtonRect(int state, int tab);
+    Windows::TRect GetInventoryWideButtonRect(ButtonState state);
     void SaveScreenshot();
     void LoadEmoteSheet(int library, int resource_id);
     void LoadWeaponEffects(int library, int resource_id);
@@ -162,20 +211,20 @@ struct InterfaceGraphics
     void RestoreItemDragBackground();
     void RestoreSpellDragBackground();
     void RestoreSkillDragBackground();
+    Windows::TRect GetMinimapEdgeRect(int edge);
+    Windows::TRect GetWeaponEffectRect(int effect, int direction);
+    Windows::TRect GetTooltipRect(int width, int height);
+    Windows::TRect GetStatusIconRect(int icon, bool small_icon);
+    Windows::TRect GetTileCursorRect(int frame);
+    Windows::TRect GetEmoteFrameRect(int frame);
 };
 
 Windows::TRect Gfx_interface_GetDamageDigitRect(int interface_graphics, int style, int digit);
 Windows::TRect Gfx_interface_GetHealthBarRect(int interface_graphics, int color, int length);
-Windows::TRect Gfx_interface_GetMinimapEdgeRect(InterfaceGraphics *self, int edge);
-Windows::TRect Gfx_interface_GetWeaponEffectRect(InterfaceGraphics *self, int effect, int direction);
-Windows::TRect Gfx_interface_GetTooltipRect(InterfaceGraphics *self, int width, int height);
-Windows::TRect Gfx_interface_GetStatusIconRect(InterfaceGraphics *self, int icon, bool small_icon);
-Windows::TRect Gfx_interface_GetTileCursorRect(InterfaceGraphics *self, int frame);
-Windows::TRect Gfx_interface_GetEmoteFrameRect(InterfaceGraphics *self, int frame);
 
 // Shared body: a class defines its GetCornerButtonRect with DEFINE_GET_CORNER_BUTTON_RECT(TheClass).
 #define DEFINE_GET_CORNER_BUTTON_RECT(Class) \
-Windows::TRect Class::GetCornerButtonRect(Class *self, int state) \
+Windows::TRect Class::GetCornerButtonRect(int state) \
 { \
     TRect corner_button_rect; \
     corner_button_rect.left = 0; \

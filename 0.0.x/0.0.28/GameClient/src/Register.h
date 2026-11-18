@@ -1,6 +1,15 @@
 #ifndef RegisterH
 #define RegisterH
 
+enum LayoutKey
+{
+    LayoutKey_Inventory = 1,
+    LayoutKey_Spells = 2,
+    LayoutKey_Skills = 3,
+    LayoutKey_Macros = 4,
+    LayoutKey_Hotkeys = 5
+};
+
 // Remembers where each character keeps its items, spells, skills and macros, in the registry of the current user.
 struct WinRegister
 {
@@ -15,8 +24,8 @@ struct WinRegister
     String current_key;
     String account_name;
     String character_name;
-    char pad_0x2c[1024];
-    int unread_int_at_1068;
+    char unused_bytes[1024];
+    int unused_value;
 
     WinRegister();
     ~WinRegister();

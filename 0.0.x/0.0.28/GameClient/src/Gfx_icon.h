@@ -18,8 +18,8 @@ struct IconResource
     IconResource();
     ~IconResource();
     GraphicSize LoadSurface(int library, int resource_id);
+    Windows::TRect GetFrameRect(int frame);
 };
 
-Windows::TRect Gfx_icon_GetFrameRect(IconResource *self, int frame);
 
 #endif

@@ -78,7 +78,7 @@ struct Npc
     Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing);
     ~Npc();
     void CreateResources();
-    static Windows::TPoint GetAnimatedPosition(Npc *self, int screen_x, int screen_y);
+    Windows::TPoint GetAnimatedPosition(int screen_x, int screen_y);
     void ShowBalloon(String *lines, int width, int height, int tinted);
     void DrawBalloon();
     void CloseBalloon();

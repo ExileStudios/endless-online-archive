@@ -13,27 +13,27 @@ GroupController::GroupController()
     invite_cooldown = 0;
     list_request_cooldown = 0;
     is_leader = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_dirty = 0;
-    list_dirty = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_dirty = false;
+    list_dirty = false;
     top_row = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
     Clear();
 }
 
 // True when the player is in the group.
 bool GroupController::HasMember(int player_id)
 {
-    bool found = 0;
+    bool found = false;
     vector<GroupMember>::iterator it;
     for (it = members.begin(); it != members.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -72,9 +72,9 @@ String GroupController::GetMemberName(int player_id)
 
 bool GroupController::IsListRequestCoolingDown()
 {
-    bool cooling_down = 0;
+    bool cooling_down = false;
     if (list_request_cooldown > 0)
-        cooling_down = 1;
+        cooling_down = true;
     return cooling_down;
 }
 
@@ -85,27 +85,27 @@ void GroupController::SetListRequestCooldown(int cooldown)
 
 bool GroupController::IsInviteCoolingDown()
 {
-    bool cooling_down = 0;
+    bool cooling_down = false;
     if (invite_cooldown > 0)
-        cooling_down = 1;
+        cooling_down = true;
     return cooling_down;
 }
 
 // Empties the group and scrolls back to the top.
 void GroupController::Clear()
 {
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     members.clear();
     is_leader = 0;
-    scroll_up_hovered = 0;
-    scroll_down_hovered = 0;
-    scroll_dirty = 1;
-    list_dirty = 1;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_dirty = true;
+    list_dirty = true;
     top_row = 0;
     scroll_thumb_offset = 0;
-    scroll_up_held = 0;
-    scroll_down_held = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
 }
 
 void GroupController::SetInviteCooldown(int cooldown)
@@ -138,15 +138,15 @@ void GroupController::AddMember(int player_id, String name, int level, int leade
     handle.removable = removable;
     members.insert(members.end(), handle);
     OnMemberAdded();
-    list_dirty = 1;
+    list_dirty = true;
 }
 
 // Lets every member be removed.
 void GroupController::MarkMembersRemovable()
 {
     for (vector<GroupMember>::iterator it = members.begin(); it != members.end(); it++)
-        it->removable = 1;
-    list_dirty = 1;
+        it->removable = true;
+    list_dirty = true;
 }
 
 // Sets a member's health.
@@ -157,7 +157,7 @@ void GroupController::SetMemberHealth(int player_id, int health_percent)
         if (player_id == it->player_id)
         {
             it->health_percent = health_percent;
-            list_dirty = 1;
+            list_dirty = true;
             return;
         }
     }
@@ -171,16 +171,15 @@ void GroupController::RemoveMember(int player_id)
         if (player_id == it->player_id)
         {
             members.erase(it);
-            list_dirty = 1;
+            list_dirty = true;
             break;
         }
     }
-    list_dirty = 1;
+    list_dirty = true;
 }
 
 void GroupController::OnMemberAdded()
 {
-
 }
 
 int GroupController::GetTopRow()
@@ -216,16 +215,16 @@ void GroupController::ScrollUp()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)members.size() > GROUP_VISIBLE_ROWS && top_row > 0)
     {
         top_row--;
         scroll_fraction = (double)top_row / (double)(members.size() - 7);
         thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -234,16 +233,16 @@ void GroupController::ScrollDown()
 {
     double scroll_fraction;
     double thumb_pos;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if ((int)members.size() - 7 > top_row)
     {
         top_row++;
         scroll_fraction = (double)top_row / (double)(members.size() - 7);
         thumb_pos = PANEL_THUMB_TRAVEL * scroll_fraction;
         scroll_thumb_offset = thumb_pos;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -252,8 +251,8 @@ void GroupController::DragScrollThumb(int y)
 {
     double thumb_fraction;
     double scaled_row;
-    int __slot1;
-    int __slot2;
+    int unused_int;
+    int second_unused_int;
     if (thumb_grabbed)
     {
         int thumb_offset = y - thumb_grab_offset;
@@ -270,8 +269,8 @@ void GroupController::DragScrollThumb(int y)
                 top_row = new_top_row;
         }
         scroll_thumb_offset = thumb_offset;
-        scroll_dirty = 1;
-        list_dirty = 1;
+        scroll_dirty = true;
+        list_dirty = true;
     }
 }
 
@@ -286,29 +285,29 @@ void GroupController::MouseDown(int x, int y)
             row = top_row + (y - 350) / 14;
         if (row >= 0 && (int)members.size() > row && members[row].removable)
         {
-            MainForm->sfx->PlaySfx(3);
+            MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
             MainForm->net_client->SendPacket(AC_DELETE, OP_GROUP,
-                Client::EncodeNumber(MainForm->net_client, members[row].player_id, 2));
-            list_dirty = 1;
+                MainForm->net_client->EncodeNumber(members[row].player_id, 2));
+            list_dirty = true;
         }
     }
     if (x >= 569 && x <= 585)
     {
         if (y >= scroll_thumb_offset + 366 && y <= scroll_thumb_offset + 381)
         {
-            thumb_grabbed = 1;
+            thumb_grabbed = true;
             thumb_grab_offset = y - scroll_thumb_offset;
             DragScrollThumb(y);
         }
         if (y >= 350 && y <= 365)
         {
-            scroll_up_held = 1;
+            scroll_up_held = true;
             scroll_repeat_delay = 4;
             ScrollUp();
         }
         if (y >= 432 && y <= 447)
         {
-            scroll_down_held = 1;
+            scroll_down_held = true;
             scroll_repeat_delay = 4;
             ScrollDown();
         }
@@ -329,13 +328,13 @@ void GroupController::UpdateMemberHover(int x, int y)
             if (!it->is_hovered)
             {
                 it->is_hovered = true;
-                list_dirty = 1;
+                list_dirty = true;
             }
         }
         else if (it->is_hovered)
         {
             it->is_hovered = false;
-            list_dirty = 1;
+            list_dirty = true;
         }
     }
 }
@@ -343,7 +342,7 @@ void GroupController::UpdateMemberHover(int x, int y)
 // Lights the scroll arrow under the mouse, lets go of an arrow the mouse has left, and drags a grabbed thumb.
 void GroupController::UpdateScrollHover(int x, int y)
 {
-    char changed = 0;
+    char changed = false;
     if (x >= 569 && x <= 585)
     {
         if (y >= 365 && y <= 432)
@@ -352,49 +351,49 @@ void GroupController::UpdateScrollHover(int x, int y)
         {
             if (!scroll_up_hovered)
             {
-                scroll_up_hovered = 1;
-                changed = 1;
+                scroll_up_hovered = true;
+                changed = true;
             }
         }
         else if (scroll_up_hovered)
         {
-            scroll_up_hovered = 0;
-            changed = 1;
-            scroll_up_held = 0;
+            scroll_up_hovered = false;
+            changed = true;
+            scroll_up_held = false;
         }
         if (y >= 432 && y <= 447)
         {
             if (!scroll_down_hovered)
             {
-                scroll_down_hovered = 1;
-                changed = 1;
+                scroll_down_hovered = true;
+                changed = true;
             }
         }
         else if (scroll_down_hovered)
         {
-            scroll_down_hovered = 0;
-            scroll_down_held = 0;
-            changed = 1;
+            scroll_down_hovered = false;
+            scroll_down_held = false;
+            changed = true;
         }
     }
     else if (scroll_up_hovered || scroll_down_hovered)
     {
-        scroll_up_hovered = 0;
-        changed = 1;
-        scroll_down_hovered = 0;
-        scroll_up_held = 0;
-        scroll_down_held = 0;
+        scroll_up_hovered = false;
+        changed = true;
+        scroll_down_hovered = false;
+        scroll_up_held = false;
+        scroll_down_held = false;
     }
     if (changed)
-        scroll_dirty = 1;
+        scroll_dirty = true;
 }
 
 // Lets go of the held scroll arrows and the grabbed thumb.
 void GroupController::MouseUp()
 {
-    scroll_up_held = 0;
-    scroll_down_held = 0;
-    thumb_grabbed = 0;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
 }
 
 void GroupController::MouseMove(int x, int y)
@@ -409,5 +408,5 @@ DEFINE_TEST_AND_CLEAR_LIST_DIRTY(GroupController)
 
 void GroupController::MarkListDirty()
 {
-    list_dirty = 1;
+    list_dirty = true;
 }

@@ -31,7 +31,7 @@ struct MemoController
     int drag_offset_x;
     int drag_offset_y;
     int scroll_repeat_delay;
-    char pad_0x4c[4];
+    char unused_bytes[4];
 
     MemoController();
     ~MemoController();

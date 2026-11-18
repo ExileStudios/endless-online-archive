@@ -10,13 +10,13 @@ TileGraphics::TileGraphics(char preload)
 {
     last_index = -1;
     pending_count = 0;
-    queue_drained = 0;
-    library_open = 0;
+    queue_drained = false;
+    library_open = false;
     keep_library_open = preload;
     if (keep_library_open)
     {
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(3).c_str());
-        library_open = 1;
+        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTiles).c_str());
+        library_open = true;
     }
 }
 
@@ -37,7 +37,7 @@ void TileGraphics::ReopenLibrary()
             pending_count = 0;
     }
     if (keep_library_open)
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(3).c_str());
+        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTiles).c_str());
 }
 
 // Counts, per loaded ground tile, the frames in a row in which GetGraphic did not fetch it.
@@ -49,7 +49,7 @@ void TileGraphics::AgeGraphics()
             it->idle_ticks++;
         else
             it->idle_ticks = 0;
-        it->was_used = 0;
+        it->was_used = false;
     }
 }
 
@@ -62,16 +62,16 @@ void TileGraphics::LoadPendingGraphic()
         if (library_open && !keep_library_open)
         {
             FreeLibrary(library);
-            library_open = 0;
+            library_open = false;
         }
-        queue_drained = 0;
+        queue_drained = false;
     }
     if (pending_count > 0)
     {
         if (!library_open && !keep_library_open)
         {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(3).c_str());
-            library_open = 1;
+            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTiles).c_str());
+            library_open = true;
         }
         for (vector<TileWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
@@ -80,11 +80,11 @@ void TileGraphics::LoadPendingGraphic()
                 HMODULE open_library = library;
                 it->CreateResource();
                 GraphicSize size = it->resource->LoadSurface((int)open_library, it->graphic_id + 100);
-                it->is_loaded = 1;
+                it->is_loaded = true;
                 it->idle_ticks = 0;
                 pending_count--;
                 if (!pending_count)
-                    queue_drained = 1;
+                    queue_drained = true;
                 break;
             }
         }
@@ -98,14 +98,14 @@ bool TileGraphics::PurgeUnusedGraphics()
     // An erase ends the walk, so it starts over after each ground tile it frees.
     do
     {
-        result = 0;
+        result = false;
         for (vector<TileWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
             if (it->idle_ticks >= 16)
             {
                 it->FreeResource();
                 entries.erase(it);
-                result = 1;
+                result = true;
                 break;
             }
         }
@@ -116,7 +116,7 @@ bool TileGraphics::PurgeUnusedGraphics()
 // Frees every ground tile and empties the list.
 void TileGraphics::ReleaseGraphics()
 {
-    int __slot1;
+    int unused_int;
     for (vector<TileWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         it->FreeResource();
     if (GetGraphicCount() >= 1)
@@ -130,16 +130,16 @@ void TileGraphics::ReleaseGraphics()
 // Whether a ground tile is loaded; the first request for it puts it in the queue.
 bool TileGraphics::RequestGraphic(int graphic_id)
 {
-    bool is_loaded = 0;
-    char not_queued = 1;
     vector<TileWrapper>::iterator it;
+    bool is_loaded = false;
+    char not_queued = true;
     for (it = entries.begin(); it != entries.end(); it++)
     {
         if (graphic_id != it->graphic_id)
             continue;
-        not_queued = 0;
+        not_queued = false;
         if (it->is_loaded)
-            is_loaded = 1;
+            is_loaded = true;
     }
     // No ground tile is queued while the game runs fullscreen in the background.
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
@@ -155,7 +155,7 @@ TileWrapper TileGraphics::GetGraphic(int graphic_id)
     {
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
-            i->was_used = 1;
+            i->was_used = true;
             break;
         }
     }

@@ -47,8 +47,8 @@ InterfaceController::InterfaceController()
     ignore_button_hover = false;
     is_invalidated = false;
     corner_button_hover = false;
-    unread_flag_at_13 = false;
-    unread_flag_at_14 = false;
+    unused_flag = false;
+    second_unused_flag = false;
     status_message = "";
     status_message_state = 0;
     status_message_timer = 0;
@@ -134,13 +134,13 @@ void InterfaceController::Logout()
     MainForm->animation->paperdoll->equipped_belt = -1;
     MainForm->animation->paperdoll->equipped_gloves = -1;
     MainForm->animation->paperdoll->equipped_boots = -1;
-    MainForm->animation->paperdoll->equipped_type19_left = -1;
-    MainForm->animation->paperdoll->equipped_type19_right = -1;
-    MainForm->animation->paperdoll->equipped_type20_left = -1;
-    MainForm->animation->paperdoll->equipped_type20_right = -1;
-    MainForm->animation->paperdoll->equipped_type21_left = -1;
-    MainForm->animation->paperdoll->equipped_type21_right = -1;
-    MainForm->animation->paperdoll->equipped_type16 = -1;
+    MainForm->animation->paperdoll->equipped_ring1 = -1;
+    MainForm->animation->paperdoll->equipped_ring2 = -1;
+    MainForm->animation->paperdoll->equipped_armlet1 = -1;
+    MainForm->animation->paperdoll->equipped_armlet2 = -1;
+    MainForm->animation->paperdoll->equipped_bracer1 = -1;
+    MainForm->animation->paperdoll->equipped_bracer2 = -1;
+    MainForm->animation->paperdoll->equipped_accessory = -1;
     MainForm->animation->interface_controller->status->skip_next_exp_gain = true;
     MainForm->animation->interface_controller->status->total_exp_gained = 0;
     MainForm->animation->interface_controller->status->last_exp_gain = 0;
@@ -152,23 +152,23 @@ void InterfaceController::Logout()
     MainForm->animation->game->input_box_visible = false;
     MainForm->animation->game->form_visible = false;
     MainForm->animation->game->amount_box_visible = false;
-    MainForm->animation->bank->is_visible = 0;
-    MainForm->animation->jukebox->is_visible = 0;
-    MainForm->animation->barber->is_visible = 0;
-    MainForm->animation->shop->is_visible = 0;
-    MainForm->animation->guild->is_visible = 0;
-    MainForm->animation->memo->is_visible = 0;
-    MainForm->animation->report->is_visible = 0;
-    MainForm->animation->law->is_visible = 0;
-    MainForm->animation->inn->is_visible = 0;
-    MainForm->animation->learn->is_visible = 0;
-    MainForm->animation->trade->is_visible = 0;
-    MainForm->animation->chest->is_visible = 0;
-    MainForm->animation->paperdoll->is_visible = 0;
-    MainForm->animation->book->is_visible = 0;
-    MainForm->animation->social->is_open = 0;
-    MainForm->animation->message_board->is_visible = 0;
-    MainForm->animation->dialog->is_visible = 0;
+    MainForm->animation->bank->is_visible = false;
+    MainForm->animation->jukebox->is_visible = false;
+    MainForm->animation->barber->is_visible = false;
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->report->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->animation->inn->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->trade->is_visible = false;
+    MainForm->animation->chest->is_visible = false;
+    MainForm->animation->paperdoll->is_visible = false;
+    MainForm->animation->book->is_visible = false;
+    MainForm->animation->social->is_open = false;
+    MainForm->animation->message_board->is_visible = false;
+    MainForm->animation->dialog->is_visible = false;
     MainForm->animation->paperdoll->window_x = 133;
     MainForm->animation->paperdoll->window_y = 13;
     MainForm->animation->menu->message_x = DEFAULT_MESSAGE_BOX_X;
@@ -197,7 +197,7 @@ void InterfaceController::Logout()
     MainForm->animation->message_board->window_y = 16;
     MainForm->animation->dialog->window_x = 49;
     MainForm->animation->dialog->window_y = 115;
-    MainForm->animation->game->SetGhostWalk(0);
+    MainForm->animation->game->SetGhostWalk(false);
     MainForm->animation->SetScreenMode(ScreenMode_Menu);
     MainForm->animation->SetSubState(MenuScreen_Main);
     MainForm->edits->caret_enabled = true;
@@ -229,7 +229,7 @@ void InterfaceController::OnMouseMove(int mouse_x, int mouse_y)
 // Lights the slanted corner button at the top right and puts its tip on the status line.
 bool InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
 {
-    bool result = 0;
+    bool result = false;
     if (mouse_x >= 594 && mouse_x <= 624)
     {
         if ((mouse_y > 10 && mouse_y < 17 && mouse_x < 3 * mouse_y + 560) ||
@@ -239,29 +239,28 @@ bool InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_ExitGameAndGo));
                 corner_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (corner_button_hover)
         {
             corner_button_hover = false;
-            result = 1;
+            result = true;
         }
     }
     else if (corner_button_hover)
     {
         corner_button_hover = false;
-        result = 1;
+        result = true;
     }
     if (result)
         corner_hover_dirty = true;
-    return result;
 }
 
 // Lights the panel button under the mouse and puts its tip on the status line.
 bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
 {
-    bool result = 0;
+    bool result = false;
     if (mouse_x >= 62 && mouse_x <= 98)
     {
         if (mouse_y >= 330 && mouse_y <= 348)
@@ -270,13 +269,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_SeeInventory));
                 inventory_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (inventory_button_hover)
         {
             inventory_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 350 && mouse_y <= 368)
         {
@@ -284,13 +283,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_LookAtMap));
                 minimap_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (minimap_button_hover)
         {
             minimap_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 370 && mouse_y <= 388)
         {
@@ -298,13 +297,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_ActiveSkills));
                 spells_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (spells_button_hover)
         {
             spells_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 390 && mouse_y <= 408)
         {
@@ -312,13 +311,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_PassiveSkills));
                 skills_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (skills_button_hover)
         {
             skills_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 410 && mouse_y <= 428)
         {
@@ -326,13 +325,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_TalkWithOtherPeople));
                 chat_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (chat_button_hover)
         {
             chat_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 430 && mouse_y <= 448)
         {
@@ -340,20 +339,20 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_CharacterStatus));
                 status_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (status_button_hover)
         {
             status_button_hover = false;
-            result = 1;
+            result = true;
         }
     }
     else if (inventory_button_hover || minimap_button_hover || spells_button_hover || skills_button_hover ||
         chat_button_hover || status_button_hover)
     {
         inventory_button_hover = false;
-        result = 1;
+        result = true;
         minimap_button_hover = false;
         spells_button_hover = false;
         skills_button_hover = false;
@@ -368,13 +367,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_WhoIsOnline));
                 players_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (players_button_hover)
         {
             players_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 370 && mouse_y <= 388)
         {
@@ -382,13 +381,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GroupWithOtherPeople));
                 group_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (group_button_hover)
         {
             group_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 390 && mouse_y <= 408)
         {
@@ -396,13 +395,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_KeyboardMacroAndHotkeys));
                 third_right_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (third_right_button_hover)
         {
             third_right_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 410 && mouse_y <= 428)
         {
@@ -410,13 +409,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GameSettingsAndOptions));
                 settings_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (settings_button_hover)
         {
             settings_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 430 && mouse_y <= 448)
         {
@@ -424,13 +423,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GameHelp));
                 help_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (help_button_hover)
         {
             help_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 310 && mouse_y <= 327 && mouse_x <= 607)
         {
@@ -438,13 +437,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_FriendList));
                 friends_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (friends_button_hover)
         {
             friends_button_hover = false;
-            result = 1;
+            result = true;
         }
         if (mouse_y >= 310 && mouse_y <= 327 && mouse_x > 607)
         {
@@ -452,13 +451,13 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
             {
                 ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_IgnoreList));
                 ignore_button_hover = true;
-                result = 1;
+                result = true;
             }
         }
         else if (ignore_button_hover)
         {
             ignore_button_hover = false;
-            result = 1;
+            result = true;
         }
     }
     else if (players_button_hover || group_button_hover || third_right_button_hover || settings_button_hover ||
@@ -471,7 +470,7 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         help_button_hover = false;
         friends_button_hover = false;
         ignore_button_hover = false;
-        result = 1;
+        result = true;
     }
     if (result)
         button_hover_dirty = true;
@@ -480,11 +479,11 @@ bool InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
 
 bool InterfaceController::TakeInvalidated()
 {
-    bool was_invalidated = 0;
+    bool was_invalidated = false;
     if (is_invalidated)
     {
         is_invalidated = false;
-        was_invalidated = 1;
+        was_invalidated = true;
     }
     return was_invalidated;
 }
@@ -492,10 +491,10 @@ bool InterfaceController::TakeInvalidated()
 // True for the next four calls after RequestFullRedraw.
 bool InterfaceController::IsFullRedrawPending()
 {
-    bool is_pending = 0;
+    bool is_pending = false;
     if (full_redraw_pending)
     {
-        is_pending = 1;
+        is_pending = true;
         if (full_redraw_countdown > 0)
             full_redraw_countdown--;
         else
@@ -512,22 +511,22 @@ void InterfaceController::ClearFullRedraw()
 
 bool InterfaceController::TakeButtonHoverDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (button_hover_dirty)
     {
         button_hover_dirty = false;
-        was_dirty = 1;
+        was_dirty = true;
     }
     return was_dirty;
 }
 
 bool InterfaceController::TakeCornerHoverDirty()
 {
-    bool was_dirty = 0;
+    bool was_dirty = false;
     if (corner_hover_dirty)
     {
         corner_hover_dirty = false;
-        was_dirty = 1;
+        was_dirty = true;
     }
     return was_dirty;
 }
@@ -575,9 +574,9 @@ String InterfaceController::GetStatusMessage()
 
 bool InterfaceController::IsScreenshotCooldown()
 {
-    bool is_cooling_down = 1;
+    bool is_cooling_down = true;
     if (screenshot_cooldown <= 0)
-        is_cooling_down = 0;
+        is_cooling_down = false;
     return is_cooling_down;
 }
 

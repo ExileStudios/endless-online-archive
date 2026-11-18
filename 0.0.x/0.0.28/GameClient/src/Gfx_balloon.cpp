@@ -24,17 +24,17 @@ Balloon::Balloon(int text_width, int text_height, String *lines, int style)
     bubble_rect.top = 0;
     bubble_rect.right = text_width + 16;
     bubble_rect.bottom = text_height + 12;
-    surface_desc->Flags = 6;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = 2112;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
     surface_desc->Width = text_width + 16;
     surface_desc->Height = text_height + 12;
     fill_surface->GetSurfaceDesc(surface_desc);
     fill_surface->Create(surface_desc, MainForm->Dx_Draw1);
     text_surface->GetSurfaceDesc(surface_desc);
     text_surface->Create(surface_desc, MainForm->Dx_Draw1);
-    fill_surface->Blt(&bubble_rect, 0, 0, 16778240, fill_fx);
-    text_surface->Blt(&bubble_rect, 0, 0, 16778240, fill_fx);
+    fill_surface->Blt(&bubble_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
+    text_surface->Blt(&bubble_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
     if (fill_surface->GetDC(&dc))
     {
         try
@@ -108,7 +108,7 @@ Balloon::Balloon(int text_width, int text_height, String *lines, int style)
         {
         }
         text_surface->ReleaseDC(dc);
-        text_surface->SetColorKey(8, color_key);
+        text_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     }
 }
 
