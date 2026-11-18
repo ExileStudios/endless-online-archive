@@ -44,7 +44,7 @@ void NpcGraphics::LoadPendingGraphic()
     pending_seen = 0;
     if (pending_count > 0)
     {
-        library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_Npcs);
+        library = (void *)MainForm->gfx_vault->OpenLibrary(GfxLibrary_Npcs);
         it = entries.begin();
         for (; it != entries.end(); it++)
         {
@@ -64,7 +64,7 @@ void NpcGraphics::LoadPendingGraphic()
                 }
                 else
                 {
-                    int open_library = library;
+                    int open_library = (int)library;
                     int resource_id = 40 * it->graphic_id + 61;
                     if (!it->load_stage)
                     {
@@ -221,6 +221,82 @@ bool NpcGraphics::RequestGraphic(int graphic_id)
     if (not_queued && (Application->Active || !MainForm->config->GetFullscreen()))
         QueueGraphic(graphic_id);
     return is_loaded;
+}
+
+// Loads an npc graphic's standing and idle frames at once, front and back with their mirror images, for a picture
+// shown right away; false when it cannot be requested.
+bool NpcGraphics::LoadGraphicNow(int unused, int graphic_id)
+{
+    vector<NpcWrapper>::iterator it;
+    if (!RequestGraphic(graphic_id))
+    {
+        library = (void *)MainForm->gfx_vault->OpenLibrary(GfxLibrary_Npcs);
+        int open_library = (int)library;
+        it = entries.begin();
+        for (; it != entries.end(); it++)
+        {
+            if (!it->is_loaded)
+            {
+                NpcWrapper entry_copy = *it;
+                if (graphic_id == it->graphic_id)
+                {
+                    int resource_id = 40 * it->graphic_id + 61;
+                    if (!it->load_stage)
+                    {
+                        NpcWrapper stage_entry_copy = *it;
+                        it->CreateResource();
+                        TPoint size = it->resource->CreateSheets(open_library, resource_id);
+                        it->load_stage++;
+                    }
+                    if (it->load_stage == 1)
+                    {
+                        if (!it->resource->LoadFrontFrame(0, open_library, resource_id))
+                        {
+                            it->fail_count++;
+                            continue;
+                        }
+                        if (!it->resource->LoadBackFrame(0, open_library, resource_id + 2))
+                        {
+                            it->fail_count++;
+                            continue;
+                        }
+                        it->resource->MirrorFrame(0);
+                        int npc_id = it->graphic_id;
+                        if (npc_id - 1 || true)
+                        {
+                            MainForm->npc_values->GetNpc(it->graphic_id - 1);
+                            if (!it->resource->LoadFrontFrame(1, open_library, resource_id + 1))
+                            {
+                                it->fail_count++;
+                                continue;
+                            }
+                            if (!it->resource->LoadBackFrame(1, open_library, resource_id + 3))
+                            {
+                                it->fail_count++;
+                                continue;
+                            }
+                            it->resource->MirrorFrame(1);
+                            it->load_stage++;
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    return true;
+}
+
+// The npc graphic of the id, loaded or not; 0 when there is none.
+NpcWrapper *NpcGraphics::FindGraphic(int graphic_id)
+{
+    for (vector<NpcWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
+    {
+        if (graphic_id == it->graphic_id)
+            return it;
+    }
+    return 0;
 }
 
 // The loaded npc graphic with this id, marked as used, or null.

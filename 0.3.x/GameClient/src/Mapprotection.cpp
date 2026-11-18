@@ -61,48 +61,14 @@ void MapController::AdvanceTileFrame()
     }
 }
 
-// The map's name from its file, cut at the first 0xFF filler; empty when the file is not a map.
-String MapController::ReadMapName(int map_number)
+void Mapprotection_UnusedLiterals1()
 {
-    int file;
-    int size;
-    char *buffer;
-    String map_name = "";
-    String data;
-    try
-    {
-        data = IntToStr(map_number);
-        for (int length = data.Length(); length <= 4; length++)
-            data.Insert("0", 0);
-        data.Insert("./maps/", 0);
-        data.Insert(".emf", data.Length() + 1);
-        file = FileOpen(data.c_str(), fmOpenRead);
-        size = FileSeek(file, 0, 2);
-        FileSeek(file, 0, 0);
-        buffer = new char[size + 1];
-        FileRead(file, buffer, size);
-        FileClose(file);
-        data = buffer;
-        file_size = size;
-        data.SetLength(size);
-        delete[] buffer;
-        if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
-            return "";
-        String header = MainForm->net_client->DeobfuscateString(data.SubString(8, 24));
-        map_name = header.SubString(1, 16);
-        for (int i = 1; i <= map_name.Length(); i++)
-        {
-            if ((unsigned char)map_name[i] == 255)
-            {
-                map_name = map_name.SubString(1, i - 1);
-                break;
-            }
-        }
-    }
-    catch (...)
-    {
-    }
-    return map_name;
+    "";
+    "0";
+    "./maps/";
+    ".emf";
+    "";
+    "";
 }
 
 // Reads the checksum and size of the local map file, for comparison with the ones the server sends.

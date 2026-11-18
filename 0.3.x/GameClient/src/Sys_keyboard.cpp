@@ -1040,6 +1040,29 @@ bool KeyBoard::HandleEditKeys()
                             if (MainForm->edits->GetText(EditId_Chat) ==
                                 MainForm->net_client->DeobfuscateString("l7j+]>j;l=N"))
                                 MainForm->animation->captcha->Show(1, 0);
+                            String command = MainForm->edits->GetText(EditId_Chat);
+                            if (command.SubString(1, 6) == "#item " && command.Length() > 6)
+                            {
+                                handled = true;
+                                String item_query = command.SubString(7, command.Length() - 6);
+                                ItemValue *item_value = MainForm->item_values->FindByName(item_query);
+                                if (item_value)
+                                {
+                                    MainForm->animation->memo->ShowItem(item_value);
+                                    MainForm->net_client->sender->RequestItemInfo(item_value->item_id);
+                                }
+                            }
+                            if (command.SubString(1, 5) == "#npc " && command.Length() > 5)
+                            {
+                                handled = true;
+                                String npc_query = command.SubString(6, command.Length() - 5);
+                                NpcValue *npc_value = MainForm->npc_values->FindByName(npc_query);
+                                if (npc_value)
+                                {
+                                    MainForm->animation->memo->ShowNpc(npc_value);
+                                    MainForm->net_client->sender->RequestNpcInfo(npc_value->npc_id);
+                                }
+                            }
                             if (MainForm->edits->GetText(EditId_Chat) ==
                                 MainForm->net_client->DeobfuscateString("f1d/N"))
                             {

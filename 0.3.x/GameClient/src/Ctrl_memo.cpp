@@ -11,11 +11,36 @@
 #include "Ctrl_shop.h"
 #include "Ctrl_trade.h"
 #include "Ctrl_crafter.h"
+#include "Ctrl_tooltip.h"
+#include "Gfx_interface.h"
+#include "Gfx_mapitems.h"
+#include "Gfx_mapnpcs.h"
+#include "Gfx_npc.h"
+#include "Gfx_subitem.h"
 
 #pragma package(smart_init)
 
+// Creates the memo's preview surface and empty lists for its lines and values.
 MemoController::MemoController()
 {
+    preview_surface = new TDx_DrawSurface(NULL);
+    color_key = new TDDColorKey(NULL);
+    color_key->ColorSpaceHighValue = 0;
+    color_key->ColorSpaceLowValue = 0;
+    surface_desc = new TDDSurfaceDesc(NULL);
+    surface_caps = new TDDSCaps(NULL);
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
+    surface_desc->SCaps = surface_caps;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+    surface_desc->Width = 223;
+    surface_desc->Height = 104;
+    preview_surface->GetSurfaceDesc(surface_desc);
+    preview_surface->Create(surface_desc, MainForm->Dx_Draw1);
+    preview_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
+    preview_rect.top = 0;
+    preview_rect.left = 0;
+    preview_rect.right = 223;
+    preview_rect.bottom = 104;
     lines = new TStringList();
     line_values = new TStringList();
     item_entries = new TStringList();
@@ -34,10 +59,16 @@ MemoController::MemoController()
     scroll_up_held = false;
     scroll_down_held = false;
     is_dragging = false;
+    tooltip = new Tooltip(76, 50, 2);
+    tooltip->SetFlipEdge(630, 63);
 }
 
 MemoController::~MemoController()
 {
+    surface_desc->Clear();
+    surface_caps->Clear();
+    delete surface_desc;
+    delete surface_caps;
 }
 
 // Adds a packed item list as name and amount lines, sorted by name.
@@ -78,34 +109,38 @@ void MemoController::AddCharacterStats(String stats_data)
     int max_hitpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(14, 2));
     int techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(16, 2));
     int max_techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(18, 2));
-    int str_value = MainForm->net_client->DecodeNumber(stats_data.SubString(20, 2));
-    int int_value = MainForm->net_client->DecodeNumber(stats_data.SubString(22, 2));
-    int wis_value = MainForm->net_client->DecodeNumber(stats_data.SubString(24, 2));
-    int agi_value = MainForm->net_client->DecodeNumber(stats_data.SubString(26, 2));
-    int con_value = MainForm->net_client->DecodeNumber(stats_data.SubString(28, 2));
-    int cha_value = MainForm->net_client->DecodeNumber(stats_data.SubString(30, 2));
-    int damage_max = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
-    int damage_min = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
-    int hitrate = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
-    int dodge = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
-    int armor = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
-    int light_element = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
-    int dark_element = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
-    int fire_element = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
-    int water_element = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
-    int earth_element = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
-    int wind_element = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
-    int weight = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 1));
-    int max_weight = MainForm->net_client->DecodeNumber(stats_data.SubString(55, 1));
+    int spent_points = MainForm->net_client->DecodeNumber(stats_data.SubString(20, 2));
+    int total_points = MainForm->net_client->DecodeNumber(stats_data.SubString(22, 2));
+    int str_value = MainForm->net_client->DecodeNumber(stats_data.SubString(24, 2));
+    int int_value = MainForm->net_client->DecodeNumber(stats_data.SubString(26, 2));
+    int wis_value = MainForm->net_client->DecodeNumber(stats_data.SubString(28, 2));
+    int agi_value = MainForm->net_client->DecodeNumber(stats_data.SubString(30, 2));
+    int con_value = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
+    int cha_value = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
+    int damage_max = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
+    int damage_min = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
+    int hitrate = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
+    int dodge = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
+    int armor = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
+    int light_element = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
+    int dark_element = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
+    int fire_element = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
+    int water_element = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
+    int earth_element = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 2));
+    int wind_element = MainForm->net_client->DecodeNumber(stats_data.SubString(56, 2));
+    int divine_element = MainForm->net_client->DecodeNumber(stats_data.SubString(58, 2));
+    int weight = MainForm->net_client->DecodeNumber(stats_data.SubString(60, 1));
+    int max_weight = MainForm->net_client->DecodeNumber(stats_data.SubString(61, 1));
     AddText(MainForm->strings->GetText(GameText_Level), IntToStr(experience) + " [" + IntToStr(character_level) + "]",
         false);
-    AddText(MainForm->strings->GetText(GameText_Location), MainForm->map->ReadMapName(map_id), false);
+    AddText(MainForm->strings->GetText(GameText_Location), IntToStr(map_id), false);
     AddText(MainForm->strings->GetText(GameText_Coordinates), IntToStr(map_x) + "," + IntToStr(map_y), false);
     AddText(" ", "", false);
     AddText(MainForm->strings->GetText(GameText_Hitpoints), IntToStr(hitpoints) + "/" + IntToStr(max_hitpoints),
         false);
     AddText(MainForm->strings->GetText(GameText_Techpoints), IntToStr(techpoints) + "/" + IntToStr(max_techpoints),
         false);
+    AddText("specpoints", IntToStr(spent_points) + "/" + IntToStr(total_points), false);
     AddText(MainForm->strings->GetText(GameText_Weight), IntToStr(weight) + "/" + IntToStr(max_weight),
         false);
     AddText(" ", "", false);
@@ -128,6 +163,7 @@ void MemoController::AddCharacterStats(String stats_data)
     AddText(MainForm->strings->GetText(GameText_WaterEle), IntToStr(water_element), false);
     AddText(MainForm->strings->GetText(GameText_EarthEle), IntToStr(earth_element), false);
     AddText(MainForm->strings->GetText(GameText_WindEle), IntToStr(wind_element), false);
+    AddText("devine ele.", IntToStr(divine_element), false);
 }
 
 // Adds a text with its right-hand value, wrapped to the page width; each wrapped line repeats the value.
@@ -191,7 +227,7 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
 }
 
 // Shows the memo window empty and at the top, closing the other npc windows.
-void MemoController::Show(String window_title)
+void MemoController::Show()
 {
     MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
@@ -206,9 +242,150 @@ void MemoController::Show(String window_title)
     line_values->Clear();
     top_line = 0;
     scroll_thumb_offset = 0;
-    title = window_title;
     is_visible = true;
     MainForm->redraw_needed = true;
+}
+
+// Shows an item in the memo window: its picture, and its name, type and effect lines from its tip.
+void MemoController::ShowItem(ItemValue *item)
+{
+    int i;
+    SubItemWrapper *picture;
+    int x;
+    int y;
+    TRect *source;
+    TRect rect;
+    if (!item)
+        return;
+    preview_surface->BltFast(0, 0, MainForm->gfx->interface_graphics->chat_panel_surface,
+        &MainForm->gfx->interface_graphics->memo_preview_rect, DDBLTFAST_WAIT);
+    int graphic = item->graphic - 1;
+    if (MainForm->gfx->items->LoadSubItemGraphicNow(graphic))
+    {
+        picture = MainForm->gfx->items->GetSubItemGraphic(graphic);
+        source = &picture->resource->surface_rect;
+        rect = *source;
+        x = 108 - picture->width / 2;
+        y = 50 - picture->height / 2;
+        preview_surface->BltFast(x, y, picture->resource->surface, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (item->name.Length() < 3)
+        return;
+    Show();
+    tooltip->ShowItem(item->item_id);
+    memo_kind = 1;
+    preview_graphic = item->graphic;
+    title = "Item : " + item->name;
+    for (int row = 0; row < 7; row++)
+        AddText("", "", false);
+    for (i = 0; i < tooltip->line_count; i++)
+    {
+        if (!i)
+            AddText("Name:", tooltip->lines[i], false);
+        else if (i == 1)
+            AddText("Type:", tooltip->lines[i], false);
+        else
+            AddText("Effect", tooltip->lines[i], false);
+    }
+}
+
+// Shows an npc in the memo window: its picture, cut to fit, and its name, level, behaviour, experience, hit and tech
+// points, damage, hit rate, evade and armor.
+void MemoController::ShowNpc(NpcValue *npc)
+{
+    NpcWrapper *picture;
+    int x;
+    int y;
+    int trim;
+    if (!npc)
+        return;
+    preview_surface->BltFast(0, 0, MainForm->gfx->interface_graphics->chat_panel_surface,
+        &MainForm->gfx->interface_graphics->memo_preview_rect, DDBLTFAST_WAIT);
+    int graphic = npc->graphic;
+    if (MainForm->gfx->npc_cache->LoadGraphicNow(npc->npc_id, graphic))
+    {
+        picture = MainForm->gfx->npc_cache->FindGraphic(graphic);
+        TRect rect = picture->resource->GetFrameRect(0);
+        x = 108 - picture->resource->frame_width / 2;
+        y = 55 - picture->resource->frame_height / 2;
+        if (y < 0)
+            y = 0;
+        if (rect.bottom > 200)
+        {
+            rect.top = 70;
+            rect.bottom = rect.top + 88;
+        }
+        else if (rect.bottom > 150)
+        {
+            rect.top = 50;
+            rect.bottom = rect.top + 88;
+        }
+        else if (rect.bottom > 100)
+        {
+            rect.top = 25;
+            rect.bottom = rect.top + 88;
+        }
+        else if (rect.bottom > 88)
+        {
+            rect.top = 0;
+            rect.bottom = 88;
+        }
+        // A picture taller than 88 shows 88 rows, lower down the taller it is; one wider than 200
+        // is cut at both sides.
+        if (picture->resource->frame_width > 200)
+        {
+            trim = (picture->resource->frame_width - 200) / 2;
+            rect.left += trim;
+            rect.right -= trim;
+            x = 0;
+        }
+        preview_surface->BltFast(x, y, picture->resource->front_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    // An npc whose name has fewer than three letters shows no memo.
+    if (npc->name.Length() < 3)
+        return;
+    Show();
+    memo_kind = 2;
+    preview_graphic = npc->graphic;
+    title = "Npc : " + npc->name + " - lvl " + String(npc->level);
+    for (int row = 0; row < 7; row++)
+        AddText("", "", false);
+    AddText("Name:", npc->name, false);
+    AddText("Behaviour:", BehaviourName(npc->npc_type), false);
+    AddText("Experience", String(npc->experience) + " exp", false);
+    AddText("", "", false);
+    AddText("Hitpoints", String(npc->hp) + " hp", false);
+    AddText("Techpoints", String((unsigned short)npc->tp) + " tp", false);
+    AddText("", "", false);
+    AddText("Damage",
+        String((unsigned short)npc->min_damage) + " - " + String(String((unsigned short)npc->min_damage)) + " dmg",
+        false);
+    AddText("Hitrate", String((unsigned short)npc->accuracy) + " hit", false);
+    AddText("Evade", String((unsigned short)npc->evade) + " ev", false);
+    AddText("Armor", String((unsigned short)npc->armor) + " ac", false);
+}
+
+// The word the memo shows for an npc's behaviour number.
+String MemoController::BehaviourName(int behaviour)
+{
+    if (!behaviour)
+        return "friendly";
+    if (behaviour == 1)
+        return "passive";
+    if (behaviour == 2)
+        return "aggresive";
+    if (behaviour == 6)
+        return "shopkeeper";
+    if (behaviour == 15)
+        return "quest npc";
+    return "other";
+}
+
+void MemoController::Open(String heading)
+{
+    Show();
+    memo_kind = 0;
+    title = heading;
 }
 
 // Hides the window and frees its graphics.
@@ -232,7 +409,7 @@ int MemoController::GetTopLine()
     return top_line;
 }
 
-// A click on the scroll bar, or anywhere else in the window to start moving it.
+// A click on the scroll bar grabs its thumb or starts scrolling; any other click in the window starts moving it.
 void MemoController::MouseDown(int x, int y, int button)
 {
     if (x >= window_x + 252 && x <= window_x + 267)
@@ -267,7 +444,37 @@ void MemoController::MouseDown(int x, int y, int button)
 DEFINE_MOUSE_MOVE(MemoController)
 
 // Lights the scroll arrow under the mouse and drags a grabbed thumb.
-DEFINE_UPDATE_SCROLL_HOVER(MemoController)
+void MemoController::UpdateScrollHover(int x, int y)
+{
+    if (y >= window_y + 58 && y <= window_y + 229)
+        DragScrollThumb(y);
+    if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
+    {
+        if (!scroll_up_hovered)
+        {
+            scroll_up_hovered = true;
+            MainForm->redraw_needed = true;
+        }
+    }
+    else if (scroll_up_hovered)
+    {
+        scroll_up_hovered = false;
+        MainForm->redraw_needed = true;
+    }
+    if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243)
+    {
+        if (!scroll_down_hovered)
+        {
+            scroll_down_hovered = true;
+            MainForm->redraw_needed = true;
+        }
+    }
+    else if (scroll_down_hovered)
+    {
+        scroll_down_hovered = false;
+        MainForm->redraw_needed = true;
+    }
+}
 
 DEFINE_MEMO_DRAG_SCROLL_THUMB(MemoController)
 

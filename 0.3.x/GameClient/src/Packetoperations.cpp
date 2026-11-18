@@ -284,6 +284,20 @@ void PacketOperator::SendPublicChat(String text)
         MainForm->net_client->SendPacket(AC_PUBLIC, OP_CHAT, packet);
 }
 
+void PacketOperator::RequestItemInfo(int item_id)
+{
+    String packet = MainForm->net_client->EncodeNumber(1, 1);
+    packet.Insert(MainForm->net_client->EncodeNumber(item_id, 2), packet.Length() + 1);
+    MainForm->net_client->SendPacket(AC_GET, OP_ADMIN, packet);
+}
+
+void PacketOperator::RequestNpcInfo(int npc_id)
+{
+    String packet = MainForm->net_client->EncodeNumber(2, 1);
+    packet.Insert(MainForm->net_client->EncodeNumber(npc_id, 2), packet.Length() + 1);
+    MainForm->net_client->SendPacket(AC_GET, OP_ADMIN, packet);
+}
+
 // Reports a player: the name, a byte of 255, then the reason; nothing is sent when either is empty.
 void PacketOperator::SendReportPlayer(String name, String reason)
 {

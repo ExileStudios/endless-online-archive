@@ -130,6 +130,7 @@ struct PacketProcessor
     String EncodeNumber(unsigned int value, int width);
     unsigned int DecodeNumber(String encoded);
     char ByteToChar(unsigned char value);
+    String FormatPercent(int value);
 };
 
 #endif

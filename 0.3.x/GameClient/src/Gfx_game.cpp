@@ -1262,9 +1262,27 @@ void GameGraphics::DrawDialogWindow()
 // Draws the memo window: background, hovered line highlight, and the scroll arrows and thumb.
 void GameGraphics::DrawMemoWindow()
 {
+    int top_line;
+    char hover_visible;
+    char unused_bytes[3];
     MainForm->OffscreenSurface->BltFast(MainForm->animation->memo->window_x, MainForm->animation->memo->window_y,
         MainForm->gfx->shop->background_surface, &MainForm->gfx->shop->background_rect, DDBLTFAST_WAIT);
-    if (MainForm->animation->memo->hovered_line >= 0)
+    hover_visible = true;
+    if (MainForm->animation->memo->memo_kind > 0)
+    {
+        TRect preview_rect = MainForm->animation->memo->preview_rect;
+        top_line = MainForm->animation->memo->GetTopLine();
+        if (MainForm->animation->memo->hovered_line <= 6 - top_line)
+            hover_visible = false;
+        if (top_line < 6)
+        {
+            preview_rect.top += 16 * top_line;
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->memo->window_x + 23,
+                MainForm->animation->memo->window_y + 52, MainForm->animation->memo->preview_surface, &preview_rect,
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        }
+    }
+    if (MainForm->animation->memo->hovered_line >= 0 && hover_visible)
         MainForm->blitter->AlphaBlt(MainForm->animation->memo->window_x + 16,
             LIST_HIGHLIGHT_ROW_HEIGHT * MainForm->animation->memo->hovered_line + MainForm->animation->memo->window_y +
             47, MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &row_highlight_rect, 12);

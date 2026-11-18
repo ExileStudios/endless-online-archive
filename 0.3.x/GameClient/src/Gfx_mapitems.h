@@ -31,6 +31,7 @@ struct ItemGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     void ReleaseSubItemGraphics();
+    bool LoadSubItemGraphicNow(int graphic_id);
     bool RequestGraphic(int graphic_id);
     bool RequestSubItemGraphic(int graphic_id);
     ItemWrapper * GetGraphic(int graphic_id);

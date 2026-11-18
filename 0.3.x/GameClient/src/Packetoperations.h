@@ -47,6 +47,8 @@ struct PacketOperator
     void SendGlobalChat(String text);
     void SendPartyChat(String text);
     void SendPublicChat(String text);
+    void RequestItemInfo(int item_id);
+    void RequestNpcInfo(int npc_id);
     void SendReportPlayer(String name, String reason);
     void SendHelpQuestion(String question);
     void SendChooseTitle(int item_id, String title);

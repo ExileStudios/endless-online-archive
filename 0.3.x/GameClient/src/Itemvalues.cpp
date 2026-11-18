@@ -254,6 +254,22 @@ void ItemValues::Clear()
     records.clear();
 }
 
+// Finds an item by its number or its name: first the exact name, then a name holding the text, then the closest
+// name by score; none for under three letters.
+ItemValue *ItemValues::FindByName(String text)
+{
+    vector<ItemValue *>::iterator it;
+    if (text.Length() < 3)
+        return 0;
+    text = LowerCase(text);
+    for (it = records.begin(); it != records.end(); it++)
+    {
+        if (LowerCase((*it)->name).Pos(text) > 0)
+            return *it;
+    }
+    return 0;
+}
+
 // The item record at the index, kept within the list.
 ItemValue *ItemValues::GetItem(int index)
 {

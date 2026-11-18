@@ -11,7 +11,7 @@ struct NpcGraphics
 {
     vector<NpcWrapper> entries;
     int last_index;
-    int library;
+    void *library;
     int pending_count;
 
     NpcGraphics(char preload);
@@ -22,6 +22,8 @@ struct NpcGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
+    bool LoadGraphicNow(int unused, int graphic_id);
+    NpcWrapper * FindGraphic(int graphic_id);
     NpcWrapper * GetGraphic(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();

@@ -45,6 +45,7 @@ struct ItemValues
     void Load();
     void DeleteFiles();
     void Clear();
+    ItemValue * FindByName(String text);
     ItemValue * GetItem(int index);
     int GetWeight(int item_id);
     int GetGender(int item_id);

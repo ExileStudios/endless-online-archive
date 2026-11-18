@@ -6,6 +6,7 @@
 #include <TDDSCaps.H>
 #include <TDDSurfaceDesc.H>
 #include <TDx_DrawSurface.H>
+#include <typeinfo>
 
 struct PopupElement
 {
@@ -31,6 +32,11 @@ struct PopupElement
     void Render();
     void Tick();
     void Draw();
+};
+
+struct type_info_hash : public std::type_info
+{
+    char hash_state[12];
 };
 
 #endif

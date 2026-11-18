@@ -40,13 +40,6 @@ enum EifItemType
     EifItemType_HairTool = 29
 };
 
-#include <typeinfo>
-
-struct type_info_hash : public std::type_info
-{
-    char hash_state[12];
-};
-
 // One item of the item file.
 struct ItemValue
 {

@@ -120,7 +120,6 @@ struct MapController
     MapController();
     ~MapController();
     void AdvanceTileFrame();
-    String ReadMapName(int map_number);
     void ReadMapChecksum(int map_number);
     void SaveMapFile(int map_number);
     void LoadMap(int map_number);

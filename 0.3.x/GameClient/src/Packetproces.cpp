@@ -4377,6 +4377,139 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
     }
     if (family == OP_ADMIN)
     {
+        if (action == AC_CONFIRM)
+        {
+            int info_kind = DecodeNumber(packet.SubString(1, 1));
+            packet.Delete(1, 1);
+            if (info_kind == 1)
+            {
+                if (!MainForm->animation->memo->is_visible)
+                    return;
+                if (MainForm->animation->memo->memo_kind != 1)
+                    return;
+                int entry_count = DecodeNumber(packet.SubString(1, 1));
+                packet.Delete(1, 1);
+                char header_shown = false;
+                if (entry_count > 0)
+                {
+                    if (!header_shown)
+                    {
+                        MainForm->animation->memo->AddText("", "", false);
+                        header_shown = true;
+                    }
+                    for (int drop_index = 0; drop_index < entry_count; drop_index++)
+                    {
+                        int drop_npc_id = DecodeNumber(packet.SubString(4 * drop_index + 1, 2));
+                        int drop_rate = DecodeNumber(packet.SubString(4 * drop_index + 3, 2));
+                        NpcValue *drop_npc_value = MainForm->npc_values->GetNpc(drop_npc_id - 1);
+                        if (drop_npc_value)
+                            MainForm->animation->memo->AddText("Drop " + FormatPercent(drop_rate), drop_npc_value->name,
+                                false);
+                    }
+                    packet.Delete(1, 4 * entry_count);
+                }
+                entry_count = DecodeNumber(packet.SubString(1, 1));
+                packet.Delete(1, 1);
+                if (entry_count > 0)
+                {
+                    if (!header_shown)
+                    {
+                        MainForm->animation->memo->AddText("", "", false);
+                        header_shown = true;
+                    }
+                    for (int craft_index = 0; craft_index < entry_count; craft_index++)
+                    {
+                        int craft_name_length = DecodeNumber(packet.SubString(1, 1));
+                        String craft_name = packet.SubString(2, craft_name_length);
+                        packet.Delete(1, craft_name_length + 1);
+                        MainForm->animation->memo->AddText("Craftable ", craft_name, false);
+                    }
+                }
+                entry_count = DecodeNumber(packet.SubString(1, 1));
+                packet.Delete(1, 1);
+                if (entry_count > 0)
+                {
+                    if (!header_shown)
+                    {
+                        MainForm->animation->memo->AddText("", "", false);
+                        header_shown = true;
+                    }
+                    for (int seller_index = 0; seller_index < entry_count; seller_index++)
+                    {
+                        int seller_name_length = DecodeNumber(packet.SubString(1, 1));
+                        String seller_name = packet.SubString(2, seller_name_length);
+                        packet.Delete(1, seller_name_length + 1);
+                        MainForm->animation->memo->AddText("Sold By ", seller_name, false);
+                    }
+                }
+                entry_count = DecodeNumber(packet.SubString(1, 1));
+                packet.Delete(1, 1);
+                if (entry_count > 0)
+                {
+                    if (!header_shown)
+                    {
+                        MainForm->animation->memo->AddText("", "", false);
+                        header_shown = true;
+                    }
+                    for (int quest_index = 0; quest_index < entry_count; quest_index++)
+                    {
+                        int quest_name_length = DecodeNumber(packet.SubString(1, 1));
+                        String quest_name = packet.SubString(2, quest_name_length);
+                        packet.Delete(1, quest_name_length + 1);
+                        MainForm->animation->memo->AddText("Quest Reward ", quest_name, false);
+                    }
+                }
+                int gather_spots = DecodeNumber(packet.SubString(1, 2));
+                int chest_spawns = DecodeNumber(packet.SubString(3, 2));
+                packet.Delete(1, 4);
+                if (gather_spots > 0 || chest_spawns > 0)
+                {
+                    if (!header_shown)
+                    {
+                        MainForm->animation->memo->AddText("", "", false);
+                        header_shown = true;
+                    }
+                    if (gather_spots > 0)
+                        MainForm->animation->memo->AddText("Gatherable ", IntToStr(gather_spots) + " spots", false);
+                    if (chest_spawns > 0)
+                        MainForm->animation->memo->AddText("Chest-spawn ", IntToStr(chest_spawns) + " chests", false);
+                }
+            }
+            if (info_kind == 2)
+            {
+                if (!MainForm->animation->memo->is_visible)
+                    return;
+                if (MainForm->animation->memo->memo_kind != 2)
+                    return;
+                int npc_drop_count = DecodeNumber(packet.SubString(1, 1));
+                packet.Delete(1, 1);
+                if (npc_drop_count > 0)
+                {
+                    MainForm->animation->memo->AddText("", "", false);
+                    for (int npc_drop_index = 0; npc_drop_index < npc_drop_count; npc_drop_index++)
+                    {
+                        int npc_drop_item_id = DecodeNumber(packet.SubString(1, 2));
+                        int npc_drop_rate = DecodeNumber(packet.SubString(3, 2));
+                        packet.Delete(1, 4);
+                        String npc_drop_item_name = MainForm->item_values->GetName(npc_drop_item_id);
+                        MainForm->animation->memo->AddText("Drop " + FormatPercent(npc_drop_rate), npc_drop_item_name,
+                            false);
+                    }
+                }
+                int spawn_maps = DecodeNumber(packet.SubString(1, 2));
+                int spawn_spots = DecodeNumber(packet.SubString(3, 2));
+                packet.Delete(1, 4);
+                if (spawn_maps > 0 || spawn_spots > 0)
+                {
+                    MainForm->animation->memo->AddText("", "", false);
+                    if (spawn_maps > 0)
+                        MainForm->animation->memo->AddText("Spawn Maps ", IntToStr(spawn_maps) + " maps", false);
+                    if (spawn_spots > 0)
+                        MainForm->animation->memo->AddText("Spawns ", IntToStr(spawn_spots) + " spots", false);
+                }
+            }
+            return;
+        }
         if (action == AC_RESULT)
         {
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
@@ -4407,7 +4540,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int info_minutes_left = info_minutes % MINUTES_PER_HOUR;
             String info_time_text = IntToStr(info_hours) + "h." + IntToStr(info_minutes_left) + "m.";
             info_name = MainForm->net_client->Capitalize(info_name);
-            MainForm->animation->memo->Show(info_name + " - " + info_time_text);
+            MainForm->animation->memo->Open(info_name + " - " + info_time_text);
             MainForm->animation->memo->AddCharacterStats(info_stats);
         }
         if (action == AC_LIST)
@@ -4423,7 +4556,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             int inventory_minutes_left = inventory_minutes % MINUTES_PER_HOUR;
             String inventory_time_text = IntToStr(inventory_hours) + "h." + IntToStr(inventory_minutes_left) + "m.";
             inventory_owner_name = MainForm->net_client->Capitalize(inventory_owner_name);
-            MainForm->animation->memo->Show(inventory_owner_name + " - " + inventory_time_text);
+            MainForm->animation->memo->Open(inventory_owner_name + " - " + inventory_time_text);
             MainForm->animation->memo->AddItemList(inventory_item_list, 6, 4);
             MainForm->animation->memo->AddText(" ", "", false);
             MainForm->animation->memo->AddItemList(locker_item_list, 5, 3);
@@ -4455,7 +4588,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             String notice_body = MainForm->net_client->NextToken();
             String notice_extra_line = MainForm->net_client->NextToken();
             String notice_last_line = MainForm->net_client->NextToken();
-            MainForm->animation->memo->Show(notice_title);
+            MainForm->animation->memo->Open(notice_title);
             MainForm->animation->memo->AddText(notice_body, "", false);
             if (notice_extra_line.Length() > 0)
             {
@@ -5186,4 +5319,21 @@ unsigned int PacketProcessor::DecodeNumber(String encoded)
 char PacketProcessor::ByteToChar(unsigned char value)
 {
     return value;
+}
+
+// A value in hundredths as a percent text, with up to two decimals and none for a whole number.
+String PacketProcessor::FormatPercent(int value)
+{
+    int whole;
+    int last_decimal;
+    whole = value / 100;
+    int rest = value % 100;
+    int tenths = rest / 10;
+    last_decimal = rest % 10;
+    if (!rest)
+        return String(whole) + "%";
+    String decimals = tenths;
+    if (last_decimal)
+        decimals += String(last_decimal);
+    return String(whole) + "." + decimals + "%";
 }

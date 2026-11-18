@@ -255,6 +255,10 @@ InterfaceGraphics::InterfaceGraphics()
     notification_bottom_rect.left = 0;
     notification_bottom_rect.bottom = 50;
     notification_bottom_rect.right = 50;
+    memo_preview_rect.top = 0;
+    memo_preview_rect.left = 0;
+    memo_preview_rect.bottom = 99;
+    memo_preview_rect.right = 220;
     minimap_visible = 0;
 }
 

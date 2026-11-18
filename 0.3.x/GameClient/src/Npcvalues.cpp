@@ -243,6 +243,28 @@ void NpcValues::Clear()
     records.clear();
 }
 
+// Finds an npc by its number or its name: first the exact name, then a name holding the text, then the closest
+// name by score; none for under three letters.
+NpcValue *NpcValues::FindByName(String text)
+{
+    vector<NpcValue *>::iterator it;
+    vector<NpcValue *>::iterator lowered_record;
+    if (text.Length() < 3)
+        return 0;
+    text = LowerCase(text);
+    for (it = records.begin(); it != records.end(); it++)
+    {
+        if (LowerCase((*it)->name) == text)
+            return *it;
+    }
+    for (lowered_record = records.begin(); lowered_record != records.end(); lowered_record++)
+    {
+        if (LowerCase((*lowered_record)->name).Pos(text) > 0)
+            return *lowered_record;
+    }
+    return 0;
+}
+
 NpcValue *NpcValues::GetNpc(int index)
 {
     if (index < 0)

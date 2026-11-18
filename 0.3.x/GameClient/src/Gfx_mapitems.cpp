@@ -203,6 +203,41 @@ void ItemGraphics::ReleaseSubItemGraphics()
     }
 }
 
+// Loads a waiting sub item graphic at once when the graphic is not loaded yet; false when it fails to load.
+bool ItemGraphics::LoadSubItemGraphicNow(int graphic_id)
+{
+    vector<SubItemWrapper>::iterator it;
+    if (!RequestSubItemGraphic(graphic_id))
+    {
+        library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MapItems);
+        it = sub_items.begin();
+        while (it != sub_items.end())
+        {
+            if (!it->is_loaded)
+            {
+                int open_library = library;
+                it->CreateResource();
+                TPoint size = it->resource->LoadSurface(open_library, 2 * it->graphic_id + 102);
+                it->width = size.x;
+                it->height = size.y;
+                if (size.x == -1)
+                {
+                    it->idle_ticks++;
+                    return false;
+                }
+                it->is_loaded = true;
+                it->unfetched_frames = 0;
+                it->idle_ticks = 0;
+                pending_count--;
+                return true;
+            }
+            it++;
+        }
+        return false;
+    }
+    return true;
+}
+
 // Whether a map item picture is loaded; the first request for it puts it in the queue.
 bool ItemGraphics::RequestGraphic(int graphic_id)
 {

@@ -72,6 +72,7 @@ struct NpcValues
     void Load();
     void DeleteFiles();
     void Clear();
+    NpcValue * FindByName(String text);
     NpcValue * GetNpc(int index);
     int Count();
     void ClearHeaders();
