@@ -838,7 +838,6 @@ void GameController::ShowMessageBox(int buttons, int kind, String title, String 
 void GameController::OpenInputForm(int kind, int row_count, int char_filter, int max_length, String title,
     String caption)
 {
-    int unused_height;
     if (row_count < 2)
         row_count = 2;
     for (int row = 0; row < INPUT_FORM_MAX_ROWS; row++)
@@ -873,7 +872,7 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
         EDIT_LINE_HEIGHT);
     MainForm->edits->EnableChangeNotify(EditId_FormFirstRow);
     MainForm->edits->SetText(EditId_FormFirstRow, "");
-    MainForm->edits->SetTextColor(EditId_FormFirstRow, 0xB4C8DC);
+    MainForm->edits->SetTextColor(EditId_FormFirstRow, MainForm->themes->color_popup_edits);
     MainForm->edits->SetCharFilter(EditId_FormFirstRow, char_filter);
     MainForm->edits->SetMaxLength(EditId_FormFirstRow, max_length);
     MainForm->edits->SetBackgroundVisible(EditId_FormFirstRow, false);
@@ -882,7 +881,7 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
         EDIT_LINE_HEIGHT);
     MainForm->edits->EnableChangeNotify(EditId_FormSecondRow);
     MainForm->edits->SetText(EditId_FormSecondRow, "");
-    MainForm->edits->SetTextColor(EditId_FormSecondRow, 0xB4C8DC);
+    MainForm->edits->SetTextColor(EditId_FormSecondRow, MainForm->themes->color_popup_edits);
     MainForm->edits->SetCharFilter(EditId_FormSecondRow, char_filter);
     MainForm->edits->SetMaxLength(EditId_FormSecondRow, max_length);
     MainForm->edits->SetBackgroundVisible(EditId_FormSecondRow, false);
@@ -893,7 +892,7 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
             EDIT_LINE_HEIGHT);
         MainForm->edits->EnableChangeNotify(EditId_FormThirdRow);
         MainForm->edits->SetText(EditId_FormThirdRow, "");
-        MainForm->edits->SetTextColor(EditId_FormThirdRow, 0xB4C8DC);
+        MainForm->edits->SetTextColor(EditId_FormThirdRow, MainForm->themes->color_popup_edits);
         MainForm->edits->SetCharFilter(EditId_FormThirdRow, char_filter);
         MainForm->edits->SetMaxLength(EditId_FormThirdRow, max_length);
         MainForm->edits->SetBackgroundVisible(EditId_FormThirdRow, false);
@@ -905,7 +904,7 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
             EDIT_LINE_HEIGHT);
         MainForm->edits->EnableChangeNotify(EditId_FormFourthRow);
         MainForm->edits->SetText(EditId_FormFourthRow, "");
-        MainForm->edits->SetTextColor(EditId_FormFourthRow, 0xB4C8DC);
+        MainForm->edits->SetTextColor(EditId_FormFourthRow, MainForm->themes->color_popup_edits);
         MainForm->edits->SetCharFilter(EditId_FormFourthRow, char_filter);
         MainForm->edits->SetMaxLength(EditId_FormFourthRow, max_length);
         MainForm->edits->SetBackgroundVisible(EditId_FormFourthRow, false);
@@ -917,7 +916,7 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
             EDIT_LINE_HEIGHT);
         MainForm->edits->EnableChangeNotify(EditId_FormFifthRow);
         MainForm->edits->SetText(EditId_FormFifthRow, "");
-        MainForm->edits->SetTextColor(EditId_FormFifthRow, 0xB4C8DC);
+        MainForm->edits->SetTextColor(EditId_FormFifthRow, MainForm->themes->color_popup_edits);
         MainForm->edits->SetCharFilter(EditId_FormFifthRow, char_filter);
         MainForm->edits->SetMaxLength(EditId_FormFifthRow, max_length);
         MainForm->edits->SetBackgroundVisible(EditId_FormFifthRow, false);
@@ -951,7 +950,7 @@ void GameController::OpenInputBox(int kind, String prompt, int char_filter, int 
         EDIT_LINE_HEIGHT);
     MainForm->edits->EnableChangeNotify(EditId_InputBox);
     MainForm->edits->SetText(EditId_InputBox, "");
-    MainForm->edits->SetTextColor(EditId_InputBox, 0xB4C8DC);
+    MainForm->edits->SetTextColor(EditId_InputBox, MainForm->themes->color_popup_edits);
     MainForm->edits->SetCharFilter(EditId_InputBox, char_filter);
     MainForm->edits->SetMaxLength(EditId_InputBox, max_length);
     MainForm->edits->SetBackgroundVisible(EditId_InputBox, false);
@@ -967,7 +966,7 @@ void GameController::OpenInputBox(int kind, String prompt, int char_filter, int 
     MainForm->redraw_needed = true;
 }
 
-// Opens the amount box for an item dropped on a map tile; the tile is kept for the drop request.
+// Opens the amount box for the kind and item, from 1 to the most allowed, remembering the tile the item goes to.
 void GameController::OpenAmountBoxAtTile(int kind, int max_amount, int item_id, int reserved, int x, int y)
 {
     amount_box_visible = true;
@@ -987,14 +986,14 @@ void GameController::OpenAmountBoxAtTile(int kind, int max_amount, int item_id, 
     MainForm->edits->SetNumericRange(EditId_Amount, 1, max_amount);
     MainForm->edits->EnableChangeNotify(EditId_Amount);
     MainForm->edits->SetText(EditId_Amount, "1");
-    MainForm->edits->SetTextColor(EditId_Amount, 0xB4C8DC);
+    MainForm->edits->SetTextColor(EditId_Amount, MainForm->themes->color_popup_edits);
     MainForm->edits->SetMaxLength(EditId_Amount, 8);
     MainForm->edits->SetBackgroundVisible(EditId_Amount, false);
     MainForm->edits->SetBorderVisible(EditId_Amount, false);
     MainForm->redraw_needed = true;
 }
 
-// Opens the amount box, an edit and a slider from 1 to max_amount; kind picks its prompt and what OK does.
+// Opens the amount box for the kind and item, from 1 to the most allowed.
 void GameController::OpenAmountBox(int kind, int max_amount, int item_id, int reserved)
 {
     amount_box_visible = true;
@@ -1014,7 +1013,7 @@ void GameController::OpenAmountBox(int kind, int max_amount, int item_id, int re
     MainForm->edits->SetNumericRange(EditId_Amount, 1, max_amount);
     MainForm->edits->EnableChangeNotify(EditId_Amount);
     MainForm->edits->SetText(EditId_Amount, "1");
-    MainForm->edits->SetTextColor(EditId_Amount, 0xB4C8DC);
+    MainForm->edits->SetTextColor(EditId_Amount, MainForm->themes->color_popup_edits);
     MainForm->edits->SetMaxLength(EditId_Amount, 8);
     MainForm->edits->SetBackgroundVisible(EditId_Amount, false);
     MainForm->edits->SetBorderVisible(EditId_Amount, false);

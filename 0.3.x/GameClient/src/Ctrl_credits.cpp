@@ -46,6 +46,28 @@ CreditsController::CreditsController()
     credit_styles->Add("n");
     credit_texts->Add(MainForm->net_client->DeobfuscateString("[0U:{"));
     credit_styles->Add("n");
+    if (MainForm->themes->is_loaded)
+    {
+        credit_texts->Add(MainForm->net_client->DeobfuscateString("h2h7Y"));
+        credit_styles->Add("t");
+        credit_texts->Add(MainForm->themes->theme_author);
+        credit_styles->Add("n");
+        if (MainForm->themes->co_author_1.Length() > 3)
+        {
+            credit_texts->Add(MainForm->themes->co_author_1);
+            credit_styles->Add("n");
+        }
+        if (MainForm->themes->co_author_2.Length() > 3)
+        {
+            credit_texts->Add(MainForm->themes->co_author_2);
+            credit_styles->Add("n");
+        }
+        if (MainForm->themes->co_author_3.Length() > 3)
+        {
+            credit_texts->Add(MainForm->themes->co_author_3);
+            credit_styles->Add("n");
+        }
+    }
     credit_texts->Add(MainForm->net_client->DeobfuscateString("^+ ,b1l7Y"));
     credit_styles->Add("t");
     credit_texts->Add(MainForm->net_client->DeobfuscateString("k0k/^7z"));

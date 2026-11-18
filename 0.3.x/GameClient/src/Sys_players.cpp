@@ -429,6 +429,8 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
             {
                 if (it->death_countdown <= 0)
                 {
+                    it->balloon_shown = false;
+                    it->hover_label_shown = false;
                     it->FreeResources();
                     it->CloseBalloon();
                     players.erase(it);
@@ -448,6 +450,8 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
                     it->removal_countdown--;
                     if (it->removal_countdown <= 0)
                     {
+                        it->balloon_shown = false;
+                        it->hover_label_shown = false;
                         it->FreeResources();
                         it->CloseBalloon();
                         players.erase(it);
@@ -522,6 +526,7 @@ void Players::LoadPendingGraphics()
             i->reload_requested = false;
             i->graphics_pending = true;
             i->sheets_cleared = false;
+            i->stand_sheet_loaded = false;
             i->walk_sheets_loaded = false;
             i->walk_tail_sheets_loaded = false;
             i->stand_sheet_loaded = false;
@@ -531,7 +536,8 @@ void Players::LoadPendingGraphics()
             i->cast_sheets_loaded = false;
             i->emote_sheets_loaded = false;
         }
-        if (i->graphics_pending && !i->reload_requested && (Application->Active || !MainForm->config->GetFullscreen()))
+        // Sheets load only while the game is active, or in a window.
+        if ((Application->Active || !MainForm->config->GetFullscreen()) && i->graphics_pending && !i->reload_requested)
         {
             int gender = i->gender;
             int skin = i->skin;
@@ -673,6 +679,7 @@ void Players::LoadPendingGraphics()
                 {
                 }
             }
+            // The sitting frames, on a chair or on the floor.
             if ((i->sitting_on_chair || i->sitting_on_floor || i->chair_sit_start || i->floor_sit_start) &&
                 !i->sit_sheets_loaded)
             {
@@ -812,7 +819,7 @@ void Players::LoadPendingGraphics()
                 {
                 }
             }
-            // The sitting frames, on a chair or on the floor.
+            // The walking frames; the player's own character loads them even while standing.
             if ((i->walking || i->walk_start || i->jumping || i->jump_start ||
                 MainForm->net_client->GetPlayerId() == i->player_id) && !i->walk_sheets_loaded)
             {
@@ -820,7 +827,6 @@ void Players::LoadPendingGraphics()
                 {
                     LoadGraphicsLibraries(gender);
                     SelectGraphicsLibraries(gender);
-                    // The walking frames; the player's own character loads them even while standing.
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();

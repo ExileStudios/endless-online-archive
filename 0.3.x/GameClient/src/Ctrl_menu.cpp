@@ -787,7 +787,7 @@ void MenuController::ShowRecoverStep(int step)
         MainForm->animation->SetSubState(MenuScreen_PasswordReset);
         MainForm->gfx->LoadPasswordResetScreen(1, true);
         MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, 300, 242, EDIT_LINE_HEIGHT);
-        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+        MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
         MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
         MainForm->edits->SetMaxLength(EditId_AccountName, 16);
         MainForm->edits->caret_enabled = true;

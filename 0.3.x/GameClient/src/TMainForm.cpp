@@ -182,7 +182,9 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     version_major = 0;
     version_minor = 3;
     version_build = 29;
-    version_letter = 'e';
+    version_letter = 'F';
+    min_theme_version_major = 0;
+    min_theme_version_minor = 3;
     files = new FileController();
     String title =
         "Endless Online " + String(version_major) + "." + String(version_minor) + "." + String(version_build);
@@ -221,9 +223,31 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
         return;
     }
     config = new Config();
+    themes = new FileThemes(String(".\\gfx\\themes\\"), min_theme_version_major, min_theme_version_minor);
     strings = new StringContainer(config->GetLanguage());
     chat_log = new FFileLog(config->GetLogChat(), config->GetChatLogPath());
     registry = new WinRegister();
+    fonts = new Fonts(true);
+    gfx_vault = new GfxVault();
+    gfx_transfers = new GfxTransfers();
+    if (themes->LoadTheme(config->GetThemeFile()))
+    {
+        if (themes->is_outdated)
+        {
+            String theme_message = title;
+            theme_message += "Installed theme [" + themes->theme_name + " ] is not up-to-date.\n";
+            theme_message += "Suggestion: fix or change theme using configuration tool.\n\n";
+            theme_message +=
+                "Min. needed theme version: " + String(min_theme_version_major) + "." +
+                    String(min_theme_version_minor) + "\n";
+            theme_message +=
+                "Theme target version: " + String(themes->target_major_version) + "." +
+                    String(themes->target_minor_version);
+            MessageDlg(theme_message, mtInformation, TMsgDlgButtons() << mbOK, 0);
+        }
+        gfx_vault->SetGfxFileName(GfxLibrary_MenuInterface, themes->first_graphics_path);
+        gfx_vault->SetGfxFileName(GfxLibrary_GameInterface, themes->second_graphics_path);
+    }
     Application->OnMinimize = MinimizeForm;
     Application->OnRestore = RestoreForm;
     Application->OnActivate = ActivateForm;
@@ -378,9 +402,6 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     weapon_mapper = new WeaponMapper();
     keyboard = new KeyBoard();
     mouse = new Mouser();
-    fonts = new Fonts(true);
-    gfx_vault = new GfxVault();
-    gfx_transfers = new GfxTransfers();
     sfx = new SfxController(config->GetSoundVolume(), config->GetMusicVolume());
     animation = new AnimationController(config->GetSkipIntro());
     gfx = new GfxController(config->GetPreloadTileGfx(), config->GetPreloadMapGfx());
@@ -395,7 +416,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     npc_values = new NpcValues(pub_path, false);
     skill_values = new SkillValues(pub_path, false);
     class_values = new ClassValues(pub_path, false);
-    edits = new Edits();
+    edits = new Edits(themes->color_edits);
     edit_canvas = new EditCanvas();
     gfx->CreateMenuGraphics();
     gfx->LoadMenuGraphics(config->GetSkipSoftpad());
@@ -626,7 +647,7 @@ void __fastcall TMainForm::WMSysCommand(TWMSysCommand &message)
     if (message.CmdType == 177)
         config->SetStatusWidget(3);
     if (message.CmdType == 178)
-        time((long *)((char *)this + 1068));
+        time(&start_time);
     if (message.CmdType == 179)
         config->SetMinimapMode(MinimapMode_Toggled);
     if (message.CmdType == 180)
@@ -2790,6 +2811,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
             int knob_icon = 5;
             if (animation->game->amount_slider_hovered)
                 knob_icon = 6;
+            String amount_text = edits->GetText(EditId_Amount);
             if (edits->GetText(EditId_Amount).Length() > 0)
             {
                 int amount = StrToInt(edits->GetText(EditId_Amount));
@@ -3243,10 +3265,7 @@ void TMainForm::RenderGame_BottomPanel()
             {
                 try
                 {
-                    if (!config->GetTextTheme())
-                        fonts->color = 0;
-                    if (config->GetTextTheme() == 1)
-                        fonts->color = 0xB3B4B4;
+                    fonts->color = themes->color_bottom_bar;
                     fonts->face = 0;
                     fonts->size = 7;
                     fonts->DrawString(99, 455, animation->interface_controller->GetStatusMessage());
@@ -3314,10 +3333,7 @@ void TMainForm::RenderGame_BottomPanel()
         {
             try
             {
-                if (!config->GetTextTheme())
-                    fonts->color = 0;
-                if (config->GetTextTheme() == 1)
-                    fonts->color = 0xB5B4B3;
+                fonts->color = themes->color_bottom_bar;
                 fonts->face = 0;
                 fonts->size = 7;
                 int clock_x = (86 - (short)fonts->TextWidth(current_clock_text)) / 2 + 543;
@@ -3494,14 +3510,21 @@ void TMainForm::RenderMainLoop_Menu()
         }
         gfx->menu->DrawKeyHighlights();
     }
-    if (animation->GetSubState() == MenuScreen_Main && fonts->BeginOffscreen())
+    if (animation->GetSubState() == MenuScreen_Main)
     {
-        fonts->color = 0x96AABE;
-        fonts->face = 0;
-        fonts->size = 7;
-        fonts->DrawString(28, 456,
-            VersionString(version_major, version_minor, version_build, version_letter) + " - " + config->GetHost());
-        fonts->End();
+        if (fonts->BeginOffscreen())
+        {
+            fonts->color = themes->color_menu_version;
+            fonts->face = 0;
+            fonts->size = 7;
+            String version_text =
+                VersionString(version_major, version_minor, version_build, version_letter) + " -h: " +
+                    config->GetHost();
+            if (themes->is_loaded)
+                version_text += " -t: " + themes->theme_name;
+            fonts->DrawString(28, 456, version_text);
+            fonts->End();
+        }
     }
     if (MainForm->animation->menu->is_loading_world)
     {
@@ -3514,7 +3537,7 @@ void TMainForm::RenderMainLoop_Menu()
         {
             try
             {
-                fonts->color = 0xC8F0F0;
+                fonts->color = MainForm->themes->color_dialog_caption;
                 fonts->face = 1;
                 fonts->size = 10;
                 char load_started = false;
@@ -3555,7 +3578,7 @@ void TMainForm::RenderMainLoop_Menu()
                     else
                         fonts->DrawString(410, 341, MainForm->strings->GetText(GameText_Wait));
                 }
-                fonts->color = 0xB9B9B9;
+                fonts->color = MainForm->themes->color_dialog_soft;
                 line_end = 0;
                 fonts->face = 1;
                 fonts->size = 8;
@@ -3637,7 +3660,7 @@ void TMainForm::RenderMainLoop_Menu()
                     fonts->color = 0x28E6FA;
                 if (animation->credits->shown_styles->Strings[credit_line] == "n")
                 {
-                    fonts->color = 0xA1428;
+                    fonts->color = credit_name_color;
                     line_end = 10;
                 }
                 if (animation->credits->shown_styles->Strings[credit_line] == "s")
@@ -3689,6 +3712,35 @@ void TMainForm::RenderMainLoop_Menu()
         }
         gfx->menu->DrawMessageBoxControls();
     }
+}
+
+// Picks the credit names' colour from two pixels of the menu background: a lighter colour when either is dark.
+void TMainForm::SampleCreditNameColor()
+{
+    unsigned char top_red;
+    char dark;
+    int bottom_pixel;
+    unsigned char bottom_red;
+    int top_pixel = blitter->ReadPixel(500, 240, gfx->menu->background);
+    top_red = top_pixel;
+    unsigned char top_green = (unsigned short)top_pixel >> 8;
+    unsigned char top_blue = top_pixel >> 16;
+    bottom_pixel = blitter->ReadPixel(500, 340, gfx->menu->background);
+    unsigned char bottom_green = (unsigned short)bottom_pixel >> 8;
+    bottom_red = bottom_pixel;
+    unsigned char bottom_blue = bottom_pixel >> 16;
+    dark = false;
+    credit_name_color = 0xA1428;
+    if (top_red < 60 && top_green < 60 && top_blue < 60)
+        dark = true;
+    if (bottom_red < 60 && bottom_green < 60 && bottom_blue < 60)
+        dark = true;
+    if (top_red + top_red + top_blue < 120)
+        dark = true;
+    if (bottom_red + bottom_red + bottom_blue < 120)
+        dark = true;
+    if (dark)
+        credit_name_color = 0x78828C;
 }
 
 void TMainForm::RenderMainLoop_Intro()

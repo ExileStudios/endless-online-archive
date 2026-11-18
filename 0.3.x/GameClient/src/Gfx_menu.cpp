@@ -660,7 +660,7 @@ void MenuGraphics::DrawPasswordResetBackground(int x, int y, int step)
 void MenuGraphics::DrawLoginText()
 {
     int password_length;
-    MainForm->fonts->color = 0x8CA0B4;
+    MainForm->fonts->color = MainForm->themes->color_dialog_soft;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
     MainForm->fonts->DrawString(450, 261, MainForm->animation->menu->account_name);
@@ -679,7 +679,7 @@ void MenuGraphics::DrawLoginText()
 void MenuGraphics::DrawCharacterSlotText()
 {
     int name_x;
-    MainForm->fonts->color = 0x8CA0B4;
+    MainForm->fonts->color = MainForm->themes->color_dialog_soft;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
     if (MainForm->players->GetCount() >= 1)
@@ -718,7 +718,7 @@ void MenuGraphics::DrawListBoxText()
     int text_y;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog_soft;
     int first_index = MainForm->animation->menu->GetScrollOffset();
     int entry_count = MainForm->animation->menu->text_lines->Count;
     row = 0;
@@ -727,7 +727,6 @@ void MenuGraphics::DrawListBoxText()
         String entry = MainForm->animation->menu->text_lines->Strings[i];
         if (entry.Length() > 0)
         {
-            MainForm->fonts->color = 0xC8C8C8;
             text_x = MainForm->animation->menu->text_window_x + 30;
             text_y = MainForm->animation->menu->text_window_y + 16 * row + 70;
             MainForm->fonts->DrawString(text_x, text_y, entry);
@@ -742,8 +741,7 @@ void MenuGraphics::DrawMessageBoxText()
 {
     int break_at;
     int line_start;
-    int line_end;
-    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     int wrap_width = 250;
@@ -757,8 +755,8 @@ void MenuGraphics::DrawMessageBoxText()
     if ((short)MainForm->fonts->TextWidth(MainForm->animation->menu->message_lines[0]) > wrap_width)
     {
         String message = MainForm->animation->menu->message_lines[0];
+        int line_end = 1;
         line_start = 1;
-        line_end = 1;
         int line_index = 0;
         do
         {
@@ -794,6 +792,7 @@ void MenuGraphics::DrawMessageBoxText()
     }
     MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + 60,
         (short)MainForm->animation->menu->message_y + 26, MainForm->animation->menu->message_title);
+    MainForm->fonts->color = MainForm->themes->color_popup;
     MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + text_x,
         (short)MainForm->animation->menu->message_y + 61, MainForm->animation->menu->message_lines[0]);
     MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + text_x,
@@ -803,7 +802,7 @@ void MenuGraphics::DrawMessageBoxText()
 // Draws the password reset steps, with the account name once it has been entered.
 void MenuGraphics::DrawPasswordResetText()
 {
-    MainForm->fonts->color = 0xDCDCDC;
+    MainForm->fonts->color = MainForm->themes->color_menu;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
     MainForm->fonts->DrawString(370, 152, "Password reset instructions:");
@@ -835,7 +834,7 @@ void MenuGraphics::SetEmailText(String email)
 // Draws the sign-up code notice with the account and the email, a long email scrolling through 26 characters.
 void MenuGraphics::DrawSignupCodeText()
 {
-    MainForm->fonts->color = 0xDCDCDC;
+    MainForm->fonts->color = MainForm->themes->color_menu;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
     if (!email_text_set)
@@ -951,7 +950,7 @@ void MenuGraphics::DrawChangePasswordText()
     {
         try
         {
-            MainForm->fonts->color = 0x8CA0B4;
+            MainForm->fonts->color = MainForm->themes->color_dialog;
             MainForm->fonts->face = 1;
             MainForm->fonts->size = 8;
             MainForm->fonts->DrawString((short)MainForm->animation->menu->form_x + 40,

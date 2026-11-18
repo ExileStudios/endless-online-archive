@@ -140,3 +140,12 @@ TCanvas *Fonts::GetCanvas()
 {
     return canvas;
 }
+
+// Halves each part of the text colour.
+void Fonts::DarkenColor()
+{
+    unsigned char red = (unsigned char)color / 2;
+    unsigned char green = (((unsigned short)color >> 8) & 0xFF) / 2;
+    unsigned char blue = (((int)color >> 16) & 0xFF) / 2;
+    color = red | ((unsigned short)green << 8) | (blue << 16);
+}

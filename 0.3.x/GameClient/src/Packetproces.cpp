@@ -280,8 +280,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->animation->SetScreenMode(ScreenMode_Game);
                 MainForm->animation->interface_controller->RequestFullRedraw(3);
                 MainForm->edits->AddEdit(EditId_Chat, EditGroup_Game, 120, 309, 470, EDIT_LINE_HEIGHT);
-                if (MainForm->config->GetTextTheme() == 1)
-                    MainForm->edits->SetTextColor(EditId_Chat, 0xB4B3B4);
+                MainForm->edits->SetTextColor(EditId_Chat, MainForm->themes->color_chat_edit);
                 MainForm->edits->SetMaxLength(EditId_Chat, 128);
                 MainForm->edits->SetBackgroundVisible(EditId_Chat, false);
                 MainForm->edits->SetBorderVisible(EditId_Chat, false);
@@ -1334,7 +1333,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     MainForm->edits->Clear();
                     MainForm->edits->AddEdit(EditId_InputBox, EditGroup_Menu, MainForm->animation->menu->form_x + 113,
                         MainForm->animation->menu->form_y + 38, 132, EDIT_LINE_HEIGHT);
-                    MainForm->edits->SetTextColor(EditId_InputBox, 0xB4C8DC);
+                    MainForm->edits->SetTextColor(EditId_InputBox, MainForm->themes->color_popup_edits);
                     MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_Letters);
                     MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_Name);
                     MainForm->edits->SetAllowSpaces(EditId_InputBox, false);

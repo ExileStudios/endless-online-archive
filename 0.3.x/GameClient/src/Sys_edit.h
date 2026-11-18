@@ -21,6 +21,8 @@ struct Edit
     int max_value;
     int char_filter;
     char allow_spaces;
+    bool no_double_spaces;
+    bool no_leading_space;
     int max_length;
     char password;
     char show_strength;
@@ -34,9 +36,6 @@ struct Edit
     char visible;
     short unused_word;
     short second_unused_word;
-    int border_color;
-    int background_color;
-    int caret_color;
     int text_color;
     int id;
     String label;

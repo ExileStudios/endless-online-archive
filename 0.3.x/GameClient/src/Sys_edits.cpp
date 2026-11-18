@@ -5,8 +5,9 @@
 
 #pragma package(smart_init)
 
-Edits::Edits()
+Edits::Edits(int default_color)
 {
+    default_text_color = default_color;
     current_index = -1;
     text_changed = false;
     caret_enabled = true;
@@ -78,17 +79,18 @@ void Edits::TypeText(String text)
     vector<Edit>::iterator it;
     if (text.Length() < 1)
         return;
-    String before = 0;
     for (it = edits.begin(); it != edits.end(); it++)
     {
         if (it->focused && it->editable && it->text.Length() < it->max_length)
         {
-            before = it->text;
+            String before = it->text;
             for (int i = 1; i <= text.Length(); i++)
                 TypeChar(text[i]);
             if (it->text.Length() < 1)
                 continue;
             it->redraw_ticks = 2;
+            if (it->change_notify && before != it->text)
+                text_changed = true;
             // Case modes: 1 and 4 upper case, 2 lower case, 3 a capital first letter,
             // 5 a capital first letter and at most one more capital, never two in a row.
             if (it->case_mode == EditCaseMode_Upper)
@@ -126,24 +128,29 @@ void Edits::TypeText(String text)
             break;
         }
     }
-    if (before == 0)
-        return;
-    if (it->change_notify && before != it->text)
-        text_changed = true;
 }
 
 // Adds one typed character to the focused edit box when the box's rules allow it: spaces, a number's upper limit,
 // the character filter's letters, digits and signs, and at most a few dots.
 void Edits::TypeChar(char key)
 {
-    String previous_text = 0;
-    vector<Edit>::iterator it;
-    for (it = edits.begin(); it != edits.end(); it++)
+    String *text;
+    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
     {
         // A character goes to the focused box while it is editable and not full.
         if (it->focused && it->editable && it->text.Length() < it->max_length)
         {
-            previous_text = it->text;
+            if (key == ' ')
+            {
+                if (it->no_leading_space && it->text.Length() < 1)
+                    return;
+                if (it->no_double_spaces && it->text.Length() > 0)
+                {
+                    text = &it->text;
+                    if ((*text)[it->text.Length()] == ' ')
+                        return;
+                }
+            }
             it->dirty = true;
             if (it->multi_line)
                 it->scroll_offset = 0;
@@ -151,7 +158,10 @@ void Edits::TypeChar(char key)
             {
                 if (key >= '0' && key <= '9')
                 {
-                    it->text += String(key);
+                    if (it->max_value < 10)
+                        it->text = String(key);
+                    else
+                        it->text += String(key);
                     if (StrToInt(it->text) > it->max_value)
                         it->text = IntToStr(it->max_value);
                 }
@@ -217,10 +227,6 @@ void Edits::TypeChar(char key)
             break;
         }
     }
-    if (previous_text == 0)
-        return;
-    if (it->change_notify && previous_text != it->text)
-        text_changed = true;
 }
 
 // Enter in the focused box: a multi-line box gets a line break.
@@ -493,6 +499,7 @@ void Edits::AddEdit(int id, int screen_group, int x, int y, int width, int heigh
 {
     UnfocusAll();
     Edit handle(id, screen_group, x, y, width, height);
+    handle.text_color = default_text_color;
     edits.insert(edits.end(), handle);
 }
 
@@ -970,6 +977,30 @@ void Edits::SetShowStrength(int id, char show)
     }
 }
 
+void Edits::DisallowDoubleSpaces(int id)
+{
+    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    {
+        if (id == it->id)
+        {
+            it->no_double_spaces = true;
+            return;
+        }
+    }
+}
+
+void Edits::DisallowLeadingSpace(int id)
+{
+    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    {
+        if (id == it->id)
+        {
+            it->no_leading_space = true;
+            return;
+        }
+    }
+}
+
 void Edits::SetAllowSpaces(int id, char allow)
 {
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
@@ -1044,7 +1075,9 @@ String Edits::GetText(int id)
         {
             if (it->numeric)
             {
-                if (StrToInt(it->text) < it->min_value)
+                if (it->text.Length() < 1)
+                    it->text = "";
+                else if (StrToInt(it->text) < it->min_value)
                     it->text = IntToStr(it->min_value);
             }
             text = it->text;

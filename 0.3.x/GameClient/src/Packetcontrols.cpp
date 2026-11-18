@@ -759,9 +759,16 @@ void Client::ShowPendingScreen()
             MainForm->edits->SetPasswordMode(EditId_AccountPassword, true);
             MainForm->edits->SetPasswordMode(EditId_ConfirmPassword, true);
             MainForm->edits->SetShowStrength(EditId_AccountPassword, true);
-            MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+            MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
             MainForm->edits->SetAllowSpaces(EditId_AccountPassword, false);
             MainForm->edits->SetAllowSpaces(EditId_ConfirmPassword, false);
+            MainForm->edits->SetAllowSpaces(EditId_Email, false);
+            MainForm->edits->DisallowLeadingSpace(EditId_AccountName);
+            MainForm->edits->DisallowLeadingSpace(EditId_AccountDetailA);
+            MainForm->edits->DisallowLeadingSpace(EditId_AccountDetailB);
+            MainForm->edits->DisallowDoubleSpaces(EditId_AccountName);
+            MainForm->edits->DisallowDoubleSpaces(EditId_AccountDetailA);
+            MainForm->edits->DisallowDoubleSpaces(EditId_AccountDetailB);
             MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
             MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_Password);
             MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_Password);
@@ -796,7 +803,7 @@ void Client::ShowPendingScreen()
                 MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, 340, 141, EDIT_LINE_HEIGHT);
                 MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
                 MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_Password);
-                MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
                 MainForm->edits->SetAllowSpaces(EditId_Password, false);
                 MainForm->edits->SetPasswordMode(EditId_Password, true);
                 MainForm->edits->SetMaxLength(EditId_AccountName, 16);
@@ -815,7 +822,7 @@ void Client::ShowPendingScreen()
                 MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, GRID_LOGIN_NAME_EDIT_Y,
                     161, EDIT_LINE_HEIGHT);
                 MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Letters);
-                MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
                 MainForm->edits->SetMaxLength(EditId_AccountName, 16);
                 MainForm->edits->FocusEdit(EditId_AccountName);
             }

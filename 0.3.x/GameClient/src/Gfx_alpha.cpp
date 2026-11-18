@@ -1600,6 +1600,37 @@ int ExtBlts::MakeColor(int red, int green, int blue)
     return red_part | green_part | blue_part;
 }
 
+// The colour of the surface's pixel at the point, read with the surface locked.
+int ExtBlts::ReadPixel(int x, int y, TDx_DrawSurface *surface)
+{
+    TRect rect;
+    TDDSurfaceDesc *desc = new TDDSurfaceDesc(NULL);
+    rect.left = x;
+    rect.top = y;
+    rect.right = x;
+    rect.bottom = y;
+    surface->GetSurfaceDesc(desc);
+    surface->Lock(&rect, desc, DDLOCK_WAIT);
+    try
+    {
+        char *bits = (char *)desc->Internal_DDSURFACEDESC2_Ptr->lpSurface;
+        pixel_red = *(unsigned char *)bits;
+        bits++;
+        pixel_green = *(unsigned char *)bits;
+        bits++;
+        pixel_blue = *(unsigned char *)bits;
+        surface->Unlock(&rect);
+    }
+    catch (...)
+    {
+        surface->Unlock(&rect);
+    }
+    desc->Clear();
+    delete desc;
+    return (unsigned char)pixel_red | ((unsigned short)(unsigned char)pixel_green << 8) |
+        ((unsigned char)pixel_blue << 16);
+}
+
 // The position of the lowest set bit of a colour mask, and the run of set bits from there.
 int ExtBlts::GetMaskShiftAndWidth(int mask, unsigned short *shift, unsigned short *width)
 {

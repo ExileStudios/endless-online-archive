@@ -10,6 +10,7 @@ GfxVault::GfxVault()
 {
     for (int i = 0; i < 26; i++)
     {
+        file_names[i] = "";
         is_open[i] = false;
         keep_open[i] = false;
         libraries[i] = 0;
@@ -49,7 +50,7 @@ int GfxVault::OpenLibrary(int file_number)
     }
     if (libraries[file_number])
         CloseLibrary(file_number);
-    String path = MainForm->files->GetGfxPath(file_number);
+    String path = GetGfxFileName(file_number);
     libraries[file_number] = LoadLibraryExA(path.c_str(), 0, 35);
     if (!libraries[file_number])
     {
@@ -59,6 +60,19 @@ int GfxVault::OpenLibrary(int file_number)
     idle_ticks[file_number] = 6;
     is_open[file_number] = true;
     return (int)libraries[file_number];
+}
+
+// The file name kept for the library, or its usual path when none is.
+String GfxVault::GetGfxFileName(int file_number)
+{
+    if (file_names[file_number].Length() > 4)
+        return file_names[file_number];
+    return MainForm->files->GetGfxPath(file_number);
+}
+
+void GfxVault::SetGfxFileName(int file_number, String path)
+{
+    file_names[file_number] = path;
 }
 
 int GfxVault::GetLibrary(int file_number)

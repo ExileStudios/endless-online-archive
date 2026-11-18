@@ -82,8 +82,6 @@ enum PanelBackground
 // group, settings, help, news), their sheets and buttons, and the drag image of an item, spell or skill.
 struct InterfaceGraphics
 {
-    int theme_0_colors[7];
-    int theme_1_colors[7];
     TDx_DrawSurface *hud_background;
     TDx_DrawSurface *clock_background;
     TDx_DrawSurface *tooltip_background;
@@ -141,7 +139,7 @@ struct InterfaceGraphics
 
     InterfaceGraphics();
     ~InterfaceGraphics();
-    int GetThemeColor(int theme, int shade);
+    int GetCodeColor(String code);
     TRect GetChatTabRect(int tab);
     TRect GetDamageDigitRect(unsigned char style, int digit);
     TRect GetMissRect(unsigned char kind);

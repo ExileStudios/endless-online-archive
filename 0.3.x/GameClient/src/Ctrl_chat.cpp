@@ -363,7 +363,6 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
         try
         {
             int name_width;
-            MainForm->fonts->color = 0;
             MainForm->fonts->face = 1;
             MainForm->fonts->size = 8;
             name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
@@ -479,7 +478,6 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
         try
         {
             int name_width;
-            MainForm->fonts->color = 0;
             MainForm->fonts->face = 1;
             MainForm->fonts->size = 8;
             name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
@@ -605,7 +603,6 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
         try
         {
             int name_width;
-            MainForm->fonts->color = 0;
             MainForm->fonts->face = 1;
             MainForm->fonts->size = 8;
             name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
@@ -728,7 +725,6 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
         try
         {
             int name_width;
-            MainForm->fonts->color = 0;
             MainForm->fonts->face = 1;
             MainForm->fonts->size = 8;
             name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");

@@ -29,6 +29,7 @@ struct Fonts
     int TextWidth(String text);
     int TextHeight(String text);
     TCanvas * GetCanvas();
+    void DarkenColor();
 };
 
 #endif

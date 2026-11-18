@@ -31,20 +31,6 @@
 // Creates every interface surface at its fixed size and sets the source rects of the HUD sheet's pieces.
 InterfaceGraphics::InterfaceGraphics()
 {
-    theme_0_colors[0] = 0;
-    theme_0_colors[1] = 0xA5CACF;
-    theme_0_colors[2] = 0xBBE3E3;
-    theme_0_colors[3] = 0x4C5AF0;
-    theme_0_colors[4] = 0xBBC3C4;
-    theme_0_colors[5] = 0xBBD7E2;
-    theme_0_colors[6] = 0x42DFE2;
-    theme_1_colors[0] = 0xB4B4B4;
-    theme_1_colors[1] = 0xB2C7C8;
-    theme_1_colors[2] = 0xC1BFB2;
-    theme_1_colors[3] = 0x4250CD;
-    theme_1_colors[4] = 0xCECDB1;
-    theme_1_colors[5] = 0xC7B2BB;
-    theme_1_colors[6] = 0xB2C7BB;
     hud_background = new TDx_DrawSurface(NULL);
     clock_background = new TDx_DrawSurface(NULL);
     tooltip_background = new TDx_DrawSurface(NULL);
@@ -272,15 +258,20 @@ InterfaceGraphics::InterfaceGraphics()
     minimap_visible = 0;
 }
 
-int InterfaceGraphics::GetThemeColor(int theme, int shade)
+// The theme colour of a chat colour code, 1 to 5, or the default chat colour.
+int InterfaceGraphics::GetCodeColor(String code)
 {
-    if (theme > 1)
-        shade = 1;
-    if (shade > 5)
-        shade = 5;
-    if (theme == 1)
-        return theme_1_colors[shade];
-    return theme_0_colors[shade];
+    if (code == "1")
+        return MainForm->themes->color_chat_private;
+    if (code == "2")
+        return MainForm->themes->color_chat_system;
+    if (code == "3")
+        return MainForm->themes->color_chat_warning;
+    if (code == "4")
+        return MainForm->themes->color_chat_global;
+    if (code == "5")
+        return MainForm->themes->color_chat_admin;
+    return MainForm->themes->color_chat_default;
 }
 
 // One piece of the chat tab strip: the whole strip, or one of the wide, medium or small tabs in pairs.
@@ -1377,7 +1368,7 @@ void InterfaceGraphics::DrawPlayerListText()
     int row;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     int title_width =
         (short)MainForm->fonts->TextWidth(IntToStr(MainForm->animation->interface_controller->player_list->shown_names->Count));
     MainForm->fonts->DrawString(580 - (short)title_width, 332,
@@ -1385,7 +1376,7 @@ void InterfaceGraphics::DrawPlayerListText()
     int top_line = MainForm->animation->interface_controller->player_list->GetTopLine();
     int line_count = MainForm->animation->interface_controller->player_list->shown_names->Count;
     row = 0;
-    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = MainForm->themes->color_panel_list;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
@@ -1589,54 +1580,54 @@ void InterfaceGraphics::DrawChatText()
     int private_top_line;
     int private_line_count;
     int private_row;
-    int i;
-    int local_top_line;
-    MainForm->fonts->color = 0;
+    int private_index;
+    int local_top;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
+    // A tab's label is lit while open, and marked while it holds unread lines.
     if (MainForm->animation->interface_controller->chat->active_tab == 1)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[0])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(141, 434,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->first_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 2)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[1])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(273, 434,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->second_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 3)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[2])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(406, 434, "scr");
     if (MainForm->animation->interface_controller->chat->active_tab == 4)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[3])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(450, 434, "glb");
     if (MainForm->animation->interface_controller->chat->active_tab == 5)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[4])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(494, 434, "grp");
     if (MainForm->animation->interface_controller->chat->active_tab == 6)
-        MainForm->fonts->color = 0xFFFFFF;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_active;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[5])
-        MainForm->fonts->color = 0xAAC8DC;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab_highlight;
     else
-        MainForm->fonts->color = 0;
+        MainForm->fonts->color = MainForm->themes->color_chat_tab;
     MainForm->fonts->DrawString(538, 434, "sys");
     // Tabs 1 and 2 are the private ones; each tab draws its own lines from its scroll offset.
     if (MainForm->animation->interface_controller->chat->active_tab <= 2)
@@ -1645,59 +1636,32 @@ void InterfaceGraphics::DrawChatText()
         private_line_count =
             MainForm->animation->interface_controller->chat->private_lines[MainForm->animation->interface_controller->chat->active_tab]->Count;
         private_row = 0;
-        i = private_top_line;
-        while (i < private_line_count && private_top_line + 7 > i)
+        for (private_index = private_top_line;
+            private_index < private_line_count && private_top_line + 7 > private_index; private_index++)
         {
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "0")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "1")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "2")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "3")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "4")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
-            if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
-                "5")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->last_private_colors[MainForm->animation->interface_controller->chat->active_tab]->Strings[i]) +
+            String private_color =
+                MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[private_index];
+            MainForm->fonts->color = GetCodeColor(private_color);
+            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->last_private_colors[MainForm->animation->interface_controller->chat->active_tab]->Strings[private_index]) +
                 124, (short)(14 * private_row) + 332,
-                MainForm->animation->interface_controller->chat->private_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i]);
+                MainForm->animation->interface_controller->chat->private_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[private_index]);
             private_row++;
-            i++;
         }
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 3)
     {
-        local_top_line = MainForm->animation->interface_controller->chat->GetScrollOffset();
+        local_top = MainForm->animation->interface_controller->chat->GetScrollOffset();
         int local_line_count = MainForm->animation->interface_controller->chat->local_lines->Count;
         int local_row = 0;
-        int j = local_top_line;
-        while (j < local_line_count && local_top_line + 7 > j)
+        int j;
+        for (j = local_top; j < local_line_count && local_top + 7 > j; j++)
         {
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "0")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "1")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "2")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "3")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "4")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
-            if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "5")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            String local_color = MainForm->animation->interface_controller->chat->local_colors->Strings[j];
+            MainForm->fonts->color = GetCodeColor(local_color);
             MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->local_indents->Strings[j]) +
                 124, (short)(14 * local_row) + 332,
                 MainForm->animation->interface_controller->chat->local_lines->Strings[j]);
             local_row++;
-            j++;
         }
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 4)
@@ -1706,26 +1670,15 @@ void InterfaceGraphics::DrawChatText()
         global_top_line = MainForm->animation->interface_controller->chat->GetScrollOffset();
         int global_line_count = MainForm->animation->interface_controller->chat->global_lines->Count;
         int global_row = 0;
-        int k = global_top_line;
-        while (k < global_line_count && global_top_line + 7 > k)
+        int k;
+        for (k = global_top_line; k < global_line_count && global_top_line + 7 > k; k++)
         {
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "0")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "1")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "2")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "3")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "4")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
-            if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "5")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            String global_color = MainForm->animation->interface_controller->chat->global_colors->Strings[k];
+            MainForm->fonts->color = GetCodeColor(global_color);
             MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->global_indents->Strings[k]) +
                 124, (short)(14 * global_row) + 332,
                 MainForm->animation->interface_controller->chat->global_lines->Strings[k]);
             global_row++;
-            k++;
         }
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 5)
@@ -1734,26 +1687,15 @@ void InterfaceGraphics::DrawChatText()
         group_top_line = MainForm->animation->interface_controller->chat->GetScrollOffset();
         int group_line_count = MainForm->animation->interface_controller->chat->group_lines->Count;
         int group_row = 0;
-        int m = group_top_line;
-        while (m < group_line_count && group_top_line + 7 > m)
+        int m;
+        for (m = group_top_line; m < group_line_count && group_top_line + 7 > m; m++)
         {
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "0")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "1")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "2")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "3")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "4")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
-            if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "5")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            String group_color = MainForm->animation->interface_controller->chat->group_colors->Strings[m];
+            MainForm->fonts->color = GetCodeColor(group_color);
             MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->private_lines[0]->Strings[m]) +
                 124, (short)(14 * group_row) + 332,
                 MainForm->animation->interface_controller->chat->group_lines->Strings[m]);
             group_row++;
-            m++;
         }
     }
     if (MainForm->animation->interface_controller->chat->active_tab == 6)
@@ -1762,25 +1704,14 @@ void InterfaceGraphics::DrawChatText()
         system_top_line = MainForm->animation->interface_controller->chat->GetScrollOffset();
         int system_line_count = MainForm->animation->interface_controller->chat->system_lines->Count;
         int system_row = 0;
-        int n = system_top_line;
-        while (n < system_line_count && system_top_line + 7 > n)
+        int n;
+        for (n = system_top_line; n < system_line_count && system_top_line + 7 > n; n++)
         {
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "0")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "1")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "2")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "3")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "4")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
-            if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "5")
-                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            String system_color = MainForm->animation->interface_controller->chat->system_colors->Strings[n];
+            MainForm->fonts->color = GetCodeColor(system_color);
             MainForm->fonts->DrawString(124, (short)(14 * system_row) + 332,
                 MainForm->animation->interface_controller->chat->system_lines->Strings[n]);
             system_row++;
-            n++;
         }
     }
 }
@@ -1790,7 +1721,7 @@ void InterfaceGraphics::DrawStatusValues()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     MainForm->fonts->DrawString(153, 338, IntToStr(MainForm->animation->interface_controller->status->stat_str));
     MainForm->fonts->DrawString(153, 356, IntToStr(MainForm->animation->interface_controller->status->stat_int));
     MainForm->fonts->DrawString(153, 374, IntToStr(MainForm->animation->interface_controller->status->stat_wis));
@@ -2006,7 +1937,7 @@ void InterfaceGraphics::DrawGroupText()
     int row;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     int count_width =
         (short)MainForm->fonts->TextWidth(IntToStr(MainForm->animation->interface_controller->group->members.size()));
     MainForm->fonts->DrawString(580 - (short)count_width, 332,
@@ -2014,7 +1945,7 @@ void InterfaceGraphics::DrawGroupText()
     int top_row = MainForm->animation->interface_controller->group->GetTopRow();
     int member_count = MainForm->animation->interface_controller->group->members.size();
     row = 0;
-    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = MainForm->themes->color_panel_list;
     for (int i = top_row; i < member_count && i < top_row + 7; i++)
     {
         MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
@@ -2081,7 +2012,7 @@ void InterfaceGraphics::DrawSettingsText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     if (MainForm->config->GetSoundVolume() >= 100)
         MainForm->fonts->DrawString(222, 356, MainForm->strings->GetText(GameText_Enabled));
     else if (MainForm->config->GetSoundVolume() <= 0)
@@ -2160,11 +2091,10 @@ void InterfaceGraphics::DrawHelpText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = MainForm->themes->color_panel_list;
     int top_line = MainForm->animation->interface_controller->help->GetTopLine();
     int line_count = MainForm->animation->interface_controller->help->lines->Count;
     int row = 0;
-    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         if (MainForm->animation->interface_controller->help->line_flags->Strings[i] == "1")
@@ -2207,11 +2137,10 @@ void InterfaceGraphics::DrawNewsText()
     int row;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0;
+    MainForm->fonts->color = MainForm->themes->color_panel_list;
     int top_line = MainForm->animation->interface_controller->news->GetTopLine();
     int line_count = MainForm->animation->interface_controller->news->lines->Count;
     row = 0;
-    MainForm->fonts->color = 0;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
@@ -2247,7 +2176,7 @@ void InterfaceGraphics::DrawSpellInfoText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xE1E1E1;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     if (MainForm->animation->interface_controller->spells->selected_spell_id >= 0 &&
         MainForm->animation->interface_controller->spells->selected_spell_icon >= 0)
     {
@@ -2280,7 +2209,7 @@ void InterfaceGraphics::DrawSkillInfoText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_panel;
     if (MainForm->animation->interface_controller->skills->selected_skill_id >= 0 &&
         MainForm->animation->interface_controller->skills->selected_skill_icon >= 0)
     {
@@ -2560,9 +2489,6 @@ void InterfaceGraphics::DrawInventoryGrid()
 // Draws the hovered item's tooltip, unless an item is being dragged.
 void InterfaceGraphics::DrawInventoryText()
 {
-    MainForm->fonts->face = 1;
-    MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xE1E1E1;
     if (MainForm->animation->interface_controller->inventory->has_hover &&
         !MainForm->animation->interface_controller->inventory->is_dragging)
         MainForm->animation->interface_controller->inventory->tooltip->DrawString();
@@ -2683,7 +2609,7 @@ void InterfaceGraphics::DrawDraggedSpell()
             draw_y = MainForm->animation->interface_controller->spells->drag_y - icon_half_height;
             if (draw_x < 0)
             {
-                source_rect.left = 0 - draw_x;
+                source_rect.left += 0 - draw_x;
                 draw_x = 0;
             }
             if (draw_y < 0)
@@ -2691,8 +2617,8 @@ void InterfaceGraphics::DrawDraggedSpell()
                 source_rect.top = 0 - draw_y;
                 draw_y = 0;
             }
-            if (draw_x + source_rect.right > 640)
-                source_rect.right -= draw_x + source_rect.right - 640;
+            if (source_rect.right - source_rect.left + draw_x > 640)
+                source_rect.right -= source_rect.right - source_rect.left + draw_x - 640;
             if (draw_y + source_rect.bottom > 480)
                 source_rect.bottom -= draw_y + source_rect.bottom - 480;
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
@@ -3455,7 +3381,7 @@ void InterfaceGraphics::DrawStatusBarText()
     {
         MainForm->fonts->face = 1;
         MainForm->fonts->size = 8;
-        MainForm->fonts->color = 0xC8C8C8;
+        MainForm->fonts->color = MainForm->themes->color_top_bar;
         if (MainForm->animation->interface_controller->game_bars->show_health_text)
             MainForm->fonts->DrawString(104, 14,
                 IntToStr(MainForm->animation->interface_controller->status->health) + "/" +

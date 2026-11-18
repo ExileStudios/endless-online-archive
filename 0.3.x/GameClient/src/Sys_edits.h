@@ -64,13 +64,14 @@ struct Edits
     bool caret_blink_on;
     bool caret_enabled;
     bool chat_locked;
+    int default_text_color;
     vector<Edit> edits;
     int current_index;
     bool tick_redraw;
     bool text_changed;
     int lock_countdown;
 
-    Edits();
+    Edits(int default_color);
     ~Edits();
     void Clear();
     void TimerTick();
@@ -119,6 +120,8 @@ struct Edits
     void SetBorderVisible(int id, char visible);
     void SetPasswordMode(int id, char password);
     void SetShowStrength(int id, char show);
+    void DisallowDoubleSpaces(int id);
+    void DisallowLeadingSpace(int id);
     void SetAllowSpaces(int id, char allow);
     void SetCharFilter(int id, int char_filter);
     void SetMaxLength(int id, int max_length);

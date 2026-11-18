@@ -62,6 +62,7 @@ struct ExtBlts
     ExtBlts(TDx_DrawSurface *surface);
     ~ExtBlts();
     int MakeColor(int red, int green, int blue);
+    int ReadPixel(int x, int y, TDx_DrawSurface *surface);
     int GetMaskShiftAndWidth(int mask, unsigned short *shift, unsigned short *width);
     void ResetDarkness(int amount, unsigned char brightest);
     void AddLight(short x, short y, short size, unsigned char strength);

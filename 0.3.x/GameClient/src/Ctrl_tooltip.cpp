@@ -712,6 +712,8 @@ void Tooltip::DrawString()
     int scrolled_index;
     if (line_count > 0)
     {
+        MainForm->fonts->face = 1;
+        MainForm->fonts->size = 8;
         int height = 2 * pad_y;
         int left = x;
         int top = y;

@@ -53,10 +53,10 @@ struct Config
     bool always_ghost;
     char filter_enabled;
     char strict_filter;
+    String theme_file;
     int default_color;
     int npc_color;
     int group_color;
-    int text_theme;
     char log_chat;
     String chat_log_path;
     char accept_private_messages;
@@ -164,6 +164,7 @@ struct Config
     char GetForceBuffer();
     char GetFilterEnabled();
     char GetStrictFilter();
+    String GetThemeFile();
     char GetLogChat();
     char GetAcceptPrivateMessages();
     char GetAcceptRequests();
@@ -176,7 +177,6 @@ struct Config
     int GetDefaultColor();
     int GetNpcColor();
     int GetGroupColor();
-    int GetTextTheme();
     int GetMusicAvailable();
     int GetSoundAvailable();
     char GetDebug();

@@ -3507,8 +3507,6 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
     unsigned char first_facing;
     unsigned char second_facing;
     unsigned char third_facing;
-    char account_error;
-    int account_problem;
     // On the menu screens an open message, text window, form or world load takes the click first.
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
     {
@@ -3959,15 +3957,15 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->edits->SetBorderVisible(EditId_NewPassword, false);
                     MainForm->edits->SetBackgroundVisible(EditId_ConfirmNewPassword, false);
                     MainForm->edits->SetBorderVisible(EditId_ConfirmNewPassword, false);
-                    MainForm->edits->SetTextColor(EditId_AccountName, 0xB4C8DC);
-                    MainForm->edits->SetTextColor(EditId_OldPassword, 0xB4C8DC);
-                    MainForm->edits->SetTextColor(EditId_NewPassword, 0xB4C8DC);
-                    MainForm->edits->SetTextColor(EditId_ConfirmNewPassword, 0xB4C8DC);
+                    MainForm->edits->SetTextColor(EditId_AccountName, MainForm->themes->color_popup_edits);
+                    MainForm->edits->SetTextColor(EditId_OldPassword, MainForm->themes->color_popup_edits);
+                    MainForm->edits->SetTextColor(EditId_NewPassword, MainForm->themes->color_popup_edits);
+                    MainForm->edits->SetTextColor(EditId_ConfirmNewPassword, MainForm->themes->color_popup_edits);
                     MainForm->edits->SetMaxLength(EditId_AccountName, 16);
                     MainForm->edits->SetMaxLength(EditId_OldPassword, 16);
                     MainForm->edits->SetMaxLength(EditId_NewPassword, 16);
                     MainForm->edits->SetMaxLength(EditId_ConfirmNewPassword, 16);
-                    MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                    MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
                     MainForm->edits->SetAllowSpaces(EditId_OldPassword, false);
                     MainForm->edits->SetAllowSpaces(EditId_NewPassword, false);
                     MainForm->edits->SetAllowSpaces(EditId_ConfirmNewPassword, false);
@@ -4024,8 +4022,9 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->edits->GetText(EditId_AccountDetailB) != "" &&
                         MainForm->edits->GetText(EditId_Email) != "")
                     {
-                        account_error = false;
-                        if (MainForm->edits->GetText(EditId_AccountName).Length() < 4)
+                        char account_error = false;
+                        String new_account = MainForm->edits->GetText(EditId_AccountName);
+                        if (new_account.Length() < 4)
                         {
                             MainForm->edits->caret_enabled = false;
                             MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
@@ -4034,6 +4033,27 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->edits->SetText(EditId_AccountName, "");
                             MainForm->edits->FocusEdit(EditId_AccountName);
                             account_error = true;
+                        }
+                        else
+                        {
+                            if (new_account[new_account.Length()] == ' ')
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongAccount, false),
+                                    "Please remove the last spacebar token from your accountname and try again.");
+                                MainForm->edits->FocusEdit(EditId_AccountName);
+                                account_error = true;
+                            }
+                            if (new_account[1] == ' ')
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongAccount, false),
+                                    "Please remove the first spacebar token from your accountname and try again.");
+                                MainForm->edits->FocusEdit(EditId_AccountName);
+                                account_error = true;
+                            }
                         }
                         if (MainForm->edits->HasFewDistinctChars(MainForm->edits->GetText(EditId_AccountName)) &&
                             !account_error)
@@ -4058,7 +4078,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->edits->FocusEdit(EditId_AccountPassword);
                             account_error = true;
                         }
-                        account_problem = MainForm->edits->GetPasswordProblem(EditId_AccountPassword);
+                        int account_problem = MainForm->edits->GetPasswordProblem(EditId_AccountPassword);
                         if (account_problem == 4)
                             MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                                 MainForm->strings->GetDialogText(account_problem, false),
@@ -4473,6 +4493,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     {
                         MainForm->gfx->LoadMenuBackground();
                         MainForm->animation->credits->Start();
+                        MainForm->SampleCreditNameColor();
                     }
                 }
                 if (click_x >= 30 && click_x <= 210 && click_y >= 320 && click_y <= 360)
@@ -4520,9 +4541,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->edits->SetPasswordMode(EditId_AccountPassword, true);
                         MainForm->edits->SetPasswordMode(EditId_ConfirmPassword, true);
                         MainForm->edits->SetShowStrength(EditId_AccountPassword, true);
-                        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                        MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
                         MainForm->edits->SetAllowSpaces(EditId_AccountPassword, false);
                         MainForm->edits->SetAllowSpaces(EditId_ConfirmPassword, false);
+                        MainForm->edits->SetAllowSpaces(EditId_Email, false);
+                        MainForm->edits->DisallowLeadingSpace(EditId_AccountName);
+                        MainForm->edits->DisallowLeadingSpace(EditId_AccountDetailA);
+                        MainForm->edits->DisallowLeadingSpace(EditId_AccountDetailB);
+                        MainForm->edits->DisallowDoubleSpaces(EditId_AccountName);
+                        MainForm->edits->DisallowDoubleSpaces(EditId_AccountDetailA);
+                        MainForm->edits->DisallowDoubleSpaces(EditId_AccountDetailB);
                         MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
                         MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_Password);
                         MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_Password);
@@ -5283,7 +5311,7 @@ void Mouser::OpenLoginScreen()
         MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, 339, 141, EDIT_LINE_HEIGHT);
         MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
         MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_Password);
-        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+        MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
         MainForm->edits->SetAllowSpaces(EditId_Password, false);
         MainForm->edits->SetPasswordMode(EditId_Password, true);
         MainForm->edits->SetMaxLength(EditId_AccountName, 16);
@@ -5295,7 +5323,7 @@ void Mouser::OpenLoginScreen()
     MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, GRID_LOGIN_NAME_EDIT_Y, 161,
         EDIT_LINE_HEIGHT);
     MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Letters);
-    MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+    MainForm->edits->SetAllowSpaces(EditId_AccountName, true);
     MainForm->edits->SetMaxLength(EditId_AccountName, 16);
     MainForm->edits->FocusEdit(EditId_AccountName);
 }

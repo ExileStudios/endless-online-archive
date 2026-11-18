@@ -1488,12 +1488,12 @@ void GameController::StartSpotCountdown(int x, int y)
 - **The help report window brightens its link lines by the guild window's hovered row, not its own.** `Gfx_game.cpp`,
   `GameGraphics::DrawReportText`.
   - Code:
-    `if (line[1] == '*') { line.Delete(1, 1); if (MainForm->animation->guild->hovered_row == row) MainForm->fonts->color = 0xDCDCDC; else MainForm->fonts->color = 0xB4B4B4; MainForm->fonts->is_underlined = true;`
+    `if (line[1] == '*') { line.Delete(1, 1); if (MainForm->animation->guild->hovered_row == row) MainForm->fonts->color = MainForm->themes->color_dialog_link_over; else MainForm->fonts->color = MainForm->themes->color_dialog_link;`
   - What it does: Step by step: - `DrawReportText` draws a line that starts with an asterisk as a link, underlined, and
-    picks `0xDCDCDC` when `MainForm->animation->guild->hovered_row == row`, else `0xB4B4B4`. - The report window has a
-    hovered line of its own, `report->hovered_line`, which `DrawReportWindow` reads for the row highlight bar; only the
-    `ReportController` constructor stores it, as -1. - The same test with `guild->hovered_row` is the guild window's own
-    link test in `DrawGuildText`, the function before it in the file.
+    picks `color_dialog_link_over` when `MainForm->animation->guild->hovered_row == row`, else `color_dialog_link`. -
+    The report window has a hovered line of its own, `report->hovered_line`, which `DrawReportWindow` reads for the row
+    highlight bar; only the `ReportController` constructor stores it, as -1. - The same test with `guild->hovered_row`
+    is the guild window's own link test in `DrawGuildText`, the function before it in the file.
   - When it happens: The help report window is open (`ReportController::Open`, from `Mouser::OpenHelpPanel`) and one of
     its lines is a link. The search for `guild->hovered_row == row` finds 2 line(s). The search for
     `report->hovered_line` finds 2 line(s). Reachable with the shipped code: unknown. The draw runs on every frame while
@@ -1679,6 +1679,22 @@ void GameController::StartSpotCountdown(int x, int y)
     the two branches; the one other change is the step of 1, so the count never passes 12.
   - What you see: None visible from this line: the message box of dialog message 1 is never shown from here, and a world
     load is never stopped by this count.
+- **The credits' darkness test adds red twice and leaves out green.** `TMainForm.cpp`,
+  `TMainForm::SampleCreditNameColor`.
+  - Code:
+    `if (top_red < 60 && top_green < 60 && top_blue < 60) dark = true; if (bottom_red < 60 && bottom_green < 60 && bottom_blue < 60) dark = true; if (top_red + top_red + top_blue < 120) dark = true; if (bottom_red + bottom_red + bottom_blue < 120) dark = true;`
+  - What it does: Step by step: - The pixels at (500, 240) and (500, 340) are split into red, green and blue. - A pixel
+    whose three colours are all below 60 marks the background dark. - So does a pixel whose red plus red plus blue is
+    below 120; green plays no part in this test. - A dark background gives the name lines the light grey (0x78828C);
+    otherwise they stay dark brown (0xA1428).
+  - When it happens: `Mouser::HandleMouseDown` calls it when the credits button of the main menu starts the credits,
+    right after `LoadMenuBackground`; `TMainForm::RenderMainLoop_Menu` draws each style "n" line in the picked colour.
+    Called from `Mouser::HandleMouseDown`. The search for `top_red \+ top_red \+ top_blue < 120` finds 1 line(s). The
+    search for `bottom_red \+ bottom_red \+ bottom_blue < 120` finds 1 line(s). The search for `(top|bottom)_green \+`
+    finds 0 line(s). Reachable with the shipped code: unknown. It turns on the two pixels of the menu background
+    picture, which comes from the graphics files and not from the code.
+  - What you see: Over a background that is bright green but low in red and blue, the name lines turn light grey; over a
+    dark red one, with red at 60 or above, they stay dark brown.
 - **With block transfer drawing, each transparent draw leaves a bitmap and a memory device context behind.**
   `Gfxtransfers.cpp`, `GfxTransfers::DrawAt`.
   - Code:

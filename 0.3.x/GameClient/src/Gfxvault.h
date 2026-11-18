@@ -3,6 +3,7 @@
 
 struct GfxVault
 {
+    String file_names[26];
     void *libraries[26];
     char keep_open[26];
     char is_open[26];
@@ -12,6 +13,8 @@ struct GfxVault
     GfxVault();
     ~GfxVault();
     int OpenLibrary(int file_number);
+    String GetGfxFileName(int file_number);
+    void SetGfxFileName(int file_number, String path);
     int GetLibrary(int file_number);
     void AgeLibraries();
     void CloseLibrary(int file_number);

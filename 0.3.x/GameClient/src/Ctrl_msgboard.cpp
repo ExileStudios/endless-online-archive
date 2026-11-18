@@ -44,13 +44,13 @@ void MsgBoardController::CreatePostEdits()
     MainForm->edits->EnableChangeNotify(POST_SUBJECT_EDIT);
     MainForm->edits->EnableChangeNotify(POST_MESSAGE_EDIT);
     MainForm->edits->SetText(POST_SUBJECT_EDIT, "");
-    MainForm->edits->SetTextColor(POST_SUBJECT_EDIT, 0xC8C8C8);
+    MainForm->edits->SetTextColor(POST_SUBJECT_EDIT, MainForm->themes->color_popup_edits);
     MainForm->edits->SetCharFilter(POST_SUBJECT_EDIT, EditCharFilter_Email);
     MainForm->edits->SetMaxLength(POST_SUBJECT_EDIT, 32);
     MainForm->edits->SetBackgroundVisible(POST_SUBJECT_EDIT, false);
     MainForm->edits->SetBorderVisible(POST_SUBJECT_EDIT, false);
     MainForm->edits->SetText(POST_MESSAGE_EDIT, MainForm->strings->GetText(GameText_LoadingMessage));
-    MainForm->edits->SetTextColor(POST_MESSAGE_EDIT, 0xC8C8C8);
+    MainForm->edits->SetTextColor(POST_MESSAGE_EDIT, MainForm->themes->color_popup_edits);
     MainForm->edits->SetMaxLength(POST_MESSAGE_EDIT, 1200);
     MainForm->edits->SetBackgroundVisible(POST_MESSAGE_EDIT, false);
     MainForm->edits->SetBorderVisible(POST_MESSAGE_EDIT, false);

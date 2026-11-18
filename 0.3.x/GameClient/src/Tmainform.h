@@ -29,6 +29,7 @@
 #include "Configuration.h"
 #include "Filelogger.h"
 #include "Fileprotection.h"
+#include "Filethemes.h"
 #include "Fonts.h"
 #include "Gfx_alpha.h"
 #include "Gfx_edits.h"
@@ -148,6 +149,7 @@ public:
     GfxController *gfx;
     MapController *map;
     Config *config;
+    FileThemes *themes;
     WinRegister *registry;
     FFileLog *chat_log;
     ItemValues *item_values;
@@ -186,10 +188,12 @@ public:
     String form_text;
     int display_mode_count;
     int mm_timer_id;
-    int version_major;
-    int version_minor;
-    int version_build;
+    short version_major;
+    short version_minor;
+    short version_build;
     char version_letter;
+    short min_theme_version_major;
+    short min_theme_version_minor;
     bool minimized;
     char unused_bytes[1];
     bool active;
@@ -214,6 +218,7 @@ public:
     bool item_drag_drawn;
     bool spell_drag_drawn;
     bool skill_drag_drawn;
+    int credit_name_color;
 
     __fastcall TMainForm(TComponent *owner);
     virtual __fastcall ~TMainForm();
@@ -235,6 +240,7 @@ public:
     void RenderGame_BottomPanel();
     void RenderGame_MapLoadScreen();
     void RenderMainLoop_Menu();
+    void SampleCreditNameColor();
     void RenderMainLoop_Intro();
     void RenderFpsOverlay();
     void RenderOffscreenToPrimary();

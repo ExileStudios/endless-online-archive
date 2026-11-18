@@ -1,0 +1,60 @@
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="EndlessUnits.lib"/>
+    <OBJFILES value="Itemvalue.obj Itemvalues.obj Ctrl_settings.obj Ctrl_news.obj Ctrl_inventory.obj Iteminventory.obj Gfx_subitem.obj Gfx_useritem.obj Register.obj Ctrl_paperdoll.obj Filelogger.obj Mapsign.obj Ctrl_trade.obj Gfx_trade.obj Gfx_chest.obj Ctrl_chest.obj Mapdoor.obj Npcvalues.obj Npcvalue.obj Gfx_shop.obj Ctrl_shop.obj Itemshop.obj Gfx_bank.obj Ctrl_bank.obj Ctrl_locker.obj Ctrl_social.obj Gfx_social.obj Itemcraft.obj Ctrl_barber.obj Gfx_barber.obj Ctrl_guild.obj Gfx_effect.obj Gfx_mapeffect.obj Gfx_mapeffects.obj Sys_soundmap.obj Sys_magicmap.obj Sys_effect.obj Sys_effects.obj Sys_weaponmap.obj Ctrl_gamebars.obj Gfx_msgboard.obj Ctrl_msgboard.obj Sys_msg.obj Gfx_jukebox.obj Ctrl_jukebox.obj Gfx_stats.obj Ctrl_stats.obj Skillvalues.obj Skillvalue.obj Ctrl_spells.obj Itemspell.obj Gfx_icon.obj Gfx_mapicon.obj Gfx_mapicons.obj Ctrl_skills.obj Itemskill.obj Ctrl_priest.obj Ctrl_law.obj Ctrl_learn.obj Learnitem.obj Ctrl_help.obj Ctrl_memo.obj Ctrl_report.obj Ctrl_musician.obj Gfx_musician.obj Ctrl_inn.obj Classvalues.obj Classvalue.obj Ctrl_quests.obj Gfx_dialog.obj Ctrl_dialog.obj Ctrl_book.obj Ctrl_tooltip.obj Pubfileheader.obj Ctrl_popupelement.obj Ctrl_bossbar.obj Ctrl_bossbars.obj Ctrl_hotkeys.obj Itemhotkey.obj Ctrl_notification.obj Gfx_mapnpc.obj Gfx_mapnpcs.obj Gfxtransfers.obj Gfxvault.obj Gfx_global_sprites.obj Gfx_global_npcs.obj Fonts.obj Mapglow.obj Npcdrop.obj Ctrl_crafter.obj Gfx_crafter.obj Filethemes.obj"/>
+    <MAINSOURCE value="EndlessUnits.bpf"/>
+    <PATHCPP value=".;"/>
+    <USERDEFINES value="NO_STRICT"/>
+    <SYSDEFINES value=""/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl;..\lib\tdx\inc0;..\lib\tdx\inc1;..\lib\tdx\inc2;..\lib\tdx\inc3;..\lib\tdx\inc4;..\lib\tdx\inc5;..\lib\tdx\inc6;..\lib\tdx\inc7;..\lib\tdx\inc8"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\release;..\lib\dx"/>
+    <WARNINGS value="-w-8057"/>
+    <PATHASM value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="TLib"/>
+  </MACROS>
+  <OPTIONS>
+    <CFLAG1 value="-O2 -vi -tWM -c"/>
+    <PFLAGS value="-v -$Y -$W -$O- -JPHNE -M"/>
+    <LFLAGS value=""/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="$(OBJFILES)"/>
+  </LINKER>
+  <IDEOPTIONS>
+
+[Version Info]
+IncludeVerInfo=0
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=0
+Build=0
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+
+[Version Info Keys]
+CompanyName=
+FileDescription=
+FileVersion=1.0.0.0
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=1.0.0.0
+Comments=
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+  </IDEOPTIONS>
+</PROJECT>

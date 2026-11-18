@@ -408,7 +408,7 @@ bool GameGraphics::BlitClipped(int x, int y, TDx_DrawSurface *source, TRect sour
 void GameGraphics::DrawMessageBoxText()
 {
     int i;
-    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     if ((short)MainForm->fonts->TextWidth(MainForm->animation->game->message_lines[0]) > 250)
@@ -449,7 +449,7 @@ void GameGraphics::DrawMessageBoxText()
     }
     MainForm->fonts->DrawString((short)MainForm->animation->game->message_x + 20,
         (short)MainForm->animation->game->message_y + 12, MainForm->animation->game->message_title);
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_popup;
     MainForm->fonts->DrawString((short)MainForm->animation->game->message_x + 20,
         (short)MainForm->animation->game->message_y + 40, MainForm->animation->game->message_lines[0]);
     MainForm->fonts->DrawString((short)MainForm->animation->game->message_x + 20,
@@ -462,7 +462,7 @@ void GameGraphics::DrawTextBoxText()
     int width_limit;
     int line_index;
     char line_full;
-    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     if (MainForm->animation->game->large_box_text.Length() > 0)
@@ -509,7 +509,7 @@ void GameGraphics::DrawTextBoxText()
     }
     MainForm->fonts->DrawString((short)MainForm->animation->game->large_box_x + 20,
         (short)MainForm->animation->game->large_box_y + 12, MainForm->animation->game->large_box_title);
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_popup;
     for (int j = 0; j < 6; j++)
         MainForm->fonts->DrawString((short)MainForm->animation->game->large_box_x + 20,
             (short)MainForm->animation->game->large_box_y + (short)(16 * j) + 40,
@@ -572,14 +572,15 @@ void GameGraphics::DrawListBox()
 void GameGraphics::DrawInputBoxText()
 {
     int i;
-    MainForm->fonts->color = 0xC8F0F0;
+    int line_start;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     if ((short)MainForm->fonts->TextWidth(MainForm->animation->game->input_box_lines[0]) > 210)
     {
         String prompt = MainForm->animation->game->input_box_lines[0];
-        int line_start = 1;
         int line_end = 1;
+        line_start = 1;
         int line_index = 0;
         do
         {
@@ -612,7 +613,7 @@ void GameGraphics::DrawInputBoxText()
                 line_end++;
         } while (prompt.Length() >= line_end && line_index <= 1);
     }
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_popup;
     MainForm->fonts->DrawString((short)MainForm->animation->game->input_box_x + 20,
         (short)MainForm->animation->game->input_box_y + 19, MainForm->animation->game->input_box_lines[0]);
     MainForm->fonts->DrawString((short)MainForm->animation->game->input_box_x + 20,
@@ -620,7 +621,7 @@ void GameGraphics::DrawInputBoxText()
     // While a message box is open the input edit's text is drawn here in the small font.
     if (MainForm->animation->game->message_visible)
     {
-        MainForm->fonts->color = 0xB4C8DC;
+        MainForm->fonts->color = MainForm->themes->color_popup_edits;
         MainForm->fonts->face = 1;
         MainForm->fonts->size = 8;
         MainForm->fonts->DrawString((short)MainForm->animation->game->input_box_x + 46,
@@ -735,10 +736,10 @@ void GameGraphics::DrawTextBoxButtons()
 // typed amount.
 void GameGraphics::DrawItemAmountText()
 {
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_popup;
+    int prompt_text_id = 57;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
-    int prompt_text_id = 57;
     if (MainForm->animation->game->amount_box_kind == AmountBoxKind_JunkItem ||
         MainForm->animation->game->amount_box_kind == AmountBoxKind_Amount)
         prompt_text_id = prompt_text_id + MainForm->animation->game->amount_box_kind - 1;
@@ -765,7 +766,7 @@ void GameGraphics::DrawItemAmountText()
     // While a message box or the social window is open, the amount edit's text is drawn here.
     if (MainForm->animation->game->message_visible || MainForm->animation->social->is_open)
     {
-        MainForm->fonts->color = 0xB4C8DC;
+        MainForm->fonts->color = MainForm->themes->color_popup_edits;
         MainForm->fonts->face = 1;
         MainForm->fonts->size = 8;
         MainForm->fonts->DrawString((short)MainForm->animation->game->amount_box_x + 163,
@@ -2944,12 +2945,12 @@ void GameGraphics::LoadSpareSurface2(int library, int resource_id)
 void GameGraphics::DrawFormText()
 {
     int drawn;
-    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->color = MainForm->themes->color_popup_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     MainForm->fonts->DrawString((short)MainForm->animation->game->form_x + 20,
         (short)MainForm->animation->game->form_y + 12, MainForm->animation->game->form_title);
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_popup;
     MainForm->fonts->DrawString((short)MainForm->animation->game->form_x + 20,
         (short)MainForm->animation->game->form_y + 40, MainForm->animation->game->form_caption);
     int top_row = MainForm->animation->game->GetInputFormTopRow();
@@ -2965,7 +2966,7 @@ void GameGraphics::DrawFormText()
     // While a message or text box is open, the row edits' text is drawn here in the small font.
     if (MainForm->animation->game->message_visible || MainForm->animation->game->large_box_visible)
     {
-        MainForm->fonts->color = 0xB4C8DC;
+        MainForm->fonts->color = MainForm->themes->color_popup_edits;
         MainForm->fonts->face = 1;
         MainForm->fonts->size = 8;
         for (int j = 14; j < 19; j++)
@@ -2979,7 +2980,7 @@ void GameGraphics::DrawChestText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int item_count = MainForm->animation->chest->items.size();
     int row = 0;
     for (int i = 0; i < item_count && i < 5; i++)
@@ -3012,7 +3013,7 @@ void GameGraphics::DrawBarberText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int text_y = MainForm->animation->barber->window_y + 157;
     int center_x = MainForm->animation->barber->window_x + 117;
     String gold_name = LowerCase(MainForm->item_values->GetName(ItemId_Gold));
@@ -3029,7 +3030,7 @@ void GameGraphics::DrawJukeboxText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_y = MainForm->animation->jukebox->window_y;
     int window_x = MainForm->animation->jukebox->window_x;
     String status_text = "";
@@ -3067,7 +3068,7 @@ void GameGraphics::DrawStatText()
     int elapsed_days;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->stat->window_x;
     int window_y = MainForm->animation->stat->window_y;
     TDateTime now = Now();
@@ -3162,7 +3163,7 @@ void GameGraphics::DrawBankText()
     int text_y;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->bank->window_x;
     int window_y = MainForm->animation->bank->window_y;
     String balance_text = IntToStr(MainForm->animation->bank->bank_gold);
@@ -3193,7 +3194,7 @@ void GameGraphics::DrawQuestText()
     int top_line;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->quests->window_x;
     window_y = MainForm->animation->quests->window_y;
     MainForm->fonts->DrawString((short)window_x + 20, window_y + 15, MainForm->animation->quests->title);
@@ -3207,7 +3208,7 @@ void GameGraphics::DrawQuestText()
             String quest_line = MainForm->animation->quests->lines->Strings[i];
             if (quest_line.Length() > 0)
             {
-                MainForm->fonts->color = 0xC8C8C8;
+                MainForm->fonts->color = MainForm->themes->color_dialog;
                 int text_x = MainForm->animation->quests->window_x + 42;
                 int text_y = MainForm->animation->quests->window_y + LIST_ROW_HEIGHT * row + 48;
                 MainForm->fonts->DrawString(text_x, text_y, quest_line);
@@ -3226,7 +3227,7 @@ void GameGraphics::DrawQuestText()
         }
         if (MainForm->animation->quests->lines->Count == 0)
         {
-            MainForm->fonts->color = 0xC8C8C8;
+            MainForm->fonts->color = MainForm->themes->color_dialog;
             int empty_text_x = MainForm->animation->quests->window_x + 24;
             int empty_text_y = MainForm->animation->quests->window_y + 48;
             MainForm->fonts->DrawString(empty_text_x, empty_text_y,
@@ -3244,7 +3245,7 @@ void GameGraphics::DrawQuestText()
             String history_line = MainForm->animation->quests->history_lines->Strings[j];
             if (history_line.Length() > 0)
             {
-                MainForm->fonts->color = 0xC8C8C8;
+                MainForm->fonts->color = MainForm->themes->color_dialog;
                 int history_text_x = MainForm->animation->quests->window_x + 42;
                 int history_text_y = MainForm->animation->quests->window_y + 16 * history_row + 48;
                 MainForm->fonts->DrawString(history_text_x, history_text_y, history_line);
@@ -3268,7 +3269,7 @@ void GameGraphics::DrawMsgBoardText()
     int row;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->message_board->window_x;
     window_y = MainForm->animation->message_board->window_y;
     if (MainForm->animation->message_board->view_mode == 1 ||
@@ -3299,7 +3300,7 @@ void GameGraphics::DrawSocialText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->social->window_x;
     int window_y = MainForm->animation->social->window_y;
     String title = MainForm->animation->social->title;
@@ -3317,9 +3318,9 @@ void GameGraphics::DrawSocialText()
         for (int i = friend_top_line; i < friend_line_count && friend_top_line + 12 > i; i++)
         {
             if (MainForm->animation->social->IsOnline(MainForm->animation->social->friend_names->Strings[i]))
-                MainForm->fonts->color = 0xF0F0F0;
+                MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
             else
-                MainForm->fonts->color = 0xB4B4B4;
+                MainForm->fonts->color = MainForm->themes->color_dialog_link;
             String friend_name = MainForm->animation->social->friend_names->Strings[i];
             int friend_text_x = MainForm->animation->social->window_x + 22;
             int friend_text_y = MainForm->animation->social->window_y + LIST_ROW_HEIGHT * friend_row + 48;
@@ -3354,13 +3355,13 @@ void GameGraphics::DrawLockerText()
     int count;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xE1E1E1;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     left = MainForm->animation->locker->window_x;
     window_y = MainForm->animation->locker->window_y;
     String title =
         MainForm->animation->locker->title + " [" + IntToStr(MainForm->animation->locker->items.size()) + "]";
     MainForm->fonts->DrawString(left + 22, window_y + 17, title);
-    MainForm->fonts->color = 0x646482;
+    MainForm->fonts->color = MainForm->themes->color_locker_item;
     index = 4 * MainForm->animation->locker->GetTopRow();
     count = MainForm->animation->locker->items.size();
     int row = 0;
@@ -3373,9 +3374,9 @@ void GameGraphics::DrawLockerText()
             amount = MainForm->animation->locker->items[index].amount;
             delay = MainForm->animation->locker->items[index].highlight_ticks;
             if (delay <= 0)
-                MainForm->fonts->color = 0x646482;
+                MainForm->fonts->color = MainForm->themes->color_locker_item;
             else
-                MainForm->fonts->color = 0xBEBEC8;
+                MainForm->fonts->color = MainForm->themes->color_locker_item_highlight;
             if (amount > 999)
                 amount = 999;
             index++;
@@ -3397,7 +3398,7 @@ void GameGraphics::DrawGuildText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int left = MainForm->animation->guild->window_x;
     int window_y = MainForm->animation->guild->window_y;
     MainForm->fonts->DrawString(left + 22, window_y + 17, MainForm->animation->guild->title);
@@ -3484,13 +3485,13 @@ void GameGraphics::DrawGuildText()
                 {
                     list_line.Delete(1, 1);
                     if (MainForm->animation->guild->hovered_row == row)
-                        MainForm->fonts->color = 0xDCDCDC;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
                     else
-                        MainForm->fonts->color = 0xB4B4B4;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link;
                     MainForm->fonts->is_underlined = true;
                 }
                 else
-                    MainForm->fonts->color = 0xC8C8C8;
+                    MainForm->fonts->color = MainForm->themes->color_dialog;
             }
             int list_text_x = MainForm->animation->guild->window_x + 22;
             int list_text_y = MainForm->animation->guild->window_y + LIST_ROW_HEIGHT * row + 48;
@@ -3513,7 +3514,7 @@ void GameGraphics::DrawReportText()
     int top_line;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->report->window_x;
     window_y = MainForm->animation->report->window_y;
     MainForm->fonts->DrawString((short)window_x + 22, window_y + 17, MainForm->animation->report->title);
@@ -3529,13 +3530,13 @@ void GameGraphics::DrawReportText()
             {
                 line.Delete(1, 1);
                 if (MainForm->animation->guild->hovered_row == row)
-                    MainForm->fonts->color = 0xDCDCDC;
+                    MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
                 else
-                    MainForm->fonts->color = 0xB4B4B4;
+                    MainForm->fonts->color = MainForm->themes->color_dialog_link;
                 MainForm->fonts->is_underlined = true;
             }
             else
-                MainForm->fonts->color = 0xC8C8C8;
+                MainForm->fonts->color = MainForm->themes->color_dialog;
             int text_x = MainForm->animation->report->window_x + 22;
             int text_y = MainForm->animation->report->window_y + LIST_ROW_HEIGHT * row + 48;
             MainForm->fonts->DrawString(text_x, text_y, line);
@@ -3562,7 +3563,7 @@ void GameGraphics::DrawDialogText()
     int top_line;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->dialog->window_x;
     window_y = MainForm->animation->dialog->window_y;
     // The dialog's text, or with the quest list showing, the quests.
@@ -3581,11 +3582,11 @@ void GameGraphics::DrawDialogText()
                 if (line[1] == '*')
                 {
                     line.Delete(1, 1);
-                    MainForm->fonts->color = 0xB4B4B4;
+                    MainForm->fonts->color = MainForm->themes->color_dialog_link;
                     MainForm->fonts->is_underlined = true;
                 }
                 else
-                    MainForm->fonts->color = 0xC8C8C8;
+                    MainForm->fonts->color = MainForm->themes->color_dialog;
                 int text_x = MainForm->animation->dialog->window_x + 22;
                 int text_y = MainForm->animation->dialog->window_y + LIST_ROW_HEIGHT * row + 48;
                 MainForm->fonts->DrawString(text_x, text_y, line);
@@ -3614,7 +3615,7 @@ void GameGraphics::DrawDialogText()
             String other_line = MainForm->animation->dialog->quest_names->Strings[j];
             if (other_line.Length() > 0)
             {
-                MainForm->fonts->color = 0xC8C8C8;
+                MainForm->fonts->color = MainForm->themes->color_dialog;
                 other_text_x = MainForm->animation->dialog->window_x + 22;
                 other_text_y = MainForm->animation->dialog->window_y + LIST_ROW_HEIGHT * other_row + 48;
                 MainForm->fonts->DrawString(other_text_x, other_text_y, other_line);
@@ -3633,7 +3634,7 @@ void GameGraphics::DrawMemoText()
     int top_line;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->memo->window_x;
     window_y = MainForm->animation->memo->window_y;
     MainForm->fonts->DrawString((short)window_x + 22, window_y + 17, MainForm->animation->memo->title);
@@ -3645,7 +3646,7 @@ void GameGraphics::DrawMemoText()
         String line = MainForm->animation->memo->lines->Strings[i];
         if (line.Length() > 0)
         {
-            MainForm->fonts->color = 0xC8C8C8;
+            MainForm->fonts->color = MainForm->themes->color_dialog;
             int text_x = MainForm->animation->memo->window_x + 22;
             int text_y = MainForm->animation->memo->window_y + LIST_ROW_HEIGHT * row + 48;
             MainForm->fonts->DrawString(text_x, text_y, line);
@@ -3669,7 +3670,7 @@ void GameGraphics::DrawInnText()
     int list_text_y;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->inn->window_x;
     int window_y = MainForm->animation->inn->window_y;
     MainForm->fonts->DrawString((short)window_x + 22, window_y + 17, MainForm->animation->inn->npc_name);
@@ -3709,13 +3710,13 @@ void GameGraphics::DrawInnText()
                 {
                     line.Delete(1, 1);
                     if (MainForm->animation->inn->hovered_row == row)
-                        MainForm->fonts->color = 0xDCDCDC;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
                     else
-                        MainForm->fonts->color = 0xB4B4B4;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link;
                     MainForm->fonts->is_underlined = true;
                 }
                 else
-                    MainForm->fonts->color = 0xC8C8C8;
+                    MainForm->fonts->color = MainForm->themes->color_dialog;
             }
             list_text_x = MainForm->animation->inn->window_x + 22;
             list_text_y = MainForm->animation->inn->window_y + LIST_ROW_HEIGHT * row + 48;
@@ -3734,7 +3735,7 @@ void GameGraphics::DrawLawText()
     int list_text_y;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->law->window_x;
     int window_y = MainForm->animation->law->window_y;
     MainForm->fonts->DrawString((short)window_x + 22, window_y + 17, MainForm->animation->law->npc_name);
@@ -3773,13 +3774,13 @@ void GameGraphics::DrawLawText()
                 {
                     line.Delete(1, 1);
                     if (MainForm->animation->law->hovered_row == row)
-                        MainForm->fonts->color = 0xDCDCDC;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
                     else
-                        MainForm->fonts->color = 0xB4B4B4;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link;
                     MainForm->fonts->is_underlined = true;
                 }
                 else
-                    MainForm->fonts->color = 0xC8C8C8;
+                    MainForm->fonts->color = MainForm->themes->color_dialog;
             }
             list_text_x = MainForm->animation->law->window_x + 22;
             list_text_y = MainForm->animation->law->window_y + LIST_ROW_HEIGHT * row + 48;
@@ -3797,12 +3798,12 @@ void GameGraphics::DrawLearnText()
     int skill_y;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->learn->window_x;
     int window_y = MainForm->animation->learn->window_y;
     MainForm->fonts->DrawString(window_x + 22, window_y + 17, MainForm->animation->learn->npc_name);
     if (MainForm->animation->learn->tooltip->IsVisible())
-        MainForm->fonts->color = 0x46484B;
+        MainForm->fonts->DarkenColor();
     if (MainForm->animation->learn->page == LearnPage_Menu)
     {
         int text_y = MainForm->animation->learn->window_y + 54;
@@ -3854,13 +3855,13 @@ void GameGraphics::DrawLearnText()
                 {
                     list_line.Delete(1, 1);
                     if (MainForm->animation->learn->hovered_row == list_row)
-                        MainForm->fonts->color = 0xDCDCDC;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link_over;
                     else
-                        MainForm->fonts->color = 0xB4B4B4;
+                        MainForm->fonts->color = MainForm->themes->color_dialog_link;
                     MainForm->fonts->is_underlined = true;
                 }
                 else
-                    MainForm->fonts->color = 0xC8C8C8;
+                    MainForm->fonts->color = MainForm->themes->color_dialog;
             }
             int list_text_x = MainForm->animation->learn->window_x + 22;
             int list_text_y = MainForm->animation->learn->window_y + LIST_ROW_HEIGHT * list_row + 48;
@@ -3878,26 +3879,24 @@ void GameGraphics::DrawLearnText()
 // the item can be crafted.
 void GameGraphics::DrawCrafterText()
 {
-    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->color = MainForm->themes->color_dialog_caption;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 10;
     String title = "Craftable: " + MainForm->animation->crafter->result_name;
-    MainForm->fonts->TextWidth(title);
     MainForm->fonts->DrawString((short)MainForm->animation->crafter->window_x + 30,
         (short)MainForm->animation->crafter->window_y + 12, title);
-    MainForm->fonts->color = 0xD6E6E6;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     String state_text;
     if (MainForm->animation->crafter->can_craft)
         state_text = MainForm->strings->GetText(GameText_PutIngredientsTogether);
     else
         state_text = MainForm->strings->GetText(GameText_YouDontHaveAll);
-    MainForm->fonts->TextWidth(state_text);
     MainForm->fonts->DrawString((short)MainForm->animation->crafter->window_x + 30,
         (short)MainForm->animation->crafter->window_y + 36, state_text);
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     MainForm->fonts->size = 8;
     if (MainForm->animation->crafter->tooltip->IsVisible())
-        MainForm->fonts->color = 0x787878;
+        MainForm->fonts->DarkenColor();
     vector<CraftIngredient>::iterator ingredient;
     for (ingredient = MainForm->animation->crafter->ingredients.begin();
         ingredient != MainForm->animation->crafter->ingredients.end(); ingredient++)
@@ -3934,7 +3933,7 @@ void GameGraphics::DrawShopText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->shop->window_x;
     int window_y = MainForm->animation->shop->window_y;
     MainForm->fonts->DrawString(window_x + 22, window_y + 17, MainForm->animation->shop->npc_name);
@@ -3959,7 +3958,7 @@ void GameGraphics::DrawShopText()
         }
     }
     if (MainForm->animation->shop->tooltip->IsVisible())
-        MainForm->fonts->color = 0x46484B;
+        MainForm->fonts->DarkenColor();
     int top_row = MainForm->animation->shop->GetTopRow();
     int item_count = MainForm->animation->shop->shown_items.size();
     int row = 0;
@@ -4016,7 +4015,7 @@ void GameGraphics::DrawTradeText()
     int partner_row;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     int window_x = MainForm->animation->trade->window_x;
     int window_y = MainForm->animation->trade->window_y;
     int partner_count = MainForm->animation->trade->partner_items.size();
@@ -4042,7 +4041,7 @@ void GameGraphics::DrawTradeText()
     int item_count = MainForm->animation->trade->partner_items.size();
     partner_row = 0;
     if (MainForm->animation->trade->tooltip->IsVisible())
-        MainForm->fonts->color = 0x46484B;
+        MainForm->fonts->DarkenColor();
     for (int i = top_row; i < item_count && top_row + 5 > i; i++)
     {
         int partner_item_id = MainForm->animation->trade->partner_items[i].item_id;
@@ -4068,7 +4067,7 @@ void GameGraphics::DrawTradeText()
             MainForm->fonts->DrawString(partner_text_x, partner_text_y, "x " + IntToStr(partner_amount));
         partner_row++;
     }
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     top_row = MainForm->animation->trade->GetOwnTopRow();
     item_count = MainForm->animation->trade->own_items.size();
     partner_row = 0;
@@ -4107,7 +4106,7 @@ void GameGraphics::DrawBookText()
     int top_line;
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     window_x = MainForm->animation->book->window_x;
     window_y = MainForm->animation->book->window_y;
     DrawInfoLine(window_x, window_y, 37, MainForm->animation->book->player_name);
@@ -4125,7 +4124,7 @@ void GameGraphics::DrawBookText()
         String line = MainForm->animation->book->lines->Strings[i];
         if (line.Length() > 0)
         {
-            MainForm->fonts->color = 0xC8C8C8;
+            MainForm->fonts->color = MainForm->themes->color_dialog;
             text_x = MainForm->animation->book->window_x + 49;
             text_y = MainForm->animation->book->window_y + BOOK_ROW_HEIGHT * row + 41;
             MainForm->fonts->DrawString(text_x, text_y, line);
@@ -4140,9 +4139,9 @@ void GameGraphics::DrawPaperdollText()
 {
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
-    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->color = MainForm->themes->color_dialog;
     if (MainForm->animation->paperdoll->HasHoveredSlot())
-        MainForm->fonts->color = 0x5A5A5A;
+        MainForm->fonts->DarkenColor();
     int window_x = MainForm->animation->paperdoll->window_x;
     int window_y = MainForm->animation->paperdoll->window_y;
     DrawInfoLine(window_x, window_y, 37, MainForm->animation->paperdoll->player_name);

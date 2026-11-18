@@ -188,7 +188,6 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
         {
             try
             {
-                MainForm->fonts->color = 0;
                 MainForm->fonts->face = 1;
                 MainForm->fonts->size = 8;
                 if ((short)MainForm->fonts->TextWidth(text) >= max_width)

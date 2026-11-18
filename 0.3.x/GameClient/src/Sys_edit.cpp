@@ -29,6 +29,8 @@ Edit::Edit(int edit_id, int group, int left, int top, int box_width, int box_hei
     numeric = false;
     char_filter = 0;
     allow_spaces = true;
+    no_double_spaces = false;
+    no_leading_space = false;
     border_visible = true;
     background_visible = true;
     editable = true;
@@ -38,9 +40,6 @@ Edit::Edit(int edit_id, int group, int left, int top, int box_width, int box_hei
     show_strength = false;
     redraw_ticks = 0;
     visible = true;
-    border_color = 0;
-    background_color = 0x6982A5;
-    caret_color = 0x21557D;
     text_color = 0;
     max_length = 64;
     extra_mode = 0;

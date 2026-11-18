@@ -40,6 +40,7 @@ Config::Config()
     always_ghost = false;
     filter_enabled = true;
     strict_filter = false;
+    theme_file = "";
     log_chat = false;
     accept_private_messages = true;
     accept_requests = true;
@@ -66,7 +67,6 @@ Config::Config()
     default_color = 0;
     group_color = 2;
     npc_color = 4;
-    text_theme = 0;
     settings_read = 0;
     standard_settings_read = 0;
     extra_settings_read = 0;
@@ -125,9 +125,7 @@ bool Config::ReadInteger(String key)
         return false;
     for (int i = 1; i <= value_upper.Length(); i++)
     {
-        if (value_upper[i] != '0' && value_upper[i] != '1' && value_upper[i] != '2' && value_upper[i] != '3' &&
-            value_upper[i] != '4' && value_upper[i] != '5' && value_upper[i] != '6' && value_upper[i] != '7' &&
-            value_upper[i] != '8' && value_upper[i] != '9')
+        if (value_upper[i] < '0' || value_upper[i] > '9')
             return false;
     }
     setting_number = StrToInt(value_upper);
@@ -234,14 +232,14 @@ bool Config::ReadVolume(String key)
 bool Config::LoadSettings()
 {
     int file_size;
+    TStringList *lines = 0;
     char *file_bytes;
     int handle;
-    TStringList *file_lines;
     String path = "./config/setup.ini";
     if (access(path.c_str(), 0))
         return false;
     String file_text;
-    file_lines = new TStringList();
+    lines = new TStringList();
     try
     {
         handle = FileOpen(path.c_str(), fmOpenRead);
@@ -275,7 +273,7 @@ bool Config::LoadSettings()
                         if ((unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
                             line = line + file_text[i];
                     }
-                    file_lines->Add(line);
+                    lines->Add(line);
                     line_start = i + 1;
                     break;
                 }
@@ -283,31 +281,31 @@ bool Config::LoadSettings()
                     line = line + file_text[i];
             }
         } while (file_text.Length() >= line_start);
-        for (int line_index = 0; line_index < file_lines->Count; line_index++)
+        for (int line_index = 0; line_index < lines->Count; line_index++)
         {
             key_name = "";
             value_text = "";
             int position = 1;
             int equals_count = 0;
-            if (!file_lines->Strings[line_index].Length())
+            if (!lines->Strings[line_index].Length())
                 continue;
-            if (file_lines->Strings[line_index][1] == '#')
+            if (lines->Strings[line_index][1] == '#')
                 continue;
-            if (file_lines->Strings[line_index][1] == '[')
+            if (lines->Strings[line_index][1] == '[')
                 continue;
-            while (file_lines->Strings[line_index].Length() >= position)
+            while (lines->Strings[line_index].Length() >= position)
             {
-                if (file_lines->Strings[line_index][position] == '=')
+                if (lines->Strings[line_index][position] == '=')
                     equals_count++;
                 else
                 {
                     if (!equals_count)
                     {
-                        if (file_lines->Strings[line_index][position] != ' ')
-                            key_name += (char)file_lines->Strings[line_index][position];
+                        if (lines->Strings[line_index][position] != ' ')
+                            key_name += (char)lines->Strings[line_index][position];
                     }
                     if (equals_count == 1)
-                        value_text += (char)file_lines->Strings[line_index][position];
+                        value_text += (char)lines->Strings[line_index][position];
                 }
                 position++;
             }
@@ -446,6 +444,11 @@ bool Config::LoadSettings()
                     strict_filter = setting_switch;
                     standard_settings_read++;
                 }
+                else if (ReadString("THEMEFILE"))
+                {
+                    theme_file = value_text;
+                    standard_settings_read++;
+                }
                 else if (ReadVolume("SOUND"))
                 {
                     sound_volume = setting_number;
@@ -581,11 +584,6 @@ bool Config::LoadSettings()
                     group_color = setting_number;
                     standard_settings_read++;
                 }
-                else if (ReadColor("TEXTTHEME"))
-                {
-                    text_theme = setting_number;
-                    extra_settings_read++;
-                }
                 else if (ReadSwitch("DEBUG"))
                 {
                     debug = setting_switch;
@@ -603,6 +601,9 @@ bool Config::LoadSettings()
     {
     }
     settings_read = standard_settings_read + extra_settings_read;
+    // Values out of range: language and layout go back to 0, the others to the nearest limit.
+    if (theme_file.Pos(".ini") <= 0)
+        theme_file = theme_file + ".ini";
     if (language < 0 || language > 3)
         language = 0;
     if (keyboard_layout < 0 || keyboard_layout > 3)
@@ -619,10 +620,6 @@ bool Config::LoadSettings()
         radar_position = 0;
     if (radar_position > 3)
         radar_position = 3;
-    if (text_theme < 0)
-        text_theme = 0;
-    if (text_theme > 1)
-        text_theme = 1;
     if (status_widget < 0)
         status_widget = 0;
     if (status_widget > 3)
@@ -997,6 +994,11 @@ char Config::GetStrictFilter()
     return strict_filter;
 }
 
+String Config::GetThemeFile()
+{
+    return theme_file;
+}
+
 char Config::GetLogChat()
 {
     return log_chat;
@@ -1056,11 +1058,6 @@ int Config::GetNpcColor()
 int Config::GetGroupColor()
 {
     return group_color;
-}
-
-int Config::GetTextTheme()
-{
-    return text_theme;
 }
 
 int Config::GetMusicAvailable()

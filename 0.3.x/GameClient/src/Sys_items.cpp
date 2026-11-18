@@ -197,6 +197,7 @@ void MapItems::AddProtectedItem(int uid, int item_id, int x, int y, int amount, 
     }
 }
 
+// Takes the item with the uid off the map.
 void MapItems::RemoveItem(int uid)
 {
     for (vector<MapItem>::iterator it = items.begin(); it != items.end(); it++)
