@@ -1,0 +1,336 @@
+#include <vcl.h>
+#pragma hdrstop
+
+#include "Ctrl_inn.h"
+#include "Tmainform.h"
+#include "Ctrl_guild.h"
+#include "Ctrl_game.h"
+#include "Ctrl_law.h"
+#include "Ctrl_memo.h"
+#include "Packetoperations.h"
+#include "Ctrl_learn.h"
+#include "Ctrl_locker.h"
+#include "Ctrl_shop.h"
+#include "Ctrl_trade.h"
+
+#pragma package(smart_init)
+
+InnController::InnController()
+{
+    lines = new TStringList();
+    unused_lines = new TStringList();
+    window_x = 49;
+    window_y = 15;
+    unused_flag = true;
+    unused_value = 0;
+    scroll_up_hovered = false;
+    scroll_down_hovered = false;
+    scroll_changed = false;
+    npc_session_id = -1;
+    top_line = 0;
+    scroll_thumb_offset = 0;
+    hovered_row = -1;
+    is_visible = false;
+    close_hovered = false;
+    back_hovered = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    is_dragging = false;
+}
+
+InnController::~InnController()
+{
+}
+
+DEFINE_ADD_TEXT(InnController)
+
+// Shows the innkeeper's window on its menu page, noting whether the character is a citizen here, and closes the
+// other npc windows.
+void InnController::Open(int session_id, int citizen_flag)
+{
+    MainForm->animation->shop->is_visible = false;
+    MainForm->animation->locker->is_visible = false;
+    MainForm->animation->learn->is_visible = false;
+    MainForm->animation->guild->is_visible = false;
+    MainForm->animation->memo->is_visible = false;
+    MainForm->animation->law->is_visible = false;
+    MainForm->gfx->CreateShopGraphics();
+    MainForm->gfx->LoadShopGraphics();
+    lines->Clear();
+    top_line = 0;
+    scroll_thumb_offset = 0;
+    question_index = 0;
+    sleep_request_cooldown = 0;
+    npc_session_id = session_id;
+    is_citizen = citizen_flag;
+    page = 0;
+    reset_value = 0;
+    link_line_index = 0;
+    is_visible = true;
+    MainForm->redraw_needed = true;
+}
+
+// Hides the window and frees its graphics.
+void InnController::Close()
+{
+    is_visible = false;
+    npc_session_id = -1;
+    MainForm->gfx->FreeShopGraphics();
+    MainForm->redraw_needed = true;
+}
+
+// Counts down the wait between sleep requests and repeats a held scroll arrow.
+void InnController::Tick()
+{
+    if (sleep_request_cooldown > 0)
+        sleep_request_cooldown--;
+    if (scroll_repeat_delay > 0)
+        scroll_repeat_delay--;
+    else
+    {
+        if (scroll_up_held)
+            ScrollUp();
+        if (scroll_down_held)
+            ScrollDown();
+    }
+}
+
+int InnController::GetScrollThumbOffset()
+{
+    return scroll_thumb_offset;
+}
+
+int InnController::GetTopLine()
+{
+    return top_line;
+}
+
+// A click in the window. On the menu: open the citizenship page or ask to sleep. On a text page the link line
+// starts the first question, or gives citizenship up. Otherwise the scroll bar and moving the window.
+void InnController::MouseDown(int x, int y, int button)
+{
+    bool handled = false;
+    if (button == 0 || button == 1)
+    {
+        if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252)
+        {
+            is_dragging = false;
+            int row = top_line + (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
+            if (page >= 6)
+            {
+                row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+                if (row == link_line_index)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                    if (page == 6)
+                    {
+                        // A citizen gets a message instead of the questions
+                        if (is_citizen)
+                            MainForm->animation->game->ShowMessageBox(DialogButtons_Default, ConfirmAction_None,
+                                MainForm->strings->GetText(GameText_RegistrationService2),
+                                MainForm->strings->GetText(GameText_YouAreAlreadyCitizen));
+                        else
+                        {
+                            question_index = 0;
+                            String question_prompt = IntToStr(1) + ". " + questions[0];
+                            MainForm->animation->game->OpenInputBox(InputBoxKind_InnAnswer, question_prompt,
+                                EditCharFilter_AlphanumericSpaces, 12);
+                        }
+                    }
+                    if (page == 7)
+                    {
+                        MainForm->net_client->sender->SendGiveUpCitizenship(npc_session_id);
+                        page = 0;
+                        MainForm->redraw_needed = true;
+                    }
+                }
+            }
+            if (page == 1)
+            {
+                if (!row)
+                {
+                    ClearText();
+                    AddText(MainForm->strings->GetText(GameText_SignUp), true);
+                    AddText(MainForm->strings->GetText(GameText_YouAreAboutToRequestTo), true);
+                    AddText(MainForm->strings->GetText(GameText_IfYouAreAble), true);
+                    AddText(MainForm->strings->GetText(GameText_ClickHereToTake), true);
+                    page = 6;
+                    MainForm->redraw_needed = true;
+                }
+                if (row == 1)
+                {
+                    ClearText();
+                    AddText(MainForm->strings->GetText(GameText_Unsubscribe), true);
+                    AddText(MainForm->strings->GetText(GameText_YouAreAboutToGive), true);
+                    AddText(MainForm->strings->GetText(GameText_ClickHereToUnsubscribe), true);
+                    page = 7;
+                    MainForm->redraw_needed = true;
+                }
+            }
+            if (!page)
+            {
+                if (!row)
+                {
+                    page = 1;
+                    MainForm->redraw_needed = true;
+                }
+                // Sleep requests are spaced out
+                if (row == 1 && sleep_request_cooldown <= 0)
+                {
+                    sleep_request_cooldown = 20;
+                    MainForm->net_client->sender->RequestInnSleep(npc_session_id);
+                    MainForm->redraw_needed = true;
+                }
+            }
+        }
+    }
+    if (!handled)
+    {
+        if (x >= window_x + 252 && x <= window_x + 267)
+        {
+            if (y >= window_y + scroll_thumb_offset + 58 && y <= window_y + scroll_thumb_offset + 73)
+            {
+                thumb_grabbed = true;
+                thumb_grab_offset = y - scroll_thumb_offset - window_y;
+                DragScrollThumb(y);
+            }
+        }
+        if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)
+        {
+            scroll_up_held = true;
+            scroll_repeat_delay = 4;
+            ScrollUp();
+        }
+        if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 228 && y <= window_y + 243)
+        {
+            scroll_down_held = true;
+            scroll_repeat_delay = 4;
+            ScrollDown();
+        }
+        if (x >= window_x && x <= window_x + 284 && y >= window_y && y <= window_y + 290 && !thumb_grabbed)
+        {
+            is_dragging = true;
+            drag_offset_x = x - window_x;
+            drag_offset_y = y - window_y;
+        }
+    }
+}
+
+// Moves a dragged window, kept on screen, and tracks the hovered row and the close and back buttons.
+void InnController::MouseMove(int x, int y)
+{
+    int row;
+    UpdateScrollHover(x, y);
+    if (is_dragging)
+    {
+        window_x = x - drag_offset_x;
+        window_y = y - drag_offset_y;
+        if (window_x <= 10)
+            window_x = 10;
+        if (window_y <= 8)
+            window_y = 8;
+        if (window_x >= 346)
+            window_x = 346;
+        if (window_y >= 19)
+            window_y = 19;
+        MainForm->redraw_needed = true;
+    }
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
+    {
+        if (!page)
+        {
+            row = (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
+            if (row > 1)
+                row = -1;
+        }
+        if (page == 1)
+        {
+            row = (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
+            if (row > 1)
+                row = -1;
+        }
+        if (page >= 6)
+        {
+            row = (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+            if (row > 11)
+                row = -1;
+            if (lines->Count <= row)
+                row = -1;
+        }
+        if (row != hovered_row)
+        {
+            hovered_row = row;
+            MainForm->redraw_needed = true;
+        }
+    }
+    else if (hovered_row >= 0)
+    {
+        hovered_row = -1;
+        MainForm->redraw_needed = true;
+    }
+    if (!page)
+    {
+        if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279)
+        {
+            if (!close_hovered)
+            {
+                close_hovered = true;
+                MainForm->redraw_needed = true;
+            }
+        }
+        else if (close_hovered)
+        {
+            close_hovered = false;
+            MainForm->redraw_needed = true;
+        }
+    }
+    else
+    {
+        if (x >= window_x + 144 && x <= window_x + 234 && y >= window_y + 253 && y <= window_y + 279)
+        {
+            if (!close_hovered)
+            {
+                close_hovered = true;
+                MainForm->redraw_needed = true;
+            }
+        }
+        else if (close_hovered)
+        {
+            close_hovered = false;
+            MainForm->redraw_needed = true;
+        }
+        if (x >= window_x + 48 && x <= window_x + 138 && y >= window_y + 253 && y <= window_y + 279)
+        {
+            if (!back_hovered)
+            {
+                back_hovered = true;
+                MainForm->redraw_needed = true;
+            }
+        }
+        else if (back_hovered)
+        {
+            back_hovered = false;
+            MainForm->redraw_needed = true;
+        }
+    }
+}
+
+// Lights the scroll arrow under the mouse and drags a grabbed thumb.
+DEFINE_UPDATE_SCROLL_HOVER(InnController)
+
+DEFINE_DRAG_SCROLL_THUMB(InnController)
+
+DEFINE_SCROLL_UP(InnController)
+
+DEFINE_SCROLL_DOWN(InnController)
+
+// Ends moving the window, the held scroll arrows and the grabbed thumb.
+void InnController::MouseUp()
+{
+    is_dragging = false;
+    scroll_up_held = false;
+    scroll_down_held = false;
+    thumb_grabbed = false;
+}
+
+DEFINE_CLEAR_TEXT(InnController)
