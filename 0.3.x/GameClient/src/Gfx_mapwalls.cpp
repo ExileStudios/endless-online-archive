@@ -125,7 +125,7 @@ void WallGraphics::LoadGraphicNow(int graphic_id)
     for (it = entries.begin(); it != entries.end(); it++)
     {
         if (graphic_id == it->graphic_id)
-            result = true;
+            result = 1;
     }
     if (!result && (Application->Active || !MainForm->config->GetFullscreen()))
     {

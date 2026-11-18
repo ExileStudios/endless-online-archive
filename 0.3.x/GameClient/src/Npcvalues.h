@@ -73,6 +73,10 @@ struct NpcValues
     void DeleteFiles();
     void Clear();
     NpcValue * FindByName(String text);
+    int GetMatchScore(String name, String text);
+    void LoadFrom(String folder);
+    String StripSpaces(String name);
+    int ParseNumber(String text);
     NpcValue * GetNpc(int index);
     int Count();
     void ClearHeaders();

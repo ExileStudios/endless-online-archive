@@ -46,6 +46,10 @@ struct ItemValues
     void DeleteFiles();
     void Clear();
     ItemValue * FindByName(String text);
+    int GetMatchScore(String name, String text);
+    void LoadFrom(String folder);
+    String StripSpaces(String name);
+    int ParseNumber(String text);
     ItemValue * GetItem(int index);
     int GetWeight(int item_id);
     int GetGender(int item_id);

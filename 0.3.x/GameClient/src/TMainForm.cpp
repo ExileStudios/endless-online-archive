@@ -184,7 +184,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     version_major = 0;
     version_minor = 3;
     version_build = 29;
-    version_letter = 'J';
+    version_letter = 'K';
     min_theme_version_major = 0;
     min_theme_version_minor = 3;
     files = new FileController();
@@ -199,7 +199,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     {
         String files_message = title;
         files_message += "Endless File Protection Error\n";
-        files_message += "Some files are missing or corrupted\n\n";
+        files_message += "Some files are missing, blocked or corrupted\n\n";
         files_message += files->error_message + "\n\n";
         if (files->error_kind == "V3")
         {
@@ -210,19 +210,22 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
             files_message += "folder: \\sfx\\effect\\\n";
             files_message += "folder: \\sfx\\instr\\\n\n";
         }
-        files_message += "Please, completely uninstall Endless Online\n";
-        files_message += "and re-install the correct client version.\n";
+        files_message += "1) Please, do not move Endless (endless.exe) outside \n";
+        files_message += "of it's program folder.\n\n";
+        files_message += "2) The file could potentially be blocked. Try to allow\n";
+        files_message += "the file inside your virus scanner or Windows Defender.\n\n";
+        files_message += "3) If this message is repeated consider to completely uninstall\n";
+        files_message += "Endless Online and re-install the correct client version.\n";
         files_message += "Goto: http://www.endless-online.com";
-        if (MessageDlg(files_message, mtError, TMsgDlgButtons() << mbOK, 0) == mrOk)
+        if (MessageDlg(files_message, mtError, TMsgDlgButtons() << mbAbort << mbIgnore, 0) == mrAbort)
         {
             delete files;
             delete config;
             delete strings;
-            delete chat_log;
             delete registry;
+            ((TCustomForm *)this)->Close();
+            return;
         }
-        ((TCustomForm *)this)->Close();
-        return;
     }
     config = new Config();
     themes = new FileThemes(String(".\\gfx\\themes\\"), min_theme_version_major, min_theme_version_minor);
@@ -360,24 +363,24 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     else
         // Dx_Draw1Create makes the surfaces and, full screen, sets the display mode.
         Dx_Draw1->Create(0);
-    if (!Dx_Draw1->Created || !PrimarySurface->Created || !OffscreenSurface->Created)
+    if (!Dx_Draw1->Created)
     {
         String directx_message = title;
         directx_message += start_error;
         directx_message += "Reason: directX (min v.7) runtime was not found.\n";
-        directx_message += "Suggestion: install directX runtime package";
-        if (MessageDlg(directx_message, mtError, TMsgDlgButtons() << mbOK, 0) == mrOk)
+        directx_message += "Suggestion: Read the troubleshooting:\n\n";
+        directx_message += "Troubleshoot-1: finish pending Windows Update(s)\n";
+        directx_message += "Troubleshoot-2: reboot your system and try again.\n";
+        directx_message += "Troubleshoot-3: (re)install directX runtime package.\n\n";
+        directx_message += "If all fails download 'DDrawCompat', this is a ddraw.dll file\n";
+        directx_message += "that you should place in the Endless.exe folder, and try again.";
+        if (MessageDlg(directx_message, mtError, TMsgDlgButtons() << mbAbort << mbIgnore, 0) == mrAbort)
         {
-            delete files;
-            delete config;
-            delete strings;
-            delete chat_log;
-            delete registry;
+            Dx_Input1->Destroy();
+            Dx_Sound1->Destroy();
+            Application->Terminate();
+            return;
         }
-        Dx_Input1->Destroy();
-        Dx_Sound1->Destroy();
-        Application->Terminate();
-        return;
     }
     if (!PrimarySurface->Created || !OffscreenSurface->Created)
     {

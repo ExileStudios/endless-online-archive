@@ -241,11 +241,6 @@ void ItemValues::DeleteFiles()
     }
 }
 
-void Itemvalues_UnusedLiterals1()
-{
-    "dat";
-}
-
 // Deletes every item record.
 void ItemValues::Clear()
 {
@@ -259,16 +254,62 @@ void ItemValues::Clear()
 ItemValue *ItemValues::FindByName(String text)
 {
     vector<ItemValue *>::iterator it;
+    int number = ParseNumber(text);
+    if (number >= 0)
+        return GetItem(number);
     if (text.Length() < 3)
         return 0;
     text = LowerCase(text);
     for (it = records.begin(); it != records.end(); it++)
     {
+        if (LowerCase((*it)->name) == text)
+            return *it;
+    }
+    for (it = records.begin(); it != records.end(); it++)
+    {
+        if (StripSpaces((*it)->name).Pos(text) > 0)
+            return *it;
+    }
+    for (it = records.begin(); it != records.end(); it++)
+    {
         if (LowerCase((*it)->name).Pos(text) > 0)
             return *it;
     }
+    if (records.size() > 0)
+    {
+        int best_score = 0;
+        ItemValue *best = NULL;
+        for (it = records.begin(); it != records.end(); it++)
+        {
+            int score = GetMatchScore((*it)->name, text);
+            if (score >= 50 && score > best_score)
+            {
+                best_score = score;
+                best = *it;
+            }
+        }
+        if (best)
+            return best;
+    }
     return 0;
 }
+
+DEFINE_GET_MATCH_SCORE(ItemValues)
+
+// Reads the item file again from the folder given: the prefix of its file names, then a fresh load.
+void ItemValues::LoadFrom(String folder)
+{
+    file_prefix = folder + "dat";
+    Clear();
+    is_loaded = false;
+    has_bad_record = false;
+    header_read = false;
+    Load();
+}
+
+DEFINE_STRIP_SPACES(ItemValues)
+
+DEFINE_PARSE_NUMBER(ItemValues)
 
 // The item record at the index, kept within the list.
 ItemValue *ItemValues::GetItem(int index)

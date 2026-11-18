@@ -225,12 +225,6 @@ void NpcValues::DeleteFiles()
     }
 }
 
-void Npcvalues_UnusedLiterals1()
-{
-    "dtn";
-    "";
-}
-
 // Deletes every npc record with its drops and messages.
 void NpcValues::Clear()
 {
@@ -248,7 +242,9 @@ void NpcValues::Clear()
 NpcValue *NpcValues::FindByName(String text)
 {
     vector<NpcValue *>::iterator it;
-    vector<NpcValue *>::iterator lowered_record;
+    int number = ParseNumber(text);
+    if (number >= 0)
+        return GetNpc(number);
     if (text.Length() < 3)
         return 0;
     text = LowerCase(text);
@@ -257,13 +253,51 @@ NpcValue *NpcValues::FindByName(String text)
         if (LowerCase((*it)->name) == text)
             return *it;
     }
-    for (lowered_record = records.begin(); lowered_record != records.end(); lowered_record++)
+    for (it = records.begin(); it != records.end(); it++)
     {
-        if (LowerCase((*lowered_record)->name).Pos(text) > 0)
-            return *lowered_record;
+        if (LowerCase((*it)->name).Pos(text) > 0)
+            return *it;
+    }
+    for (it = records.begin(); it != records.end(); it++)
+    {
+        if (StripSpaces((*it)->name).Pos(text) > 0)
+            return *it;
+    }
+    if (records.size() > 0)
+    {
+        int best_score = 0;
+        NpcValue *best = NULL;
+        for (it = records.begin(); it != records.end(); it++)
+        {
+            int score = GetMatchScore((*it)->name, text);
+            if (score >= 50 && score > best_score)
+            {
+                best_score = score;
+                best = *it;
+            }
+        }
+        if (best)
+            return best;
     }
     return 0;
 }
+
+DEFINE_GET_MATCH_SCORE(NpcValues)
+
+// Reads the npc file again from the folder given: the prefix of its file names, then a fresh load.
+void NpcValues::LoadFrom(String folder)
+{
+    file_prefix = folder + "dtn";
+    Clear();
+    is_loaded = false;
+    has_bad_record = false;
+    header_read = false;
+    Load();
+}
+
+DEFINE_STRIP_SPACES(NpcValues)
+
+DEFINE_PARSE_NUMBER(NpcValues)
 
 NpcValue *NpcValues::GetNpc(int index)
 {

@@ -4528,6 +4528,41 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                         CHAT_COLOR_NOTICE, reporter_name, "reports: " + reported_name + ", " + report_text, false);
             }
         }
+        if (action == AC_NEW)
+        {
+            MainForm->animation->memo->is_visible = false;
+            MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
+            String memo_title = MainForm->net_client->NextToken();
+            MainForm->animation->memo->Open(memo_title);
+            int memo_line = 0;
+            while (memo_line < 255)
+            {
+                String memo_key = MainForm->net_client->NextToken();
+                String memo_value = MainForm->net_client->NextToken();
+                if (memo_key.Length() < 1 && memo_value.Length() < 1)
+                    break;
+                MainForm->animation->memo->AddText(memo_key, memo_value, false);
+                memo_line++;
+            }
+            return;
+        }
+        if (action == AC_ADD)
+        {
+            if (!MainForm->animation->memo->is_visible)
+                return;
+            MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
+            int memo_line = 0;
+            while (memo_line < 255)
+            {
+                String memo_key = MainForm->net_client->NextToken();
+                String memo_value = MainForm->net_client->NextToken();
+                if (memo_key.Length() < 1 && memo_value.Length() < 1)
+                    break;
+                MainForm->animation->memo->AddText(memo_key, memo_value, false);
+                memo_line++;
+            }
+            return;
+        }
         if (action == AC_PRIVATE)
         {
             MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
