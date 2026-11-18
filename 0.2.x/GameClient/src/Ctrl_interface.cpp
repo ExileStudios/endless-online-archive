@@ -98,7 +98,7 @@ InterfaceController::InterfaceController()
 // Back to the main menu: closes the connection, frees the game graphics, empties the lists and puts every window back.
 void InterfaceController::Logout()
 {
-    MainForm->gfx->interface_graphics->minimap_visible = false;
+    MainForm->gfx->interface_graphics->minimap_visible = 0;
     MainForm->map->path_finder->CancelPath();
     MainForm->sfx->StopMusic();
     MainForm->sfx->FadeOutAmbientSound();

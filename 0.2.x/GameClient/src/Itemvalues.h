@@ -6,6 +6,8 @@
 #include <string>
 #include <vector.h>
 
+struct PubfileHeader;
+
 #include "Itemvalue.h"
 
 #define PUB_RECORDS_PER_FILE 900
@@ -18,29 +20,28 @@ struct ItemValues
     int expected_part_count;
     int received_part_count;
     char is_loaded;
+    bool has_bad_record;
+    bool header_read;
+    String file_name;
+    String file_path;
+    int records_read;
+    int records_expected;
     int checksum_high;
     int checksum_low;
     int record_count;
+    String data;
+    int read_position;
     vector<ItemValue> records;
     int unused_value;
+    vector<PubfileHeader *> headers;
     String file_prefix;
 
-    ItemValues();
+    ItemValues(String prefix);
     ~ItemValues();
     void ReadHeader();
     void SaveFilePart(int part_number, String data);
     void Load();
     void DeleteFiles();
-    void AddItem(int item_id, String name, short graphic, short type, short subtype, short special,
-    short hp, short tp, int min_damage, int max_damage,
-    int accuracy, int evade, int armor, int return_damage,
-    short bonus_str, short bonus_int, short bonus_wis,
-    short bonus_agi, short bonus_con, short bonus_cha,
-    short light_resist, short dark_resist, short earth_resist,
-    short air_resist, short water_resist, short fire_resist, int spec_value,
-    short gender, short spec3, short required_level, short required_class, short required_str,
-    short required_int, short required_wis, short required_agi, short required_con, short required_cha,
-    short element, short element_power, short weight, short spare_byte, short size);
     void Clear();
     ItemValue GetItem(int item_id);
     int GetWeight(int item_id);
@@ -55,7 +56,9 @@ struct ItemValues
     String GetKeyName(int key_id);
     String GetName(int item_id);
     unsigned int Count();
-    int DecodeNumber(String encoded);
+    void ClearHeaders();
+    unsigned char ReadByte();
+    int DecodeNumber(unsigned char encoded);
 };
 
 #endif

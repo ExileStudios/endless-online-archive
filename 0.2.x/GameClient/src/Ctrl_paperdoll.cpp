@@ -38,7 +38,7 @@ PaperdollController::PaperdollController()
     equipped_bracer1 = -1;
     equipped_bracer2 = -1;
     equipped_accessory = -1;
-    tooltip = new Tooltip(6, 0);
+    tooltip = new Tooltip(6, 0, 2);
     tooltip->SetFlipEdge(630, 63);
     tooltip->SetVerticalAlign(TooltipAlign_Centered);
     tooltip->SetShowCursed(true);

@@ -38,7 +38,7 @@ SpellController::SpellController()
     thumb_grabbed = false;
     unused_reset_flag = true;
     train_confirm_ticks = 0;
-    tooltip = new Tooltip(252, 350);
+    tooltip = new Tooltip(252, 350, 2);
     tooltip->SetFlipEdge(566, 55);
     tooltip->SetBottomLimit(446, 10);
     tooltip->SetRaise(-1);
@@ -732,8 +732,8 @@ void SpellController::UseSlot(int col, int row)
     is_dirty = true;
 }
 
-// Uses a spell when there is mana and stamina for it and the character is free to act. A spell that needs a target
-// waits for one; one without a target is chanted and cast at once; a group spell needs a group of two or more.
+// Starts casting a spell when it has cooled down, the mana covers it and the character is free to act.
+// A bard spell opens the musician window when an instrument is held; the rest show the chant and begin the cast.
 void SpellController::UseSpell(int col, int row, int spell_id)
 {
     int sp_cost;
@@ -779,9 +779,10 @@ void SpellController::UseSpell(int col, int row, int spell_id)
                 !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
                 !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) && !was_casting)
             {
-                target_type = MainForm->skill_values->GetTargetType(spell_id);
-                // This type only opens the musician window, and only with some weapons held
-                if (MainForm->skill_values->GetType(spell_id) == 2)
+                SkillValue spell = MainForm->skill_values->GetSkill(spell_id);
+                target_type = spell.target_type;
+                int held_type = spell.type;
+                if (held_type == 2)
                 {
                     awaiting_target = false;
                     selected_spell_id = -1;
@@ -791,6 +792,9 @@ void SpellController::UseSpell(int col, int row, int spell_id)
                     if (check_result == 49 || check_result == 50)
                         MainForm->animation->musician->Open();
                     return;
+                }
+                if (held_type == 3)
+                {
                 }
                 if (target_type == 0 || target_type == 2)
                 {
@@ -829,11 +833,10 @@ void SpellController::UseSpell(int col, int row, int spell_id)
                     selected_spell_id = -1;
                     selected_spell_icon = -1;
                     use_cooldown = 10;
-                    String shout_text = MainForm->skill_values->GetShout(spell_id);
-                    MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), shout_text, LabelColor_Silver,
-                        true, SHOUT_LABEL_TICKS);
+                    MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), spell.shout,
+                        LabelColor_Silver, true, 4 * spell.cast_time);
                     MainForm->net_client->sender->SendSpellChant(spell_id);
-                    BeginCast(spell_id, CastTarget_None, -1);
+                    BeginCast(spell_id, CastTarget_None, -1, false);
                 }
                 if (target_type == 3)
                 {
@@ -843,11 +846,10 @@ void SpellController::UseSpell(int col, int row, int spell_id)
                         selected_spell_id = -1;
                         selected_spell_icon = -1;
                         use_cooldown = 10;
-                        String group_shout_text = MainForm->skill_values->GetShout(spell_id);
-                        MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), group_shout_text,
-                            LabelColor_Silver, true, SHOUT_LABEL_TICKS);
+                        MainForm->players->ShowTextLabel(MainForm->net_client->GetPlayerId(), spell.shout,
+                            LabelColor_Silver, true, 4 * spell.cast_time);
                         MainForm->net_client->sender->SendSpellChant(spell_id);
-                        BeginCast(spell_id, CastTarget_Group, -1);
+                        BeginCast(spell_id, CastTarget_Group, -1, false);
                     }
                     else
                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
@@ -863,10 +865,13 @@ bool SpellController::IsCasting()
     return is_casting;
 }
 
-// Starts the cast countdown, from the spell's cast time, for the given target kind and target.
-void SpellController::BeginCast(int spell_id, int target_kind, int target_id)
+// Starts casting the spell at the target, for four ticks per unit of its cast time, or at once when instant.
+void SpellController::BeginCast(int spell_id, int target_kind, int target_id, char is_instant)
 {
     cast_ticks_left = 4 * MainForm->skill_values->GetCastTime(spell_id);
+    if (is_instant)
+        cast_ticks_left = -1;
+    cast_is_instant = is_instant;
     cast_spell_id = spell_id;
     cast_target_kind = target_kind;
     cast_target_id = target_id;

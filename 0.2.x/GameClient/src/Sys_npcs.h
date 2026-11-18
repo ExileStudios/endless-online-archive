@@ -43,7 +43,7 @@ struct Npcs
     void SortByPosition();
     bool HasNpc(int index);
     bool HasNpcAt(int x, int y);
-    void KillNpc(int index);
+    void KillNpc(int index, int damage);
     void KillNpcsById(int npc_id);
     Npc GetNpc(int index);
     void StartWalk(int index, int x, int y, int direction);

@@ -125,13 +125,16 @@ void Players::Animate()
         if (i->text_label_shown)
         {
             i->text_label_timer--;
-            if (i->text_label_blinking && i->text_label_timer % 2 == 1)
+            if (i->text_label_blinking && (i->text_label_timer % 4 == 1 || i->text_label_timer % 4 == 3))
             {
                 i->redraw = true;
                 MainForm->redraw_needed = true;
             }
-            if (i->text_label_timer < 1)
+            if (i->text_label_timer < 0)
+            {
                 i->text_label_shown = false;
+                MainForm->redraw_needed = true;
+            }
         }
         if (i->emote_start && i->emote_sheets_loaded)
         {
@@ -464,7 +467,7 @@ void Players::Animate()
                         else
                             label_text = label_text + " " + (&*it)->guild_tag;
                     }
-                    MainForm->gfx->sprites->ShowNameLabel(label_text, label_style);
+                    MainForm->gfx->sprites->ShowNameLabel(label_text, label_style, -1);
                     (*it).hover_label_shown = true;
                     (*it).redraw = true;
                 }

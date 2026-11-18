@@ -53,6 +53,8 @@
 #include "Gfx_maptiles.h"
 #include "Gfx_mapwalls.h"
 #include "Pathfinder.h"
+#include "Ctrl_popupelement.h"
+#include "Ctrl_tooltip.h"
 
 #pragma package(smart_init)
 
@@ -669,15 +671,16 @@ void Mouser::HandleMove()
 void Mouser::HandleMouseDown(int click_x, int click_y, int button)
 {
     char close_input;
+    int npc_height;
     char npc_clicked;
     int near_height;
-    int self_x;
+    int target_x;
     char menu_handled = false;
+    int target_y;
     int player_screen_y;
     int npc_y;
     char handled;
     char box_closed;
-    char unused_value;
     // In the game an open box or window takes the click first; with none open, the panels and the map.
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
@@ -956,7 +959,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     }
                     if (MainForm->animation->game->message_kind == ConfirmAction_JukeboxRequest)
                     {
-                        Windows::TPoint jukebox_pos;
+                        TPoint jukebox_pos;
                         jukebox_pos.x = 0;
                         jukebox_pos.y = 0;
                         MainForm->net_client->sender->SendJukeboxRequest(jukebox_pos,
@@ -1641,7 +1644,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             int chest_amount = StrToInt(MainForm->edits->GetText(EditId_Amount));
                             if (chest_amount > 0)
                             {
-                                Windows::TPoint chest_pos;
+                                TPoint chest_pos;
                                 chest_pos.x = MainForm->animation->chest->chest_x;
                                 chest_pos.y = MainForm->animation->chest->chest_y;
                                 MainForm->net_client->sender->SendChestAddItem(chest_pos,
@@ -1711,7 +1714,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             int locker_amount = StrToInt(MainForm->edits->GetText(EditId_Amount));
                             if (locker_amount > 0)
                             {
-                                Windows::TPoint locker_pos;
+                                TPoint locker_pos;
                                 locker_pos.x = MainForm->animation->locker->locker_x;
                                 locker_pos.y = MainForm->animation->locker->locker_y;
                                 int locker_total =
@@ -2420,7 +2423,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     if (MainForm->animation->interface_controller->inventory->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
                                         2)
                                     {
-                                        Windows::TPoint drop_locker_pos;
+                                        TPoint drop_locker_pos;
                                         drop_locker_pos.x = MainForm->animation->locker->locker_x;
                                         drop_locker_pos.y = MainForm->animation->locker->locker_y;
                                         if (MainForm->animation->locker->GetItemAmount(MainForm->animation->interface_controller->inventory->drag_item_id) <
@@ -2675,7 +2678,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                         {
                                             if (!MainForm->animation->interface_controller->group->HasMember(MainForm->animation->game->player_menu_target_id))
                                             {
-                                                MainForm->animation->interface_controller->group->SetInviteCooldown(200);
+                                                MainForm->animation->interface_controller->group->SetInviteCooldown(300);
                                                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                                     MainForm->net_client->Capitalize(
                                                     MainForm->animation->game->player_menu_name) + " " +
@@ -2713,7 +2716,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                             {
                                                 if (!MainForm->animation->interface_controller->group->IsInviteCoolingDown())
                                                 {
-                                                    MainForm->animation->interface_controller->group->SetInviteCooldown(200);
+                                                    MainForm->animation->interface_controller->group->SetInviteCooldown(300);
                                                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                                         MainForm->strings->GetText(GameText_RequestedToTrade));
                                                     MainForm->net_client->sender->RequestTrade(MainForm->animation->game->player_menu_target_id);
@@ -2839,38 +2842,43 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 int target_player_id = 0;
                                 char npc_targeted = false;
                                 int target_npc_index = 0;
+                                int target_npc_id = 0;
                                 for (int npc_slot = MainForm->npcs->GetCount() - 1; npc_slot >= 0; npc_slot--)
                                 {
                                     Npc target_npc = MainForm->npcs->GetNpc(npc_slot);
                                     TPoint target_type = MainForm->npc_values->GetType(target_npc.npc_id);
-                                    if (target_type.x == NpcType_Passive || target_type.x == NpcType_Aggressive)
+                                    if (target_npc.frame_width > 0 && target_npc.frame_height > 0)
                                     {
-                                        if (target_npc.frame_width > 0 && target_npc.frame_height > 0)
+                                        npc_height = target_npc.frame_height;
+                                        if (npc_height > 70)
+                                            npc_height = 70;
+                                        target_x =
+                                            TILE_HALF_WIDTH * target_npc.x - TILE_HALF_WIDTH * target_npc.y +
+                                                MainForm->map->GetScrollOffsetX() + 319;
+                                        target_y =
+                                            16 * target_npc.x + 16 * target_npc.y + MainForm->map->GetScrollOffsetY() +
+                                                160;
+                                        if (target_x - target_npc.frame_width / 2 <= click_x &&
+                                            target_x + target_npc.frame_width / 2 >= click_x &&
+                                            target_y - npc_height <= click_y && target_y + 5 >= click_y)
                                         {
-                                            int npc_height = target_npc.frame_height;
-                                            if (npc_height > 70)
-                                                npc_height = 70;
-                                            int target_x =
-                                                TILE_HALF_WIDTH * target_npc.x - TILE_HALF_WIDTH * target_npc.y +
-                                                    MainForm->map->GetScrollOffsetX() + 319;
-                                            int target_y =
-                                                16 * target_npc.x + 16 * target_npc.y +
-                                                    MainForm->map->GetScrollOffsetY() + 160;
-                                            if (target_x - target_npc.frame_width / 2 <= click_x &&
-                                                target_x + target_npc.frame_width / 2 >= click_x &&
-                                                target_y - npc_height <= click_y && target_y + 5 >= click_y)
+                                            if (target_type.x == NpcType_Passive || target_type.x == 2)
                                             {
                                                 npc_targeted = true;
                                                 target_npc_index = target_npc.index;
-                                                break;
+                                                target_npc_id = target_npc.npc_id;
                                             }
+                                            else
+                                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                                                    MainForm->strings->GetText(GameText_YouCannotAttackThis));
+                                            break;
                                         }
                                     }
-                                    else
-                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                            MainForm->strings->GetText(GameText_YouCannotAttackThis));
                                 }
                                 char spell_cast;
+                                char popup_shown;
+                                int caster_id;
+                                int self_id;
                                 for (int player_slot = MainForm->players->GetCount() - 1; player_slot >= 0;
                                     player_slot--)
                                 {
@@ -2900,14 +2908,23 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     (!MainForm->animation->interface_controller->spells->selected_target_kind ||
                                         MainForm->animation->interface_controller->spells->selected_target_kind == 2))
                                 {
-                                    int caster_id = MainForm->net_client->GetPlayerId();
-                                    String npc_spell_shout =
-                                        MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
-                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout, LabelColor_Silver,
-                                        true, SHOUT_LABEL_TICKS);
+                                    popup_shown = false;
+                                    if (MainForm->animation->interface_controller->spells->selected_spell_type == 3)
+                                    {
+                                        NpcValue spell_npc_value =
+                                            MainForm->npc_values->GetNpcByIndex(target_npc_id - 1);
+                                        MainForm->animation->popup->Show(230, 244, spell_npc_value.element_weakness,
+                                            spell_npc_value.name);
+                                        popup_shown = true;
+                                    }
+                                    caster_id = MainForm->net_client->GetPlayerId();
+                                    SkillValue npc_spell_shout =
+                                        MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id);
+                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout.shout,
+                                        LabelColor_Silver, true, 4 * npc_spell_shout.cast_time);
                                     MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
                                     MainForm->animation->interface_controller->spells->BeginCast(MainForm->animation->interface_controller->spells->selected_spell_id,
-                                        CastTarget_Npc, target_npc_index);
+                                        CastTarget_Npc, target_npc_index, popup_shown);
                                     spell_cast = true;
                                 }
                                 if (!spell_cast && player_targeted &&
@@ -2923,14 +2940,14 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     }
                                     else
                                     {
-                                        int self_id = MainForm->net_client->GetPlayerId();
-                                        String player_spell_shout =
-                                            MainForm->skill_values->GetShout(MainForm->animation->interface_controller->spells->selected_spell_id);
-                                        MainForm->players->ShowTextLabel(self_id, player_spell_shout, LabelColor_Silver,
-                                            true, SHOUT_LABEL_TICKS);
+                                        self_id = MainForm->net_client->GetPlayerId();
+                                        SkillValue player_spell =
+                                            MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id);
+                                        MainForm->players->ShowTextLabel(self_id, player_spell.shout, LabelColor_Silver,
+                                            true, 4 * player_spell.cast_time);
                                         MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
                                         MainForm->animation->interface_controller->spells->BeginCast(MainForm->animation->interface_controller->spells->selected_spell_id,
-                                            CastTarget_Player, target_player_id);
+                                            CastTarget_Player, target_player_id, false);
                                         spell_cast = true;
                                     }
                                 }
@@ -3044,24 +3061,28 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                                         MainForm->net_client->sender->RequestQuestDialog(clicked_npc.index,
                                                             QUEST_DEFAULT_DIALOG);
                                                     }
-                                                    self_x =
-                                                        MainForm->players->GetX(MainForm->net_client->GetPlayerId());
-                                                    unsigned char attack_direction =
-                                                        MainForm->net_client->GetAdjacentDirection(clicked_npc.x,
-                                                            clicked_npc.y, self_x,
-                                                            MainForm->players->GetY(MainForm->net_client->GetPlayerId()));
-                                                    if (attack_direction)
+                                                    if (npc_type.x == 1 || npc_type.x == 2 || npc_type.x ==
+                                                        NpcType_Monster4 || npc_type.x == NpcType_Monster5)
                                                     {
-                                                        if (MainForm->net_client->CanAct())
+                                                        int self_x =
+                                                            MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+                                                        unsigned char attack_direction =
+                                                            MainForm->net_client->GetAdjacentDirection(clicked_npc.x,
+                                                                clicked_npc.y, self_x,
+                                                                MainForm->players->GetY(MainForm->net_client->GetPlayerId()));
+                                                        if (attack_direction)
                                                         {
-                                                            MainForm->map->path_finder->CancelPath();
-                                                            MainForm->animation->game->Attack(false,
-                                                                attack_direction - 1);
+                                                            if (MainForm->net_client->CanAct())
+                                                            {
+                                                                MainForm->map->path_finder->CancelPath();
+                                                                MainForm->animation->game->Attack(false,
+                                                                    attack_direction - 1);
+                                                            }
                                                         }
+                                                        else
+                                                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Npc,
+                                                                MainForm->npc_values->GetName(clicked_npc.npc_id));
                                                     }
-                                                    else
-                                                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Npc,
-                                                            MainForm->npc_values->GetName(clicked_npc.npc_id));
                                                 }
                                             }
                                         }
@@ -3231,6 +3252,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 }
                             }
                         }
+                        menu_handled = false;
                     }
                 }
             }
@@ -4075,10 +4097,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
     }
 }
 
-// Scrolls the open window on top, or with none open, the open interface panel.
+// Scrolls with the wheel whatever takes it first: the input form, an open window's list or text, or the item tip
+// shown over the inventory, paperdoll, shop, trade or locker.
 void Mouser::HandleWheel(int direction)
 {
     char handled = false;
+    // The wheel scrolls the first open form, window or tip, in this order; the panels come last.
     if (!handled && direction == WheelDirection_Up && MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
         if (!handled && MainForm->animation->game->form_visible)
@@ -4106,6 +4130,20 @@ void Mouser::HandleWheel(int direction)
             MainForm->animation->report->ScrollUp();
             handled = true;
         }
+        if (!handled && MainForm->animation->interface_controller->inventory->tooltip->IsVisible())
+        {
+            handled = MainForm->animation->interface_controller->inventory->tooltip->ScrollUp();
+            if (handled)
+                MainForm->animation->interface_controller->inventory->MarkItemsDirty();
+        }
+        if (!handled && MainForm->animation->paperdoll->tooltip->IsVisible())
+            handled = MainForm->animation->paperdoll->tooltip->ScrollUp();
+        if (!handled && MainForm->animation->shop->tooltip->IsVisible())
+            handled = MainForm->animation->shop->tooltip->ScrollUp();
+        if (!handled && MainForm->animation->trade->tooltip->IsVisible())
+            handled = MainForm->animation->trade->tooltip->ScrollUp();
+        if (!handled && MainForm->animation->locker->tooltip->IsVisible())
+            handled = MainForm->animation->locker->tooltip->ScrollUp();
         if (!handled && MainForm->animation->learn->is_visible)
         {
             MainForm->animation->learn->ScrollUp();
@@ -4164,6 +4202,20 @@ void Mouser::HandleWheel(int direction)
             MainForm->animation->report->ScrollDown();
             handled = true;
         }
+        if (!handled && MainForm->animation->interface_controller->inventory->tooltip->IsVisible())
+        {
+            handled = MainForm->animation->interface_controller->inventory->tooltip->ScrollDown();
+            if (handled)
+                MainForm->animation->interface_controller->inventory->MarkItemsDirty();
+        }
+        if (!handled && MainForm->animation->paperdoll->tooltip->IsVisible())
+            handled = MainForm->animation->paperdoll->tooltip->ScrollDown();
+        if (!handled && MainForm->animation->shop->tooltip->IsVisible())
+            handled = MainForm->animation->shop->tooltip->ScrollDown();
+        if (!handled && MainForm->animation->trade->tooltip->IsVisible())
+            handled = MainForm->animation->trade->tooltip->ScrollDown();
+        if (!handled && MainForm->animation->locker->tooltip->IsVisible())
+            handled = MainForm->animation->locker->tooltip->ScrollDown();
         if (!handled && MainForm->animation->learn->is_visible)
         {
             MainForm->animation->learn->ScrollDown();
@@ -4601,23 +4653,25 @@ void Mouser::ToggleMinimap(bool play_sound)
         MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
     if (!MainForm->map->IsMinimapDisabled())
     {
-        if (MainForm->gfx->interface_graphics->minimap_visible)
+        if (!MainForm->gfx->interface_graphics->minimap_visible)
         {
-            MainForm->gfx->interface_graphics->minimap_visible = false;
-            MainForm->redraw_needed = true;
+            if (MainForm->config->GetMinimapMode() < 2)
+                MainForm->gfx->interface_graphics->minimap_visible = 1;
+            else
+                MainForm->gfx->interface_graphics->minimap_visible = 2;
         }
+        else if (!MainForm->config->GetMinimapMode() && MainForm->gfx->interface_graphics->minimap_visible == 1)
+            MainForm->gfx->interface_graphics->minimap_visible = 2;
         else
-        {
-            MainForm->gfx->interface_graphics->minimap_visible = true;
-            MainForm->redraw_needed = true;
-        }
+            MainForm->gfx->interface_graphics->minimap_visible = 0;
     }
     else
     {
-        MainForm->gfx->interface_graphics->minimap_visible = false;
+        MainForm->gfx->interface_graphics->minimap_visible = 0;
         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
             MainForm->strings->GetText(GameText_ThereIsNoMap));
     }
+    MainForm->redraw_needed = true;
 }
 
 // Shows the group panel, leaving global chat, and asks the server for the member list at most every 50 ticks.

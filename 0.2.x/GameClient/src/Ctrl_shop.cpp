@@ -36,7 +36,7 @@ ShopController::ShopController()
     scroll_up_held = false;
     scroll_down_held = false;
     is_dragging = false;
-    tooltip = new Tooltip(76, 50);
+    tooltip = new Tooltip(76, 50, 2);
     tooltip->SetFlipEdge(630, 63);
 }
 

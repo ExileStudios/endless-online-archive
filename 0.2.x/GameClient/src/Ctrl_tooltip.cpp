@@ -9,10 +9,12 @@
 #pragma package(smart_init)
 
 // An empty tip at left, top; fixed is the number of its fixed lines.
-Tooltip::Tooltip(int left, int fixed)
+Tooltip::Tooltip(int left, int top, int fixed)
 {
     x = left;
-    y = fixed;
+    y = top;
+    shown_id = -1;
+    fixed_lines = fixed;
     anchor_x = 0;
     anchor_y = 0;
     flip_edge_x = 0;
@@ -56,11 +58,12 @@ bool Tooltip::Hide()
 
 void Tooltip::ClearLines()
 {
-    for (int i = 0; i < 6; i++)
+    for (int i = 0; i < 9; i++)
     {
         lines[i] = "";
         line_colors[i] = 6;
     }
+    scroll_offset = 0;
     line_count = 0;
 }
 
@@ -73,32 +76,45 @@ void Tooltip::ShowItem(int item_id)
 // its stats, the class it asks for, its elements and whether it is cursed.
 void Tooltip::ShowItemCount(int item_id, int count)
 {
-    ClearLines();
     if (item_id <= 0)
+    {
+        ClearLines();
         return;
+    }
     if (MainForm->item_values->Count() < item_id)
         return;
+    if (line_count > 0 && item_id == shown_id)
+        return;
+    shown_id = item_id;
+    ClearLines();
     ItemValue item = MainForm->item_values->GetItem(item_id);
     int type = item.type;
+    String item_name = item.name;
+    if (item_name.Length() < 1)
+        item_name = "NoName-" + IntToStr(item.item_id);
     if (count > 1)
     {
         if (type == EifItemType_General)
-            lines[line_count] = IntToStr(count) + " " + item.name;
+            lines[line_count] = IntToStr(count) + " " + item_name;
         if (type == EifItemType_Currency)
-            lines[line_count] = IntToStr(count) + " " + item.name;
+            lines[line_count] = IntToStr(count) + " " + item_name;
         else
-            lines[line_count] = item.name + " x" + IntToStr(count);
+            lines[line_count] = item_name + " x" + IntToStr(count);
     }
     else
     {
         if (type == EifItemType_General)
-            lines[line_count] = IntToStr(count) + " " + item.name;
+            lines[line_count] = IntToStr(count) + " " + item_name;
         if (type == EifItemType_Currency)
-            lines[line_count] = IntToStr(count) + " " + item.name;
+            lines[line_count] = IntToStr(count) + " " + item_name;
         else
-            lines[line_count] = item.name;
+            lines[line_count] = item_name;
     }
-    line_colors[line_count] = (char)item.special;
+    if (MainForm->config->GetElementalIcons())
+        element = item.element;
+    else
+        element = 0;
+    line_colors[line_count] = item.special;
     if (line_colors[line_count] > 5)
         line_colors[line_count] = 0;
     if (show_cursed && item.special == 5)
@@ -174,7 +190,7 @@ void Tooltip::ShowItemCount(int item_id, int count)
     else if (type == EifItemType_Gloves)
         lines[line_count] += " gloves";
     else if (type == EifItemType_Accessory)
-        lines[line_count] += " misc.";
+        lines[line_count] += " pants";
     else if (type == EifItemType_Belt)
         lines[line_count] += " belt";
     else if (type == EifItemType_Necklace)
@@ -182,7 +198,7 @@ void Tooltip::ShowItemCount(int item_id, int count)
     else if (type == EifItemType_Ring)
         lines[line_count] += " ring";
     else if (type == EifItemType_Armlet)
-        lines[line_count] += " barclet";
+        lines[line_count] += " bracelet";
     else if (type == EifItemType_Bracer)
         lines[line_count] += " bracer";
     line_colors[line_count] = 5;
@@ -191,29 +207,51 @@ void Tooltip::ShowItemCount(int item_id, int count)
     {
         if (item.min_damage > 0 || item.max_damage > 0)
         {
-            if (item.gender >= 10 && item.gender <= 16)
+            if (item.spare_byte >= 1 && item.spare_byte <= 5)
                 lines[line_count] += "aoe: ";
             else
                 lines[line_count] += "damage: ";
             lines[line_count] += IntToStr(item.min_damage) + "-" + IntToStr(item.max_damage);
-            if (item.gender == 11)
-                lines[line_count] += " (1x1)";
-            if (item.gender == 12)
-                lines[line_count] += " (2x2)";
-            if (item.gender == 13)
+            if (item.spare_byte == 2)
                 lines[line_count] += " (3x3)";
-            if (item.gender == 14)
-                lines[line_count] += " (4x4)";
-            if (item.gender == 15)
+            if (item.spare_byte == 3)
                 lines[line_count] += " (5x5)";
-            if (item.gender == 16)
-                lines[line_count] += " (6x6)";
+            if (item.spare_byte == 4)
+                lines[line_count] += " (7x7)";
+            if (item.spare_byte == 5)
+                lines[line_count] += " (9x9)";
+            line_count++;
+        }
+        if (item.element > 0)
+        {
+            lines[line_count] += "damage: " + IntToStr(item.element_power);
+            if (item.element == 1)
+                lines[line_count] += " light";
+            if (item.element == 2)
+                lines[line_count] += " dark";
+            if (item.element == 3)
+                lines[line_count] += " earth";
+            if (item.element == 4)
+                lines[line_count] += " air";
+            if (item.element == 5)
+                lines[line_count] += " water";
+            if (item.element == 6)
+                lines[line_count] += " fire";
+            line_count++;
+        }
+        if (item.hp > 0 || item.tp > 0)
+        {
+            lines[line_count] = "add+";
+            if (item.hp > 0)
+                lines[line_count] += " " + IntToStr(item.hp) + "hp";
+            if (item.tp > 0)
+                lines[line_count] += " " + IntToStr(item.tp) + "tp";
             line_count++;
         }
         if (item.accuracy > 0)
             lines[line_count] += " " + IntToStr(item.accuracy) + "hit";
         if (item.evade > 0)
-            lines[line_count] += " " + IntToStr(item.evade) + "dg";
+            lines[line_count] += " " + IntToStr(item.evade) + "eva";
         if (item.armor > 0)
             lines[line_count] += " " + IntToStr(item.armor) + "ar";
         if (item.return_damage > 0)
@@ -264,6 +302,42 @@ void Tooltip::ShowItemCount(int item_id, int count)
         if (lines[line_count].Length() > 0)
         {
             lines[line_count] = "stat+" + lines[line_count];
+            line_count++;
+        }
+        int resist_count = 0;
+        if (item.light_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.light_resist) + "l";
+            resist_count++;
+        }
+        if (item.dark_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.dark_resist) + "d";
+            resist_count++;
+        }
+        if (item.earth_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.earth_resist) + "e";
+            resist_count++;
+        }
+        if (item.air_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.air_resist) + "a";
+            resist_count++;
+        }
+        if (item.water_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.water_resist) + "w";
+            resist_count++;
+        }
+        if (item.fire_resist > 0 && resist_count < 4)
+        {
+            lines[line_count] += " " + IntToStr(item.fire_resist) + "f";
+            resist_count++;
+        }
+        if (lines[line_count].Length() > 0)
+        {
+            lines[line_count] = "res+" + lines[line_count];
             line_count++;
         }
         if (item.required_class > 0)
@@ -325,10 +399,16 @@ void Tooltip::ShowItemCount(int item_id, int count)
 // stats it changes and its costs.
 void Tooltip::ShowSpell(int spell_id)
 {
-    int current_line;
-    ClearLines();
     if (spell_id < 0)
+    {
+        ClearLines();
         return;
+    }
+    // The tip of the spell already shown is kept as it is.
+    if (line_count > 0 && spell_id == shown_id)
+        return;
+    shown_id = spell_id;
+    ClearLines();
     SkillValue spell = MainForm->skill_values->GetSkill(spell_id);
     lines[line_count] = spell.name;
     line_colors[line_count] = 0;
@@ -338,11 +418,15 @@ void Tooltip::ShowSpell(int spell_id)
         Measure();
         return;
     }
-    int spell_kind = spell.type;
-    int spell_type = spell.spare_byte;
+    if (MainForm->config->GetElementalIcons())
+        element = spell.element;
+    else
+        element = 0;
+    int spell_type = spell.type;
+    int area = spell.area;
     int target_type = spell.target_type;
     int heal_amount = spell.hp_heal;
-    if (!spell_kind)
+    if (!spell_type)
     {
         if (target_type == 1)
             lines[line_count] += "self heal +" + String(heal_amount);
@@ -352,48 +436,65 @@ void Tooltip::ShowSpell(int spell_id)
             lines[line_count] += "group heal +" + String(heal_amount);
         line_colors[line_count] = 7;
     }
-    else if (spell_kind == 1)
+    else if (spell_type == 1)
     {
         lines[line_count] += "attack";
         line_colors[line_count] = 6;
     }
-    else if (spell_kind == 2)
+    else if (spell_type == 2)
     {
         lines[line_count] += "bard";
         line_colors[line_count] = 9;
     }
-    if (spell_type >= 10 && spell_type <= 16)
+    else if (spell_type == 3)
+    {
+        lines[line_count] += "discover";
+        line_colors[line_count] = 9;
+    }
+    if (area >= 1 && area <= 5)
     {
         lines[line_count] = "aoe " + lines[line_count];
-        if (spell_type == 11)
-            lines[line_count] += " (1x1)";
-        if (spell_type == 12)
-            lines[line_count] += " (2x2)";
-        if (spell_type == 13)
+        if (area == 2)
             lines[line_count] += " (3x3)";
-        if (spell_type == 14)
-            lines[line_count] += " (4x4)";
-        if (spell_type == 15)
+        if (area == 3)
             lines[line_count] += " (5x5)";
-        if (spell_type == 16)
-            lines[line_count] += " (6x6)";
+        if (area == 4)
+            lines[line_count] += " (7x7)";
+        if (area == 5)
+            lines[line_count] += " (9x9)";
     }
     lines[line_count] = "type : " + lines[line_count];
     line_count++;
-    if (spell_kind == 1 || (spell_kind >= 10 && spell_kind <= 16))
+    if (spell_type == 1)
     {
         lines[line_count] += "damage: " + IntToStr(spell.min_damage) + "-" + IntToStr(spell.max_damage);
+        line_count++;
+    }
+    if (spell_type == 1 && spell.element > 0)
+    {
+        lines[line_count] += "damage: " + IntToStr(spell.element_power);
+        if (spell.element == 1)
+            lines[line_count] += " light";
+        if (spell.element == 2)
+            lines[line_count] += " dark";
+        if (spell.element == 3)
+            lines[line_count] += " earth";
+        if (spell.element == 4)
+            lines[line_count] += " air";
+        if (spell.element == 5)
+            lines[line_count] += " water";
+        if (spell.element == 6)
+            lines[line_count] += " fire";
         line_count++;
     }
     if (spell.accuracy > 0)
         lines[line_count] += " " + IntToStr(spell.accuracy) + "hit";
     if (spell.evade > 0)
-        lines[line_count] += " " + IntToStr(spell.evade) + "dg";
+        lines[line_count] += " " + IntToStr(spell.evade) + "eva";
     if (spell.armor > 0)
         lines[line_count] += " " + IntToStr(spell.armor) + "ar";
-    current_line = spell.return_damage;
-    if (current_line > 0)
-        lines[line_count] += " " + IntToStr(current_line) + "ar";
+    if (spell.return_damage > 0)
+        lines[line_count] += " " + IntToStr(spell.return_damage) + "rd";
     if (spell.accuracy > 0)
     {
         lines[line_count] = "amp+" + lines[line_count];
@@ -468,12 +569,15 @@ void Tooltip::SetShowCursed(char show)
 void Tooltip::DrawFrame()
 {
     int bottom;
+    int right_limit;
+    int text_width;
+    int flip_shift;
     if (line_count > 0)
     {
-        int height = 2 * pad_y;
+        int height = pad_y;
         int left = x;
+        height = 2 * height + 15;
         int top = y;
-        height += 15;
         if (MainForm->config->GetExtendedTooltip())
         {
             if (line_count >= 2)
@@ -489,7 +593,7 @@ void Tooltip::DrawFrame()
             top -= raise;
             if (bottom_limit > 0)
             {
-                bottom = anchor_y + top + height;
+                bottom = top + anchor_y + height;
                 if (bottom > bottom_limit)
                     top -= bottom - bottom_limit + bottom_margin + bottom_extra;
             }
@@ -502,11 +606,39 @@ void Tooltip::DrawFrame()
             }
         }
         // Near the flip edge the tip is drawn on the other side of the mouse.
-        if (flip_edge_x > 0 && flip_edge_x < x + anchor_x + width + 2 * pad_x)
-            left -= 2 * pad_x + width + flip_gap + flip_extra;
+        right_limit = flip_edge_x;
+        if (right_limit > 0)
+        {
+            text_width = width;
+            if (right_limit < x + anchor_x + text_width + 2 * pad_x)
+            {
+                flip_shift = 2 * pad_x + text_width + flip_gap + flip_extra;
+                left -= flip_shift;
+            }
+        }
         MainForm->blitter->HalfBlendBlt(left + anchor_x, top + anchor_y, MainForm->OffscreenSurface,
             MainForm->gfx->interface_graphics->chat_panel_surface,
             &MainForm->gfx->interface_graphics->GetBackRect(2 * pad_x + width, height));
+        if (element > 0)
+        {
+            if (element > 6)
+                element = 6;
+            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + title_width, top + anchor_y + pad_y + 2,
+                MainForm->gfx->interface_graphics->element_icons,
+                &MainForm->gfx->interface_graphics->GetElementIconRect(element),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        }
+        if (line_count > 6)
+        {
+            if (line_count - 6 > scroll_offset)
+                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width - 2, top + anchor_y + pad_y + 81,
+                    MainForm->gfx->interface_graphics->element_icons,
+                    &MainForm->gfx->interface_graphics->scroll_down_arrow_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            if (scroll_offset)
+                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width - 2, top + anchor_y + pad_y + 21,
+                    MainForm->gfx->interface_graphics->element_icons,
+                    &MainForm->gfx->interface_graphics->scroll_up_arrow_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        }
     }
 }
 
@@ -516,6 +648,8 @@ void Tooltip::DrawString()
     int flip_edge;
     int text_width;
     int flip_shift;
+    int line;
+    int index;
     int bottom;
     if (line_count > 0)
     {
@@ -560,11 +694,18 @@ void Tooltip::DrawString()
                 left -= flip_shift;
             }
         }
-        for (height = 0; height < line_count; height++)
+        for (line = 0; line < fixed_lines; line++)
         {
-            MainForm->text_canvas->Font->Color = (TColor)colors[line_colors[height]];
-            MainForm->text_canvas->TextOut(left + anchor_x + pad_x, top + anchor_y + pad_y + 15 * height,
-                lines[height]);
+            index = line;
+            MainForm->text_canvas->Font->Color = (TColor)colors[line_colors[index]];
+            MainForm->text_canvas->TextOut(left + anchor_x + pad_x, top + anchor_y + pad_y + 15 * line, lines[index]);
+        }
+        for (; line < 6; line++)
+        {
+            int scrolled_index = scroll_offset + line;
+            MainForm->text_canvas->Font->Color = (TColor)colors[line_colors[scrolled_index]];
+            MainForm->text_canvas->TextOut(left + anchor_x + pad_x, top + anchor_y + pad_y + 15 * line,
+                lines[scrolled_index]);
         }
         MainForm->text_canvas->Font->Color = (TColor)colors[default_color];
     }
@@ -573,21 +714,26 @@ void Tooltip::DrawString()
 // Sets the tip's width from its widest line, only the title unless the extended tips setting is on.
 void Tooltip::Measure()
 {
+    short grow;
     HDC dc;
     width = 0;
+    title_width = 0;
     if (MainForm->OffscreenSurface->GetDC(&dc))
     {
         try
         {
             MainForm->text_canvas->Handle = dc;
-            int measured_lines = 1;
+            MainForm->text_canvas->Font->Size = 8;
+            int line_total = 1;
             if (MainForm->config->GetExtendedTooltip())
-                measured_lines = line_count;
-            for (int i = 0; i < measured_lines; i++)
+                line_total = line_count;
+            for (int i = 0; i < line_total; i++)
             {
                 int line_width = MainForm->text_canvas->TextWidth(lines[i]);
                 if (line_width > width)
                     width = line_width;
+                if (!i)
+                    title_width = line_width + 4;
             }
         }
         catch (Exception &)
@@ -595,6 +741,42 @@ void Tooltip::Measure()
         }
         MainForm->OffscreenSurface->ReleaseDC(dc);
     }
+    if (element > 0 && title_width + 6 > width)
+    {
+        grow = (short)title_width + 6 - (short)width;
+        width += grow;
+    }
+    if (line_count > 6)
+        width += 8;
+}
+
+// Scrolls the lines down one; false when all of them fit in the six shown.
+bool Tooltip::ScrollDown()
+{
+    if (line_count <= 6)
+        return false;
+    if (line_count - 6 > scroll_offset)
+    {
+        scroll_offset++;
+        MainForm->redraw_needed = true;
+        return true;
+    }
+    return true;
+}
+
+// Scrolls the lines up one; false when all of them fit in the six shown.
+bool Tooltip::ScrollUp()
+{
+    int count = line_count;
+    if (count <= 6)
+        return false;
+    if (scroll_offset > 0)
+    {
+        scroll_offset--;
+        MainForm->redraw_needed = true;
+        return true;
+    }
+    return true;
 }
 
 bool Tooltip::IsVisible()

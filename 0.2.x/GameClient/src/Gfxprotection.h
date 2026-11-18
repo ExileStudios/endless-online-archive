@@ -237,7 +237,7 @@ struct GfxController
     void FreeBarberGraphics();
     void CreateChestGraphics();
     void FreeChestGraphics();
-    void CreateHoverLabel(int text_width, int height, int label_style, String text);
+    void CreateHoverLabel(int text_width, int height, int label_style, int element, String text);
     void FreeHoverLabel();
     void CreateGameGraphics();
     void FreeGameGraphics();

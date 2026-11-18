@@ -7,15 +7,18 @@
 #include "Packetproces.h"
 #include <io.h>
 #include <stdio.h>
+#include "Pubfileheader.h"
 
 #pragma package(smart_init)
 
-ItemValues::ItemValues()
+ItemValues::ItemValues(String prefix)
 {
-    file_prefix = "./pub/dat";
+    file_prefix = prefix + "dat";
     unused_value = -1;
     is_downloading = false;
     is_loaded = false;
+    has_bad_record = false;
+    header_read = false;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
@@ -25,94 +28,43 @@ ItemValues::~ItemValues()
 {
 }
 
-// Reads the checksum and item count from the header of the first item file.
-// With more than 900 items the last part file is read too; the values are kept only when its header matches.
+// Reads the checksum and record count from the head of the first item file; a missing file is marked.
 void ItemValues::ReadHeader()
 {
     int file_handle;
-    int file_size;
-    char *buffer;
-    int first_checksum_high;
-    int first_checksum_low;
-    int total_records;
-    String file_text;
-    String file_name = file_prefix + "001.eif";
+    char *header_bytes;
+    int file_length;
+    String header_path = file_prefix + "001.eif";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
-        file_size = FileSeek(file_handle, 0, 2);
-        FileSeek(file_handle, 0, 0);
-        buffer = new char[file_size + 1];
-        FileRead(file_handle, buffer, file_size);
-        FileClose(file_handle);
-        file_text = buffer;
-        file_text.SetLength(file_size);
-        delete[] buffer;
-        // "EIF".
-        if (file_text[1] != 'E' || file_text[2] != 'I' || file_text[3] != 'F')
+        file_handle = FileOpen(header_path.c_str(), fmOpenRead);
+        file_length = FileSeek(file_handle, 0, 2);
+        if (file_length < 0)
+        {
+            header_read = true;
             return;
-        first_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-        first_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-        total_records = DecodeNumber(file_text.SubString(8, 2));
+        }
+        FileSeek(file_handle, 0, 0);
+        header_bytes = new char[11];
+        FileRead(file_handle, header_bytes, 10);
+        FileClose(file_handle);
+        data = header_bytes;
+        data.SetLength(file_length);
+        delete[] header_bytes;
+        if (data.Length() < 10)
+            return;
+        if (data[1] != 'E' || data[2] != 'I' || data[3] != 'F')
+            return;
+        read_position = 4;
+        checksum_high = DecodeNumber(2);
+        checksum_low = DecodeNumber(2);
+        record_count = DecodeNumber(2);
     }
     catch (...)
     {
-        first_checksum_high = 0;
-        first_checksum_low = 0;
-        total_records = 0;
-    }
-    if (total_records > 900)
-    {
-        file_text = "";
-        file_name = file_prefix;
-        int last_file_number = total_records / PUB_RECORDS_PER_FILE + 1;
-        if (last_file_number < 10)
-            file_name = file_name + "00" + IntToStr(last_file_number) + ".eif";
-        else
-            file_name = file_name + "0" + IntToStr(last_file_number) + ".eif";
-        try
-        {
-            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
-            file_size = FileSeek(file_handle, 0, 2);
-            FileSeek(file_handle, 0, 0);
-            buffer = new char[file_size + 1];
-            FileRead(file_handle, buffer, file_size);
-            FileClose(file_handle);
-            file_text = buffer;
-            file_text.SetLength(file_size);
-            delete[] buffer;
-            if (file_text[1] != 'E' || file_text[2] != 'I' || file_text[3] != 'F')
-            {
-                checksum_high = 0;
-                checksum_low = 0;
-                record_count = 0;
-            }
-            else
-            {
-                int last_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-                int last_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-                int last_total_records = DecodeNumber(file_text.SubString(8, 2));
-                if (last_checksum_high == first_checksum_high && last_checksum_low == first_checksum_low &&
-                    last_total_records == total_records)
-                {
-                    checksum_high = first_checksum_high;
-                    checksum_low = first_checksum_low;
-                    record_count = total_records;
-                }
-            }
-        }
-        catch (...)
-        {
-            checksum_high = 0;
-            checksum_low = 0;
-            record_count = 0;
-        }
-    }
-    else
-    {
-        checksum_high = first_checksum_high;
-        checksum_low = first_checksum_low;
-        record_count = total_records;
+        checksum_high = 0;
+        checksum_low = 0;
+        record_count = 0;
     }
 }
 
@@ -130,105 +82,132 @@ void ItemValues::SaveFilePart(int part_number, String data)
     handle.close();
 }
 
-// Reads every item part file into the list, once until the files change.
+// Loads the item records from the numbered .eif files, checking each file's mark and reading up to 900 records from
+// each, until the count the headers give is read.
 void ItemValues::Load()
 {
-    int file_size;
+    int file_handle;
+    int part_length;
+    short file_number;
     char *buffer;
     if (!is_loaded)
     {
         Clear();
-        int file_number = 1;
-        int loaded_count = 0;
-        int record_total = 1;
+        ClearHeaders();
+        file_number = 0;
+        records_read = 0;
+        records_expected = 0;
+        // The file comes in parts numbered from 001, read until the record count of the header.
         do
         {
-            String file_name;
-            String file_text;
-            file_name.Insert(file_prefix, 0);
+            file_number++;
             if (file_number < 10)
-                file_name = file_name + "00" + IntToStr(file_number) + ".eif";
+                file_name = "00" + IntToStr(file_number) + ".eif";
             else
-                file_name = file_name + "0" + IntToStr(file_number) + ".eif";
-            int h_file;
+                file_name = "0" + IntToStr(file_number) + ".eif";
+            file_path = file_prefix + file_name;
             try
             {
-                h_file = FileOpen(file_name.c_str(), fmOpenRead);
-                file_size = FileSeek(h_file, 0, 2);
-                FileSeek(h_file, 0, 0);
-                buffer = new char[file_size + 1];
-                FileRead(h_file, buffer, file_size);
-                FileClose(h_file);
-                file_text = buffer;
-                file_text.SetLength(file_size);
-                delete[] buffer;
-                if (file_text[1] != 'E' || file_text[2] != 'I' || file_text[3] != 'F')
+                file_handle = FileOpen(file_path.c_str(), fmOpenRead);
+                part_length = FileSeek(file_handle, 0, 2);
+                if (part_length < 0)
+                {
+                    header_read = true;
                     return;
-                if (file_number == 1)
-                {
-                    int header_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-                    int header_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-                    int header_count = DecodeNumber(file_text.SubString(8, 2));
-                    int header_byte_at = DecodeNumber(file_text.SubString(10, 1));
-                    record_total = header_count;
                 }
-                file_text.Delete(1, 10);
-                for (int i = 0; loaded_count < record_total && i < 900; i++)
+                FileSeek(file_handle, 0, 0);
+                buffer = new char[part_length + 1];
+                FileRead(file_handle, buffer, part_length);
+                FileClose(file_handle);
+                data = buffer;
+                data.SetLength(part_length);
+                delete[] buffer;
+                if (data.Length() < 14)
+                    return;
+                if (data[1] != 'E' || data[2] != 'I' || data[3] != 'F')
+                    return;
+                read_position = 4;
+                PubfileHeader *header = new PubfileHeader(file_name);
+                header->file_length = data.Length();
+                header->checksum_high = DecodeNumber(2);
+                header->checksum_low = DecodeNumber(2);
+                header->record_count = DecodeNumber(2);
+                header->version = ReadByte();
+                headers.insert(headers.end(), header);
+                if (!records_read)
+                    records_expected = header->record_count;
+                int i;
+                for (i = 0; records_read < records_expected && i < 900; i++)
                 {
-                    // Each item: a length byte, the name, then 58 bytes of numbers.
-                    int name_end = DecodeNumber(file_text.SubString(1, 1)) + 1;
-                    AddItem(Count() + 1, file_text.SubString(2, name_end - 1),
-                        DecodeNumber(file_text.SubString(name_end + 1, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 3, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 4, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 5, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 6, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 8, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 10, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 12, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 14, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 16, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 18, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 20, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 21, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 22, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 23, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 24, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 25, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 26, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 27, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 28, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 29, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 30, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 31, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 32, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 33, 3)),
-                        DecodeNumber(file_text.SubString(name_end + 36, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 37, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 38, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 40, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 41, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 44, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 46, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 48, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 50, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 52, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 54, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 55, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 56, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 57, 1)),
-                        DecodeNumber(file_text.SubString(name_end + 58, 1)));
-                    loaded_count++;
-                    file_text.Delete(1, name_end + 58);
+                    unsigned char name_length = ReadByte();
+                    int name_size = name_length;
+                    if (name_length > 50)
+                    {
+                        has_bad_record = true;
+                        header->load_state = 3;
+                    }
+                    String item_name = data.SubString(read_position, name_length);
+                    ItemValue item(Count() + 1);
+                    item.name = item_name;
+                    read_position += name_length;
+                    item.graphic = DecodeNumber(2);
+                    item.type = ReadByte();
+                    item.subtype = ReadByte();
+                    item.special = ReadByte();
+                    item.hp = DecodeNumber(2);
+                    item.tp = DecodeNumber(2);
+                    item.min_damage = DecodeNumber(2);
+                    item.max_damage = DecodeNumber(2);
+                    item.accuracy = DecodeNumber(2);
+                    item.evade = DecodeNumber(2);
+                    item.armor = DecodeNumber(2);
+                    item.return_damage = ReadByte();
+                    item.bonus_str = ReadByte();
+                    item.bonus_int = ReadByte();
+                    item.bonus_wis = ReadByte();
+                    item.bonus_agi = ReadByte();
+                    item.bonus_con = ReadByte();
+                    item.bonus_cha = ReadByte();
+                    item.light_resist = ReadByte();
+                    item.dark_resist = ReadByte();
+                    item.earth_resist = ReadByte();
+                    item.air_resist = ReadByte();
+                    item.water_resist = ReadByte();
+                    item.fire_resist = ReadByte();
+                    item.spec_value = DecodeNumber(3);
+                    item.gender = ReadByte();
+                    item.spec3 = ReadByte();
+                    item.required_level = DecodeNumber(2);
+                    item.required_class = DecodeNumber(2);
+                    item.required_str = DecodeNumber(2);
+                    item.required_int = DecodeNumber(2);
+                    item.required_wis = DecodeNumber(2);
+                    item.required_agi = DecodeNumber(2);
+                    item.required_con = DecodeNumber(2);
+                    item.required_cha = DecodeNumber(2);
+                    item.element = ReadByte();
+                    item.element_power = ReadByte();
+                    item.weight = ReadByte();
+                    item.spare_byte = ReadByte();
+                    item.size = ReadByte();
+                    records.insert(records.end(), item);
+                    header->records_read++;
+                    records_read++;
+                    if (read_position - 1 == data.Length())
+                    {
+                        if (header->load_state != 3)
+                            header->load_state = 0;
+                        break;
+                    }
                 }
+                data = "";
             }
             catch (...)
             {
-                FileClose(h_file);
                 is_loaded = false;
+                return;
             }
-            file_number++;
-        } while (loaded_count < record_total);
+        } while (records_read < records_expected);
         is_loaded = true;
     }
 }
@@ -258,60 +237,9 @@ void ItemValues::DeleteFiles()
     }
 }
 
-void ItemValues::AddItem(int item_id, String name, short graphic, short type, short subtype, short special,
-    short hp, short tp, int min_damage, int max_damage,
-    int accuracy, int evade, int armor, int return_damage,
-    short bonus_str, short bonus_int, short bonus_wis,
-    short bonus_agi, short bonus_con, short bonus_cha,
-    short light_resist, short dark_resist, short earth_resist,
-    short air_resist, short water_resist, short fire_resist, int spec_value,
-    short gender, short spec3, short required_level, short required_class, short required_str,
-    short required_int, short required_wis, short required_agi, short required_con, short required_cha,
-    short element, short element_power, short weight, short spare_byte, short size)
+void Itemvalues_UnusedLiterals1()
 {
-    ItemValue handle(item_id);
-    handle.name = name;
-    handle.graphic = graphic;
-    handle.type = type;
-    handle.subtype = subtype;
-    handle.special = special;
-    handle.hp = hp;
-    handle.tp = tp;
-    handle.min_damage = min_damage;
-    handle.max_damage = max_damage;
-    handle.accuracy = accuracy;
-    handle.evade = evade;
-    handle.armor = armor;
-    handle.return_damage = return_damage;
-    handle.bonus_str = bonus_str;
-    handle.bonus_int = bonus_int;
-    handle.bonus_wis = bonus_wis;
-    handle.bonus_agi = bonus_agi;
-    handle.bonus_con = bonus_con;
-    handle.bonus_cha = bonus_cha;
-    handle.light_resist = light_resist;
-    handle.dark_resist = dark_resist;
-    handle.earth_resist = earth_resist;
-    handle.air_resist = air_resist;
-    handle.water_resist = water_resist;
-    handle.fire_resist = fire_resist;
-    handle.spec_value = spec_value;
-    handle.gender = gender;
-    handle.spec3 = spec3;
-    handle.required_level = required_level;
-    handle.required_class = required_class;
-    handle.required_str = required_str;
-    handle.required_int = required_int;
-    handle.required_wis = required_wis;
-    handle.required_agi = required_agi;
-    handle.required_con = required_con;
-    handle.required_cha = required_cha;
-    handle.size = size;
-    handle.spare_byte = spare_byte;
-    handle.weight = weight;
-    handle.element = element;
-    handle.element_power = element_power;
-    records.insert(records.end(), handle);
+    "dat";
 }
 
 DEFINE_CLEAR(ItemValues)
@@ -330,6 +258,7 @@ int ItemValues::GetWeight(int item_id)
     int weight = 0;
     if (item_id > 0 && Count() > item_id)
     {
+        weight = 0;
         weight = records[item_id - 1].weight;
         if (weight < 0)
             weight = 0;
@@ -343,6 +272,7 @@ int ItemValues::GetGender(int item_id)
     int gender = -1;
     if (item_id > 0 && Count() > item_id)
     {
+        gender = 0;
         gender = records[item_id - 1].gender;
         if (gender < 0)
             gender = 0;
@@ -438,6 +368,27 @@ String ItemValues::GetName(int item_id)
 unsigned int ItemValues::Count()
 {
     return records.size();
+}
+
+// Deletes every item record.
+DEFINE_CLEAR_HEADERS(ItemValues)
+
+unsigned char ItemValues::ReadByte()
+{
+    unsigned char value;
+    try
+    {
+        value = data[read_position];
+        value--;
+    }
+    catch (...)
+    {
+        value = 0;
+    }
+    read_position++;
+    if (value > 252)
+        value = 0;
+    return value;
 }
 
 DEFINE_DECODE_NUMBER(ItemValues)

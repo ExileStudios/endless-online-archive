@@ -6,6 +6,7 @@
 struct BankController;
 struct BarberController;
 struct BookController;
+struct BossBars;
 struct ChestController;
 struct CreditsController;
 struct DialogController;
@@ -23,6 +24,7 @@ struct MenuController;
 struct MsgBoardController;
 struct MusicianController;
 struct PaperdollController;
+struct PopupElement;
 struct PriestController;
 struct QuestController;
 struct ReportController;
@@ -34,7 +36,7 @@ struct TradeController;
 #include "Itemcraft.h"
 #include "Sys_msg.h"
 
-#define MAX_RECENT_CHAT_MESSAGES 3
+#define MAX_RECENT_CHAT_MESSAGES 6
 #define MAX_RECENT_GLOBAL_MESSAGES 2
 #define SIT_DELAY_TICKS 4
 
@@ -100,12 +102,17 @@ struct AnimationController
     StatController *stat;
     SocialController *social;
     MsgBoardController *message_board;
+    PopupElement *popup;
+    BossBars *boss_bars;
     int screen_mode;
     int sub_state;
     int frame_counter;
     bool animating;
     int account_progress;
     int reply_timeout;
+    int reply_wait_start;
+    int reply_progress;
+    int server_reply_timeout;
     int chat_delay;
     int chat_decay_ticks;
     int chat_message_count;
@@ -145,6 +152,8 @@ struct AnimationController
     void BlockWalking();
     bool IsWalkingBlocked();
     void UpdateTimers();
+    void SetServerReplyTimeout(short seconds);
+    int GetReplyTimeout();
     void StartChatDelay();
     void RecordChatMessage();
     void RecordGlobalMessage();

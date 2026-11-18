@@ -79,7 +79,7 @@ struct SpriteGraphics
     void DrawNameLabel();
     TRect ClipToView(TRect rect);
     TRect GetClippedSourceRect(TRect rect);
-    void ShowNameLabel(String text, int color_index);
+    void ShowNameLabel(String text, int color_index, int element);
     void ShowSpeechBalloon(String text, int player_id, int style);
     void CreateEmoteBuffer();
     void FreeEmoteBuffer();

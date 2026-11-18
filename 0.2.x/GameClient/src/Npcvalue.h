@@ -6,12 +6,12 @@ struct NpcValue
 {
     int npc_id;
     String name;
-    short graphic;
-    short race;
+    unsigned short graphic;
+    char race;
     unsigned short boss;
     short child;
-    short npc_type;
-    short behavior_id;
+    unsigned short npc_type;
+    unsigned short behavior_id;
     int hp;
     short tp;
     short min_damage;
@@ -24,7 +24,7 @@ struct NpcValue
     short element_damage;
     unsigned short element_weakness;
     short element_weakness_damage;
-    short level;
+    unsigned char level;
     int experience;
 
     NpcValue(int record_id);

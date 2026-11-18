@@ -5,16 +5,20 @@
 
 USEFORM("TMainForm.cpp", MainForm);
 
-// The program's entry: a named mutex stops a second copy from starting, then the application is set up,
-// given its title and its main form, and run until it closes.
+// The program's entry: two named mutexes let at most two copies run, then the application is set up, given its
+// title and its main form, and run until it closes.
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-    void *h_object = CreateMutexA(0, 1, "EOINST");
+    void *h_object = CreateMutexA(0, 1, "EOINST-1");
     if (GetLastError() == 183)
     {
-        if (h_object)
-            CloseHandle(h_object);
-        return 0;
+        h_object = CreateMutexA(0, 1, "EOINST-2");
+        if (GetLastError() == 183)
+        {
+            if (h_object)
+                CloseHandle(h_object);
+            return 0;
+        }
     }
     try
     {

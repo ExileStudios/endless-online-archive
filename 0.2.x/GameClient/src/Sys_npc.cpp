@@ -10,11 +10,13 @@
 #pragma package(smart_init)
 
 // An empty npc at the map index, with every animation stopped.
-Npc::Npc()
+Npc::Npc(int map_index)
 {
-    index = 0;
-    direction = FacingDirection_Down;
-    hidden = false;
+    index = map_index;
+    bar_index = map_index;
+    npc_id = 1;
+    walk_start = false;
+    walking = false;
     health_bar_start = false;
     health_bar_shown = false;
     damage_start = false;
@@ -23,23 +25,14 @@ Npc::Npc()
     effect_running = false;
     effect_frame = 0;
     effect_id = SpellEffect_None;
-    walk_start = false;
-    walking = false;
-    alt_attack_start = false;
-    alt_attacking = false;
-    attack_start = false;
-    attacking = false;
-    out_of_range = false;
+    out_of_view = false;
     dying = false;
-    graphics_pending = true;
-    reload_requested = false;
-    load_stage = 0;
-    load_failures = 0;
     label_shown = false;
-    idle_frame = 0;
     balloon_timer = 0;
-    queued_balloon_count = 0;
     balloon_shown = false;
+    out_of_view = false;
+    dying = false;
+    killed_by_hit = false;
     frame_width = 0;
     frame_height = 0;
     health_bar_timer = -1;
@@ -50,6 +43,7 @@ Npc::Npc()
 Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing)
 {
     index = map_index;
+    bar_index = map_index;
     npc_id = record_id;
     direction = FacingDirection_Down;
     hidden = false;
@@ -72,8 +66,9 @@ Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int 
     alt_attacking = false;
     attack_start = false;
     attacking = false;
-    out_of_range = false;
+    out_of_view = false;
     dying = false;
+    killed_by_hit = false;
     graphics_pending = true;
     reload_requested = false;
     load_stage = 0;

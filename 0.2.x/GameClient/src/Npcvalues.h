@@ -6,6 +6,8 @@
 #include <string>
 #include <vector.h>
 
+struct PubfileHeader;
+
 #include "Npcvalue.h"
 
 enum NpcType
@@ -35,32 +37,37 @@ struct NpcValues
     int expected_part_count;
     int received_part_count;
     char is_loaded;
+    bool has_bad_record;
+    bool header_read;
+    String file_name;
+    String file_path;
+    int records_read;
+    int records_expected;
     int checksum_high;
     int checksum_low;
     int record_count;
+    String data;
+    int read_position;
     vector<NpcValue> records;
     int unused_value;
+    vector<PubfileHeader *> headers;
     String file_prefix;
 
-    NpcValues();
+    NpcValues(String data_path);
     ~NpcValues();
     void ReadHeader();
     void SaveFilePart(int part_number, String data);
     void Load();
     void DeleteFiles();
-    void AddNpc(int npc_id, String name, short graphic, short race, short boss,
-        short child, short npc_type, short behavior_id, int hp,
-        short tp, short min_damage, short max_damage,
-        short accuracy, short evade, short armor,
-        short return_damage, short element, short element_damage,
-        short element_weakness, short element_weakness_damage, short level,
-        int experience);
     void Clear();
+    NpcValue GetNpcByIndex(int index);
     int GetGraphic(int npc_id);
     String GetName(int npc_id);
     TPoint GetType(int npc_id);
     unsigned int Count();
-    int DecodeNumber(String encoded);
+    void ClearHeaders();
+    char ReadByte();
+    int DecodeNumber(unsigned char encoded);
 };
 
 #endif

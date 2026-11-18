@@ -216,7 +216,7 @@ void GameController::Attack(char animation_only, int face_direction)
         if (!IsActionDelayElapsed())
             return;
         // Attacks in a row without a step are capped; each step resets the count
-        if (attack_count > 910)
+        if (attack_count > 10001)
             return;
         int direction = MainForm->players->GetDirection(MainForm->net_client->GetPlayerId());
         int player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
@@ -1546,7 +1546,8 @@ bool GameController::TryOpenDoor(int x, int y, int tile_spec)
     return handled;
 }
 
-// One timer tick: the idle logout, the spot countdown, walking through a blocking player, held form scroll buttons.
+// One timer tick: the idle emote and logout, the spot countdown, walking through a blocking player, held form scroll
+// buttons.
 void GameController::Tick()
 {
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
@@ -1557,20 +1558,23 @@ void GameController::Tick()
         {
             if (idle_ticks % 250 == 0)
                 PlayEmote(Emote_Moon);
-            if (idle_ticks >= 15000)
+            if (MainForm->config->GetIdleDisconnect())
             {
-                if (idle_ticks % 500 == 0)
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                        MainForm->strings->GetText(GameText_YouHaveBeenIdle));
-                if (idle_ticks % 500 == 30)
-                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                        MainForm->strings->GetText(GameText_StartMovingYourCharacter));
-            }
-            if (idle_ticks >= 17500)
-            {
-                idle_ticks = 0;
-                MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                MainForm->animation->interface_controller->Logout();
+                if (idle_ticks >= 15000)
+                {
+                    if (idle_ticks % 500 == 0)
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
+                            MainForm->strings->GetText(GameText_YouHaveBeenIdle));
+                    if (idle_ticks % 500 == 30)
+                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
+                            MainForm->strings->GetText(GameText_StartMovingYourCharacter));
+                }
+                if (idle_ticks >= 17500)
+                {
+                    idle_ticks = 0;
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->interface_controller->Logout();
+                }
             }
         }
     }

@@ -11,11 +11,11 @@
 // The defaults, then setup.ini read over them; also notes whether a "screen" folder is next to the program.
 Config::Config()
 {
-    int position;
     port = 8078;
     build_version = -1;
     auto_account_name = "";
     force_buffer = false;
+    ddraw_hardware = false;
     fullscreen = false;
     skip_intro = true;
     skip_softpad = true;
@@ -26,6 +26,8 @@ Config::Config()
     stay_on_top = false;
     sizeable = true;
     scale = 1;
+    window_position.x = -1;
+    window_position.y = -1;
     preload_character_gfx = true;
     preload_map_gfx = true;
     preload_tile_gfx = true;
@@ -37,8 +39,15 @@ Config::Config()
     log_chat = false;
     accept_private_messages = true;
     accept_requests = true;
+    idle_disconnect = false;
     show_balloons = true;
     extended_tooltip = true;
+    elemental_icons = true;
+    minimap_mode = 0;
+    radar_position = 0;
+    minimap_icons = true;
+    minimap_grid = false;
+    radar_coords = false;
     show_shadows = true;
     chat_log_path = "chatlog.txt";
     debug = false;
@@ -51,20 +60,30 @@ Config::Config()
     settings_loaded = LoadSettings();
     music_available = music_volume;
     sound_available = sound_volume;
-    String exe_dir = Application->ExeName;
-    if (exe_dir.Length() >= 1)
+    app_path = Application->ExeName;
+    exe_name = "";
+    int exe_name_length = Application->ExeName.Length();
+    try
     {
-        position = exe_dir.Length();
-        for (; position > 0; position--)
+        if (app_path.Length() >= 1)
         {
-            if (exe_dir[position] == '\\' || exe_dir[position] == '/')
+            for (int i = app_path.Length(); i > 0; i--)
             {
-                exe_dir = exe_dir.SubString(1, position);
-                break;
+                if (app_path[i] == '\\' || app_path[i] == '/')
+                {
+                    int name_length = exe_name_length - i;
+                    exe_name = app_path.SubString(i + 1, name_length);
+                    app_path = app_path.SubString(1, i);
+                    break;
+                }
             }
         }
     }
-    String lp_file_name = exe_dir + "screen";
+    catch (...)
+    {
+        app_path = ".\\";
+    }
+    String lp_file_name = app_path + "screen";
     screen_folder_exists = false;
     if (!access(lp_file_name.c_str(), 0))
         screen_folder_exists = true;
@@ -72,6 +91,11 @@ Config::Config()
 
 Config::~Config()
 {
+}
+
+String Config::GetAppPath()
+{
+    return app_path;
 }
 
 bool Config::ReadString(String key)
@@ -131,6 +155,39 @@ bool Config::ReadSwitch(String key)
     return false;
 }
 
+// Reads the value of the key as a window position: CENTER, DESKTOP, or x and y split by a comma.
+bool Config::ReadPosition(String key)
+{
+    if (key_name != key)
+        return false;
+    if (value_upper == "CENTER")
+    {
+        setting_x = -1;
+        return true;
+    }
+    if (value_upper == "DESKTOP")
+    {
+        setting_x = -2;
+        return true;
+    }
+    int comma = value_upper.Pos(",");
+    if (comma <= 1)
+        return false;
+    if (comma >= value_upper.Length())
+        return false;
+    String remaining = value_upper;
+    value_upper = remaining.SubString(1, comma - 1);
+    if (!ReadInteger(key))
+        return false;
+    setting_x = setting_number;
+    remaining.Delete(1, comma);
+    value_upper = remaining;
+    if (!ReadInteger(key))
+        return false;
+    setting_y = setting_number;
+    return true;
+}
+
 // Reads the colour value of the key; DEFAULT reads as 0.
 bool Config::ReadColor(String key)
 {
@@ -163,31 +220,26 @@ bool Config::ReadVolume(String key)
 // false when the file is missing.
 bool Config::LoadSettings()
 {
-    bool loop_entered = false;
     int file_size;
-    TStringList *lines;
     char *file_bytes;
     int handle;
+    TStringList *file_lines;
     String path = "./config/setup.ini";
     if (access(path.c_str(), 0))
         return false;
     String file_text;
-    lines = new TStringList();
+    file_lines = new TStringList();
     try
     {
         handle = FileOpen(path.c_str(), fmOpenRead);
-        while (true)
-        {
-            file_size = FileSeek(handle, 0, 2);
-            FileSeek(handle, 0, 0);
-            file_bytes = new char[file_size + 1];
-            FileRead(handle, file_bytes, file_size);
-            FileClose(handle);
-            file_text = file_bytes;
-            file_text.SetLength(file_size);
-            delete[] file_bytes;
-            break;
-        }
+        file_size = FileSeek(handle, 0, 2);
+        FileSeek(handle, 0, 0);
+        file_bytes = new char[file_size + 1];
+        FileRead(handle, file_bytes, file_size);
+        FileClose(handle);
+        file_text = file_bytes;
+        file_text.SetLength(file_size);
+        delete[] file_bytes;
     }
     catch (...)
     {
@@ -198,231 +250,274 @@ bool Config::LoadSettings()
     {
         String line = "";
         int line_start = 1;
-        while (true)
+        do
         {
-            loop_entered = true;
             line = "";
             for (int i = line_start; i <= file_text.Length(); i++)
             {
-                loop_entered = true;
                 if (file_text[i] == '\n' || file_text.Length() == i)
                 {
                     if (file_text.Length() == i)
                     {
-                        if ((unsigned char)file_text[i] != '\n')
-                        {
-                            if ((unsigned char)file_text[i] != '\r')
-                                line = line + file_text[i];
-                        }
+                        if ((unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
+                            line = line + file_text[i];
                     }
-                    lines->Add(line);
+                    file_lines->Add(line);
                     line_start = i + 1;
                     break;
                 }
-                if (file_text[i] != ' ' && (unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
+                if ((unsigned char)file_text[i] != '\n' && (unsigned char)file_text[i] != '\r')
                     line = line + file_text[i];
             }
-            if (file_text.Length() < line_start)
-                break;
-        }
-        for (int line_index = 0; line_index < lines->Count; line_index++)
+        } while (file_text.Length() >= line_start);
+        for (int line_index = 0; line_index < file_lines->Count; line_index++)
         {
-            loop_entered = true;
             key_name = "";
             value_text = "";
             int position = 1;
             int equals_count = 0;
-            if (!lines->Strings[line_index].Length())
+            if (!file_lines->Strings[line_index].Length())
                 continue;
-            if (lines->Strings[line_index][1] == '#')
+            if (file_lines->Strings[line_index][1] == '#')
                 continue;
-            if (lines->Strings[line_index][1] == '[')
+            if (file_lines->Strings[line_index][1] == '[')
                 continue;
-            while (lines->Strings[line_index].Length() >= position)
+            while (file_lines->Strings[line_index].Length() >= position)
             {
-                loop_entered = true;
-                if (lines->Strings[line_index][position] == '=')
+                if (file_lines->Strings[line_index][position] == '=')
                     equals_count++;
                 else
                 {
                     if (!equals_count)
-                        key_name += (char)lines->Strings[line_index][position];
+                    {
+                        if (file_lines->Strings[line_index][position] != ' ')
+                            key_name += (char)file_lines->Strings[line_index][position];
+                    }
                     if (equals_count == 1)
-                        value_text += (char)lines->Strings[line_index][position];
+                        value_text += (char)file_lines->Strings[line_index][position];
                 }
                 position++;
             }
+            value_text = TrimSpaces(value_text);
             key_name = UpperCase(key_name);
             value_upper = UpperCase(value_text);
-            if (ReadString("HOST"))
+            if (value_upper.Length() > 0)
             {
-                host = value_text;
-                standard_settings_read++;
-            }
-            else if (ReadInteger("PORT"))
-            {
-                port = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadInteger("BUILDVERSION"))
-            {
-                build_version = setting_number;
-                extra_settings_read++;
-            }
-            else if (ReadString("AUTOACCOUNTNAME"))
-            {
-                auto_account_name = value_text;
-                extra_settings_read++;
-            }
-            else if (ReadSwitch("FULLSCREEN"))
-            {
-                fullscreen = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("SKIPINTRO"))
-            {
-                skip_intro = setting_switch;
-                extra_settings_read++;
-            }
-            else if (ReadSwitch("SKIPSOFTPAD"))
-            {
-                skip_softpad = setting_switch;
-                extra_settings_read++;
-            }
-            else if (ReadSwitch("PAGEFLIPPING"))
-            {
-                use_page_flip = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("BLOCKTRANSFER"))
-            {
-                use_bit_blt_draw = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("FORCEBUFFER"))
-            {
-                force_buffer = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("STAYONTOP"))
-            {
-                stay_on_top = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("SIZEABLE"))
-            {
-                sizeable = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadInteger("SCALE"))
-            {
-                scale = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("STATICSPRITES"))
-            {
-                preload_character_gfx = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("STATICOBJECTS"))
-            {
-                preload_map_gfx = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("STATICTILES"))
-            {
-                preload_tile_gfx = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadInteger("LANGUAGE"))
-            {
-                language = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadInteger("KEYBOARD"))
-            {
-                keyboard_layout = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("WASDKEYS"))
-            {
-                wasd_keys = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("FILTER"))
-            {
-                filter_enabled = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("FILTERALL"))
-            {
-                strict_filter = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadVolume("SOUND"))
-            {
-                sound_volume = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadVolume("MUSIC"))
-            {
-                music_volume = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("SHOWBALOONS"))
-            {
-                show_balloons = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("EXTENDEDTOOLTIP"))
-            {
-                extended_tooltip = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("SHOWSHADOWS"))
-            {
-                show_shadows = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("HEARWHISPER"))
-            {
-                accept_private_messages = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("INTERACTION"))
-            {
-                accept_requests = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadSwitch("LOGCHAT"))
-            {
-                log_chat = setting_switch;
-                standard_settings_read++;
-            }
-            else if (ReadString("LOGFILE"))
-            {
-                chat_log_path = value_text;
-                standard_settings_read++;
-            }
-            else if (ReadColor("NPCCOLOR"))
-            {
-                npc_color = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadColor("GROUPCOLOR"))
-            {
-                group_color = setting_number;
-                standard_settings_read++;
-            }
-            else if (ReadColor("TEXTTHEME"))
-            {
-                text_theme = setting_number;
-                extra_settings_read++;
-            }
-            else if (ReadSwitch("DEBUG"))
-            {
-                debug = setting_switch;
-                extra_settings_read++;
+                if (ReadString("HOST"))
+                {
+                    host = value_text;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("PORT"))
+                {
+                    port = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("BUILDVERSION"))
+                {
+                    build_version = setting_number;
+                    extra_settings_read++;
+                }
+                else if (ReadString("AUTOACCOUNTNAME"))
+                {
+                    auto_account_name = value_text;
+                    extra_settings_read++;
+                }
+                else if (ReadSwitch("DDRAWHARDWARE"))
+                {
+                    ddraw_hardware = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("FULLSCREEN"))
+                {
+                    fullscreen = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("SKIPINTRO"))
+                {
+                    skip_intro = setting_switch;
+                    extra_settings_read++;
+                }
+                else if (ReadSwitch("SKIPSOFTPAD"))
+                {
+                    skip_softpad = setting_switch;
+                    extra_settings_read++;
+                }
+                else if (ReadSwitch("PAGEFLIPPING"))
+                {
+                    use_page_flip = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("BLOCKTRANSFER"))
+                {
+                    use_bit_blt_draw = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("FORCEBUFFER"))
+                {
+                    force_buffer = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("STAYONTOP"))
+                {
+                    stay_on_top = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("SIZEABLE"))
+                {
+                    sizeable = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("SCALE"))
+                {
+                    scale = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadPosition("POSITION"))
+                {
+                    window_position = *(TPoint *)&setting_x;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("STATICSPRITES"))
+                {
+                    preload_character_gfx = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("STATICOBJECTS"))
+                {
+                    preload_map_gfx = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("STATICTILES"))
+                {
+                    preload_tile_gfx = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("LANGUAGE"))
+                {
+                    language = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("KEYBOARD"))
+                {
+                    keyboard_layout = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("WASDKEYS"))
+                {
+                    wasd_keys = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("FILTER"))
+                {
+                    filter_enabled = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("FILTERALL"))
+                {
+                    strict_filter = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadVolume("SOUND"))
+                {
+                    sound_volume = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadVolume("MUSIC"))
+                {
+                    music_volume = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("SHOWBALOONS"))
+                {
+                    show_balloons = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("EXTENDEDTOOLTIP"))
+                {
+                    extended_tooltip = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("ELEMENTALICONS"))
+                {
+                    elemental_icons = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("MINIMAPMODE"))
+                {
+                    minimap_mode = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadInteger("RADARPOSITION"))
+                {
+                    radar_position = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("RADARCOORDS"))
+                {
+                    radar_coords = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("MINIMAPICONS"))
+                {
+                    minimap_icons = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("MINIMAPGRID"))
+                {
+                    minimap_grid = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("SHOWSHADOWS"))
+                {
+                    show_shadows = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("HEARWHISPER"))
+                {
+                    accept_private_messages = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("INTERACTION"))
+                {
+                    accept_requests = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("IDLEDISCONNECT"))
+                {
+                    idle_disconnect = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("LOGCHAT"))
+                {
+                    log_chat = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadString("LOGFILE"))
+                {
+                    chat_log_path = value_text;
+                    standard_settings_read++;
+                }
+                else if (ReadColor("NPCCOLOR"))
+                {
+                    npc_color = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadColor("GROUPCOLOR"))
+                {
+                    group_color = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadColor("TEXTTHEME"))
+                {
+                    text_theme = setting_number;
+                    extra_settings_read++;
+                }
+                else if (ReadSwitch("DEBUG"))
+                {
+                    debug = setting_switch;
+                    extra_settings_read++;
+                }
             }
         }
     }
@@ -430,24 +525,31 @@ bool Config::LoadSettings()
     {
     }
     settings_read = standard_settings_read + extra_settings_read;
-    while (true)
-    {
-        if (language < 0 || language > 3)
-            language = 0;
-        if (keyboard_layout < 0 || keyboard_layout > 3)
-            keyboard_layout = 0;
-        break;
-    }
+    if (language < 0 || language > 3)
+        language = 0;
+    if (keyboard_layout < 0 || keyboard_layout > 3)
+        keyboard_layout = 0;
     if (scale < 1)
         scale = 1;
     if (scale > 4)
         scale = 4;
+    if (minimap_mode < MinimapMode_Toggled)
+        minimap_mode = 0;
+    if (minimap_mode > MinimapMode_Radar)
+        minimap_mode = 2;
+    if (radar_position < 0)
+        radar_position = 0;
+    if (radar_position > 3)
+        radar_position = 3;
     if (text_theme < 0)
         text_theme = 0;
     if (text_theme > 1)
         text_theme = 1;
     return true;
 }
+
+// The text without the spaces at its start and end.
+DEFINE_TRIM_SPACES(Config)
 
 void Config::SetFullscreen(char enabled)
 {
@@ -467,6 +569,36 @@ void Config::SetMusicEnabled(int enabled)
 void Config::SetSoundVolume(int enabled)
 {
     sound_volume = enabled;
+}
+
+void Config::SetScale(int count)
+{
+    scale = count;
+}
+
+void Config::SetExtendedTooltip(bool value)
+{
+    extended_tooltip = value;
+}
+
+void Config::SetElementalIcons(bool enabled)
+{
+    elemental_icons = enabled;
+}
+
+void Config::SetMinimapMode(int mode)
+{
+    minimap_mode = mode;
+}
+
+void Config::SetMinimapIcons(bool enabled)
+{
+    minimap_icons = enabled;
+}
+
+void Config::SetMinimapGrid(bool enabled)
+{
+    minimap_grid = enabled;
 }
 
 void Config::SetLanguage(int new_language)
@@ -519,14 +651,14 @@ void Config::SetWasdKeys(bool value)
     wasd_keys = value;
 }
 
-String Config::GetAppPath()
-{
-    return app_path;
-}
-
 bool Config::GetScreenFolderExists()
 {
     return screen_folder_exists;
+}
+
+int Config::GetDDrawHardware()
+{
+    return ddraw_hardware;
 }
 
 char Config::GetFullscreen()
@@ -579,9 +711,44 @@ int Config::GetScale()
     return scale;
 }
 
-char Config::GetExtendedTooltip()
+TPoint Config::GetWindowPosition()
+{
+    return window_position;
+}
+
+bool Config::GetExtendedTooltip()
 {
     return extended_tooltip;
+}
+
+bool Config::GetElementalIcons()
+{
+    return elemental_icons;
+}
+
+int Config::GetMinimapMode()
+{
+    return minimap_mode;
+}
+
+int Config::GetRadarPosition()
+{
+    return radar_position;
+}
+
+bool Config::GetMinimapIcons()
+{
+    return minimap_icons;
+}
+
+bool Config::GetMinimapGrid()
+{
+    return minimap_grid;
+}
+
+char Config::GetRadarCoords()
+{
+    return radar_coords;
 }
 
 char Config::GetPreloadCharacterGfx()
@@ -659,6 +826,11 @@ char Config::GetAcceptRequests()
     return accept_requests;
 }
 
+char Config::GetIdleDisconnect()
+{
+    return idle_disconnect;
+}
+
 char Config::GetShowBalloons()
 {
     return show_balloons;
@@ -674,6 +846,7 @@ String Config::GetChatLogPath()
     return chat_log_path;
 }
 
+// The PORT setting, or 8078 when it is not a number.
 int Config::GetPort()
 {
     return port;

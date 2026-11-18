@@ -19,7 +19,7 @@ struct PlayerNameGraphics
     TDDColorKey *color_key;
     TDDBltFX *fill_fx;
 
-    PlayerNameGraphics(int label_width, int label_height, int color_index, String name);
+    PlayerNameGraphics(int label_width, int label_height, int color_index, int element, String name);
     ~PlayerNameGraphics();
 };
 

@@ -38,7 +38,7 @@ MenuGraphics::MenuGraphics()
     surface_caps = new TDDSCaps(NULL);
     color_key = new TDDColorKey(NULL);
     progress_fill_fx = new TDDBltFX(NULL);
-    progress_fill_fx->FillColor = 0xB4DCE6;
+    progress_fill_fx->FillColor = 0xDCDCB4;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
     background_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
@@ -923,7 +923,7 @@ void MenuGraphics::DrawMessageBoxControls()
         bar_rect.bottom = 12;
         fill_rect.left = MainForm->animation->menu->message_x + 16;
         fill_rect.top = MainForm->animation->menu->message_y + 93;
-        fill_rect.right = MainForm->animation->menu->message_x + MainForm->animation->GetAccountProgress() / 2 + 16;
+        fill_rect.right = MainForm->animation->menu->message_x + MainForm->animation->GetAccountProgress() + 16;
         fill_rect.bottom = MainForm->animation->menu->message_y + 101;
         MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->message_x + 14,
             MainForm->animation->menu->message_y + 91, progress_bar, &bar_rect, DDBLTFAST_WAIT);

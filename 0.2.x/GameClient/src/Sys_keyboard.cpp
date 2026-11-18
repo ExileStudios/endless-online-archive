@@ -55,7 +55,7 @@ KeyBoard::KeyBoard()
     wasd_key_used = false;
     attack_key_used = false;
     delete_pressed = false;
-    for (int i = 0; i < 61; i++)
+    for (int i = 0; i < 69; i++)
         key_waits[i] = 0;
     for (int j = 0; j < 4; j++)
         key_flags[j] = false;
@@ -519,10 +519,61 @@ bool KeyBoard::HandleGameKeys()
             if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
             {
                 if (TakeKeyDelay())
-                {
-                    MainForm->config->SetWasdKeys(!MainForm->config->GetWasdKeys());
-                    MainForm->animation->interface_controller->game_bars->ToggleHealthText(true, true);
-                }
+                    MainForm->animation->game->PlayEmote(Emote_Happy);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_2] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Depressed);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_3] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Sad);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_4] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Angry);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_5] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Confused);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_6] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Surprised);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_7] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Hearts);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_8] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Moon);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_9] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Suicidal);
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_0] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Playful);
                 return false;
             }
             if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
@@ -646,76 +697,116 @@ bool KeyBoard::HandleGameKeys()
         // F1 to F8 use the spell in that column, from the second row with Shift.
         if ((MainForm->DIKeyboardState1->Keys[DIK_F1] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(1, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(1, 1);
+            if (TakeKeyRepeat(61))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(1, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(1, 1);
+            }
         }
+        else
+            ResetKeyRepeat(61);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F2] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(2, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(2, 1);
+            if (TakeKeyRepeat(62))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(2, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(2, 1);
+            }
         }
+        else
+            ResetKeyRepeat(62);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F3] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(3, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(3, 1);
+            if (TakeKeyRepeat(63))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(3, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(3, 1);
+            }
         }
+        else
+            ResetKeyRepeat(63);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F4] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(4, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(4, 1);
+            if (TakeKeyRepeat(64))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(4, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(4, 1);
+            }
         }
+        else
+            ResetKeyRepeat(64);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F5] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(5, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(5, 1);
+            if (TakeKeyRepeat(65))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(5, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(5, 1);
+            }
         }
+        else
+            ResetKeyRepeat(65);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F6] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(6, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(6, 1);
+            if (TakeKeyRepeat(66))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(6, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(6, 1);
+            }
         }
+        else
+            ResetKeyRepeat(66);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F7] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(7, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(7, 1);
+            if (TakeKeyRepeat(67))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(7, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(7, 1);
+            }
         }
+        else
+            ResetKeyRepeat(67);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F8] & 0x80) != 0)
         {
-            if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
-                (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                MainForm->animation->interface_controller->spells->UseSlot(8, 2);
-            else
-                MainForm->animation->interface_controller->spells->UseSlot(8, 1);
+            if (TakeKeyRepeat(68))
+            {
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
+                    (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+                    MainForm->animation->interface_controller->spells->UseSlot(8, 2);
+                else
+                    MainForm->animation->interface_controller->spells->UseSlot(8, 1);
+            }
         }
+        else
+            ResetKeyRepeat(68);
         if ((MainForm->DIKeyboardState1->Keys[DIK_F11] & 0x80) != 0)
         {
             MainForm->map->path_finder->CancelPath();
@@ -905,7 +996,7 @@ bool KeyBoard::HandleEditKeys()
                                     CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
                                     MainForm->net_client->DeobfuscateString(" e 1^6Z-h) +_:d3j p'r") +
                                     MainForm->VersionString(MainForm->version_major, MainForm->version_minor,
-                                    MainForm->version_build), true);
+                                    MainForm->version_build, MainForm->version_letter), true);
                                 MainForm->animation->interface_controller->chat->AddLocalMessage(ChatIcon_Lookup,
                                     CHAT_COLOR_DEFAULT, MainForm->net_client->DeobfuscateString("`:Y,TL"),
                                     MainForm->net_client->DeobfuscateString(" e :_6f1h [:i1h- BUD") + info_text, true);
@@ -2315,9 +2406,9 @@ bool KeyBoard::TakeKeyDelay()
 // True when the held key may act again; the first press waits 80 ticks, each repeat 16.
 bool KeyBoard::TakeKeyRepeat(unsigned char key)
 {
+    int wait = key_waits[key];
     if (key_waits[key] > 3)
         return false;
-    key;
     if (!key_waits[key])
         key_waits[key] = 40;
     else

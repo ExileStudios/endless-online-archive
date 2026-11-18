@@ -8,8 +8,6 @@ struct Tooltip;
 
 #include "Itemspell.h"
 
-#define SHOUT_LABEL_TICKS 100
-
 enum CastTarget
 {
     CastTarget_None = 0,
@@ -62,6 +60,7 @@ struct SpellController
     char scroll_down_hovered;
     int train_confirm_ticks;
     int train_spell_id;
+    char cast_is_instant;
     int cast_spell_id;
     int cast_target_kind;
     int cast_target_id;
@@ -116,7 +115,7 @@ struct SpellController
     void UseSlot(int col, int row);
     void UseSpell(int col, int row, int spell_id);
     bool IsCasting();
-    void BeginCast(int spell_id, int target_kind, int target_id);
+    void BeginCast(int spell_id, int target_kind, int target_id, char is_instant);
     void CancelCast();
     void ClearSelection();
     int GetBlinkPhase();

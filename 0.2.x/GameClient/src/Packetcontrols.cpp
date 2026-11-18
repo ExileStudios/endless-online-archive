@@ -169,6 +169,7 @@ bool Client::HandleRawPacket(String frame)
                         ban_minutes = ByteValue(frame[5]);
                 }
                 // A version rejection: the server names the version it wants.
+                // A protocol rejection: the server names the protocol version it speaks.
                 if (frame.Length() >= 6 && ByteValue(frame[3]) == 1)
                 {
                     version_rejected = true;
@@ -179,12 +180,12 @@ bool Client::HandleRawPacket(String frame)
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetDialogText(DialogText_ConnectionRefused, false),
                         MainForm->strings->GetDialogText(DialogText_ConnectionRefused, true) + " " +
-                            MainForm->VersionString(version_major, version_minor, version_build) + ".");
+                            MainForm->VersionString(version_major, version_minor, version_build, 48) + ".");
                 }
+                // The init reply: sequence start, both keys, the player id and the server's challenge answer.
+                // The client answers with its keys and its id, now encrypted.
                 if (frame.Length() >= 12 && ByteValue(frame[3]) == 2)
                 {
-                    // The init reply: sequence start, both keys, the player id and the server's challenge answer.
-                    // The client answers with its keys and its id, now encrypted.
                     int key_seed = ByteValue(frame[4]);
                     init_sequence = ByteValue(frame[5]) + 7 * key_seed;
                     key_seed = init_sequence;
@@ -203,6 +204,10 @@ bool Client::HandleRawPacket(String frame)
                 // The other kinds are handed to the packet processor as packets of their own.
                 if (frame.Length() >= 3)
                 {
+                    // A bare rejection: the server refused the connection.
+                    // The init reply: sequence start, both keys, the player id and the server's challenge answer.
+                    // The client answers with its keys and its id, now encrypted.
+                    // A ban, permanent or for the minutes the next byte gives.
                     if (ByteValue(frame[3]) == 4)
                         processor->DispatchPacket(AC_SET, OP_MAP, frame.SubString(4, frame.Length() - 3));
                     if (ByteValue(frame[3]) == 5)

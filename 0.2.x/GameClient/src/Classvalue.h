@@ -5,9 +5,9 @@
 struct ClassValue
 {
     int class_id;
-    int parent_class_id;
     String name;
-    short stat_group;
+    char stat_group;
+    unsigned char parent_class_id;
     short strength;
     short intelligence;
     short wisdom;

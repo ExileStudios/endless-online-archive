@@ -30,7 +30,7 @@ InventoryController::InventoryController()
     is_dragging = false;
     dragging_from_paperdoll = false;
     input_enabled = true;
-    tooltip = new Tooltip(145, 342);
+    tooltip = new Tooltip(145, 342, 2);
     tooltip->SetFlipEdge(474, 36);
     tooltip->SetBottomLimit(446, 10);
 }
@@ -593,6 +593,7 @@ void InventoryController::UpdateItemHover(int x, int y)
                     hover_row = -1;
                     hover_item_id = -1;
                 }
+                tooltip->Hide();
                 drop_blocked = false;
                 has_hover = false;
             }
@@ -608,6 +609,7 @@ void InventoryController::UpdateItemHover(int x, int y)
             hover_row = -1;
             hover_item_id = -1;
         }
+        tooltip->Hide();
         drop_blocked = false;
         has_hover = false;
     }

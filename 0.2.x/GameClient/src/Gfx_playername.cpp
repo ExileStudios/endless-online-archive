@@ -3,13 +3,18 @@
 
 #include "Gfx_playername.h"
 #include "Tmainform.h"
+#include "Gfx_interface.h"
 
 #pragma package(smart_init)
 
-// Draws the capitalised name onto a label surface sized to the text, in the colour that color_index picks.
-PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int color_index, String name)
+// Draws the capitalised name onto a label surface sized to the text, in the colour that color_index picks, with room
+// for an element icon when element is set.
+PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int color_index, int element, String name)
 {
+    int name_width;
     HDC dc;
+    if (element > 0)
+        label_width += 7;
     text_width = label_width;
     text_height = label_height;
     surface = new TDx_DrawSurface(NULL);
@@ -32,6 +37,7 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int co
     surface->GetSurfaceDesc(surface_desc);
     surface->Create(surface_desc, MainForm->Dx_Draw1);
     surface->Blt(&surface_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
+    name_width = 0;
     if (surface->GetDC(&dc))
     {
         try
@@ -77,6 +83,7 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int co
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
             MainForm->draw_canvas->TextOut(1, 0, MainForm->net_client->Capitalize(name));
+            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(name));
             MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
@@ -84,6 +91,9 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int co
         }
         surface->ReleaseDC(dc);
     }
+    if (element > 0 && element < 7)
+        surface->BltFast(name_width + 4, 2, MainForm->gfx->interface_graphics->element_icons,
+            &MainForm->gfx->interface_graphics->GetElementIconRect(element), DDBLTFAST_WAIT);
     surface->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 

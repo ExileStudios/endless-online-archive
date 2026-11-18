@@ -60,7 +60,12 @@ struct MapController
     unsigned short top_masks[250][250];
     char blocked[250][250];
     char has_tile_spec[250][250];
-    short minimap_mask[250][250];
+    unsigned char spec_grid[250][250];
+    unsigned char minimap_mask[250][250];
+    char edge_left[250][250];
+    char edge_top[250][250];
+    char edge_right[250][250];
+    char edge_bottom[250][250];
     int trap_reveal_timer;
     int tile_frame;
     bool has_animated_tiles;
@@ -85,6 +90,8 @@ struct MapController
     int center_y;
     int cursor_x;
     int cursor_y;
+    int scroll_shift_x;
+    int scroll_shift_y;
     int scroll_offset_x;
     int scroll_offset_y;
     bool scroll_requested;
@@ -94,6 +101,7 @@ struct MapController
     bool frozen;
     bool action_blocked;
     int action_block_tick;
+    bool has_boss;
     bool cursor_moved;
     bool cursor_update_pending;
     int last_cursor_x;
@@ -113,6 +121,7 @@ struct MapController
     void ReadMapChecksum(int map_number);
     void SaveMapFile(int map_number);
     void LoadMap(int map_number);
+    void MarkEdgeTiles();
     bool IsWallOrSpecTile(int x, int y);
     char IsBlocked(int x, int y);
     void SetChestKey(int x, int y, int key);
@@ -145,12 +154,15 @@ struct MapController
     int GetCursorX();
     int GetCursorY();
     void Animate();
+    int GetScrollShiftX();
+    int GetScrollShiftY();
     void AcceptPendingWarp();
     int GetScrollOffsetX();
     int GetScrollOffsetY();
     void ClearMap();
     String GetName();
     int GetMapType();
+    int GetMapAttribute();
     int GetMusicId();
     int GetMusicMode();
     void ClearMusic();
@@ -173,6 +185,7 @@ struct MapController
     void FreezePlayer();
     void UnfreezePlayer();
     bool IsActionBlocked();
+    bool HasBoss();
     bool HasPathMarker();
     void SetPathMarker(int x, int y);
     int GetPathMarkerX();

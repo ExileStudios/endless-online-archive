@@ -11,7 +11,7 @@ enum KeyboardLayout
 // Keyboard input: the menu and game keys, walking with the arrows, and typing into the edit boxes.
 struct KeyBoard
 {
-    unsigned char key_waits[61];
+    unsigned char key_waits[69];
     char key_flags[4];
     unsigned char key_delay;
     unsigned char backspace_wait;

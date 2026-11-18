@@ -464,11 +464,7 @@ void MenuController::UpdateScrollbarHover(int mouse_x, int mouse_y)
 {
     if (is_text_window_open)
     {
-        if (mouse_x >= text_window_x + 320 && mouse_x <= text_window_x + 335)
-        {
-            if (mouse_y >= text_window_y + 81 && mouse_y <= text_window_y + 166)
-                DragScrollbar(mouse_y);
-        }
+        DragScrollbar(mouse_y);
         if (mouse_x >= text_window_x + 320 && mouse_x <= text_window_x + 335 && mouse_y >= text_window_y + 66 &&
             mouse_y <= text_window_y + 81)
         {

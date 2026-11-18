@@ -47,6 +47,7 @@
 #include "Gfx_maptops.h"
 #include "Gfx_mapwalls.h"
 #include "Pathfinder.h"
+#include "Ctrl_bossbars.h"
 
 #pragma package(smart_init)
 
@@ -65,6 +66,7 @@ PacketProcessor::~PacketProcessor()
 void PacketProcessor::DispatchPacket(int action, int family, String packet)
 {
     int i = 0;
+    int appearing_npc_graphic;
     int npc_graphic;
     // Entering the game: the map and the four data files come in parts, then the welcome replies.
     if (family == OP_PLAY)
@@ -206,7 +208,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->class_values->download_requested = false;
                 if (MainForm->class_values->checksum_high != class_checksum_high ||
                     MainForm->class_values->checksum_low != class_checksum_low ||
-                    MainForm->class_values->record_count != class_record_count)
+                    MainForm->class_values->header_record_count != class_record_count)
                 {
                     MainForm->class_values->received_part_count = 1;
                     MainForm->class_values->expected_part_count = skill_record_count / CLASS_RECORDS_PER_FILE + 1;
@@ -279,7 +281,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->sfx->StopMusic();
                 MainForm->map->LoadMap(MainForm->map->map_id);
                 if (MainForm->map->IsMinimapDisabled())
-                    MainForm->gfx->interface_graphics->minimap_visible = false;
+                    MainForm->gfx->interface_graphics->minimap_visible = 0;
                 ParseNearbyEntities(MainForm->net_client->RemainingTokens());
                 MainForm->animation->game->CenterViewOnPlayer(MainForm->net_client->GetPlayerId());
                 if (MainForm->map->GetName() != "")
@@ -442,80 +444,94 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->menu->login_enabled = false;
         }
     }
-    if (family == OP_ACCOUNT && action == AC_RESULT)
+    if (family == OP_ACCOUNT)
     {
-        int account_reply = DecodeNumber(packet.SubString(1, 2));
-        if (account_reply == AccountReply_NameDialog24)
+        if (action == AC_LOGINGET)
         {
-            MainForm->edits->caret_enabled = false;
-            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                MainForm->strings->GetDialogText(DialogText_AlreadyExistAccount, false),
-                MainForm->strings->GetDialogText(DialogText_AlreadyExistAccount, true));
-            MainForm->animation->menu->create_account_enabled = true;
-            MainForm->edits->SetText(EditId_AccountName, "");
-            MainForm->edits->FocusEdit(EditId_AccountName);
-        }
-        if (account_reply == AccountReply_NameDialog25)
-        {
-            MainForm->edits->caret_enabled = false;
-            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                MainForm->strings->GetDialogText(DialogText_NotApprovedAccount, false),
-                MainForm->strings->GetDialogText(DialogText_NotApprovedAccount, true));
-            MainForm->animation->menu->create_account_enabled = true;
-            MainForm->edits->SetText(EditId_AccountName, "");
-            MainForm->edits->FocusEdit(EditId_AccountName);
-        }
-        if (account_reply == AccountReply_Created)
-        {
-            MainForm->edits->Clear();
-            MainForm->gfx->LoadMainMenuScreen(false);
-            MainForm->animation->SetSubState(MenuScreen_Main);
-            MainForm->edits->caret_enabled = false;
-            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                MainForm->strings->GetDialogText(DialogText_Welcome, false),
-                MainForm->strings->GetDialogText(DialogText_Welcome, true));
-        }
-        if (account_reply == AccountReply_FieldsDialog27)
-        {
-            MainForm->edits->SetText(EditId_AccountName, "");
-            MainForm->edits->SetText(EditId_OldPassword, "");
-            MainForm->edits->FocusEdit(EditId_AccountName);
-            MainForm->animation->menu->change_password_enabled = true;
-            MainForm->edits->caret_enabled = false;
-            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                MainForm->strings->GetDialogText(DialogText_RequestDeniedAccount, false),
-                MainForm->strings->GetDialogText(DialogText_RequestDeniedAccount, true));
-        }
-        if (account_reply == AccountReply_ResetDialog28)
-        {
-            MainForm->edits->Clear();
-            MainForm->animation->menu->is_form_open = false;
-            MainForm->edits->caret_enabled = false;
-            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                MainForm->strings->GetDialogText(DialogText_PasswordChanged, false),
-                MainForm->strings->GetDialogText(DialogText_PasswordChanged, true));
-        }
-        if (account_reply == AccountReply_Disconnect)
-        {
-            MainForm->net_client->account_reply_disconnect = true;
-            MainForm->edits->Clear();
-            MainForm->edits->caret_enabled = false;
-        }
-        if (account_reply >= AccountReply_SessionBase)
-        {
-            int account_expected_response = MainForm->net_client->server_challenge_hash;
-            int account_challenge = MainForm->net_client->challenge;
-            if (MainForm->net_client->HashChallenge(account_challenge) == account_expected_response)
+            int login_get_reply = DecodeNumber(packet.SubString(1, 2));
+            if (login_get_reply == 1)
             {
-                MainForm->net_client->SetSessionId(account_reply);
-                if (packet.Length() > 2)
+                int reply_timeout_seconds = DecodeNumber(packet.SubString(3, 2));
+                MainForm->animation->SetServerReplyTimeout(reply_timeout_seconds);
+            }
+        }
+        if (action == AC_RESULT)
+        {
+            int account_reply = DecodeNumber(packet.SubString(1, 2));
+            MainForm->animation->StopAccountProgress();
+            if (account_reply == AccountReply_NameDialog24)
+            {
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetDialogText(DialogText_AlreadyExistAccount, false),
+                    MainForm->strings->GetDialogText(DialogText_AlreadyExistAccount, true));
+                MainForm->animation->menu->create_account_enabled = true;
+                MainForm->edits->SetText(EditId_AccountName, "");
+                MainForm->edits->FocusEdit(EditId_AccountName);
+            }
+            if (account_reply == AccountReply_NameDialog25)
+            {
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetDialogText(DialogText_NotApprovedAccount, false),
+                    MainForm->strings->GetDialogText(DialogText_NotApprovedAccount, true));
+                MainForm->animation->menu->create_account_enabled = true;
+                MainForm->edits->SetText(EditId_AccountName, "");
+                MainForm->edits->FocusEdit(EditId_AccountName);
+            }
+            if (account_reply == AccountReply_Created)
+            {
+                MainForm->edits->Clear();
+                MainForm->gfx->LoadMainMenuScreen(false);
+                MainForm->animation->SetSubState(MenuScreen_Main);
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetDialogText(DialogText_Welcome, false),
+                    MainForm->strings->GetDialogText(DialogText_Welcome, true));
+            }
+            if (account_reply == AccountReply_FieldsDialog27)
+            {
+                MainForm->edits->SetText(EditId_AccountName, "");
+                MainForm->edits->SetText(EditId_OldPassword, "");
+                MainForm->edits->FocusEdit(EditId_AccountName);
+                MainForm->animation->menu->change_password_enabled = true;
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetDialogText(DialogText_RequestDeniedAccount, false),
+                    MainForm->strings->GetDialogText(DialogText_RequestDeniedAccount, true));
+            }
+            if (account_reply == AccountReply_ResetDialog28)
+            {
+                MainForm->edits->Clear();
+                MainForm->animation->menu->is_form_open = false;
+                MainForm->edits->caret_enabled = false;
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                    MainForm->strings->GetDialogText(DialogText_PasswordChanged, false),
+                    MainForm->strings->GetDialogText(DialogText_PasswordChanged, true));
+            }
+            if (account_reply == AccountReply_Disconnect)
+            {
+                MainForm->net_client->account_reply_disconnect = true;
+                MainForm->edits->Clear();
+                MainForm->edits->caret_enabled = false;
+            }
+            if (account_reply >= AccountReply_SessionBase)
+            {
+                MainForm->animation->SetServerReplyTimeout(120);
+                int account_expected_response = MainForm->net_client->server_challenge_hash;
+                int account_challenge = MainForm->net_client->challenge;
+                if (MainForm->net_client->HashChallenge(account_challenge) == account_expected_response)
                 {
-                    MainForm->net_client->SetSequenceStart(DecodeNumber(packet.SubString(3, 1)));
-                    MainForm->animation->StartAccountProgress();
-                    MainForm->edits->caret_enabled = false;
-                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Progress,
-                        MainForm->strings->GetDialogText(DialogText_AccountAccepted, false),
-                        MainForm->strings->GetDialogText(DialogText_AccountAccepted, true));
+                    MainForm->net_client->SetSessionId(account_reply);
+                    if (packet.Length() > 2)
+                    {
+                        MainForm->net_client->SetSequenceStart(DecodeNumber(packet.SubString(3, 1)));
+                        MainForm->animation->StartAccountProgress();
+                        MainForm->edits->caret_enabled = false;
+                        MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Progress,
+                            MainForm->strings->GetDialogText(DialogText_AccountAccepted, false),
+                            MainForm->strings->GetDialogText(DialogText_AccountAccepted, true));
+                    }
                 }
             }
         }
@@ -1470,8 +1486,9 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int chanter_id = DecodeNumber(packet.SubString(1, 2));
             int chanted_spell_id = DecodeNumber(packet.SubString(3, 2));
-            String chant_text = MainForm->skill_values->GetShout(chanted_spell_id);
-            MainForm->players->ShowTextLabel(chanter_id, chant_text, LabelColor_Silver, true, SHOUT_LABEL_TICKS);
+            SkillValue shout_skill = MainForm->skill_values->GetSkill(chanted_spell_id);
+            MainForm->players->ShowTextLabel(chanter_id, shout_skill.shout, LabelColor_Silver, true, 4 *
+                shout_skill.cast_time);
         }
         if (action == AC_GROUP)
         {
@@ -1918,11 +1935,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->npcs->StartEffect(spell_killed_npc, killing_spell_graphic - 1);
             MainForm->npcs->ShowDamage(spell_killed_npc, spell_kill_damage, false);
             MainForm->npcs->ShowHealthBar(spell_killed_npc, 0, 4);
-            MainForm->npcs->KillNpc(spell_killed_npc);
+            MainForm->npcs->KillNpc(spell_killed_npc, spell_killer_id);
             if (spell_killer_id > 0 && MainForm->net_client->GetPlayerId() != spell_killer_id)
             {
-                int spell_killer_x;
-                spell_killer_x = MainForm->players->GetX(spell_killer_id);
+                int spell_killer_x = MainForm->players->GetX(spell_killer_id);
                 int spell_killer_y;
                 spell_killer_y = MainForm->players->GetY(spell_killer_id);
                 if (MainForm->map->GetTileSpec(spell_killer_x, spell_killer_y) == TileSpec_Splash)
@@ -1948,6 +1964,28 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             String killing_spell_shout = MainForm->skill_values->GetShout(killing_spell_id);
             MainForm->players->ShowTextLabel(spell_killer_id, killing_spell_shout, LabelColor_LightBlue, false, 10);
             MainForm->redraw_needed = true;
+        }
+    }
+    if (family == OP_BOSS)
+    {
+        if (action == AC_SYN1)
+        {
+            int boss_bar_count = DecodeNumber(packet[1]);
+            for (appearing_npc_graphic = 0; appearing_npc_graphic < boss_bar_count; appearing_npc_graphic++)
+            {
+                int boss_npc_index = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 2, 2));
+                int boss_damage = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 4, 3));
+                int boss_health_percent = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 7, 1));
+                int boss_hit_points = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 8, 3));
+                int boss_bar_slot = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 11, 1));
+                int boss_died_flag = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 12, 1));
+                int boss_spare_flag = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 13, 1));
+                int boss_spare_value = DecodeNumber(packet.SubString(13 * appearing_npc_graphic + 14, 1));
+                char boss_killed = false;
+                if (boss_died_flag == 1)
+                    boss_killed = true;
+                MainForm->animation->boss_bars->ApplyHealth(boss_npc_index, boss_health_percent, boss_killed);
+            }
         }
     }
     if (family == OP_NPC)
@@ -2034,7 +2072,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             }
             MainForm->npcs->ShowDamage(killed_npc_index, kill_damage, false);
             MainForm->npcs->ShowHealthBar(killed_npc_index, 0, 4);
-            MainForm->npcs->KillNpc(killed_npc_index);
+            MainForm->npcs->KillNpc(killed_npc_index, npc_killer_id);
             if (npc_killer_id > 0 && MainForm->net_client->GetPlayerId() != npc_killer_id)
             {
                 int npc_killer_x = MainForm->players->GetX(npc_killer_id);
@@ -2646,7 +2684,9 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_OPEN)
         {
             int barber_session_id = DecodeNumber(packet.SubString(1, 4));
-            MainForm->animation->barber->Open(barber_session_id);
+            int barber_base_price = DecodeNumber(packet.SubString(1, 2));
+            int barber_price_per_level = DecodeNumber(packet.SubString(1, 2));
+            MainForm->animation->barber->Open(barber_session_id, barber_base_price, barber_price_per_level);
         }
         if (action == AC_UPDATE)
         {
@@ -2855,15 +2895,19 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->guild->AddText(packet, true);
             MainForm->animation->guild->AddText(MainForm->strings->GetText(GameText_ClickHereToChange), false);
         }
-        if (action == AC_RANK && MainForm->animation->guild->is_visible)
+        if (action == AC_RANK)
         {
-            MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
-            MainForm->animation->game->OpenInputForm(FormKind_GuildRankNames, 9, EditCharFilter_LettersSpaces, 16,
-                MainForm->strings->GetText(GameText_Ranking), MainForm->strings->GetText(GameText_EnterYourRankings));
-            for (int rank_number = 1; rank_number <= 9; rank_number++)
-                MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Rank) + " " +
-                    IntToStr(rank_number), MainForm->net_client->NextToken(), EditCharFilter_LettersSpaces, 16,
-                    EditCaseMode_None, false);
+            if (MainForm->animation->guild->is_visible)
+            {
+                MainForm->net_client->BeginTokens(packet, ByteToChar(TOKEN_BREAK_BYTE));
+                MainForm->animation->game->OpenInputForm(FormKind_GuildRankNames, 9, EditCharFilter_LettersSpaces, 16,
+                    MainForm->strings->GetText(GameText_Ranking),
+                    MainForm->strings->GetText(GameText_EnterYourRankings));
+                for (int rank_number = 1; rank_number <= 9; rank_number++)
+                    MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Rank) + " " +
+                        IntToStr(rank_number), MainForm->net_client->NextToken(), EditCharFilter_LettersSpaces, 16,
+                        EditCaseMode_None, false);
+            }
         }
         if (action == AC_PRIVATE)
         {
@@ -4373,6 +4417,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->gfx->tops->ReopenLibrary();
             MainForm->gfx->blends->ReopenLibrary();
             MainForm->gfx->items->ReopenLibrary();
+            MainForm->animation->boss_bars->HideAll();
             MainForm->map->LoadMap(MainForm->map->GetMapId());
             MainForm->animation->game->CenterViewOnPlayer(MainForm->net_client->GetPlayerId());
         }
@@ -4415,9 +4460,10 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                 MainForm->gfx->tops->ReopenLibrary();
                 MainForm->gfx->blends->ReopenLibrary();
                 MainForm->gfx->items->ReopenLibrary();
+                MainForm->animation->boss_bars->HideAll();
                 MainForm->map->LoadMap(new_map_id);
                 if (MainForm->map->IsMinimapDisabled())
-                    MainForm->gfx->interface_graphics->minimap_visible = false;
+                    MainForm->gfx->interface_graphics->minimap_visible = 0;
                 ParseNearbyEntities(packet.SubString(5, packet.Length()));
                 MainForm->animation->game->CenterViewOnPlayer(MainForm->net_client->GetPlayerId());
                 if (warp_effect == 2)

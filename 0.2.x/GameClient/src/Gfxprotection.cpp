@@ -280,14 +280,14 @@ void GfxController::FreeChestGraphics()
 }
 
 // Replaces the hover label with a new one for text, in the colour that label_style picks.
-void GfxController::CreateHoverLabel(int text_width, int height, int label_style, String text)
+void GfxController::CreateHoverLabel(int text_width, int height, int label_style, int element, String text)
 {
     if (hover_label_created)
     {
         FreeHoverLabel();
         Sleep(1);
     }
-    hover_label = new PlayerNameGraphics(text_width, height, label_style, text);
+    hover_label = new PlayerNameGraphics(text_width, height, label_style, element, text);
     hover_label_created = true;
 }
 
@@ -578,6 +578,8 @@ void GfxController::LoadGameGraphics()
         interface_graphics->LoadMinimapTiles(interface_library_copy, InterfaceBitmap_MinimapTiles);
         interface_graphics->LoadStatusIcons(interface_library_copy, InterfaceBitmap_StatusIcons);
         interface_graphics->LoadHudSheet(interface_library_copy, InterfaceBitmap_HudSheet);
+        interface_graphics->LoadElementIcons(interface_library_copy, InterfaceBitmap_ElementIcons);
+        interface_graphics->LoadPopupIcons(interface_library_copy, InterfaceBitmap_PopupIcons);
         interface_graphics->LoadPanelBackground(interface_library_copy, PanelBackground_Status);
         game->LoadPopupMenu(interface_library_copy, InterfaceBitmap_PopupMenu);
         game->LoadPaperdollBackground(interface_library_copy, InterfaceBitmap_PaperdollBackground);

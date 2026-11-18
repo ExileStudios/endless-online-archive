@@ -341,7 +341,7 @@ void Npcs::Animate()
         {
             it->idle_frame++;
             if (it->idle_frame > 3)
-                it->idle_frame = -1;
+                it->idle_frame = 255;
             if (it->idle_frame == 0 || it->idle_frame == 2)
                 it->redraw = true;
         }
@@ -473,7 +473,7 @@ void Npcs::Animate()
         }
         if (it->dying)
         {
-            it->death_countdown--;
+            it->death_timer--;
             MainForm->redraw_needed = true;
         }
         if (it->balloon_shown)
@@ -524,8 +524,8 @@ void Npcs::Animate()
                 {
                     if (!(*reverse_it).label_shown)
                     {
-                        String npc_name = MainForm->npc_values->GetName((*reverse_it).npc_id);
-                        MainForm->gfx->sprites->ShowNameLabel(npc_name, LabelColor_White);
+                        NpcValue npc_name = MainForm->npc_values->GetNpcByIndex((*reverse_it).npc_id - 1);
+                        MainForm->gfx->sprites->ShowNameLabel(npc_name.name, LabelColor_White, npc_name.element);
                         (*reverse_it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }
@@ -577,7 +577,7 @@ void Npcs::RemoveExpiredNpcs()
         {
             if (i->dying)
             {
-                if (i->death_countdown <= 0)
+                if (i->death_timer <= 0)
                 {
                     i->FreeResources();
                     npcs.erase(i);
@@ -587,15 +587,15 @@ void Npcs::RemoveExpiredNpcs()
             }
             else if (!IsInViewRange(center_x, center_y, i->x, i->y))
             {
-                if (!i->out_of_range)
+                if (!i->out_of_view)
                 {
-                    i->out_of_range = true;
-                    i->removal_countdown = 10;
+                    i->out_of_view = true;
+                    i->out_of_view_timer = 10;
                 }
                 else
                 {
-                    i->removal_countdown--;
-                    if (i->removal_countdown <= 0)
+                    i->out_of_view_timer--;
+                    if (i->out_of_view_timer <= 0)
                     {
                         i->FreeResources();
                         i->CloseBalloon();
@@ -606,7 +606,7 @@ void Npcs::RemoveExpiredNpcs()
                 }
             }
             else
-                i->out_of_range = false;
+                i->out_of_view = false;
         }
     } while (list_changed);
 }
@@ -805,7 +805,7 @@ void Npcs::SortByPosition()
         swapped = false;
         for (int i = 0; i < (int)GetCount() - 1; i++)
         {
-            Npc handle;
+            Npc handle(-1);
             if (npcs[i].y == npcs[i + 1].y)
             {
                 if (npcs[i].x > npcs[i + 1].x)
@@ -850,7 +850,7 @@ bool Npcs::HasNpcAt(int x, int y)
     vector<Npc>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (x == (int)it->x && y == (int)it->y && !it->dying)
+        if (x == it->x && y == it->y && !it->dying)
         {
             found = true;
             break;
@@ -859,15 +859,19 @@ bool Npcs::HasNpcAt(int x, int y)
     return found;
 }
 
-// Starts the npc's death countdown and takes its map index away, so lookups by the index no longer find it.
-void Npcs::KillNpc(int index)
+// Starts the npc's death for nine ticks, noting whether a hit killed it.
+void Npcs::KillNpc(int index, int damage)
 {
     for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
         if (index == it->index)
         {
             it->dying = true;
-            it->death_countdown = 9;
+            if (damage > 0)
+                it->killed_by_hit = true;
+            if (damage <= 0)
+                it->killed_by_hit = false;
+            it->death_timer = 9;
             it->index = -1;
             return;
         }
@@ -882,7 +886,7 @@ void Npcs::KillNpcsById(int npc_id)
         if (npc_id == it->npc_id)
         {
             it->dying = true;
-            it->death_countdown = 9;
+            it->death_timer = 9;
             it->index = -1;
         }
     }
@@ -891,6 +895,8 @@ void Npcs::KillNpcsById(int npc_id)
 // A copy of the npc at the index, or an npc of id -1 past the list.
 Npc Npcs::GetNpc(int index)
 {
+    if (index < 0 || GetCount() <= index)
+        return Npc(-1);
     return npcs[index];
 }
 
@@ -990,7 +996,7 @@ void Npcs::StartAttack(int index, int direction)
     }
 }
 
-// Adds an npc from a packet, unless one with the map index is on the list.
+// Adds an npc to the list, or moves the one of that index, keeping the list in drawing order by position.
 void Npcs::AddNpc(int index, int npc_id, int graphic, String name, int x, int y, int direction)
 {
     if (!HasNpc(index))

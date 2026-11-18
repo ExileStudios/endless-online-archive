@@ -23,6 +23,7 @@
 #include "Ctrl_tooltip.h"
 #include "Gfx_mapicons.h"
 #include "Gfx_mapitems.h"
+#include "Gfx_game.h"
 
 #pragma package(smart_init)
 
@@ -69,6 +70,8 @@ InterfaceGraphics::InterfaceGraphics()
     emote_sheet = new TDx_DrawSurface(NULL);
     weapon_effects = new TDx_DrawSurface(NULL);
     drag_save_surface = new TDx_DrawSurface(NULL);
+    element_icons = new TDx_DrawSurface(NULL);
+    popup_icons = new TDx_DrawSurface(NULL);
     color_key = new TDDColorKey(NULL);
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
@@ -109,8 +112,8 @@ InterfaceGraphics::InterfaceGraphics()
     surface_desc->Height = 106;
     corner_button->GetSurfaceDesc(surface_desc);
     corner_button->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 243;
-    surface_desc->Height = 14;
+    surface_desc->Width = 297;
+    surface_desc->Height = 80;
     minimap_tiles->GetSurfaceDesc(surface_desc);
     minimap_tiles->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 83;
@@ -169,7 +172,7 @@ InterfaceGraphics::InterfaceGraphics()
     surface_desc->Height = 30;
     group_icons->GetSurfaceDesc(surface_desc);
     group_icons->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 80;
+    surface_desc->Width = 120;
     surface_desc->Height = 40;
     status_icons->GetSurfaceDesc(surface_desc);
     status_icons->Create(surface_desc, MainForm->Dx_Draw1);
@@ -181,6 +184,14 @@ InterfaceGraphics::InterfaceGraphics()
     surface_desc->Height = 102;
     drag_save_surface->GetSurfaceDesc(surface_desc);
     drag_save_surface->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 184;
+    surface_desc->Height = 56;
+    element_icons->GetSurfaceDesc(surface_desc);
+    element_icons->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 225;
+    surface_desc->Height = 18;
+    popup_icons->GetSurfaceDesc(surface_desc);
+    popup_icons->Create(surface_desc, MainForm->Dx_Draw1);
     drag_rect.top = 0;
     drag_rect.left = 0;
     drag_rect.bottom = 102;
@@ -253,7 +264,15 @@ InterfaceGraphics::InterfaceGraphics()
     book_scrollbar_rect.left = 303;
     book_scrollbar_rect.bottom = 238;
     book_scrollbar_rect.right = 322;
-    minimap_visible = false;
+    scroll_up_arrow_rect.top = 47;
+    scroll_up_arrow_rect.left = 177;
+    scroll_up_arrow_rect.bottom = 51;
+    scroll_up_arrow_rect.right = 183;
+    scroll_down_arrow_rect.top = 52;
+    scroll_down_arrow_rect.left = 177;
+    scroll_down_arrow_rect.bottom = 56;
+    scroll_down_arrow_rect.right = 183;
+    minimap_visible = 0;
 }
 
 int InterfaceGraphics::GetThemeColor(int theme, int shade)
@@ -413,15 +432,119 @@ TRect InterfaceGraphics::GetSmallIconRect(int icon)
 // The interface corner button, plain or lit.
 DEFINE_GET_CORNER_BUTTON_RECT(InterfaceGraphics)
 
-// One minimap tile edge piece.
-TRect InterfaceGraphics::GetMinimapTileRect(int edge)
+TRect InterfaceGraphics::GetMinimapTileRect(int row, int edge)
 {
     TRect minimap_edge_rect;
     minimap_edge_rect.left = 27 * edge;
-    minimap_edge_rect.right = 27 * edge + 27;
-    minimap_edge_rect.top = 0;
-    minimap_edge_rect.bottom = 14;
+    minimap_edge_rect.right = 27 * edge + 26;
+    minimap_edge_rect.top = 16 * row;
+    minimap_edge_rect.bottom = 16 * row + 14;
     return minimap_edge_rect;
+}
+
+TRect InterfaceGraphics::GetListIconInnerRect(int row, int column)
+{
+    TRect rect;
+    rect.left = 27 * column + 2;
+    rect.right = 27 * column + 25;
+    rect.top = 16 * row + 2;
+    rect.bottom = 16 * row + 13;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetListIconMarkRect(int row, int column)
+{
+    TRect rect;
+    rect.left = 27 * column + 8;
+    rect.right = 27 * column + 18;
+    rect.top = 16 * row;
+    rect.bottom = 16 * row + 14;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetMinimapMarkRect(int row, int column)
+{
+    TRect rect;
+    rect.left = 7 * column + 216;
+    rect.right = 7 * column + 222;
+    rect.top = 7 * row + 48;
+    rect.bottom = 7 * row + 53;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetStatusIconLowRect(int row, int column)
+{
+    TRect rect;
+    rect.left = 7 * column + 216;
+    rect.right = 7 * column + 222;
+    rect.top = 7 * row + 49;
+    rect.bottom = 7 * row + 53;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetMarkerRect(int unused, int index)
+{
+    TRect rect;
+    rect.left = 11 * index + 252;
+    rect.right = 11 * index + 262;
+    rect.top = 69;
+    rect.bottom = 77;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetElementIconRect(int element)
+{
+    TRect rect;
+    rect.left = 8 * element + 120;
+    rect.right = 8 * element + 127;
+    rect.top = 38;
+    rect.bottom = 47;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetWeaknessIconRect(int weakness)
+{
+    TRect rect;
+    rect.left = 15 * weakness;
+    rect.right = 15 * weakness + 14;
+    rect.top = 39;
+    rect.bottom = 56;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetPopupFrameRect()
+{
+    TRect rect;
+    rect.left = 0;
+    rect.right = 184;
+    rect.top = 0;
+    rect.bottom = 38;
+    return rect;
+}
+
+TRect InterfaceGraphics::GetBarRowRect(int row)
+{
+    TRect rect;
+    rect.left = 0;
+    rect.right = 206;
+    rect.top = 6 * row;
+    rect.bottom = 6 * row + 5;
+    return rect;
+}
+
+// The bar of the row filled to the percent, 2 pixels a percent, kept within 0 to 100.
+TRect InterfaceGraphics::GetPercentBarRect(int percent, int row)
+{
+    TRect rect;
+    if (percent < 0)
+        percent = 0;
+    if (percent > 100)
+        percent = 100;
+    rect.left = 0;
+    rect.right = 2 * percent;
+    rect.top = 3 * row + 7;
+    rect.bottom = 3 * row + 9;
+    return rect;
 }
 
 // One weapon effect frame, by effect row and direction column.
@@ -462,16 +585,16 @@ TRect InterfaceGraphics::GetBackRect(int width, int height)
     return rect;
 }
 
-// One status icon, large from the first row or small from the second.
+// The place of an icon button on the sheet: its plain picture in the first row, its pressed one in the second.
 TRect InterfaceGraphics::GetStatusIconRect(int icon, bool small_icon)
 {
     TRect status_icon_rect;
     if (!small_icon)
     {
-        status_icon_rect.left = 20 * icon;
-        status_icon_rect.right = 20 * icon + 20;
-        status_icon_rect.top = 0;
-        status_icon_rect.bottom = 20;
+        status_icon_rect.left = 20 * icon + 2;
+        status_icon_rect.right = 20 * icon + 18;
+        status_icon_rect.top = 2;
+        status_icon_rect.bottom = 18;
     }
     else
     {
@@ -610,6 +733,8 @@ InterfaceGraphics::~InterfaceGraphics()
     minimap_tiles->Destroy();
     status_icons->Destroy();
     hud_sheet->Destroy();
+    element_icons->Destroy();
+    popup_icons->Destroy();
     delete hud_background;
     delete clock_background;
     delete tooltip_background;
@@ -624,6 +749,8 @@ InterfaceGraphics::~InterfaceGraphics()
     delete minimap_tiles;
     delete status_icons;
     delete hud_sheet;
+    delete element_icons;
+    delete popup_icons;
     hud_frame->Destroy();
     hud_left_frame->Destroy();
     hud_top_frame->Destroy();
@@ -691,14 +818,28 @@ void InterfaceGraphics::SaveScreenshot()
     }
 }
 
-// Draws the interface emote sheet bitmap onto its surface.
-void InterfaceGraphics::LoadEmoteSheet(int library, int resource_id)
+void InterfaceGraphics::LoadSurface(TDx_DrawSurface *surface, int library, int resource_id)
+{
+    LoadResourceSurface(surface, library, resource_id, 0, 0);
+}
+
+bool InterfaceGraphics::LoadResourceSurface(TDx_DrawSurface *emote_sheet, int library, int resource_id,
+    int fallback_width, int fallback_height)
 {
     HDC dc;
     MainForm->resource_bitmap->Width = 0;
     MainForm->resource_bitmap->Height = 0;
     MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    try
+    {
+        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+    }
+    catch (...)
+    {
+        MainForm->resource_bitmap->Width = fallback_width;
+        MainForm->resource_bitmap->Height = fallback_height;
+        return false;
+    }
     if (emote_sheet->GetDC(&dc))
     {
         try
@@ -708,145 +849,152 @@ void InterfaceGraphics::LoadEmoteSheet(int library, int resource_id)
         }
         catch (Exception &)
         {
+            return false;
         }
         emote_sheet->ReleaseDC(dc);
     }
+    return true;
+}
+
+// Draws the interface emote sheet bitmap onto its surface.
+void InterfaceGraphics::LoadEmoteSheet(int library, int resource_id)
+{
+    LoadSurface(emote_sheet, library, resource_id);
 }
 
 // Draws the interface weapon effects bitmap onto its surface, with black see-through.
 void InterfaceGraphics::LoadWeaponEffects(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (weapon_effects->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        weapon_effects->ReleaseDC(dc);
-    }
+    LoadSurface(weapon_effects, library, resource_id);
     weapon_effects->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws a panel background bitmap onto the shared panel surface; every side panel loads into it.
 void InterfaceGraphics::LoadPanelBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->interface_bitmap->Width = 0;
-    MainForm->interface_bitmap->Height = 0;
-    MainForm->interface_bitmap->Transparent = false;
-    MainForm->interface_bitmap->Width = 0;
-    MainForm->interface_bitmap->Height = 0;
-    MainForm->interface_bitmap->Transparent = false;
-    MainForm->interface_bitmap->LoadFromResourceID(library, resource_id);
-    if (panel_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->interface_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        panel_background->ReleaseDC(dc);
-    }
+    LoadSurface(panel_background, library, resource_id);
 }
 
 // Draws the map loading box bitmap onto the loading icon surface.
 void InterfaceGraphics::LoadMapLoadingBox(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (loading_icon->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        loading_icon->ReleaseDC(dc);
-    }
+    LoadSurface(loading_icon, library, resource_id);
 }
 
 // Draws the interface clock background bitmap onto its surface.
 void InterfaceGraphics::LoadClockBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (clock_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        clock_background->ReleaseDC(dc);
-    }
+    LoadSurface(clock_background, library, resource_id);
 }
 
 // Draws the interface group icons bitmap onto its surface.
 void InterfaceGraphics::LoadGroupIcons(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (group_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        group_icons->ReleaseDC(dc);
-    }
+    LoadSurface(group_icons, library, resource_id);
 }
 
 // Draws the interface tooltip background bitmap onto its surface.
 void InterfaceGraphics::LoadTooltipBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (tooltip_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        tooltip_background->ReleaseDC(dc);
-    }
+    LoadSurface(tooltip_background, library, resource_id);
+}
+
+// Draws the interface chat input background bitmap onto its surface.
+void InterfaceGraphics::LoadChatInputBackground(int library, int resource_id)
+{
+    LoadSurface(chat_input_background, library, resource_id);
+}
+
+// Draws the interface small icons bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadSmallIcons(int library, int resource_id)
+{
+    LoadSurface(small_icons, library, resource_id);
+    small_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface HUD sheet bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadHudSheet(int library, int resource_id)
+{
+    LoadSurface(hud_sheet, library, resource_id);
+    hud_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface status icons bitmap onto its surface.
+void InterfaceGraphics::LoadStatusIcons(int library, int resource_id)
+{
+    LoadSurface(status_icons, library, resource_id);
+}
+
+// Draws the interface chat tabs bitmap onto its surface.
+void InterfaceGraphics::LoadChatTabs(int library, int resource_id)
+{
+    LoadSurface(chat_tabs, library, resource_id);
+}
+
+// Draws the interface list icons bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadListIcons(int library, int resource_id)
+{
+    LoadSurface(list_icons, library, resource_id);
+    list_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface corner button bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadCornerButton(int library, int resource_id)
+{
+    LoadSurface(corner_button, library, resource_id);
+    corner_button->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface minimap tiles bitmap onto its surface.
+void InterfaceGraphics::LoadMinimapTiles(int library, int resource_id)
+{
+    LoadSurface(minimap_tiles, library, resource_id);
+}
+
+// Draws the interface chat mode icons bitmap onto its surface.
+void InterfaceGraphics::LoadChatModeIcons(int library, int resource_id)
+{
+    LoadSurface(chat_mode_icons, library, resource_id);
+}
+
+// Draws the interface HUD background bitmap onto its surface.
+void InterfaceGraphics::LoadHudBackground(int library, int resource_id)
+{
+    LoadSurface(hud_background, library, resource_id);
+}
+
+// Draws the interface tab buttons bitmap onto its surface.
+void InterfaceGraphics::LoadTabButtons(int library, int resource_id)
+{
+    LoadSurface(tab_buttons, library, resource_id);
+}
+
+// Draws the interface HUD frame bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadHudFrame(int library, int resource_id)
+{
+    LoadSurface(hud_frame, library, resource_id);
+    hud_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface HUD left frame bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadHudLeftFrame(int library, int resource_id)
+{
+    LoadSurface(hud_left_frame, library, resource_id);
+    hud_left_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface HUD top frame bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadHudTopFrame(int library, int resource_id)
+{
+    LoadSurface(hud_top_frame, library, resource_id);
+    hud_top_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the interface tile cursor bitmap onto its surface, with black see-through.
+void InterfaceGraphics::LoadTileCursor(int library, int resource_id)
+{
+    LoadSurface(tile_cursor, library, resource_id);
+    tile_cursor->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Fills the chat panel's surface with its dark background.
@@ -873,348 +1021,29 @@ void InterfaceGraphics::ClearChatPanel()
     }
 }
 
-// Draws the interface chat input background bitmap onto its surface.
-void InterfaceGraphics::LoadChatInputBackground(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (chat_input_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        chat_input_background->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface small icons bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadSmallIcons(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (small_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        small_icons->ReleaseDC(dc);
-    }
-    small_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface HUD sheet bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudSheet(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (hud_sheet->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        hud_sheet->ReleaseDC(dc);
-    }
-    hud_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface status icons bitmap onto its surface.
-void InterfaceGraphics::LoadStatusIcons(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (status_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        status_icons->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface chat tabs bitmap onto its surface.
-void InterfaceGraphics::LoadChatTabs(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (chat_tabs->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        chat_tabs->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface list icons bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadListIcons(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (list_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        list_icons->ReleaseDC(dc);
-    }
-    list_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface corner button bitmap onto its surface, with black see-through.
-DEFINE_LOAD_CORNER_BUTTON(InterfaceGraphics)
-
-// Draws the interface minimap tiles bitmap onto its surface.
-void InterfaceGraphics::LoadMinimapTiles(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (minimap_tiles->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        minimap_tiles->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface chat mode icons bitmap onto its surface.
-void InterfaceGraphics::LoadChatModeIcons(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (chat_mode_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        chat_mode_icons->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface HUD background bitmap onto its surface.
-void InterfaceGraphics::LoadHudBackground(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (hud_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        hud_background->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface tab buttons bitmap onto its surface.
-void InterfaceGraphics::LoadTabButtons(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (tab_buttons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        tab_buttons->ReleaseDC(dc);
-    }
-}
-
-// Draws the interface HUD frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudFrame(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (hud_frame->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        hud_frame->ReleaseDC(dc);
-    }
-    hud_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface HUD left frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudLeftFrame(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (hud_left_frame->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        hud_left_frame->ReleaseDC(dc);
-    }
-    hud_left_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface HUD top frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudTopFrame(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (hud_top_frame->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        hud_top_frame->ReleaseDC(dc);
-    }
-    hud_top_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface tile cursor bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadTileCursor(int library, int resource_id)
-{
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (tile_cursor->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        tile_cursor->ReleaseDC(dc);
-    }
-    tile_cursor->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
 // Draws the interface control sheet bitmap onto its surface.
 void InterfaceGraphics::LoadControlSheet(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (control_sheet->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        control_sheet->ReleaseDC(dc);
-    }
+    LoadSurface(control_sheet, library, resource_id);
 }
 
 // Draws the interface scroll icons bitmap onto its surface.
-DEFINE_LOAD_SCROLL_ICONS(InterfaceGraphics)
+void InterfaceGraphics::LoadScrollIcons(int library, int resource_id)
+{
+    LoadSurface(scroll_icons, library, resource_id);
+}
+
+void InterfaceGraphics::LoadElementIcons(int library, int resource_id)
+{
+    LoadResourceSurface(element_icons, library, resource_id, 17, 47);
+    element_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+void InterfaceGraphics::LoadPopupIcons(int library, int resource_id)
+{
+    LoadSurface(popup_icons, library, resource_id);
+    popup_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
 
 // One frame of the emote sheet.
 TRect InterfaceGraphics::GetWideIconRect(int frame)
@@ -1954,8 +1783,7 @@ void InterfaceGraphics::DrawChatText()
     }
 }
 
-// Draws the status panel: stats, health and mana, the damage range and other values, name, guild, weight, points,
-// gold, experience, the alignment word and the level.
+// Draws the status panel's values: the character's name and numbers, and the karma as a word from Demonic to Pure.
 void InterfaceGraphics::DrawStatusValues()
 {
     MainForm->text_canvas->Brush->Color = clWhite;
@@ -1964,33 +1792,37 @@ void InterfaceGraphics::DrawStatusValues()
     MainForm->text_canvas->Font->Name = "MS Sans Serif";
     MainForm->text_canvas->Font->Size = 7;
     MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    MainForm->text_canvas->TextOut(156, 338, IntToStr(MainForm->animation->interface_controller->status->stat_str));
-    MainForm->text_canvas->TextOut(156, 356, IntToStr(MainForm->animation->interface_controller->status->stat_int));
-    MainForm->text_canvas->TextOut(156, 374, IntToStr(MainForm->animation->interface_controller->status->stat_wis));
-    MainForm->text_canvas->TextOut(156, 392, IntToStr(MainForm->animation->interface_controller->status->stat_agi));
-    MainForm->text_canvas->TextOut(156, 410, IntToStr(MainForm->animation->interface_controller->status->stat_con));
-    MainForm->text_canvas->TextOut(156, 428, IntToStr(MainForm->animation->interface_controller->status->stat_cha));
-    MainForm->text_canvas->TextOut(264, 338, IntToStr(MainForm->animation->interface_controller->status->health));
-    MainForm->text_canvas->TextOut(264, 356, IntToStr(MainForm->animation->interface_controller->status->mana));
-    MainForm->text_canvas->TextOut(264, 374,
+    MainForm->text_canvas->TextOut(153, 338, IntToStr(MainForm->animation->interface_controller->status->stat_str));
+    MainForm->text_canvas->TextOut(153, 356, IntToStr(MainForm->animation->interface_controller->status->stat_int));
+    MainForm->text_canvas->TextOut(153, 374, IntToStr(MainForm->animation->interface_controller->status->stat_wis));
+    MainForm->text_canvas->TextOut(153, 392, IntToStr(MainForm->animation->interface_controller->status->stat_agi));
+    MainForm->text_canvas->TextOut(153, 410, IntToStr(MainForm->animation->interface_controller->status->stat_con));
+    MainForm->text_canvas->TextOut(153, 428, IntToStr(MainForm->animation->interface_controller->status->stat_cha));
+    MainForm->text_canvas->TextOut(261, 338,
+        IntToStr(MainForm->animation->interface_controller->status->health) + " / " +
+            IntToStr(MainForm->animation->interface_controller->status->max_health));
+    MainForm->text_canvas->TextOut(261, 356,
+        IntToStr(MainForm->animation->interface_controller->status->mana) + " / " +
+            IntToStr(MainForm->animation->interface_controller->status->max_mana));
+    MainForm->text_canvas->TextOut(261, 374,
         IntToStr(MainForm->animation->interface_controller->status->damage_min) + "-" +
             IntToStr(MainForm->animation->interface_controller->status->damage_max));
-    MainForm->text_canvas->TextOut(264, 392, IntToStr(MainForm->animation->interface_controller->status->hitrate));
-    MainForm->text_canvas->TextOut(264, 410, IntToStr(MainForm->animation->interface_controller->status->armor));
-    MainForm->text_canvas->TextOut(264, 428, IntToStr(MainForm->animation->interface_controller->status->dodge));
-    MainForm->text_canvas->TextOut(385, 338,
+    MainForm->text_canvas->TextOut(261, 392, IntToStr(MainForm->animation->interface_controller->status->hitrate));
+    MainForm->text_canvas->TextOut(261, 410, IntToStr(MainForm->animation->interface_controller->status->armor));
+    MainForm->text_canvas->TextOut(261, 428, IntToStr(MainForm->animation->interface_controller->status->dodge));
+    MainForm->text_canvas->TextOut(382, 338,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->character_name));
-    MainForm->text_canvas->TextOut(385, 356,
+    MainForm->text_canvas->TextOut(382, 356,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->guild_name));
     String weight_text = IntToStr(MainForm->animation->interface_controller->status->weight);
     weight_text = weight_text + " / ";
     weight_text = weight_text + IntToStr(MainForm->animation->interface_controller->status->max_weight);
-    MainForm->text_canvas->TextOut(385, 374, weight_text);
-    MainForm->text_canvas->TextOut(385, 392, IntToStr(MainForm->animation->interface_controller->status->stat_points));
-    MainForm->text_canvas->TextOut(385, 410, IntToStr(MainForm->animation->interface_controller->status->skill_points));
-    MainForm->text_canvas->TextOut(485, 374, IntToStr(MainForm->animation->interface_controller->status->gold));
-    MainForm->text_canvas->TextOut(485, 392, IntToStr(MainForm->animation->interface_controller->status->experience));
-    MainForm->text_canvas->TextOut(485, 410,
+    MainForm->text_canvas->TextOut(382, 374, weight_text);
+    MainForm->text_canvas->TextOut(382, 392, IntToStr(MainForm->animation->interface_controller->status->stat_points));
+    MainForm->text_canvas->TextOut(382, 410, IntToStr(MainForm->animation->interface_controller->status->skill_points));
+    MainForm->text_canvas->TextOut(482, 374, IntToStr(MainForm->animation->interface_controller->status->gold));
+    MainForm->text_canvas->TextOut(482, 392, IntToStr(MainForm->animation->interface_controller->status->experience));
+    MainForm->text_canvas->TextOut(482, 410,
         IntToStr(MainForm->animation->interface_controller->status->experience_to_next_level));
     int karma = MainForm->animation->interface_controller->status->alignment;
     String karma_text = "";
@@ -2013,8 +1845,8 @@ void InterfaceGraphics::DrawStatusValues()
         karma_text = "Saint";
     if (karma >= 900)
         karma_text = "Pure";
-    MainForm->text_canvas->TextOut(485, 428, karma_text);
-    MainForm->text_canvas->TextOut(557, 338, IntToStr(MainForm->animation->interface_controller->status->level));
+    MainForm->text_canvas->TextOut(482, 428, karma_text);
+    MainForm->text_canvas->TextOut(554, 338, IntToStr(MainForm->animation->interface_controller->status->level));
 }
 
 // Draws the group panel scroll arrows, lit under the mouse.
@@ -2941,6 +2773,629 @@ void InterfaceGraphics::DrawDraggedSkill()
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
                 MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon).resource->surface,
                 &source_rect);
+        }
+    }
+}
+
+// Draws the radar in the corner the settings pick: the tiles around the character with walls, doors and other
+// features, the other players and the npcs by kind, and the coordinates when asked.
+void InterfaceGraphics::DrawMinimap()
+{
+    GfxController *gfx;
+    MapController *map = MainForm->map;
+    gfx = MainForm->gfx;
+    if (!gfx->interface_graphics->minimap_visible)
+        return;
+    if (map->IsMinimapDisabled())
+        return;
+    int player_index = 0;
+    int npc_index = 0;
+    int origin_x = 104;
+    int origin_y = 192;
+    // 0 = bottom left, 1 = bottom right, 2 = top left, 3 = top right, or top left while a boss bar shows
+    if (MainForm->config->GetRadarPosition() == 1)
+        origin_x = 508;
+    if (MainForm->config->GetRadarPosition() == 2)
+        origin_y = 10;
+    if (MainForm->config->GetRadarPosition() == 3)
+    {
+        origin_x = 508;
+        origin_y = 10;
+    }
+    short radius = 11;
+    Player self = MainForm->players->GetPlayerById(MainForm->net_client->GetPlayerId());
+    int first_x = self.x - radius;
+    int first_y = self.y - radius;
+    for (int row = 0; 2 * radius >= row; row++)
+    {
+        // The tiles within the radius around the player, half blended over the view.
+        for (int col = 0; 2 * radius >= col; col++)
+        {
+            int x = col + first_x;
+            int y = row + first_y;
+            int screen_x = 4 * col - 4 * row + origin_x;
+            int screen_y = 2 * col + 2 * row + origin_y;
+            int dot_x = screen_x + 1;
+            int dot_y = screen_y + 1;
+            if (2 * radius == row)
+                gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetStatusIconLowRect(1, 0));
+            if (2 * radius == col)
+                gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetStatusIconLowRect(1, 1));
+            char off_map = false;
+            if (x < 0)
+                off_map = true;
+            if (y < 0)
+                off_map = true;
+            if (x > map->GetWidth())
+                off_map = true;
+            if (map->GetHeight() < y)
+                off_map = true;
+            if (map->spec_grid[x][y] == 18)
+                off_map = true;
+            if (off_map)
+                gfx->game->BlitClippedAlpha(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetStatusIconLowRect(3, 0), 60);
+            else
+            {
+                if ((int)MainForm->players->GetCount() > player_index)
+                {
+                    char player_searching;
+                    do
+                    {
+                        player_searching = false;
+                        Player player = MainForm->players->GetPlayer(player_index);
+                        if (x == player.x && player.y == y)
+                        {
+                            if (MainForm->net_client->GetPlayerId() != player.player_id && !player.hidden)
+                                gfx->game->BlitClippedHalfBlend(screen_x, screen_y,
+                                    gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetStatusIconLowRect(0, 5));
+                            player_searching = true;
+                            player_index++;
+                        }
+                    } while ((int)MainForm->players->GetCount() > player_index && player_searching);
+                }
+                if (map->edge_bottom[x][y])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(1, 0));
+                if (map->edge_top[x][y])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(0, 0));
+                if (map->edge_left[x][y])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(0, 1));
+                if (map->edge_right[x][y])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(1, 1));
+                unsigned char spec = map->spec_grid[x][y];
+                if (map->blocked[x][y])
+                {
+                    if (spec > MapTileSpec_FakeWall && spec < MapTileSpec_Jump)
+                        gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetStatusIconLowRect(0, 8));
+                    else if (spec != 18)
+                        gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetStatusIconLowRect(0, 3));
+                }
+                else if (spec == MapTileSpec_FakeWall)
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(0, 3));
+                else if (spec == MapTileSpec_Water)
+                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(1, 10));
+                else if (spec > MapTileSpec_AmbientSource && spec < MapTileSpec_HiddenSpikes)
+                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(1, 9));
+                if (map->has_tile_spec[x][y])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(0, 3));
+                if (map->minimap_mask[x][y] >= 1 && map->minimap_mask[x][y] <= 2 &&
+                    (!x || !y || x == map->GetWidth() || map->GetHeight() == y))
+                {
+                    int icon = map->minimap_mask[x][y] - 1;
+                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetStatusIconLowRect(1, icon + 2));
+                }
+                if ((int)MainForm->npcs->GetCount() > npc_index)
+                {
+                    char npc_searching;
+                    do
+                    {
+                        npc_searching = false;
+                        Npc npc = MainForm->npcs->GetNpc(npc_index);
+                        if (x == npc.x && npc.y == y)
+                        {
+                            if (npc.graphic != NpcGraphic_Wraith)
+                            {
+                                NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc.npc_id - 1);
+                                if (npc_value.npc_type > NpcType_Friendly && npc_value.npc_type < NpcType_Shop)
+                                {
+                                    if (npc_value.child)
+                                        gfx->game->BlitClippedAlpha(dot_x, dot_y,
+                                            gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
+                                    else if (npc_value.boss >= 2)
+                                        gfx->game->BlitClippedAlpha(dot_x, dot_y,
+                                            gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetStatusIconLowRect(0, 10), 160);
+                                    else if (npc_value.boss == 1)
+                                        gfx->game->BlitClippedAlpha(dot_x, dot_y,
+                                            gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
+                                    else if (npc_value.npc_type == NpcType_Untargetable)
+                                        gfx->game->BlitClippedAlpha(dot_x, dot_y,
+                                            gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetStatusIconLowRect(0, 8), 160);
+                                    else
+                                        gfx->game->BlitClippedAlpha(dot_x, dot_y,
+                                            gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
+                                }
+                                else if (npc_value.npc_type == NpcType_Shop)
+                                    gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetStatusIconLowRect(0, 9), 160);
+                                else if (npc_value.npc_type == NpcType_Bank)
+                                    gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetStatusIconLowRect(0, 5), 160);
+                                else if (npc_value.npc_type == NpcType_Quest)
+                                    gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetStatusIconLowRect(0, 4), 160);
+                                else
+                                    gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetStatusIconLowRect(0, 7), 160);
+                            }
+                            npc_searching = true;
+                            npc_index++;
+                        }
+                    } while ((int)MainForm->npcs->GetCount() > npc_index && npc_searching);
+                }
+            }
+        }
+    }
+    gfx->game->BlitClippedHalfBlend(origin_x - 1, 4 * radius + origin_y - 2, gfx->interface_graphics->minimap_tiles,
+        GetMarkerRect(2, self.direction));
+    // Without the icons setting the radar shows only the tiles and the player's own marker.
+    if (!MainForm->config->GetMinimapIcons())
+        return;
+    player_index = 0;
+    npc_index = 0;
+    for (int mark_row = 0; 2 * radius >= mark_row; mark_row++)
+    {
+        for (int mark_col = 0; 2 * radius >= mark_col; mark_col++)
+        {
+            int mark_tile_x = mark_col + first_x;
+            int mark_tile_y = mark_row + first_y;
+            int x = 4 * mark_col - 4 * mark_row + origin_x;
+            int mark_y = 2 * mark_col + 2 * mark_row + origin_y - 2;
+            if (mark_tile_x >= 0 && mark_tile_y >= 0 && map->GetWidth() >= mark_tile_x &&
+                map->GetHeight() >= mark_tile_y)
+            {
+                if ((int)MainForm->players->GetCount() > player_index)
+                {
+                    char mark_player_searching;
+                    do
+                    {
+                        mark_player_searching = false;
+                        Player mark_player = MainForm->players->GetPlayer(player_index);
+                        if (mark_player.x == mark_tile_x && mark_player.y == mark_tile_y)
+                        {
+                            if (MainForm->net_client->GetPlayerId() != mark_player.player_id && !mark_player.hidden)
+                            {
+                                if (mark_player.badge_level > 0)
+                                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetMinimapMarkRect(2, 10), 150);
+                                else
+                                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetMinimapMarkRect(2, 4), 150);
+                            }
+                            mark_player_searching = true;
+                            player_index++;
+                        }
+                    } while ((int)MainForm->players->GetCount() > player_index && mark_player_searching);
+                }
+                unsigned char mark_spec = map->spec_grid[mark_tile_x][mark_tile_y];
+                if (map->has_tile_spec[mark_tile_x][mark_tile_y])
+                {
+                    if (!mark_spec)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 5), 220);
+                    else if (mark_spec == 1 || mark_spec == 2)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 6), 220);
+                    else if (mark_spec == 2 || mark_spec == 3)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 7), 220);
+                    else if (mark_spec == 5 || mark_spec == 7)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 6), 220);
+                    else if (mark_spec == 6)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 7), 220);
+                    else if (mark_spec == 9)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 4), 220);
+                    else if (mark_spec == MapTileSpec_BankVault)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(1, 8), 220);
+                    else if (mark_spec == MapTileSpec_Jukebox)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(2, 0), 220);
+                    else if (mark_spec > MapTileSpec_FakeWall && mark_spec < MapTileSpec_Jukebox)
+                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapMarkRect(2, 2), 220);
+                }
+                else if (mark_spec == MapTileSpec_Arena)
+                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapMarkRect(2, 1), 220);
+                if (map->minimap_mask[mark_tile_x][mark_tile_y] == 3)
+                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapMarkRect(2, 3), 220);
+                if ((int)MainForm->npcs->GetCount() > npc_index)
+                {
+                    char mark_npc_searching;
+                    do
+                    {
+                        mark_npc_searching = false;
+                        Npc mark_npc = MainForm->npcs->GetNpc(npc_index);
+                        if (mark_npc.x == mark_tile_x && mark_npc.y == mark_tile_y)
+                        {
+                            if (mark_npc.graphic != NpcGraphic_Wraith)
+                            {
+                                NpcValue mark_npc_value = MainForm->npc_values->GetNpcByIndex(mark_npc.npc_id - 1);
+                                if (mark_npc_value.npc_type > NpcType_Friendly &&
+                                    mark_npc_value.npc_type < NpcType_Shop)
+                                {
+                                    if (mark_npc_value.child)
+                                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetMinimapMarkRect(2, 7), 150);
+                                    else if (mark_npc_value.boss >= 2)
+                                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetMinimapMarkRect(2, 9), 150);
+                                    else if (mark_npc_value.boss == 1)
+                                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetMinimapMarkRect(2, 8), 150);
+                                    else if (mark_npc_value.npc_type == NpcType_Untargetable)
+                                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetMinimapMarkRect(3, 8), 150);
+                                    else
+                                        gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                            gfx->interface_graphics->GetMinimapMarkRect(2, 5), 150);
+                                }
+                                else
+                                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetMinimapMarkRect(2, 6), 150);
+                            }
+                            mark_npc_searching = true;
+                            npc_index++;
+                        }
+                    } while ((int)MainForm->npcs->GetCount() > npc_index && mark_npc_searching);
+                }
+                if (radius == mark_col && radius == mark_row)
+                    gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapMarkRect(3, 1), 210);
+            }
+        }
+    }
+    HDC dc;
+    // With the coordinates setting on, the player's position is written by the radar.
+    if (MainForm->config->GetRadarCoords() && MainForm->OffscreenSurface->GetDC(&dc))
+    {
+        try
+        {
+            TCanvas *canvas = new TCanvas();
+            canvas->Handle = dc;
+            String coords = IntToStr(self.x) + "," + IntToStr(self.y);
+            canvas->Brush->Color = clWhite;
+            canvas->Brush->Style = bsClear;
+            canvas->Font->Name = "Arial";
+            canvas->Font->Size = 6;
+            canvas->Font->Color = (TColor)0xC8C8C8;
+            canvas->TextOut(origin_x + 42, origin_y + 86, coords);
+            canvas->Handle = 0;
+        }
+        catch (Exception &)
+        {
+        }
+        MainForm->OffscreenSurface->ReleaseDC(dc);
+    }
+}
+
+// Draws the whole map over the view, centered on the character: walls, doors and other features, the grid when set,
+// the other players and the npcs by kind.
+void InterfaceGraphics::DrawFullMinimap()
+{
+    GfxController *gfx;
+    int mark_x;
+    int mark_y;
+    unsigned char mark_spec;
+    MapController *map;
+    int player_index;
+    int npc_index;
+    int origin_x;
+    int origin_y;
+    map = MainForm->map;
+    gfx = MainForm->gfx;
+    if (!gfx->interface_graphics->minimap_visible)
+        return;
+    if (map->IsMinimapDisabled())
+        return;
+    player_index = 0;
+    npc_index = 0;
+    // Each tile is a diamond of 28 by 14 pixels, placed so the view centre sits mid-screen.
+    origin_x = 0 - 14 * map->GetCenterX() + 14 * map->GetCenterY();
+    origin_y = 0 - 7 * map->GetCenterX() - 7 * map->GetCenterY();
+    origin_x -= 24;
+    origin_y -= 8;
+    for (int row = 0; map->GetHeight() >= row; row++)
+    {
+        int col = 0;
+        while (map->GetWidth() >= col)
+        {
+            int screen_x = 14 * col - 14 * row + origin_x + 320;
+            int screen_y = 7 * col + 7 * row + origin_y + 148;
+            screen_x = screen_x + 2 * map->GetScrollShiftX();
+            screen_y += 2 * map->GetScrollShiftY();
+            int dot_x = screen_x + 1;
+            int dot_y = screen_y + 1;
+            if ((int)MainForm->players->GetCount() > player_index)
+            {
+                char player_searching;
+                do
+                {
+                    player_searching = false;
+                    Player player = MainForm->players->GetPlayer(player_index);
+                    if (player.x == col && player.y == row)
+                    {
+                        if (MainForm->net_client->GetPlayerId() != player.player_id)
+                        {
+                            if (!player.hidden)
+                                gfx->game->BlitClippedHalfBlend(screen_x, screen_y,
+                                    gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconInnerRect(3, player.direction + 4));
+                        }
+                        else if (MainForm->config->GetMinimapGrid())
+                            gfx->game->BlitClippedHalfBlend(screen_x + 2, screen_y + 1,
+                                gfx->interface_graphics->minimap_tiles,
+                                gfx->interface_graphics->GetListIconInnerRect(3, player.direction));
+                        else
+                            gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                                gfx->interface_graphics->GetListIconInnerRect(3, player.direction));
+                        player_searching = true;
+                        player_index++;
+                    }
+                } while ((int)MainForm->players->GetCount() > player_index && player_searching);
+            }
+            unsigned char spec = map->spec_grid[col][row];
+            if (MainForm->config->GetMinimapGrid())
+            {
+                if (spec != MapTileSpec_Edge)
+                {
+                    if (map->edge_top[col][row])
+                        gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapTileRect(0, 1));
+                    else if (map->edge_left[col][row])
+                        gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapTileRect(0, 0));
+                    else
+                        gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                            gfx->interface_graphics->GetMinimapTileRect(0, 2));
+                }
+            }
+            else
+            {
+                if (map->edge_bottom[col][row])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapTileRect(1, 0));
+                if (map->edge_top[col][row])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapTileRect(0, 0));
+                if (map->edge_left[col][row])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapTileRect(0, 1));
+                if (map->edge_right[col][row])
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapTileRect(1, 1));
+            }
+            if (map->blocked[col][row])
+            {
+                if (spec > MapTileSpec_FakeWall && spec < MapTileSpec_Jump)
+                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconInnerRect(0, 8));
+                else if (spec != MapTileSpec_Edge)
+                    gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetMinimapTileRect(0, 3));
+            }
+            else if (spec == MapTileSpec_FakeWall)
+                gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetMinimapTileRect(0, 3));
+            else if (spec == MapTileSpec_Water)
+                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetListIconInnerRect(1, 10));
+            else if (spec > MapTileSpec_AmbientSource && spec < MapTileSpec_HiddenSpikes)
+                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetListIconInnerRect(1, 9));
+            if (map->has_tile_spec[col][row])
+                gfx->game->BlitClippedHalfBlend(screen_x, screen_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetMinimapTileRect(0, 3));
+            if (map->minimap_mask[col][row] >= 1 && map->minimap_mask[col][row] <= 2 &&
+                (!col || !row || map->GetWidth() == col || map->GetHeight() == row))
+            {
+                int icon = map->minimap_mask[col][row] - 1;
+                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetListIconInnerRect(1, icon + 2));
+            }
+            if ((int)MainForm->npcs->GetCount() > npc_index)
+            {
+                char npc_searching;
+                do
+                {
+                    npc_searching = false;
+                    Npc npc = MainForm->npcs->GetNpc(npc_index);
+                    if (npc.x == col && npc.y == row)
+                    {
+                        if (npc.graphic != NpcGraphic_Wraith)
+                        {
+                            NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc.npc_id - 1);
+                            if (npc_value.npc_type > NpcType_Friendly && npc_value.npc_type < NpcType_Shop)
+                            {
+                                if (npc_value.child)
+                                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
+                                        gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
+                                else if (npc_value.boss >= 2)
+                                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
+                                        gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconInnerRect(4, npc.direction + 4));
+                                else if (npc_value.boss == 1)
+                                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
+                                        gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
+                                else if (npc_value.npc_type == NpcType_Untargetable)
+                                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
+                                        gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconInnerRect(0, 8));
+                                else
+                                    gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
+                                        gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
+                            }
+                            else if (npc_value.npc_type == NpcType_Shop)
+                                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconInnerRect(0, 9));
+                            else if (npc_value.npc_type == NpcType_Bank)
+                                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconInnerRect(0, 5));
+                            else if (npc_value.npc_type == NpcType_Quest)
+                                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconInnerRect(0, 4));
+                            else
+                                gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconInnerRect(0, 7));
+                        }
+                        npc_searching = true;
+                        npc_index++;
+                    }
+                } while ((int)MainForm->npcs->GetCount() > npc_index && npc_searching);
+            }
+            col++;
+        }
+    }
+    // The marks of players and npcs follow, when the minimap icons setting is on.
+    if (!MainForm->config->GetMinimapIcons())
+        return;
+    player_index = 0;
+    npc_index = 0;
+    for (int mark_row = 0; map->GetHeight() >= mark_row; mark_row++)
+    {
+        int mark_col = 0;
+        while (map->GetWidth() >= mark_col)
+        {
+            mark_x = 14 * mark_col - 14 * mark_row + origin_x + 328;
+            mark_y = 7 * mark_col + 7 * mark_row + origin_y + 142;
+            mark_x = mark_x + 2 * map->GetScrollShiftX();
+            mark_y = mark_y + 2 * map->GetScrollShiftY();
+            if ((int)MainForm->players->GetCount() > player_index)
+            {
+                char mark_player_searching;
+                do
+                {
+                    mark_player_searching = false;
+                    Player mark_player = MainForm->players->GetPlayer(player_index);
+                    if (mark_player.x == mark_col && mark_player.y == mark_row)
+                    {
+                        if (MainForm->net_client->GetPlayerId() != mark_player.player_id && !mark_player.hidden)
+                        {
+                            if (mark_player.badge_level > 0)
+                                gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconMarkRect(2, 10), 150);
+                            else
+                                gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconMarkRect(2, 4), 150);
+                        }
+                        mark_player_searching = true;
+                        player_index++;
+                    }
+                } while ((int)MainForm->players->GetCount() > player_index && mark_player_searching);
+            }
+            mark_spec = (char)map->spec_grid[mark_col][mark_row];
+            if (map->has_tile_spec[mark_col][mark_row])
+            {
+                if (!mark_spec)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 5), 220);
+                else if (mark_spec == 1 || mark_spec == 2)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 6), 220);
+                else if (mark_spec == 2 || mark_spec == 3)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 7), 220);
+                else if (mark_spec == 5 || mark_spec == 7)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 6), 220);
+                else if (mark_spec == 6)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 7), 220);
+                else if (mark_spec == 9)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 4), 220);
+                else if (mark_spec == MapTileSpec_BankVault)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(1, 8), 220);
+                else if (mark_spec == MapTileSpec_Jukebox)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(2, 0), 220);
+                else if (mark_spec > MapTileSpec_FakeWall && mark_spec < MapTileSpec_Jukebox)
+                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                        gfx->interface_graphics->GetListIconMarkRect(2, 2), 220);
+            }
+            else if (mark_spec == MapTileSpec_Arena)
+                gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetListIconMarkRect(2, 1), 220);
+            if (map->minimap_mask[mark_col][mark_row] == 3)
+                gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                    gfx->interface_graphics->GetListIconMarkRect(2, 3), 220);
+            if ((int)MainForm->npcs->GetCount() > npc_index)
+            {
+                char mark_npc_searching;
+                do
+                {
+                    mark_npc_searching = false;
+                    Npc mark_npc = MainForm->npcs->GetNpc(npc_index);
+                    if (mark_npc.x == mark_col && mark_npc.y == mark_row)
+                    {
+                        if (mark_npc.graphic != NpcGraphic_Wraith)
+                        {
+                            NpcValue mark_npc_value = MainForm->npc_values->GetNpcByIndex(mark_npc.npc_id - 1);
+                            if (mark_npc_value.npc_type > NpcType_Friendly && mark_npc_value.npc_type < NpcType_Shop)
+                            {
+                                if (mark_npc_value.child)
+                                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconMarkRect(2, 7), 150);
+                                else if (mark_npc_value.boss >= 2)
+                                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconMarkRect(2, 9), 150);
+                                else if (mark_npc_value.boss == 1)
+                                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconMarkRect(2, 8), 150);
+                                else if (mark_npc_value.npc_type == NpcType_Untargetable)
+                                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconMarkRect(3, 8), 150);
+                                else
+                                    gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                        gfx->interface_graphics->GetListIconMarkRect(2, 5), 150);
+                            }
+                            else
+                                gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
+                                    gfx->interface_graphics->GetListIconMarkRect(2, 6), 150);
+                        }
+                        mark_npc_searching = true;
+                        npc_index++;
+                    }
+                } while ((int)MainForm->npcs->GetCount() > npc_index && mark_npc_searching);
+            }
+            mark_col++;
         }
     }
 }

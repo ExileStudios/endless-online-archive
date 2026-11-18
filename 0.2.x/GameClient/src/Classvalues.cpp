@@ -5,180 +5,64 @@
 #include "Packetcontrols.h"
 #include <io.h>
 #include <stdio.h>
+#include "Pubfileheader.h"
 
 #pragma package(smart_init)
 
-ClassValues::ClassValues()
+ClassValues::ClassValues(String path)
 {
-    file_prefix = "./pub/dat";
+    file_prefix = path + "dat";
     unused_value = -1;
     is_loaded = false;
-    unused_value = -1;
+    has_long_name = false;
+    file_missing = false;
     checksum_high = 0;
     checksum_high = 0;
-    record_count = 0;
+    header_record_count = 0;
 }
 
 ClassValues::~ClassValues()
 {
 }
 
-// Reads the checksum and class count from the header of the first class file.
-// With more than 250 classes the last part file is read too; the values are kept only when its header matches.
+// Reads the checksum and record count from the head of the first class file; a missing file is marked.
 void ClassValues::ReadHeader()
 {
-    int file_handle;
-    int file_size;
-    char *buffer;
-    int first_checksum_high;
-    int first_checksum_low;
-    int total_records;
-    String file_text;
-    String file_name = file_prefix + "001.ecf";
+    int handle;
+    char *header_bytes;
+    int file_length;
+    String path = file_prefix + "001.ecf";
     try
     {
-        file_handle = FileOpen(file_name.c_str(), fmOpenRead);
-        file_size = FileSeek(file_handle, 0, 2);
-        FileSeek(file_handle, 0, 0);
-        buffer = new char[file_size + 1];
-        FileRead(file_handle, buffer, file_size);
-        FileClose(file_handle);
-        file_text = buffer;
-        file_text.SetLength(file_size);
-        delete[] buffer;
+        handle = FileOpen(path.c_str(), fmOpenRead);
+        file_length = FileSeek(handle, 0, 2);
+        if (file_length < 0)
+        {
+            file_missing = true;
+            return;
+        }
+        FileSeek(handle, 0, 0);
+        header_bytes = new char[11];
+        FileRead(handle, header_bytes, 10);
+        FileClose(handle);
+        file_text = header_bytes;
+        file_text.SetLength(file_length);
+        delete[] header_bytes;
+        if (file_text.Length() < 10)
+            return;
         // "ECF".
         if (file_text[1] != 'E' || file_text[2] != 'C' || file_text[3] != 'F')
             return;
-        first_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-        first_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-        total_records = DecodeNumber(file_text.SubString(8, 2));
+        read_position = 4;
+        checksum_high = DecodeNumber(2);
+        checksum_low = DecodeNumber(2);
+        header_record_count = DecodeNumber(2);
     }
     catch (...)
     {
-        first_checksum_high = 0;
-        first_checksum_low = 0;
-        total_records = 0;
-    }
-    if (total_records > 250)
-    {
-        file_text = "";
-        file_name = file_prefix;
-        int last_file_number = total_records / CLASS_RECORDS_PER_FILE + 1;
-        if (last_file_number < 10)
-            file_name = file_name + "00" + IntToStr(last_file_number) + ".ecf";
-        else
-            file_name = file_name + "0" + IntToStr(last_file_number) + ".ecf";
-        try
-        {
-            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
-            file_size = FileSeek(file_handle, 0, 2);
-            FileSeek(file_handle, 0, 0);
-            buffer = new char[file_size + 1];
-            FileRead(file_handle, buffer, file_size);
-            FileClose(file_handle);
-            file_text = buffer;
-            file_text.SetLength(file_size);
-            delete[] buffer;
-            if (file_text[1] != 'E' || file_text[2] != 'C' || file_text[3] != 'F')
-            {
-                checksum_high = 0;
-                checksum_low = 0;
-                record_count = 0;
-            }
-            else
-            {
-                int last_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-                int last_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-                int last_total_records = DecodeNumber(file_text.SubString(8, 2));
-                if (last_checksum_high == first_checksum_high && last_checksum_low == first_checksum_low &&
-                    last_total_records == total_records)
-                {
-                    checksum_high = first_checksum_high;
-                    checksum_low = first_checksum_low;
-                    record_count = total_records;
-                }
-            }
-        }
-        catch (...)
-        {
-            checksum_high = 0;
-            checksum_low = 0;
-            record_count = 0;
-        }
-    }
-    else
-    {
-        checksum_high = first_checksum_high;
-        checksum_low = first_checksum_low;
-        record_count = total_records;
-    }
-}
-
-// Reads every class part file into the list, once until the files change.
-void ClassValues::Load()
-{
-    int file_size;
-    char *buffer;
-    if (!is_loaded)
-    {
-        int file_number = 1;
-        int loaded_count = 0;
-        int record_total = 1;
-        do
-        {
-            String file_text;
-            String file_path = file_prefix;
-            if (file_number < 10)
-                file_path = file_path + "00" + IntToStr(file_number) + ".ecf";
-            else
-                file_path = file_path + "0" + IntToStr(file_number) + ".ecf";
-            int h_file;
-            try
-            {
-                h_file = FileOpen(file_path.c_str(), fmOpenRead);
-                file_size = FileSeek(h_file, 0, 2);
-                FileSeek(h_file, 0, 0);
-                buffer = new char[file_size + 1];
-                FileRead(h_file, buffer, file_size);
-                FileClose(h_file);
-                file_text = buffer;
-                file_text.SetLength(file_size);
-                delete[] buffer;
-                if (file_text[1] != 'E' || file_text[2] != 'C' || file_text[3] != 'F')
-                    return;
-                if (file_number == 1)
-                {
-                    int header_checksum_high = DecodeNumber(file_text.SubString(4, 2));
-                    int header_checksum_low = DecodeNumber(file_text.SubString(6, 2));
-                    int header_count = DecodeNumber(file_text.SubString(8, 2));
-                    int header_byte_at = DecodeNumber(file_text.SubString(10, 1));
-                    record_total = header_count;
-                }
-                file_text.Delete(1, 10);
-                for (int i = 0; loaded_count < record_total && i < 250; i++)
-                {
-                    // Each class: a length byte, the name, then 14 bytes of numbers.
-                    int name_length = DecodeNumber(file_text.SubString(1, 1));
-                    AddClass(Count() + 1, DecodeNumber(file_text.SubString(name_length + 2, 1)),
-                        file_text.SubString(2, name_length), DecodeNumber(file_text.SubString(name_length + 3, 1)),
-                        DecodeNumber(file_text.SubString(name_length + 4, 2)),
-                        DecodeNumber(file_text.SubString(name_length + 6, 2)),
-                        DecodeNumber(file_text.SubString(name_length + 8, 2)),
-                        DecodeNumber(file_text.SubString(name_length + 10, 2)),
-                        DecodeNumber(file_text.SubString(name_length + 12, 2)),
-                        DecodeNumber(file_text.SubString(name_length + 14, 2)));
-                    loaded_count++;
-                    file_text.Delete(1, name_length + 15);
-                }
-            }
-            catch (...)
-            {
-                FileClose(h_file);
-                is_loaded = false;
-            }
-            file_number++;
-        } while (loaded_count < record_total);
-        is_loaded = true;
+        checksum_high = 0;
+        checksum_low = 0;
+        header_record_count = 0;
     }
 }
 
@@ -194,6 +78,101 @@ void ClassValues::SaveFilePart(int part_number, String data)
     handle.open(lp_file_name.c_str(), std::ios::binary);
     handle << data.c_str();
     handle.close();
+}
+
+// Loads the class records from the numbered .ecf files, checking each file's mark and reading up to 900 records from
+// each, until the count the headers give is read.
+void ClassValues::Load()
+{
+    int handle;
+    int file_size;
+    short part_number;
+    char *buffer;
+    if (!is_loaded)
+    {
+        Clear();
+        ClearHeaders();
+        part_number = 0;
+        records_read = 0;
+        record_count = 0;
+        do
+        {
+            part_number++;
+            if (part_number < 10)
+                part_file_name = "00" + IntToStr(part_number) + ".ecf";
+            else
+                part_file_name = "0" + IntToStr(part_number) + ".ecf";
+            part_file_path = file_prefix + part_file_name;
+            try
+            {
+                handle = FileOpen(part_file_path.c_str(), fmOpenRead);
+                file_size = FileSeek(handle, 0, 2);
+                if (file_size < 0)
+                {
+                    file_missing = true;
+                    return;
+                }
+                FileSeek(handle, 0, 0);
+                buffer = new char[file_size + 1];
+                FileRead(handle, buffer, file_size);
+                FileClose(handle);
+                file_text = buffer;
+                file_text.SetLength(file_size);
+                delete[] buffer;
+                if (file_text.Length() < 14)
+                    return;
+                if (file_text[1] != 'E' || file_text[2] != 'C' || file_text[3] != 'F')
+                    return;
+                read_position = 4;
+                PubfileHeader *header = new PubfileHeader(part_file_name);
+                header->file_length = file_text.Length();
+                header->checksum_high = DecodeNumber(2);
+                header->checksum_low = DecodeNumber(2);
+                header->record_count = DecodeNumber(2);
+                header->version = ReadByte();
+                part_headers.insert(part_headers.end(), header);
+                if (!records_read)
+                    record_count = header->record_count;
+                int part_record;
+                for (part_record = 0; records_read < record_count && part_record < 900; part_record++)
+                {
+                    unsigned char name_length = ReadByte();
+                    if (name_length > 50)
+                    {
+                        has_long_name = true;
+                        header->load_state = 3;
+                    }
+                    String name = file_text.SubString(read_position, name_length);
+                    ClassValue record(Count() + 1);
+                    record.name = name;
+                    read_position += name_length;
+                    record.parent_class_id = ReadByte();
+                    record.stat_group = ReadByte();
+                    record.strength = DecodeNumber(2);
+                    record.intelligence = DecodeNumber(2);
+                    record.wisdom = DecodeNumber(2);
+                    record.agility = DecodeNumber(2);
+                    record.constitution = DecodeNumber(2);
+                    record.charisma = DecodeNumber(2);
+                    records.insert(records.end(), record);
+                    header->records_read++;
+                    records_read++;
+                    if (read_position - 1 == file_text.Length())
+                    {
+                        if (header->load_state != 3)
+                            header->load_state = 0;
+                        break;
+                    }
+                }
+            }
+            catch (...)
+            {
+                is_loaded = false;
+                return;
+            }
+        } while (records_read < record_count);
+        is_loaded = true;
+    }
 }
 
 // Deletes the class part files from 001 up to the first one missing, 100 at most.
@@ -221,21 +200,15 @@ void ClassValues::DeleteFiles()
     }
 }
 
-void ClassValues::AddClass(int class_id, int parent_class_id, String name, int stat_group,
-    short strength, short intelligence, short wisdom,
-    short agility, short constitution, short charisma)
+// Reads the class file again from the folder given: the prefix of its file names, then a fresh load.
+void ClassValues::LoadFrom(String folder)
 {
-    ClassValue handle(class_id);
-    handle.name = name;
-    handle.parent_class_id = parent_class_id;
-    handle.stat_group = stat_group;
-    handle.strength = strength;
-    handle.intelligence = intelligence;
-    handle.wisdom = wisdom;
-    handle.agility = agility;
-    handle.constitution = constitution;
-    handle.charisma = charisma;
-    records.insert(records.end(), handle);
+    file_prefix = folder + "dat";
+    Clear();
+    is_loaded = false;
+    has_long_name = false;
+    file_missing = false;
+    Load();
 }
 
 DEFINE_CLEAR(ClassValues)
@@ -254,7 +227,7 @@ String ClassValues::GetName(int class_id)
     return name;
 }
 
-// True when ancestor_id is 0, or is class_id or one of its parents, following each class's parent up the file.
+// True when the class is the ancestor or comes from it through its parent classes; any class for ancestor 0.
 bool ClassValues::IsDescendantOf(int class_id, int ancestor_id)
 {
     if (!ancestor_id)
@@ -272,4 +245,61 @@ unsigned int ClassValues::Count()
     return records.size();
 }
 
-DEFINE_DECODE_NUMBER(ClassValues)
+// Deletes the part headers.
+void ClassValues::ClearHeaders()
+{
+    for (int i = 0; i < part_headers.size(); i++)
+        delete part_headers[i];
+    part_headers.clear();
+}
+
+// Reads one byte at the read position, stored plus one; a value past 252 reads as 0.
+char ClassValues::ReadByte()
+{
+    unsigned char value;
+    try
+    {
+        value = file_text[read_position];
+        value--;
+    }
+    catch (...)
+    {
+        value = 0;
+    }
+    read_position++;
+    if (value > 252)
+        value = 0;
+    return value;
+}
+
+// Reads a number of length bytes at the read position, each a base-253 digit plus one; a 254 ends it early.
+int ClassValues::DecodeNumber(unsigned char encoded)
+{
+    int digit;
+    int number = 0;
+    try
+    {
+        for (int i = 0; i < encoded; i++)
+        {
+            unsigned char raw_byte = file_text[read_position + i];
+            if (raw_byte == 254)
+                break;
+            digit = raw_byte;
+            digit--;
+            if (!i)
+                number += digit;
+            if (i == 1)
+                number += 253 * digit;
+            if (i == 2)
+                number += 64009 * digit;
+            if (i == 3)
+                number += digit * 0xF71AE5;
+        }
+    }
+    catch (...)
+    {
+        number = 0;
+    }
+    read_position += encoded;
+    return number;
+}

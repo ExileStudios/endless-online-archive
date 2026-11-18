@@ -8,13 +8,15 @@ struct NpcResources;
 struct Npc
 {
     int index;
+    int bar_index;
     int npc_id;
     int graphic;
-    int idle_frame;
+    unsigned char idle_frame;
     char dying;
-    int death_countdown;
-    char out_of_range;
-    int removal_countdown;
+    char killed_by_hit;
+    short death_timer;
+    char out_of_view;
+    int out_of_view_timer;
     char graphics_pending;
     char reload_requested;
     int load_stage;
@@ -48,8 +50,8 @@ struct Npc
     int walk_target_y;
     int walk_facing;
     int walk_target_direction;
-    unsigned int x;
-    unsigned int y;
+    int x;
+    int y;
     int direction;
     char health_bar_shown;
     char health_bar_start;
@@ -75,7 +77,7 @@ struct Npc
     int queued_balloon_tinted[5];
     int queued_balloon_count;
 
-    Npc();
+    Npc(int map_index);
     Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing);
     ~Npc();
     void CreateResources();

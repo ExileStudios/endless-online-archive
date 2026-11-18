@@ -41,7 +41,7 @@ TradeController::TradeController()
     own_scroll_up_held = false;
     own_scroll_down_held = false;
     is_dragging = false;
-    tooltip = new Tooltip(76, 49);
+    tooltip = new Tooltip(76, 49, 2);
     tooltip->SetFlipEdge(630, 63);
 }
 

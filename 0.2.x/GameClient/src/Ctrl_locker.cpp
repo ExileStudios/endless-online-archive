@@ -38,7 +38,7 @@ LockerController::LockerController()
     scroll_up_held = false;
     scroll_down_held = false;
     is_dragging = false;
-    tooltip = new Tooltip(78, 50);
+    tooltip = new Tooltip(76, 50, 2);
     tooltip->SetFlipEdge(630, 63);
 }
 
@@ -128,16 +128,17 @@ void LockerController::MouseDown(int x, int y, int button)
     bool handled = false;
     if (button == 1)
     {
-        if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252)
+        if (y > window_y + 43 && y < window_y + 243 && x > window_x + 15 && x < window_x + 250)
         {
             is_dragging = false;
             TPoint locker_pos;
             locker_pos.x = locker_x;
             locker_pos.y = locker_y;
             // Four slots to a row; the item must fit the inventory and the weight limit.
-            int row = (x - window_x - 18) / 57;
-            row += 4 * ((y - window_y - 50) / NPC_LIST_ROW_HEIGHT);
-            row += 4 * top_row;
+            int row = (x - window_x - 17) / 57;
+            if (row > 3)
+                row = 3;
+            row = row + 4 * ((y - window_y - 50) / NPC_LIST_ROW_HEIGHT) + 4 * top_row;
             if (row >= 0 && (int)items.size() > row)
             {
                 if (MainForm->animation->interface_controller->inventory->HasRoomForItem(items[row].item_id))
@@ -219,10 +220,10 @@ void LockerController::MouseMove(int x, int y)
         MainForm->redraw_needed = true;
     }
     // Over a slot, the item's tip shows with its amount.
-    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 17 && x < window_x + 252 && !is_dragging &&
+    if (y > window_y + 43 && y < window_y + 243 && x > window_x + 15 && x < window_x + 250 && !is_dragging &&
         !thumb_grabbed)
     {
-        int col = (x - window_x - 20) / 57;
+        int col = (x - window_x - 17) / 57;
         int row = (y - window_y - 50) / NPC_LIST_ROW_HEIGHT;
         if (col < 0)
             col = 0;

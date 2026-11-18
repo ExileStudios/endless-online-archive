@@ -21,8 +21,9 @@ BarberController::~BarberController()
 {
 }
 
-// Opens the window with a preview copy of the player (id 999999) and the price: 200 gold a level, 200 at least.
-void BarberController::Open(int session_id)
+// Opens the barber window with a preview copy of the player and the first page of hair styles; the price is the base
+// cost plus the cost per level times the character's level.
+void BarberController::Open(int session_id, int base_cost, int level_cost)
 {
     Sleep(1);
     hair_style = MainForm->players->GetHairStyle(MainForm->net_client->GetPlayerId());
@@ -42,9 +43,14 @@ void BarberController::Open(int session_id)
     MainForm->players->ReloadGraphics(PlayerId_Preview);
     MainForm->gfx->CreateBarberGraphics();
     MainForm->gfx->LoadBarberGraphics();
-    price = 20 * MainForm->animation->interface_controller->status->level;
-    if (price < 20)
-        price = 20;
+    base_price = base_cost;
+    price_per_level = level_cost;
+    if (base_price <= 0)
+        base_price = 0;
+    if (price_per_level <= 0)
+        price_per_level = 20;
+    price += base_price;
+    price += MainForm->animation->interface_controller->status->level * price_per_level;
     npc_session_id = session_id;
     is_visible = true;
     MainForm->redraw_needed = true;

@@ -30,6 +30,9 @@
 #include "Ctrl_msgboard.h"
 #include "Ctrl_shop.h"
 #include "Ctrl_trade.h"
+#include "Ctrl_bossbars.h"
+#include "Ctrl_popupelement.h"
+#include <time.h>
 
 #pragma package(smart_init)
 
@@ -54,6 +57,7 @@ AnimationController::AnimationController(char show_intro)
     animating = true;
     account_progress = 0;
     reply_timeout = 0;
+    server_reply_timeout = 120000;
     chat_delay = 0;
     chat_decay_ticks = 0;
     chat_message_count = 0;
@@ -97,8 +101,11 @@ AnimationController::AnimationController(char show_intro)
     stat = new StatController();
     social = new SocialController();
     message_board = new MsgBoardController();
+    popup = new PopupElement();
+    boss_bars = new BossBars(410, 30);
 }
 
+// Frees the intro, the menu, the credits and every window controller.
 AnimationController::~AnimationController()
 {
     delete intro;
@@ -125,6 +132,8 @@ AnimationController::~AnimationController()
     delete stat;
     delete social;
     delete message_board;
+    delete popup;
+    delete boss_bars;
 }
 
 void AnimationController::SetScreenMode(int new_screen_mode)
@@ -249,7 +258,7 @@ void AnimationController::UpdateTimers()
             chat_message_count--;
             chat_count_check = IntToHex(chat_message_count, 2);
         }
-        chat_decay_ticks = 44;
+        chat_decay_ticks = 25;
         chat_decay_check = IntToHex(chat_decay_ticks, 2);
     }
     if (global_decay_ticks > 0)
@@ -307,21 +316,41 @@ void AnimationController::UpdateTimers()
     }
 }
 
+// Sets how long to wait for a server reply, 10 to 600 seconds.
+void AnimationController::SetServerReplyTimeout(short seconds)
+{
+    if (seconds < 30)
+        seconds = 30;
+    if (seconds > 600)
+        seconds = 600;
+    server_reply_timeout = 1000 * seconds;
+}
+
+int AnimationController::GetReplyTimeout()
+{
+    return server_reply_timeout;
+}
+
+int AnimationController::GetAccountProgress()
+{
+    return reply_progress;
+}
+
 void AnimationController::StartChatDelay()
 {
     chat_delay = 5;
 }
 
-// Counts a chat message; the third before a decay jumps the count, so the wait is longer than one decay.
+// Counts a chat message toward the flood limit, at most 6.
 void AnimationController::RecordChatMessage()
 {
     chat_message_count++;
-    if (chat_message_count >= 4)
+    if (chat_message_count >= 7)
         chat_message_count = MAX_RECENT_CHAT_MESSAGES;
     chat_count_check = IntToHex(chat_message_count, 2);
 }
 
-// Counts a global message; the second before a decay jumps the count, so the wait is longer than one decay.
+// Counts a global message; the third before a decay jumps the count, so the wait is longer than one decay.
 void AnimationController::RecordGlobalMessage()
 {
     global_message_count++;
@@ -505,17 +534,13 @@ void AnimationController::CloseTopWindow()
 
 void AnimationController::StartAccountProgress()
 {
+    reply_wait_start = clock();
     account_progress = 1;
 }
 
 void AnimationController::StopAccountProgress()
 {
     account_progress = 0;
-}
-
-int AnimationController::GetAccountProgress()
-{
-    return account_progress;
 }
 
 void AnimationController::StartReplyTimeout()
@@ -572,9 +597,11 @@ bool AnimationController::IsRefreshDelayed()
     return refresh_delayed;
 }
 
-// One step of the short delays, the loading spinner, the world reply wait, the account creation wait and the intro.
+// One step of the short delays, the loading spinner, the world reply wait, the account creation wait, the
+// character select cooldown and the intro.
 void AnimationController::UpdateIntroAndDelays()
 {
+    double waited;
     if (emote_delayed)
     {
         emote_delay--;
@@ -607,8 +634,7 @@ void AnimationController::UpdateIntroAndDelays()
         if (MainForm->animation->menu->loading_frame >= 8)
             MainForm->animation->menu->loading_frame = 0;
     }
-    // Partway through the world reply wait the menu is marked as entering the game.
-    // Later the wait gives up with a message.
+    // While the world loads, the game is entered on the twelfth pass.
     if (reply_timeout >= 1 && menu->is_loading_world)
     {
         reply_timeout++;
@@ -635,9 +661,11 @@ void AnimationController::UpdateIntroAndDelays()
     {
         if (menu->is_message_open)
         {
-            account_progress++;
-            if (account_progress >= 512)
+            waited = clock() - reply_wait_start;
+            reply_progress = waited / GetReplyTimeout() * 256.0;
+            if (GetReplyTimeout() <= waited)
             {
+                reply_progress = 256;
                 if (GetScreenMode() == ScreenMode_Menu && GetSubState() == MenuScreen_CreateAccount)
                 {
                     MainForm->net_client->sender->SendAccountCreate(account_name, account_password, account_detail_a,

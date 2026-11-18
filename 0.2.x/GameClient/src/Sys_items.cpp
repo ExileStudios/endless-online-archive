@@ -37,21 +37,22 @@ void MapItems::UpdateHoverLabel()
                             if ((*it).item_id == ItemId_Gold)
                             {
                                 String label_text = IntToStr((*it).amount) + " " + handle.name;
-                                MainForm->gfx->sprites->ShowNameLabel(label_text, handle.special + 2);
+                                MainForm->gfx->sprites->ShowNameLabel(label_text, handle.special + 2, handle.element);
                             }
                             else
                             {
                                 String stack_label = handle.name + " x" + IntToStr((*it).amount);
-                                MainForm->gfx->sprites->ShowNameLabel(stack_label, handle.special + 2);
+                                MainForm->gfx->sprites->ShowNameLabel(stack_label, handle.special + 2, handle.element);
                             }
                         }
                         else if ((*it).item_id == ItemId_Gold)
                         {
                             String single_gold_label = "1 " + handle.name;
-                            MainForm->gfx->sprites->ShowNameLabel(single_gold_label, handle.special + 2);
+                            MainForm->gfx->sprites->ShowNameLabel(single_gold_label, handle.special + 2,
+                                handle.element);
                         }
                         else
-                            MainForm->gfx->sprites->ShowNameLabel(handle.name, handle.special + 2);
+                            MainForm->gfx->sprites->ShowNameLabel(handle.name, handle.special + 2, handle.element);
                         (*it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }

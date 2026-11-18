@@ -6,6 +6,8 @@
 #include <string>
 #include <vector.h>
 
+struct PubfileHeader;
+
 #include "Classvalue.h"
 
 #define CLASS_RECORDS_PER_FILE 250
@@ -20,27 +22,36 @@ struct ClassValues
     int expected_part_count;
     int received_part_count;
     char is_loaded;
+    bool has_long_name;
+    bool file_missing;
+    String part_file_name;
+    String part_file_path;
+    int records_read;
+    int record_count;
     int checksum_high;
     int checksum_low;
-    int record_count;
+    int header_record_count;
+    String file_text;
+    int read_position;
     vector<ClassValue> records;
     int unused_value;
+    vector<PubfileHeader *> part_headers;
     String file_prefix;
 
-    ClassValues();
+    ClassValues(String path);
     ~ClassValues();
     void ReadHeader();
     void Load();
     void SaveFilePart(int part_number, String data);
     void DeleteFiles();
-    void AddClass(int class_id, int parent_class_id, String name, int stat_group, short strength,
-    short intelligence, short wisdom, short agility,
-    short constitution, short charisma);
+    void LoadFrom(String folder);
     void Clear();
     String GetName(int class_id);
     bool IsDescendantOf(int class_id, int ancestor_id);
     unsigned int Count();
-    int DecodeNumber(String encoded);
+    void ClearHeaders();
+    char ReadByte();
+    int DecodeNumber(unsigned char encoded);
 };
 
 
@@ -57,31 +68,29 @@ void Class::Clear() \
     } \
 }
 
-// Reads a number of up to 4 bytes, low byte first: each byte less 1 is a digit in base 253.
-// A byte of 254 ends the number.
-// Shared body: a class defines its DecodeNumber with DEFINE_DECODE_NUMBER(TheClass).
+// Shared body: a class defines its DecodeNumber with DEFINE_DECODE_NUMBER(TheClass); each class has its own data,
+// read_position.
 #define DEFINE_DECODE_NUMBER(Class) \
-int Class::DecodeNumber(String encoded) \
+int Class::DecodeNumber(unsigned char encoded) \
 { \
     int digit; \
-    String text = encoded; \
     int value = 0; \
     try \
     { \
-        for (int i = 1; i <= text.Length(); i++) \
+        for (int i = 0; i < encoded; i++) \
         { \
-            unsigned char raw_byte = text[i]; \
+            unsigned char raw_byte = data[read_position + i]; \
             if (raw_byte == 254) \
                 break; \
             digit = raw_byte; \
             digit--; \
-            if (i == 1) \
+            if (!i) \
                 value += digit; \
+            if (i == 1) \
+                value += 253 * digit; \
             if (i == 2) \
-                value += NUMBER_ENCODING_BASE * digit; \
+                value += 64009 * digit; \
             if (i == 3) \
-                value += NUMBER_ENCODING_BASE_SQUARED * digit; \
-            if (i == 4) \
                 value += digit * 0xF71AE5; \
         } \
     } \
@@ -89,6 +98,7 @@ int Class::DecodeNumber(String encoded) \
     { \
         value = 0; \
     } \
+    read_position += encoded; \
     return value; \
 }
 

@@ -10,12 +10,17 @@ enum TooltipAlign
 
 struct Tooltip
 {
-    String lines[6];
-    unsigned char line_colors[8];
+    int element;
+    int title_width;
+    String lines[9];
+    unsigned char line_colors[12];
     int line_count;
+    int scroll_offset;
+    int fixed_lines;
     int width;
     int x;
     int y;
+    int shown_id;
     int anchor_x;
     int anchor_y;
     int flip_edge_x;
@@ -41,7 +46,7 @@ struct Tooltip
     int color_9;
     char show_cursed;
 
-    Tooltip(int left, int fixed);
+    Tooltip(int left, int top, int fixed);
     ~Tooltip();
     bool Hide();
     void ClearLines();
@@ -59,6 +64,8 @@ struct Tooltip
     void DrawFrame();
     void DrawString();
     void Measure();
+    bool ScrollDown();
+    bool ScrollUp();
     bool IsVisible();
 };
 

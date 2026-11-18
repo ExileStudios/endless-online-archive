@@ -70,6 +70,7 @@ enum PacketAction
     AC_TARGET = 31,
     AC_GROUP = 33,
     AC_TALK = 34,
+    AC_LOGINGET = 200,
     AC_SYN1 = 240,
     AC_SYN2 = 241,
     AC_SYN3 = 242,
@@ -77,7 +78,6 @@ enum PacketAction
     AC_SYN5 = 244,
     AC_ERROR = 250,
     AC_SWAP = 35,
-    AC_LOGINGET = 200,
     AC_CONFIG = 220
 };
 

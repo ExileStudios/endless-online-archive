@@ -8,7 +8,7 @@
 
 #pragma package(smart_init)
 
-// An empty map with no view centre, no scrolling and no warp in progress.
+// An empty map with no view centre, no scrolling and no warp in progress, and its path finder.
 MapController::MapController()
 {
     ClearMap();
@@ -34,6 +34,7 @@ MapController::MapController()
     cursor_update_pending = false;
     action_blocked = false;
     frozen = false;
+    has_boss = false;
     map_request_pending = false;
     loading_map = false;
     warp_timeout = 0;
@@ -157,16 +158,13 @@ void MapController::SaveMapFile(int map_number)
     handle.close();
 }
 
-// Loads a map file into the tile layers and object lists, then starts or stops the map's music.
-// The file is a 46-byte header, then sections in order: a skipped block of 8-byte records, doors, chests,
-// tile specs, warps, nine tile layers, and the signs when any bytes are left.
-// Header fields by position: 1-3 the file mark, 4-7 the checksum, 8-31 the name, 32 the map type,
-// 33 an attribute, 34-35 the music and its mode, 36-37 the ambient sound, 38-39 the width and height,
-// 40-41 the fill tile, 42 the minimap setting and 43 the item setting.
+// Loads a map from its .emf file: the name and settings, then the npc spawns, chests, tile kinds, warps, doors and
+// signs, and every graphic layer; it starts the map's music and marks the edge tiles.
 void MapController::LoadMap(int map_number)
 {
     int spec_x;
     int spec_y;
+    int row_spec_count;
     int h_file;
     int n_number_of_bytes_to_read;
     char *file_handle;
@@ -200,16 +198,15 @@ void MapController::LoadMap(int map_number)
         width = MainForm->net_client->DecodeNumber(data.SubString(38, 1));
         height = MainForm->net_client->DecodeNumber(data.SubString(39, 1));
         int count;
-        int row_count;
         int fill_tile = MainForm->net_client->DecodeNumber(data.SubString(40, 2));
         int minimap_setting = MainForm->net_client->DecodeNumber(data.SubString(42, 1));
         int item_setting = MainForm->net_client->DecodeNumber(data.SubString(43, 1));
         int trailing_header_value = MainForm->net_client->DecodeNumber(data.SubString(46, 1));
-        for (int j = 1; j <= name.Length(); j++)
+        for (spec_x = 1; spec_x <= name.Length(); spec_x++)
         {
-            if ((unsigned char)name[j] == 255)
+            if ((unsigned char)name[spec_x] == 255)
             {
-                name = name.SubString(1, j - 1);
+                name = name.SubString(1, spec_x - 1);
                 break;
             }
         }
@@ -229,7 +226,15 @@ void MapController::LoadMap(int map_number)
             item_use_restricted = false;
         data.Delete(1, 46);
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-        data.Delete(1, 8 * count + 1);
+        data.Delete(1, 1);
+        for (int npc_index = 0; npc_index < count; npc_index++)
+        {
+            int npc_id = MainForm->net_client->DecodeNumber(data.SubString(3, 2));
+            NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc_id - 1);
+            if (npc_value.boss > 0)
+                has_boss = true;
+            data.Delete(1, 8);
+        }
         // Doors: x, y and a two-byte key.
         count = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
         data.Delete(1, 1);
@@ -258,12 +263,13 @@ void MapController::LoadMap(int map_number)
         for (int jj = 0; jj < count; jj++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int kk = 0; kk < row_count; kk++)
+            for (int kk = 0; row_spec_count > kk; kk++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-                int spec = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+                unsigned char spec = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+                spec_grid[spec_x][spec_y] = spec;
                 if (!spec)
                 {
                     blocked[spec_x][spec_y] = true; has_tile_spec[spec_x][spec_y] = false;
@@ -280,10 +286,10 @@ void MapController::LoadMap(int map_number)
                 {
                     blocked[spec_x][spec_y] = true;
                     has_tile_spec[spec_x][spec_y] = false;
-                    minimap_mask[spec_x][spec_y] = 1;
                 }
                 if (spec == MapTileSpec_FakeWall)
-                    minimap_mask[spec_x][spec_y] = 2;
+                {
+                }
                 if (spec > MapTileSpec_FakeWall && spec <= MapTileSpec_Jukebox)
                 {
                     objects[spec_x][spec_y] = 0; has_tile_spec[spec_x][spec_y] = true;
@@ -300,17 +306,22 @@ void MapController::LoadMap(int map_number)
         for (int mm = 0; mm < count; mm++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int nn = 0; nn < row_count; nn++)
+            for (int nn = 0; row_spec_count > nn; nn++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
+                int warp_map = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
+                int warp_level = MainForm->net_client->DecodeNumber(data.SubString(6, 1));
                 // A warp record: x, map, destination x and y, level, door.
                 int warp_door = MainForm->net_client->DecodeNumber(data.SubString(7, 2));
-                blocked[spec_x][spec_y] = false; has_tile_spec[spec_x][spec_y] = false;
-                AddWarp(spec_x, spec_y, MainForm->net_client->DecodeNumber(data.SubString(2, 2)),
-                    MainForm->net_client->DecodeNumber(data.SubString(6, 1)),
-                    MainForm->net_client->DecodeNumber(data.SubString(4, 1)),
+                blocked[spec_x][spec_y] = false;
+                has_tile_spec[spec_x][spec_y] = false;
+                if (!warp_level)
+                    minimap_mask[spec_x][spec_y] = 1;
+                else
+                    minimap_mask[spec_x][spec_y] = 2;
+                AddWarp(spec_x, spec_y, warp_map, warp_level, MainForm->net_client->DecodeNumber(data.SubString(4, 1)),
                     MainForm->net_client->DecodeNumber(data.SubString(5, 1)));
                 if (warp_door > 0)
                 {
@@ -330,9 +341,9 @@ void MapController::LoadMap(int map_number)
         for (int ground_row = 0; ground_row < count; ground_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int ground_column = 0; ground_column < row_count; ground_column++)
+            for (int ground_column = 0; row_spec_count > ground_column; ground_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 ground_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -344,9 +355,9 @@ void MapController::LoadMap(int map_number)
         for (int object_row = 0; object_row < count; object_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int object_column = 0; object_column < row_count; object_column++)
+            for (int object_column = 0; row_spec_count > object_column; object_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 objects[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -358,9 +369,9 @@ void MapController::LoadMap(int map_number)
         for (int mask_row = 0; mask_row < count; mask_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int mask_column = 0; mask_column < row_count; mask_column++)
+            for (int mask_column = 0; row_spec_count > mask_column; mask_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 masks[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -372,9 +383,9 @@ void MapController::LoadMap(int map_number)
         for (int wall_row = 0; wall_row < count; wall_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int wall_column = 0; wall_column < row_count; wall_column++)
+            for (int wall_column = 0; row_spec_count > wall_column; wall_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 walls[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -386,9 +397,9 @@ void MapController::LoadMap(int map_number)
         for (int next_row_wall_row = 0; next_row_wall_row < count; next_row_wall_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int next_row_wall_column = 0; next_row_wall_column < row_count; next_row_wall_column++)
+            for (int next_row_wall_column = 0; row_spec_count > next_row_wall_column; next_row_wall_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 walls_next_row[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -400,9 +411,9 @@ void MapController::LoadMap(int map_number)
         for (int top_row = 0; top_row < count; top_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int top_column = 0; top_column < row_count; top_column++)
+            for (int top_column = 0; row_spec_count > top_column; top_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 top_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -414,9 +425,9 @@ void MapController::LoadMap(int map_number)
         for (int overlay_row = 0; overlay_row < count; overlay_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int overlay_column = 0; overlay_column < row_count; overlay_column++)
+            for (int overlay_column = 0; row_spec_count > overlay_column; overlay_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 overlay_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -428,9 +439,9 @@ void MapController::LoadMap(int map_number)
         for (int blend_row = 0; blend_row < count; blend_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int blend_column = 0; blend_column < row_count; blend_column++)
+            for (int blend_column = 0; row_spec_count > blend_column; blend_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 blend_tiles[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -442,9 +453,9 @@ void MapController::LoadMap(int map_number)
         for (int top_mask_row = 0; top_mask_row < count; top_mask_row++)
         {
             spec_y = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
-            row_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
+            row_spec_count = MainForm->net_client->DecodeNumber(data.SubString(2, 1));
             data.Delete(1, 2);
-            for (int top_mask_column = 0; top_mask_column < row_count; top_mask_column++)
+            for (int top_mask_column = 0; row_spec_count > top_mask_column; top_mask_column++)
             {
                 spec_x = MainForm->net_client->DecodeNumber(data.SubString(1, 1));
                 top_masks[spec_x][spec_y] = MainForm->net_client->DecodeNumber(data.SubString(2, 2));
@@ -464,6 +475,7 @@ void MapController::LoadMap(int map_number)
                 data.Delete(1, 4);
                 String sign_text = MainForm->net_client->DeobfuscateString(data.SubString(1, sign_length));
                 data.Delete(1, sign_length);
+                minimap_mask[spec_x][spec_y] = 3;
                 AddSign(spec_x, spec_y, sign_text);
             }
         }
@@ -504,6 +516,44 @@ void MapController::LoadMap(int map_number)
     }
     catch (...)
     {
+    }
+    MarkEdgeTiles();
+}
+
+// Marks each tile that borders the map's edge or a tile of kind 18 on any side, for the minimap's edge lines.
+void MapController::MarkEdgeTiles()
+{
+    int x;
+    unsigned char last_x = GetWidth();
+    unsigned char last_y = GetHeight();
+    for (int y = 0; y <= GetHeight(); y++)
+    {
+        for (x = 0; x <= GetWidth(); x++)
+        {
+            edge_bottom[x][y] = false;
+            edge_top[x][y] = false;
+            edge_left[x][y] = false;
+            edge_right[x][y] = false;
+            if (spec_grid[x][y] != 18)
+            {
+                if (!x)
+                    edge_left[x][y] = true;
+                if (!y)
+                    edge_top[x][y] = true;
+                if (x == last_x)
+                    edge_right[x][y] = true;
+                if (y == last_y)
+                    edge_bottom[x][y] = true;
+                if (x > 0 && spec_grid[x - 1][y] == 18)
+                    edge_left[x][y] = true;
+                if (x < last_x && spec_grid[x + 1][y] == 18)
+                    edge_right[x][y] = true;
+                if (y > 0 && spec_grid[x][y - 1] == 18)
+                    edge_top[x][y] = true;
+                if (y < last_y && spec_grid[x][y + 1] == 18)
+                    edge_bottom[x][y] = true;
+            }
+        }
     }
 }
 
@@ -1134,21 +1184,29 @@ void MapController::Animate()
         {
             scroll_offset_x = 0 - (32 * center_x + 32 - 8 * GetScrollStep()) + 32 * center_y;
             scroll_offset_y = 0 - (16 * center_x + 16 - 4 * GetScrollStep()) - 16 * center_y;
+            scroll_shift_x = 0 - (8 - 2 * GetScrollStep());
+            scroll_shift_y = 0 - (4 - GetScrollStep());
         }
         if (GetScrollDirection() == FacingDirection_Up)
         {
             scroll_offset_x = 32 * center_y + 32 - 8 * GetScrollStep() + (0 - 32 * center_x);
             scroll_offset_y = 0 - 16 * center_x - (16 * center_y + 16 - 4 * GetScrollStep());
+            scroll_shift_x = 8 - 2 * GetScrollStep();
+            scroll_shift_y = 0 - (4 - GetScrollStep());
         }
         if (GetScrollDirection() == FacingDirection_Right)
         {
             scroll_offset_x = 0 - (8 * GetScrollStep() + 32 * center_x - 32) + 32 * center_y;
             scroll_offset_y = 0 - (4 * GetScrollStep() + 16 * center_x - 16) - 16 * center_y;
+            scroll_shift_x = 8 - 2 * GetScrollStep();
+            scroll_shift_y = 4 - GetScrollStep();
         }
         if (GetScrollDirection() == FacingDirection_Down)
         {
             scroll_offset_x = 8 * GetScrollStep() + 32 * center_y + (0 - 32 * center_x) - 32;
             scroll_offset_y = 0 - 16 * center_x - (4 * GetScrollStep() + 16 * center_y - 16);
+            scroll_shift_x = 0 - (8 - 2 * GetScrollStep());
+            scroll_shift_y = 4 - GetScrollStep();
         }
         if (scroll_step <= 3)
         {
@@ -1172,7 +1230,19 @@ void MapController::Animate()
         }
         scroll_offset_x = 0 - 32 * center_x + 32 * center_y;
         scroll_offset_y = 0 - 16 * center_x - 16 * center_y;
+        scroll_shift_x = 0;
+        scroll_shift_y = 0;
     }
+}
+
+int MapController::GetScrollShiftX()
+{
+    return scroll_shift_x;
+}
+
+int MapController::GetScrollShiftY()
+{
+    return scroll_shift_y;
 }
 
 // Acts on the warp the server sent: accepts it, or asks for the map first when the local file is not the same.
@@ -1263,8 +1333,10 @@ void MapController::ClearMap()
             blocked[i][j] = false;
             has_tile_spec[i][j] = false;
             minimap_mask[i][j] = 0;
+            spec_grid[i][j] = 0;
         }
     }
+    has_boss = false;
     ClearTileObjects();
     ClearWarps();
     ClearSigns();
@@ -1278,6 +1350,11 @@ String MapController::GetName()
 int MapController::GetMapType()
 {
     return map_type;
+}
+
+int MapController::GetMapAttribute()
+{
+    return map_attribute;
 }
 
 int MapController::GetMusicId()
@@ -1399,11 +1476,17 @@ bool MapController::IsActionBlocked()
     return action_blocked || frozen || warp_delay > 0;
 }
 
+bool MapController::HasBoss()
+{
+    return has_boss;
+}
+
 bool MapController::HasPathMarker()
 {
     return path_marker_shown;
 }
 
+// Shows the path marker at the tile for 7 ticks.
 void MapController::SetPathMarker(int x, int y)
 {
     path_marker_x = x;

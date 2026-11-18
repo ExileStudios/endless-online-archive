@@ -386,9 +386,6 @@ bool GameGraphics::BlitClipped(int x, int y, TDx_DrawSurface *source, TRect sour
 // Draws the message box title and its two message lines, first wrapping a long first line into both lines.
 void GameGraphics::DrawMessageBoxText()
 {
-    int line_index;
-    int line_start;
-    int line_end;
     int i;
     MainForm->draw_canvas->Brush->Color = clWhite;
     MainForm->draw_canvas->Brush->Style = bsClear;
@@ -410,23 +407,22 @@ void GameGraphics::DrawMessageBoxText()
                 char seeking_break = true;
                 for (i = line_end; i >= 1 && seeking_break; i--)
                 {
-                    if (message[i] != ' ')
+                    if (message[i] == ' ' || i == message.Length())
                     {
-                        if (i != message.Length())
-                            continue;
+                        if (line_index <= MESSAGE_BOX_LINES && message.SubString(line_start, i).Length() >= 1)
+                        {
+                            if (message.SubString(line_start, i)[1] == ' ')
+                                MainForm->animation->game->message_lines[line_index] =
+                                    message.SubString(line_start + 1, i);
+                            else
+                                MainForm->animation->game->message_lines[line_index] = message.SubString(line_start, i);
+                        }
+                        seeking_break = false;
+                        line_start = i;
+                        line_end = i;
+                        line_end++;
+                        line_index++;
                     }
-                    if (line_index <= MESSAGE_BOX_LINES && message.SubString(line_start, i).Length() >= 1)
-                    {
-                        if (message.SubString(line_start, i)[1] == ' ')
-                            MainForm->animation->game->message_lines[line_index] = message.SubString(line_start + 1, i);
-                        else
-                            MainForm->animation->game->message_lines[line_index] = message.SubString(line_start, i);
-                    }
-                    seeking_break = false;
-                    line_start = i;
-                    line_end = i;
-                    line_end++;
-                    line_index++;
                 }
             }
             else
@@ -558,10 +554,8 @@ void GameGraphics::DrawListBox()
 // Draws the input box prompt in two lines, first wrapping a long first line into both lines.
 void GameGraphics::DrawInputBoxText()
 {
-    int line_end;
-    int line_index;
-    int line_start;
     int i;
+    int line_start;
     MainForm->draw_canvas->Brush->Color = clWhite;
     MainForm->draw_canvas->Brush->Style = bsClear;
     MainForm->draw_canvas->Font->Color = (TColor)0xC8F0F0;
@@ -581,21 +575,23 @@ void GameGraphics::DrawInputBoxText()
                 char seeking_break = true;
                 for (i = line_end; i >= 1 && seeking_break; i--)
                 {
-                    if (prompt[i] != ' ' && i != prompt.Length())
-                        continue;
-                    if (line_index <= INPUT_BOX_LINES && prompt.SubString(line_start, i).Length() >= 1)
+                    if (prompt[i] == ' ' || i == prompt.Length())
                     {
-                        if (prompt.SubString(line_start, i)[1] == ' ')
-                            MainForm->animation->game->input_box_lines[line_index] = prompt.SubString(line_start + 1,
-                                i);
-                        else
-                            MainForm->animation->game->input_box_lines[line_index] = prompt.SubString(line_start, i);
+                        if (line_index <= INPUT_BOX_LINES && prompt.SubString(line_start, i).Length() >= 1)
+                        {
+                            if (prompt.SubString(line_start, i)[1] == ' ')
+                                MainForm->animation->game->input_box_lines[line_index] =
+                                    prompt.SubString(line_start + 1, i);
+                            else
+                                MainForm->animation->game->input_box_lines[line_index] =
+                                    prompt.SubString(line_start, i);
+                        }
+                        seeking_break = false;
+                        line_start = i;
+                        line_end = i;
+                        line_end++;
+                        line_index++;
                     }
-                    seeking_break = false;
-                    line_start = i;
-                    line_end = i;
-                    line_end++;
-                    line_index++;
                 }
             }
             else
@@ -943,7 +939,7 @@ void GameGraphics::DrawLockerWindow()
         while (col < 4 && index < count)
         {
             loop_entered = true;
-            int slot_x = MainForm->animation->locker->window_x + 57 * col + 18;
+            int slot_x = MainForm->animation->locker->window_x + 57 * col + 16;
             int slot_y = MainForm->animation->locker->window_y + 37 * row;
             MainForm->OffscreenSurface->BltFast(slot_x, slot_y + 50, MainForm->gfx->shop->item_slot_surface,
                 &MainForm->gfx->shop->item_slot_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
@@ -3185,18 +3181,18 @@ void GameGraphics::DrawLockerText()
     {
         for (int col = 0; col < 4 && index < count; col++)
         {
-            int slot_x = MainForm->animation->locker->window_x + 57 * col + 64;
+            int slot_x = MainForm->animation->locker->window_x + 57 * col + 61;
             int slot_y = MainForm->animation->locker->window_y + 37 * row + 48;
             amount = MainForm->animation->locker->items[index].amount;
+            if (amount > 999)
+                amount = 999;
             index++;
             if (amount > 1)
             {
                 if (amount < 10)
                     MainForm->text_canvas->TextOut(slot_x + 2, slot_y + 23, IntToStr(amount));
-                else if (amount < 100)
-                    MainForm->text_canvas->TextOut(slot_x + 1, slot_y + 23, IntToStr(amount));
-                else if (amount >= 100)
-                    MainForm->text_canvas->TextOut(slot_x, slot_y + 23, "99+");
+                else
+                    MainForm->text_canvas->TextOut(slot_x, slot_y + 23, IntToStr(amount));
             }
         }
         row++;

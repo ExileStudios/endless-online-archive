@@ -22,7 +22,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
                 MainForm->class_values->download_requested = false;
                 if (MainForm->class_values->checksum_high != class_checksum_high ||
                     MainForm->class_values->checksum_low != class_checksum_low ||
-                    MainForm->class_values->record_count != class_record_count)
+                    MainForm->class_values->header_record_count != class_record_count)
                 {
                     MainForm->class_values->received_part_count = 1;
                     MainForm->class_values->expected_part_count = skill_record_count / CLASS_RECORDS_PER_FILE + 1;
@@ -76,7 +76,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
     (`processor->DispatchPacket(action, family, frame.SubString(3, frame.Length() - 2));`).
   - `PacketOperator::RequestGameData` is called from `TMainForm::OnIdle` (`net_client->sender->RequestGameData();`).
   - Search of the tree for `expected_part_count = skill_record_count`: 2 line(s), in Packetproces.cpp.
-  - Search of the tree for `/ CLASS_RECORDS_PER_FILE`: 2 line(s), in Classvalues.cpp, Packetproces.cpp.
+  - Search of the tree for `/ CLASS_RECORDS_PER_FILE`: 1 line(s), in Packetproces.cpp.
   - Reachable with the shipped code: unknown. It is decided by the server's files: the part count changes only when the
     spell file or the class file has 250 records or more, and the client cannot see those counts before the reply.
 - **What you see:** With 250 spells or more and fewer classes, the client asks the server for more class parts than the
@@ -321,43 +321,6 @@ int ItemValues::GetGraphic(int item_id)
     record of the list.
 - **What you see:** With 500 items, item 500 is drawn with graphic -1, weighs 0, and `UseItem` gets type -1, which
   matches none of its item types, so using it does nothing; its name still shows, from `GetName`.
-
-## An item's STR requirement is read one byte early, from the class field's last byte and its own first byte
-
-`Itemvalues.cpp`, `ItemValues::Load`
-
-```cpp
-                        DecodeNumber(file_text.SubString(name_end + 38, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 40, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 41, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 44, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 46, 2)),
-                        DecodeNumber(file_text.SubString(name_end + 48, 2)),
-```
-
-- **What the function is for:** `ItemValues::Load` cuts each item record of the item file into its fields and passes
-  them to `AddItem`.
-- **What the line was written to do:** Read the STR requirement from the two bytes after the class requirement, 42 and
-  43, counted from the name. The evidence: the fields before it start at 38 and 40, and the ones after it at 44, 46, 48,
-  50 and 52, each two bytes on from the last; byte 43 is the only byte of the record that no field reads.
-- **What it does:** Step by step:
-  - The class requirement is read from bytes 40 and 41.
-  - The STR requirement is read from bytes 41 and 42.
-  - `DecodeNumber` stops at a byte of 254; otherwise byte 41 gives the low digit and byte 42 the digit worth 253.
-- **Evidence, from the code and not from the names:**
-  - use: `Ctrl_inventory.cpp` `stat_requirements = stat_requirements + IntToStr(handle.required_str) + " STR ";` the
-    field read from bytes 41 and 42 is shown as the STR requirement
-  - decode: `Itemvalues.cpp` `value += NUMBER_ENCODING_BASE * digit;` the second byte is the digit worth 253
-- **When it happens:** Every item, each time `RequestGameData` loads the files. `InventoryController::UseItem` reads the
-  STR requirement when an item of type 10 to 21 is used, and refuses the item with a message when it is not met.
-  - `ItemValues::Load` is called from `PacketOperator::RequestGameData` (`MainForm->item_values->Load();`).
-  - Search of the tree for `name_end \+ 4[0-4],`: 3 line(s), in Itemvalues.cpp.
-  - Search of the tree for `required_str > MainForm`: 1 line(s), in Ctrl_inventory.cpp.
-  - Reachable with the shipped code: reachable. Every item of types 10 to 21 that is used from the inventory goes
-    through the check.
-- **What you see:** When the class byte 41 is 254, the STR requirement reads 0 and the client never refuses an item for
-  STR. Otherwise it reads the class byte's digit plus 253 times the first STR byte's digit, so the message can name a
-  STR requirement the item does not have.
 
 ## A word wider than the text window makes the client add empty lines without end
 
@@ -646,7 +609,7 @@ void SfxController::CreateMidiPlayer()
   `TMainForm::HandleMMTimerEvent` calls `Animate` on each tick; the frame-8 branch of either needs `alt_attack_start`
   set first.
   - Search of the tree for `alt_attack_start = (1|true)\b`: 0 line(s).
-  - Search of the tree for `alt_attack_start =[^=]`: 3 line(s), in Sys_npc.cpp, Sys_npcs.cpp.
+  - Search of the tree for `alt_attack_start =[^=]`: 2 line(s), in Sys_npc.cpp, Sys_npcs.cpp.
   - Search of the tree for `PlaySfx\(11\)`: 0 line(s).
   - Reachable with the shipped code: never reached. The search for a store of 1 or true into `alt_attack_start` finds 0
     lines. The search for any store into it finds 2: the constructor's 0 and `Animate`'s 0.
@@ -1784,66 +1747,6 @@ void GameController::StartSpotCountdown(int x, int y)
 - **What you see:** The lock icon goes away, but the chat box stays hidden and takes no typing. It comes back only when
   the game is entered again and the chat box is made anew.
 
-## In the shipped exe, edited by hand after linking, a party invite waits 80 ticks; the source passes 200
-
-`Sys_mouse.cpp`, `Mouser::HandleMouseDown`
-
-```cpp
-                                        if (!MainForm->animation->interface_controller->group->IsInviteCoolingDown())
-                                        {
-                                            if (!MainForm->animation->interface_controller->group->HasMember(MainForm->animation->game->player_menu_target_id))
-                                            {
-                                                MainForm->animation->interface_controller->group->SetInviteCooldown(200);
-```
-
-- **What the function is for:** `Mouser::HandleMouseDown` handles the player menu's party options. Before it sends a
-  party request it calls `SetInviteCooldown`, which sets the group's `invite_cooldown`; the group counts it down once a
-  tick and refuses another request while it is above 0 (`IsInviteCoolingDown`).
-- **What the line was written to do:** Start the wait at 200 at each of the three party request sites, as the source
-  here writes it and as the compiled client has it.
-- **What it does:** Step by step:
-  - The source passes 200 at the three sites, and the compiler writes each as a five-byte push of 200.
-  - In the shipped Endless.exe the low byte of each of those three pushes was overwritten after the link, so they push
-    80.
-  - A compiler never writes a constant as small as 80 in that five-byte form, so the 80 can only come from that edit.
-  - This source builds the client as it was compiled, with 200; it does not repeat the edit.
-- **When it happens:** Each time the player picks a party option in the player menu while no invite is waiting.
-  - Search of the tree for `SetInviteCooldown\(200\)`: 3 line(s), in Sys_mouse.cpp.
-  - Search of the tree for `SetInviteCooldown\(80\)`: 0 line(s).
-  - Reachable with the shipped code: reachable. Any player who sends a party request from the player menu.
-- **What you see:** In the client as shipped, the next party request is allowed after 80 ticks instead of 200, so
-  requests can be sent two and a half times as often as the code says.
-
-## In the shipped exe, edited by hand after linking, a rejected credits file is shown instead of the built-in credits
-
-`Ctrl_credits.cpp`, `CreditsController::CreditsController`
-
-```cpp
-    LoadCredits();
-    if (!VerifyCredits())
-    {
-        credit_texts->Clear();
-        credit_styles->Clear();
-```
-
-- **What the function is for:** `CreditsController::CreditsController` loads the credits file with `LoadCredits` and
-  checks it with `VerifyCredits`. When the check fails, it clears the loaded lines and writes the built-in credits list
-  in their place.
-- **What the line was written to do:** Replace a credits file that fails `VerifyCredits` with the built-in list, as the
-  source here writes it and as the compiled client has it.
-- **What it does:** Step by step:
-  - The source tests `!VerifyCredits()` and, when it holds, runs the block that clears `credit_texts` and
-    `credit_styles`
-  and adds the built-in lines.
-  - In the shipped Endless.exe the conditional jump over that block was overwritten after the link with a jump that is
-  always taken, so the block never runs.
-  - This source builds the client as it was compiled, with the check in force; it does not repeat the edit.
-- **When it happens:** Each time the credits controller is created, at start-up.
-  - Search of the tree for `if \(!VerifyCredits\(\)\)`: 1 line(s), in Ctrl_credits.cpp.
-  - Reachable with the shipped code: reachable. Any start of the client whose credits file fails the check.
-- **What you see:** In the client as shipped, the credits screen shows whatever the credits file holds, checked or not;
-  the built-in credits list is never used.
-
 ## Small ones with no effect
 
 - **The ping shown in chat is a large negative number when midnight passes before the reply.** `Packetproces.cpp`,
@@ -1930,11 +1833,11 @@ void GameController::StartSpotCountdown(int x, int y)
   - When it happens: Every bitmap load of the map lists, the effects and the window graphics runs the test. The search
     for `if \(!(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface)\)` finds 13 line(s).
     The search for `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) =[^=]`
-    finds 30 line(s). The search for
+    finds 31 line(s). The search for
     `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) = (?!new TDx_DrawSurface\(NULL\);)`
     finds 0 line(s). Reachable with the shipped code: never reached. The search for any store to the surface members the
     loaders test (`surface`, `background_surface`, `item_slot_surface`, `cell_sheet_surface` and the three effect
-    layers) finds 30 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 0.
+    layers) finds 31 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 0.
   - What you see: None visible: no surface is restored here, lost or not.
 - **A failed canvas draw onto a loaded bitmap surface gives the surface DC back twice.** `Gfx_wall.cpp`,
   `WallResource::LoadSurface`; `Gfx_bank.cpp`, `BankGraphics::LoadSurface`;
@@ -2184,24 +2087,6 @@ void GameController::StartSpotCountdown(int x, int y)
     Reachable with the shipped code: reachable. Any player who types on the password grid.
   - What you see: A player who tries to type a password sees the box for most keys, but 2, 4, 6 and 8 give no answer, so
     the box does not come up for them.
-- **While a spell waits for its target, a click puts up status text 122 whenever an untargetable npc is in the list.**
-  `Sys_mouse.cpp`, `Sys_mouse_HandleClick`.
-  - Code:
-    `if (target_type.npc_type == NpcType_Unknown1 || target_type.npc_type == NpcType_Unknown2) { if (target_npc.frame_width > 0 && target_npc.frame_height > 0) } else MainForm->animation->interface_controller->ShowStatusMessage(3, MainForm->strings->GetText(122));`
-  - What it does: Step by step: - The npcs are tried from the last in the list to the first, and the loop stops at the
-    first one hit. - For an npc of one of the two targetable types, its box on screen is tested against the click. - For
-    an npc of any other type nothing is tested: the status line is set to `GetText(GameText_YouCannotAttackThis)` at
-    once, whether or not the click is anywhere near that npc. - So every untargetable npc tried before the loop stops
-    sets the status line, and with no npc hit, that is every untargetable npc in the list. The spell is still cast at
-    the npc or player that was hit.
-  - When it happens: Each left click on the map while `awaiting_target` is set, which `SpellController` does when a
-    spell that needs a target is chosen; `TMainForm::FormMouseDown` hands every click to `Sys_mouse_HandleClick`. The
-    searches below find the one use of text 122 and the one place that starts waiting for a target. The search for
-    `GetText\(122\)` finds 0 line(s). The search for `awaiting_target = true;` finds 1 line(s). Reachable with the
-    shipped code: reachable. Any spell aimed on a map that also holds a shop keeper, a guard or any other npc a spell
-    can not target.
-  - What you see: The status line shows text 122 on clicks that hit a monster, hit a player or hit nothing, as long as
-    an untargetable npc sits later in the list than the npc hit, or anywhere in it when none is hit. The cast goes on.
 - **On the account name screen, once a name is typed, a click anywhere moves on to the password grid.** `Sys_mouse.cpp`,
   `Mouser::HandleMouseDown`.
   - Code:
@@ -2256,9 +2141,9 @@ void GameController::StartSpotCountdown(int x, int y)
   - When it happens: `PacketProcessor::DispatchPacket` calls `StartReplyTimeout` on the welcome reply that starts the
     world load; `TMainForm::HandleMMTimerEvent` calls `UpdateIntroAndDelays` every 40th tick while the client animates.
     Called from `PacketProcessor::DispatchPacket`, `TMainForm::HandleMMTimerEvent`. The search for
-    `\baccount_progress =[^=]` finds 5 line(s). The search for `\baccount_progress\+\+` finds 1 line(s). The search for
+    `\baccount_progress =[^=]` finds 5 line(s). The search for `\baccount_progress\+\+` finds 0 line(s). The search for
     `reply_timeout == 150` finds 1 line(s). Reachable with the shipped code: never reached. The search for any store to
-    `reply_timeout` finds 5 lines: 1 in `StartReplyTimeout`, and 0 in the constructor, in `StopReplyTimeout` and in the
-    two branches; the one other change is the step of 1, so the count never passes 12.
+    `reply_timeout` finds 5 lines: 1 in `StartReplyTimeout`, and 0 in the constructor, in `StopReplyTimeout` and in
+    the two branches; the one other change is the step of 1, so the count never passes 12.
   - What you see: None visible from this line: the message box of dialog message 1 is never shown from here, and a world
     load is never stopped by this count.

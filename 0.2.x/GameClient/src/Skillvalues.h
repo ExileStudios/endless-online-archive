@@ -6,6 +6,8 @@
 #include <string>
 #include <vector.h>
 
+struct PubfileHeader;
+
 #include "Skillvalue.h"
 
 #define SLOT_GRID_CELL_HEIGHT 52
@@ -19,34 +21,34 @@ struct SkillValues
     int expected_part_count;
     int received_part_count;
     char is_loaded;
+    bool has_bad_record;
+    bool header_read;
+    String file_name;
+    String file_path;
+    int records_read;
+    int records_expected;
     int checksum_high;
     int checksum_low;
     int record_count;
+    String data;
+    int read_position;
     vector<SkillValue> records;
     int unused_value;
+    vector<PubfileHeader *> headers;
     String file_prefix;
 
-    SkillValues();
+    SkillValues(String data_path);
     ~SkillValues();
     void ReadHeader();
     void Load();
     void SaveFilePart(int part_number, String data);
     void DeleteFiles();
-    void AddSkill(int skill_id, String name, String shout, int icon, short graphic, short tp_cost, short sp_cost,
-    short cast_time, int category, int spare_byte, int type, short element,
-    short element_power, short target_restriction, short target_type, short target_time,
-    short area, short max_level, int min_damage,
-    int max_damage, int accuracy, int evade, int armor,
-    int return_damage, short hp_heal, short tp_heal,
-    short sp_heal, short bonus_str, short bonus_int,
-    short bonus_wis, short bonus_agi, short bonus_con,
-    short bonus_cha);
+    void LoadFrom(String folder);
     void Clear();
     int FindByName(String name);
     SkillValue GetSkill(int skill_id);
     int GetGraphic(int skill_id);
     int GetTargetRestriction(int skill_id);
-    int GetTargetType(int skill_id);
     int GetCastTime(int skill_id);
     int GetTpCost(int skill_id);
     int GetSpCost(int skill_id);
@@ -56,7 +58,9 @@ struct SkillValues
     String GetName(int skill_id);
     String GetShout(int skill_id);
     unsigned int Count();
-    int DecodeNumber(String encoded);
+    void ClearHeaders();
+    char ReadByte();
+    int DecodeNumber(unsigned char encoded);
 };
 
 #endif

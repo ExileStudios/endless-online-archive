@@ -1655,23 +1655,20 @@ DEFINE_CLIP_TO_VIEW(SpriteGraphics)
 // Trims a sheet rect by the amounts ClipToView cut, swapping the left and right cuts for a mirrored frame.
 DEFINE_GET_CLIPPED_SOURCE_RECT(SpriteGraphics)
 
-// Measures a name label's text in the label font and builds the shared hover label surface for it.
-void SpriteGraphics::ShowNameLabel(String text, int color_index)
+void SpriteGraphics::ShowNameLabel(String text, int color_index, int element)
 {
     int text_width;
     int label_height;
     HDC dc;
     text_width = 0;
     label_height = 0;
+    if (!MainForm->config->GetElementalIcons())
+        element = 0;
     if (MainForm->OffscreenSurface->GetDC(&dc))
     {
         try
         {
             MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Color = clBlack;
-            MainForm->draw_canvas->Brush->Style = bsClear;
-            MainForm->draw_canvas->Pen->Color = clWhite;
-            MainForm->draw_canvas->Font->Color = clWhite;
             MainForm->draw_canvas->Font->Name = "MS Sans Serif";
             MainForm->draw_canvas->Font->Size = 8;
             text_width = MainForm->draw_canvas->TextWidth(text);
@@ -1683,7 +1680,7 @@ void SpriteGraphics::ShowNameLabel(String text, int color_index)
         }
         MainForm->OffscreenSurface->ReleaseDC(dc);
     }
-    MainForm->gfx->CreateHoverLabel(text_width, label_height, color_index, text);
+    MainForm->gfx->CreateHoverLabel(text_width, label_height, color_index, element, text);
 }
 
 // Wraps a chat line into at most six balloon lines and opens the balloon over the player, when balloons are on.
@@ -1858,7 +1855,14 @@ void SpriteGraphics::DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset
     {
         MainForm->resource_bitmap->Width = 0;
         MainForm->resource_bitmap->Height = 0;
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+        try
+        {
+            MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
+        }
+        catch (...)
+        {
+            return;
+        }
         get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
         key_red = get_b_value;
         key_blue = get_b_value >> 16;
@@ -1866,7 +1870,6 @@ void SpriteGraphics::DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset
         MainForm->resource_bitmap->TransparentColor =
             (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
         MainForm->resource_bitmap->Transparent = true;
-        // A canvas Draw by default; with BitBlt drawing configured, TransparentBlt keyed to that pixel's colour.
         if (!MainForm->config->GetUseBitBltDraw())
         {
             if (emote_buffer->surface->GetDC(&dc))

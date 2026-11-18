@@ -36,6 +36,7 @@
 #include "Mapprotection.h"
 #include "Npcvalues.h"
 #include "Packetcontrols.h"
+#include "Pubfileheader.h"
 #include "Register.h"
 #include "Sfxprotection.h"
 #include "Skillvalues.h"
@@ -137,6 +138,7 @@ __published:
     void __fastcall Timer1Timer(TObject *Sender);
     void __fastcall ApplicationEvents1Activate(TObject *Sender);
     void __fastcall ApplicationEvents1Deactivate(TObject *Sender);
+    void __fastcall FormShow(TObject *Sender);
 private:
 public:
     StringContainer *strings;
@@ -181,7 +183,9 @@ public:
     int display_width;
     int display_height;
     int window_height_padding;
+    int display_bit_depth;
     int refresh_rate;
+    int unused_value;
     bool redraw_needed;
     bool dragging;
     String form_text;
@@ -190,6 +194,7 @@ public:
     int version_major;
     int version_minor;
     int version_build;
+    char version_letter;
     bool minimized;
     char unused_bytes[1];
     bool active;
@@ -204,9 +209,13 @@ public:
     TTimeStamp start_time;
     int time_value_a;
     int time_value_b;
+    HMENU scale_menu;
+    HMENU auto_drop_menu;
 
     __fastcall TMainForm(TComponent *owner);
     virtual __fastcall ~TMainForm();
+    void UpdateSystemMenu();
+    void __fastcall WMSysCommand(TWMSysCommand &message);
     void CountDrawError();
     bool isActive();
     void PaintFullDelayed();
@@ -214,9 +223,13 @@ public:
     void __fastcall DeactivateForm(TObject *sender);
     void __fastcall MinimizeForm(TObject *sender);
     void __fastcall RestoreForm(TObject *sender);
-    String VersionString(int major, int minor, int build);
+    String VersionString(int major, int minor, int build, char letter);
     void __fastcall HandleMMTimerEvent();
     void IntroAnimator();
+
+BEGIN_MESSAGE_MAP
+    VCL_MESSAGE_HANDLER(WM_SYSCOMMAND, TWMSysCommand, WMSysCommand)
+END_MESSAGE_MAP(TForm)
 };
 
 void __stdcall MMTimerProc(unsigned int timer_id, unsigned int message, unsigned long user_data,
