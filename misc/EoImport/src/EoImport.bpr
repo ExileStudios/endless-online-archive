@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="EoImport.exe"/>
+    <OBJFILES value="EoImport.obj Unitmain.obj Configuration.obj Npcdrop.obj Npcvalue.obj Npcvalues.obj Pubfileheader.obj Unitfileexist.obj Learnitem.obj Learnvalue.obj Learnvalues.obj Shopcraft.obj Shopitem.obj Shopvalue.obj Shopvalues.obj Innvalues.obj $(BCB)\lib\Release\vclx50.lib $(BCB)\lib\Release\vcl50.lib Unitfilenotfound.obj"/>
+    <RESFILES value="EoImport.res"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) UnitFileExist.dfm UnitFileNotFound.dfm UnitMain.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="vclx50.lib vcl50.lib"/>
+    <SPARELIBS value="vclx50.lib vcl50.lib"/>
+    <PACKAGES value=""/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value=""/>
+    <MAINSOURCE value="EoImport.cpp"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\release"/>
+    <WARNINGS value="-w-8057"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value=""/>
+    <CFLAG1 value="-O2 -vi -tWM -c"/>
+    <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-Tpe -aa -c -Gn -j"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0w32.obj memmgr.lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib vcle50.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=1
+MinorVer=0
+Release=3
+Build=29
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1043
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=Vult-r game studios
+FileDescription=Endless Online Import
+FileVersion=0.0.3.29
+InternalName=Endless Import
+LegalCopyright=(c) 2003-2022 Vult-r
+LegalTrademarks=none
+OriginalFilename=eoimport.exe
+ProductName=Eo Import
+ProductVersion=0.0.3.29
+Comments=www.endless-online.com
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+InMemoryExe=0
+ShowInfoMsgs=0
+LinkDebugVcl=0
+
+  </IDEOPTIONS>
+</PROJECT>
