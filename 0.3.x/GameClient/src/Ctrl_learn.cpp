@@ -162,6 +162,7 @@ void LearnController::ClearText()
 void LearnController::MouseDown(int x, int y, int button)
 {
     vector<LearnItem>::iterator i;
+    int row_pixel;
     char handled = false;
     if ((!button || button == 1) && window_y + 43 < y && window_y + 243 > y && window_x + 17 < x && window_x + 252 > x)
     {
@@ -184,11 +185,14 @@ void LearnController::MouseDown(int x, int y, int button)
             if (row < (int)offered_skills.size())
             {
                 selected_skill_id = offered_skills[row].skill_id;
-                String skill_name = MainForm->skill_values->GetName(selected_skill_id);
-                int row_pixel = (y - window_y - 50) % 37;
+                SkillValue *skill = MainForm->skill_values->GetSkill(selected_skill_id - 1);
+                String skill_name = skill->name;
+                row_pixel = (y - window_y - 50) % 37;
                 if (window_x + 75 < x && window_x + 140 > x && row_pixel > 18)
                 {
-                    String class_name = MainForm->class_values->GetName(offered_skills[row].required_class);
+                    ClassValue *required_class =
+                        MainForm->class_values->GetRecord(offered_skills[row].required_class - 1);
+                    String class_name = required_class->name;
                     if (class_name == "")
                         class_name = "All";
                     ClearText();
@@ -198,17 +202,29 @@ void LearnController::MouseDown(int x, int y, int button)
                         offered_skills[row].third_required_skill > 0 || offered_skills[row].fourth_required_skill > 0)
                     {
                         if (offered_skills[row].required_skill > 0)
-                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " +
-                                MainForm->skill_values->GetName(offered_skills[row].required_skill), false);
+                        {
+                            SkillValue *first_skill =
+                                MainForm->skill_values->GetSkill(offered_skills[row].required_skill - 1);
+                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " + first_skill->name, false);
+                        }
                         if (offered_skills[row].second_required_skill > 0)
-                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " +
-                                MainForm->skill_values->GetName(offered_skills[row].second_required_skill), false);
+                        {
+                            SkillValue *second_skill =
+                                MainForm->skill_values->GetSkill(offered_skills[row].second_required_skill - 1);
+                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " + second_skill->name, false);
+                        }
                         if (offered_skills[row].third_required_skill > 0)
-                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " +
-                                MainForm->skill_values->GetName(offered_skills[row].third_required_skill), false);
+                        {
+                            SkillValue *third_skill =
+                                MainForm->skill_values->GetSkill(offered_skills[row].third_required_skill - 1);
+                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " + third_skill->name, false);
+                        }
                         if (offered_skills[row].fourth_required_skill > 0)
-                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " +
-                                MainForm->skill_values->GetName(offered_skills[row].fourth_required_skill), false);
+                        {
+                            SkillValue *fourth_skill =
+                                MainForm->skill_values->GetSkill(offered_skills[row].fourth_required_skill - 1);
+                            AddText(MainForm->strings->GetText(GameText_Skill) + ": " + fourth_skill->name, false);
+                        }
                         AddText("", false);
                     }
                     if (offered_skills[row].required_str > 0)
@@ -282,8 +298,9 @@ void LearnController::MouseDown(int x, int y, int button)
                         can_learn = false;
                     if (!class_ok)
                     {
-                        String required_class_name =
-                            MainForm->class_values->GetName(offered_skills[row].required_class);
+                        ClassValue *class_record =
+                            MainForm->class_values->GetRecord(offered_skills[row].required_class - 1);
+                        String required_class_name = class_record->name;
                         MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                             MainForm->strings->GetDialogText(DialogText_WrongClass, false),
                             MainForm->strings->GetDialogText(DialogText_WrongClass, true) + " " + required_class_name +
@@ -327,7 +344,7 @@ void LearnController::MouseDown(int x, int y, int button)
             }
             if (row == 1)
                 MainForm->animation->game->OpenInputBox(InputBoxKind_FindSkill,
-                    MainForm->strings->GetDialogText(DialogText_ForgetSkill, true), EditCharFilter_LettersSpaces, 32);
+                    MainForm->strings->GetDialogText(DialogText_ForgetSkill, true), EditCharFilter_Password, 32);
             if (row == 2)
             {
                 ClearText();
@@ -420,8 +437,9 @@ void LearnController::MouseMove(int x, int y)
         {
             if (row != -1 && page == LearnPage_SkillList)
             {
-                String tooltip_text =
-                    MainForm->net_client->Capitalize(MainForm->skill_values->GetName(offered_skills[row].skill_id));
+                SkillValue *skill = MainForm->skill_values->GetSkill(offered_skills[row].skill_id - 1);
+                ClassValue *required_class = MainForm->class_values->GetRecord(offered_skills[row].required_class - 1);
+                String tooltip_text = MainForm->net_client->Capitalize(skill->name);
                 tooltip_text = tooltip_text + " ";
                 tooltip_text = tooltip_text + IntToStr(offered_skills[row].required_level);
                 tooltip_text = tooltip_text + " LVL, ";
@@ -437,9 +455,10 @@ void LearnController::MouseMove(int x, int y)
                     tooltip_text = tooltip_text + IntToStr(offered_skills[row].required_con) + " CON, ";
                 if (offered_skills[row].required_cha > 0)
                     tooltip_text = tooltip_text + IntToStr(offered_skills[row].required_cha) + " CHA, ";
-                tooltip_text = tooltip_text + IntToStr(offered_skills[row].price) + " " +
-                    MainForm->item_values->GetName(ItemId_Gold) + ", ";
-                tooltip_text = tooltip_text + MainForm->class_values->GetName(offered_skills[row].required_class);
+                tooltip_text =
+                    tooltip_text + IntToStr(offered_skills[row].price) + " " +
+                        MainForm->item_values->GetName(ItemId_Gold) + ", ";
+                tooltip_text = tooltip_text + required_class->name;
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, tooltip_text);
             }
             hovered_row = row;

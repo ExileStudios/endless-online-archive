@@ -27,7 +27,7 @@ struct BankGraphics
 
     BankGraphics();
     ~BankGraphics();
-    GraphicSize LoadSurface(HMODULE library, int resource_id);
+    TPoint LoadSurface(int library, int resource_id);
 };
 
 #endif

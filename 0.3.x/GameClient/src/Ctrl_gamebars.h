@@ -26,10 +26,14 @@ struct GameBars
     GameBars();
     ~GameBars();
     void ShowAllTexts();
-    void ToggleHealthText(bool force, bool play_sound);
-    void ToggleManaText(bool force, bool play_sound);
-    void ToggleStaminaText(bool force, bool play_sound);
-    void ToggleExperienceText(bool force, bool play_sound);
+    void ToggleHealthText(char force, char play_sound);
+    void ToggleHealthTextFor(char force, char play_sound, unsigned char ticks);
+    void ToggleManaText(char force, char play_sound);
+    void ToggleManaTextFor(char force, char play_sound, unsigned char ticks);
+    void ToggleStaminaText(char force, char play_sound);
+    void ToggleStaminaTextFor(char force, char play_sound, unsigned char ticks);
+    void ToggleExperienceText(char force, char play_sound);
+    void ToggleExperienceTextFor(char force, char play_sound, unsigned char ticks);
     void RequestQuestProgress(char play_sound);
     void OpenStats(bool play_sound);
     void MouseDown(int x, int y, int button);
@@ -37,7 +41,8 @@ struct GameBars
     void SetHealthBar(int health, int max_health);
     void SetManaBar(int mana, int max_mana);
     void SetStaminaBar(int stamina, int max_stamina);
-    void SetExperienceBar(int level_progress, int level_span);
+    void SetExperiencePercent(int percent);
+    void SetExperienceBar(int value, int maximum);
     int GetHealthBarSegments();
     int GetManaBarSegments();
     int GetStaminaBarSegments();

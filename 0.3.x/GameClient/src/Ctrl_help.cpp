@@ -177,7 +177,6 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
 {
     int j;
     int piece_start;
-    HDC dc;
     if (text.Length() > 1)
     {
         int max_width = 420;
@@ -185,16 +184,14 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
         int next_start = 1;
         int continuation_indent = 0;
         String wrapped_pieces[10];
-        if (MainForm->OffscreenSurface->GetDC(&dc))
+        if (MainForm->fonts->BeginOffscreenIf(200))
         {
             try
             {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Brush->Style = bsClear;
-                MainForm->draw_canvas->Font->Color = clBlack;
-                MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-                MainForm->draw_canvas->Font->Size = 8;
-                if (MainForm->draw_canvas->TextWidth(text) >= max_width)
+                MainForm->fonts->color = 0;
+                MainForm->fonts->face = 1;
+                MainForm->fonts->size = 8;
+                if ((short)MainForm->fonts->TextWidth(text) >= max_width)
                 {
                     for (int i = 0; i <= 12; i++)
                     {
@@ -209,12 +206,12 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
                                 if (i > 0)
                                     piece_indent = continuation_indent;
                                 if ((text[j] == ' ' &&
-                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                    (short)MainForm->fonts->TextWidth(text.SubString(piece_start, j - piece_start)) >=
                                         max_width - 40 - piece_indent) ||
-                                    MainForm->draw_canvas->TextWidth(text.SubString(piece_start, j - piece_start)) >=
+                                    (short)MainForm->fonts->TextWidth(text.SubString(piece_start, j - piece_start)) >=
                                         max_width - piece_indent || j == text.Length())
                                 {
-                                    if (MainForm->draw_canvas->TextWidth(text.SubString(piece_start,
+                                    if ((short)MainForm->fonts->TextWidth(text.SubString(piece_start,
                                         j - piece_start)) <= max_width || j == text.Length())
                                     {
                                         wrapped_pieces[i] = text.SubString(piece_start, j - piece_start + 1);
@@ -250,12 +247,11 @@ void HelpController::AddText(String text, String link_target, char line_flag, ch
                     else
                         line_icons->Add("0");
                 }
-                MainForm->draw_canvas->Handle = 0;
             }
             catch (Exception &)
             {
             }
-            MainForm->OffscreenSurface->ReleaseDC(dc);
+            MainForm->fonts->End();
         }
         is_dirty = true;
     }

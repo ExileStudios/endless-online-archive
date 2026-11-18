@@ -12,11 +12,8 @@ struct EffectGraphics
 {
     vector<EffectWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     EffectGraphics(char preload);
     ~EffectGraphics();
@@ -24,7 +21,7 @@ struct EffectGraphics
     void LoadPendingGraphic();
     void PurgeUnusedGraphics();
     bool RequestGraphic(int graphic_id);
-    EffectWrapper GetGraphic(int graphic_id);
+    EffectWrapper * GetGraphic(int graphic_id);
     GraphicSize GetGraphicSize(int graphic_id);
     void QueueGraphic(int graphic_id);
 };

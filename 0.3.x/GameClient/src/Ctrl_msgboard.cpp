@@ -45,7 +45,7 @@ void MsgBoardController::CreatePostEdits()
     MainForm->edits->EnableChangeNotify(POST_MESSAGE_EDIT);
     MainForm->edits->SetText(POST_SUBJECT_EDIT, "");
     MainForm->edits->SetTextColor(POST_SUBJECT_EDIT, 0xC8C8C8);
-    MainForm->edits->SetCharFilter(POST_SUBJECT_EDIT, EditCharFilter_NoPunctuation);
+    MainForm->edits->SetCharFilter(POST_SUBJECT_EDIT, EditCharFilter_Email);
     MainForm->edits->SetMaxLength(POST_SUBJECT_EDIT, 32);
     MainForm->edits->SetBackgroundVisible(POST_SUBJECT_EDIT, false);
     MainForm->edits->SetBorderVisible(POST_SUBJECT_EDIT, false);
@@ -270,6 +270,7 @@ void MsgBoardController::MouseDown(int x, int y, int button)
         if (window_x <= x && window_x + 282 >= x && y >= window_y && y <= window_y + 290)
         {
             int row = top_line + (y - window_y - 47) / NPC_TEXT_LINE_HEIGHT;
+            // In the list view a click on a post opens it.
             if (!view_mode)
             {
                 if (posts.size() <= row)

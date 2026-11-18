@@ -33,6 +33,8 @@
 #include "Ctrl_bossbars.h"
 #include "Ctrl_popupelement.h"
 #include <time.h>
+#include "Ctrl_hotkeys.h"
+#include "Ctrl_notification.h"
 
 #pragma package(smart_init)
 
@@ -58,6 +60,7 @@ AnimationController::AnimationController(char show_intro)
     account_progress = 0;
     reply_timeout = 0;
     server_reply_timeout = 120000;
+    account_confirm_mode = 0;
     chat_delay = 0;
     chat_decay_ticks = 0;
     chat_message_count = 0;
@@ -74,12 +77,14 @@ AnimationController::AnimationController(char show_intro)
     refresh_delayed = false;
     sit_delayed = false;
     path_delayed = false;
+    name_max_length = 12;
     intro = new IntroController();
     menu = new MenuController();
     credits = new CreditsController();
     interface_controller = new InterfaceController();
     game = new GameController();
     paperdoll = new PaperdollController();
+    hotkeys = new HotkeysController();
     book = new BookController();
     trade = new TradeController();
     shop = new ShopController();
@@ -103,6 +108,7 @@ AnimationController::AnimationController(char show_intro)
     message_board = new MsgBoardController();
     popup = new PopupElement();
     boss_bars = new BossBars(410, 30);
+    notification = new Notification(20, 20);
 }
 
 // Frees the intro, the menu, the credits and every window controller.
@@ -134,6 +140,7 @@ AnimationController::~AnimationController()
     delete message_board;
     delete popup;
     delete boss_bars;
+    delete notification;
 }
 
 void AnimationController::SetScreenMode(int new_screen_mode)
@@ -145,7 +152,6 @@ void AnimationController::SetScreenMode(int new_screen_mode)
 void AnimationController::SetSubState(int new_sub_state)
 {
     sub_state = new_sub_state;
-    Sleep(10);
 }
 
 void AnimationController::SetFrameCounter(int frame)
@@ -231,10 +237,6 @@ void AnimationController::UpdateTimers()
 {
     CreditsController *credits_controller;
     int line_delay;
-    // Every write in this class updates the hex copy with the count.
-    // They differ only when a count was changed from outside, and then the client stalls for a second.
-    if (IntToHex(chat_decay_ticks, 2) != chat_decay_check || IntToHex(chat_message_count, 2) != chat_count_check)
-        Sleep(1001);
     if (object_click_delay > 0)
         object_click_delay--;
     if (command_delay > 0)
@@ -319,11 +321,21 @@ void AnimationController::UpdateTimers()
 // Sets how long to wait for a server reply, 10 to 600 seconds.
 void AnimationController::SetServerReplyTimeout(short seconds)
 {
-    if (seconds < 30)
-        seconds = 30;
+    if (seconds < 10)
+        seconds = 10;
     if (seconds > 600)
         seconds = 600;
     server_reply_timeout = 1000 * seconds;
+}
+
+void AnimationController::SetAccountConfirmMode(char confirm)
+{
+    account_confirm_mode = confirm;
+}
+
+char AnimationController::IsAccountConfirmMode()
+{
+    return account_confirm_mode;
 }
 
 int AnimationController::GetReplyTimeout()
@@ -438,6 +450,11 @@ void AnimationController::CloseTopWindow()
         MainForm->redraw_needed = true;
         return;
     }
+    if (hotkeys->is_visible)
+    {
+        hotkeys->Close();
+        return;
+    }
     if (paperdoll->is_visible)
     {
         paperdoll->Close();
@@ -540,6 +557,8 @@ void AnimationController::StartAccountProgress()
 
 void AnimationController::StopAccountProgress()
 {
+    menu->activation_step = 0;
+    menu->recover_step = 0;
     account_progress = 0;
 }
 
@@ -659,17 +678,23 @@ void AnimationController::UpdateIntroAndDelays()
     // Closing the box first cancels it.
     if (account_progress >= 1)
     {
-        if (menu->is_message_open)
+        if (!menu->is_message_open)
+        {
+            MainForm->edits->caret_enabled = true;
+            MainForm->animation->menu->create_account_enabled = true;
+            account_progress = 0;
+        }
+        else
         {
             waited = clock() - reply_wait_start;
             reply_progress = waited / GetReplyTimeout() * 256.0;
             if (GetReplyTimeout() <= waited)
             {
                 reply_progress = 256;
-                if (GetScreenMode() == ScreenMode_Menu && GetSubState() == MenuScreen_CreateAccount)
+                if (!account_confirm_mode)
                 {
-                    MainForm->net_client->sender->SendAccountCreate(account_name, account_password, account_detail_a,
-                        account_detail_b, account_email);
+                    MainForm->net_client->sender->SendAccountCreateWithoutCode(account_name, account_password,
+                        account_detail_a, account_detail_b, account_email);
                     account_name = "";
                     account_password = "";
                     account_detail_a = "";
@@ -677,14 +702,10 @@ void AnimationController::UpdateIntroAndDelays()
                     account_email = "";
                     menu->is_message_open = false;
                 }
+                else
+                    MainForm->net_client->sender->RequestSignupCode(account_name, account_email);
                 account_progress = 0;
             }
-        }
-        else
-        {
-            MainForm->edits->caret_enabled = true;
-            MainForm->animation->menu->create_account_enabled = true;
-            account_progress = 0;
         }
     }
     if (screen_mode == ScreenMode_Menu && sub_state == MenuScreen_CharacterSelect)
@@ -695,24 +716,22 @@ void AnimationController::UpdateIntroAndDelays()
     // The intro: the logo and its sound, then the menu music and the menu screen.
     if (screen_mode == ScreenMode_Intro)
     {
-        if (frame_counter == 1 || frame_counter == 2 || frame_counter == 11)
+        if (frame_counter == 1 || frame_counter == 2)
             intro->clear_screen_pending = true;
-        if (frame_counter == 17)
+        if (frame_counter == 3)
         {
             MainForm->sfx->PlaySfx(SfxSound_Intro);
             intro->logo_redraw_pending = true;
             intro->logo_sound_played = true;
         }
-        if (frame_counter == 22)
-            intro->logo_redraw_pending = true;
-        if (frame_counter >= 34 && frame_counter <= 36)
+        if (frame_counter >= 13 && frame_counter <= 15)
         {
             intro->logo_redraw_pending = false;
             intro->logo_sound_played = false;
             intro->is_animating = false;
             intro->clear_screen_pending = true;
         }
-        if (frame_counter == 40)
+        if (frame_counter == 19)
         {
             MainForm->sfx->QueueMusic(Music_TitleTheme);
             Screen->Cursor = crDefault;

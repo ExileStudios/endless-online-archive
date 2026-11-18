@@ -1,6 +1,7 @@
 #ifndef ItemvaluesH
 #define ItemvaluesH
 
+#include <Classes.hpp>
 #include <fstream>
 #include <new>
 #include <string>
@@ -31,19 +32,20 @@ struct ItemValues
     int record_count;
     String data;
     int read_position;
-    vector<ItemValue> records;
-    int unused_value;
+    vector<ItemValue *> records;
     vector<PubfileHeader *> headers;
     String file_prefix;
+    TStringList *file_parts;
+    char keep_file_parts;
 
-    ItemValues(String prefix);
+    ItemValues(String prefix, char keep_parts);
     ~ItemValues();
     void ReadHeader();
     void SaveFilePart(int part_number, String data);
     void Load();
     void DeleteFiles();
     void Clear();
-    ItemValue GetItem(int item_id);
+    ItemValue * GetItem(int index);
     int GetWeight(int item_id);
     int GetGender(int item_id);
     int GetGraphic(int item_id);
@@ -55,9 +57,10 @@ struct ItemValues
     int GetSpecValue(int item_id);
     String GetKeyName(int key_id);
     String GetName(int item_id);
-    unsigned int Count();
+    int Count();
     void ClearHeaders();
-    unsigned char ReadByte();
+    void ClearFileParts();
+    char ReadByte();
     int DecodeNumber(unsigned char encoded);
 };
 

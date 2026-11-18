@@ -3,280 +3,376 @@
 
 #include "Gfx_edits.h"
 #include "Tmainform.h"
+#include "Gfx_game.h"
 
 #pragma package(smart_init)
 
+// Creates the surface the edit boxes' texts are drawn on, and its empty list of lines.
 EditCanvas::EditCanvas()
 {
     lines = new TStringList();
+    surface = new TDx_DrawSurface(NULL);
+    surface_desc = new TDDSurfaceDesc(NULL);
+    surface_caps = new TDDSCaps(NULL);
+    color_key = new TDDColorKey(NULL);
+    color_key->ColorSpaceHighValue = 0;
+    color_key->ColorSpaceLowValue = 0;
+    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
+    surface_desc->SCaps = surface_caps;
+    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+    surface_desc->Width = 410;
+    surface_desc->Height = 20;
+    surface->GetSurfaceDesc(surface_desc);
+    surface->Create(surface_desc, MainForm->Dx_Draw1);
+    end_rect.left = 297;
+    end_rect.right = 300;
+    end_rect.top = 0;
+    end_rect.bottom = 20;
+    caret_rect.left = 302;
+    caret_rect.right = 304;
+    caret_rect.top = 2;
+    caret_rect.bottom = 12;
+    meter_rect.left = 313;
+    meter_rect.right = 362;
+    meter_rect.top = 0;
+    meter_rect.bottom = 19;
+    meter_back_rect.left = 321;
+    meter_back_rect.right = 361;
+    meter_back_rect.top = 1;
+    meter_back_rect.bottom = 2;
 }
 
 EditCanvas::~EditCanvas()
 {
+    surface->Destroy();
+    delete surface;
+    surface_desc->Clear();
+    surface_caps->Clear();
+    delete surface_desc;
+    delete surface_caps;
+    color_key->Clear();
+    delete color_key;
 }
 
-// Draws every visible edit box of a screen, or of every screen: its rounded frame, its text and the caret.
+// The rectangle of an edit box's text surface: the width less 3, at most 295, and 20 high.
+TRect EditCanvas::GetBoxRect(short width)
+{
+    TRect rect;
+    if (width > 298)
+        width = 298;
+    width -= 3;
+    rect.left = 0;
+    rect.top = 0;
+    rect.right = width;
+    rect.bottom = 20;
+    return rect;
+}
+
+// The place of the strength meter's fill for the level, 0 to 10, on the edit sheet.
+TRect EditCanvas::GetFillRect(int level)
+{
+    TRect rect;
+    if (level < 0)
+        level = 0;
+    if (level > 10)
+        level = 10;
+    rect.left = 370;
+    rect.right = 4 * level + 370;
+    int row = level / 2;
+    if (row > 5)
+        row = 5;
+    rect.top = 2 * row;
+    rect.bottom = 2 * row + 1;
+    return rect;
+}
+
+void EditCanvas::LoadResource()
+{
+    int file = MainForm->gfx_vault->OpenLibrary(GfxLibrary_GameInterface);
+    if (file)
+    {
+        int file_id = file;
+        if (!MainForm->gfx_transfers->LoadResourceBitmap(file_id, InterfaceBitmap_ResourceBitmap))
+            return;
+        if (MainForm->gfx_transfers->BeginDraw(surface))
+        {
+            MainForm->gfx_transfers->Draw(surface);
+            MainForm->gfx_transfers->EndDraw(surface);
+        }
+    }
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+// Draws the boxes of the screen, their texts and the caret; the message board also draws its own text.
 void EditCanvas::DrawEditBoxes(int screen_id)
 {
-    int i;
-    int m;
-    int caret_offset;
-    int bevel_top_y;
-    int bevel_left_x;
-    TPoint bevel_start;
-    int bevel_side_y;
-    int bevel_side_x;
-    TPoint bevel_side_start;
-    int line_count;
-    int visible_lines;
-    char ends_on_new_line;
-    int first_line;
-    int row;
+    DrawBoxes(screen_id);
+    if (MainForm->fonts->BeginOffscreenIf(2))
+    {
+        try
+        {
+            if (screen_id == EditGroup_MsgBoard)
+                MainForm->gfx->game->DrawMsgBoardText();
+            DrawTexts(screen_id);
+        }
+        catch (Exception &)
+        {
+        }
+        MainForm->fonts->End();
+    }
+    if (caret_visible)
+        DrawCaret();
+}
+
+void EditCanvas::DrawCaret()
+{
+    MainForm->OffscreenSurface->BltFast(caret_x, caret_y, surface, &caret_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+// Draws the border of every visible edit box on the screen, or on all screens for 240, and a password box's strength
+// meter.
+void EditCanvas::DrawBoxes(int screen_id)
+{
     MainForm->edits->MoveFirst();
     do
     {
-        Edit handle = MainForm->edits->GetCurrentEdit();
-        if (handle.visible)
+        Edit edit = MainForm->edits->GetCurrentEdit();
+        if (edit.visible)
         {
-            if ((int)(handle.screen_group == screen_id || screen_id == EditGroup_All))
+            if ((int)(edit.screen_group == screen_id || screen_id == EditGroup_All))
             {
-                MainForm->text_canvas->Brush->Color = (TColor)handle.background_color;
-                if (handle.background_visible)
-                    MainForm->text_canvas->Brush->Style = bsSolid;
-                else
+                if (edit.border_visible)
                 {
-                    MainForm->text_canvas->Brush->Color = clWhite;
-                    MainForm->text_canvas->Brush->Style = bsClear;
+                    MainForm->OffscreenSurface->BltFast(edit.x, edit.y, surface, &GetBoxRect(edit.width),
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    MainForm->OffscreenSurface->BltFast(edit.x + edit.width - 3, edit.y, surface, &end_rect,
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 }
-                MainForm->text_canvas->Pen->Color = (TColor)handle.border_color;
-                if (handle.border_visible)
-                    MainForm->text_canvas->Pen->Style = psSolid;
-                else
-                    MainForm->text_canvas->Pen->Style = psClear;
-                if (handle.multi_line)
+                if (edit.background_visible)
                 {
-                    MainForm->text_canvas->Font->Color = (TColor)handle.text_color;
-                    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-                    MainForm->text_canvas->Font->Size = 7;
                 }
-                else
+                if (edit.show_strength)
                 {
-                    MainForm->text_canvas->Font->Color = (TColor)handle.text_color;
-                    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-                    MainForm->text_canvas->Font->Size = 8;
+                    MainForm->blitter->AlphaBlt(edit.x + edit.width - 51, edit.y + 1, MainForm->OffscreenSurface,
+                        surface, &meter_rect, 25);
+                    int length_level = MainForm->edits->GetPasswordStrength(edit.text);
+                    MainForm->OffscreenSurface->BltFast(edit.x + edit.width - 46, edit.y + edit.height - 3, surface,
+                        &meter_back_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    MainForm->OffscreenSurface->BltFast(edit.x + edit.width - 46, edit.y + edit.height - 3, surface,
+                        &GetFillRect(length_level), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 }
-                MainForm->text_canvas->RoundRect(handle.x, handle.y, handle.x + handle.width, handle.y + handle.height,
-                    4, 4);
-                bevel_top_y = handle.y + 1;
-                bevel_left_x = handle.x + 1;
-                bevel_start.x = bevel_left_x;
-                bevel_start.y = bevel_top_y;
-                MainForm->text_canvas->PenPos = bevel_start;
-                MainForm->text_canvas->Pen->Color = (TColor)handle.caret_color;
-                if (handle.background_visible)
-                {
-                    MainForm->text_canvas->LineTo(handle.x + handle.width - 1, handle.y + 1);
-                    bevel_side_y = handle.y + 1;
-                    bevel_side_x = handle.x + 1;
-                    bevel_side_start.x = bevel_side_x;
-                    bevel_side_start.y = bevel_side_y;
-                    MainForm->text_canvas->PenPos = bevel_side_start;
-                    MainForm->text_canvas->LineTo(handle.x + 1, handle.y + handle.height + 1);
-                }
-                MainForm->text_canvas->Brush->Color = clWhite;
-                MainForm->text_canvas->Brush->Style = bsClear;
-                String display_text = "";
+            }
+        }
+        MainForm->edits->MoveNext();
+    } while (!MainForm->edits->IsAtEnd());
+}
+
+// Draws the text of every visible edit box of the screen: passwords as stars, multi-line boxes wrapped at spaces with
+// their scroll, the password strength where asked, and the blinking caret in the focused box.
+void EditCanvas::DrawTexts(int screen_id)
+{
+    int i;
+    int line;
+    int max_lines;
+    char ends_in_return;
+    int first_line;
+    int drawn;
+    caret_visible = false;
+    MainForm->edits->MoveFirst();
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    do
+    {
+        Edit edit = MainForm->edits->GetCurrentEdit();
+        if (edit.visible)
+        {
+            if ((int)(edit.screen_group == screen_id || screen_id == EditGroup_All))
+            {
+                MainForm->fonts->color = edit.text_color;
+                String text = "";
                 // A password box shows one star per character.
-                if (!handle.password)
-                    display_text = handle.text;
+                if (!edit.password)
+                    text = edit.text;
                 else
                 {
-                    i = 1;
-                    while (i <= handle.text.Length())
-                    {
-                        display_text = display_text + "*";
-                        i++;
-                    }
+                    for (i = 1; i <= edit.text.Length(); i++)
+                        text = text + "*";
                 }
-                if (handle.case_mode == 4)
-                {
-                    if (display_text.Length() < 4)
-                    {
-                        String upper_text = "";
-                        for (int letter_index = 1; letter_index <= display_text.Length() && letter_index < 4;
-                            letter_index++)
-                            upper_text = upper_text + UpperCase((char)display_text[letter_index]);
-                        display_text = upper_text;
-                    }
-                }
-                int text_width = MainForm->text_canvas->TextWidth(display_text);
-                line_count = 0;
-                ends_on_new_line = false;
+                int text_width = (short)MainForm->fonts->TextWidth(text);
+                line = 0;
+                ends_in_return = false;
                 first_line = 0;
-                row = 0;
-                if (handle.multi_line)
+                drawn = 0;
+                if (edit.multi_line)
                 {
-                    // A multi-line box wraps at a space or line break to the box width.
-                    // It shows the last lines that fit, moved up by the scroll offset.
-                    if (display_text.Length() > 0)
+                    if (text.Length() > 0)
                     {
-                        if (display_text[display_text.Length()] == '\r')
-                            ends_on_new_line = true;
+                        if (text[text.Length()] == '\r')
+                            ends_in_return = true;
                     }
                     lines->Clear();
-                    int line_height = MainForm->text_canvas->TextHeight("T");
-                    visible_lines = (handle.height - line_height) / (line_height + 3);
+                    int line_height = (short)MainForm->fonts->TextHeight("T");
+                    max_lines = (edit.height - line_height) / (line_height + 3);
                     do
                     {
-                        text_width = MainForm->text_canvas->TextWidth(display_text);
-                        // A single-line text wider than the box shows only its end, so the caret end stays in view.
-                        if (text_width < handle.width - 18)
+                        if ((short)MainForm->fonts->TextWidth(text) < edit.width - 18)
                         {
-                            char new_line_found = false;
-                            if (display_text.Length() > 0)
+                            char fits = false;
+                            if (text.Length() > 0)
                             {
-                                text_width = 1;
-                                while (text_width <= display_text.Length() && !new_line_found)
+                                for (i = 1; i <= text.Length() && fits == 0; i++)
                                 {
-                                    if (display_text[text_width] == '\r')
+                                    if (text[i] == '\r')
                                     {
-                                        if (text_width == 1)
-                                            handle.line_buffer = "";
+                                        if (i == 1)
+                                            edit.line_buffer = "";
                                         else
-                                            handle.line_buffer = display_text.SubString(1, text_width - 1);
-                                        display_text.Delete(1, text_width);
-                                        new_line_found = true;
+                                            edit.line_buffer = text.SubString(1, i - 1);
+                                        text.Delete(1, i);
+                                        fits = true;
                                     }
-                                    text_width++;
                                 }
                             }
-                            if (!new_line_found)
+                            if (!fits)
                             {
-                                handle.line_buffer = display_text;
-                                display_text = "";
+                                edit.line_buffer = text;
+                                text = "";
                             }
                         }
                         else
                         {
-                            for (int j = 1; j <= display_text.Length(); j++)
+                            for (int j = 1; j <= text.Length(); j++)
                             {
-                                int prefix_width;
-                                prefix_width = MainForm->text_canvas->TextWidth(display_text.SubString(1, j));
-                                if (handle.width - 18 <= prefix_width || display_text[j] == '\r')
+                                int piece_width;
+                                piece_width = (short)MainForm->fonts->TextWidth(text.SubString(1, j));
+                                if (edit.width - 18 <= piece_width || text[j] == '\r')
                                 {
-                                    if (display_text[j] != ' ')
+                                    if (text[j] != ' ')
                                     {
                                         char break_found = false;
-                                        m = j;
-                                        while (m > 0 && !break_found)
+                                        for (i = j; i > 0 && break_found == 0; i--)
                                         {
-                                            if (display_text[m] == ' ' || display_text[m] == '\r')
+                                            if (text[i] == ' ' || text[i] == '\r')
                                             {
-                                                if (display_text[m] == '\r')
+                                                if (text[i] == '\r')
                                                 {
-                                                    prefix_width =
-                                                        MainForm->text_canvas->TextWidth(display_text.SubString(1,
-                                                            m - 1));
-                                                    if (handle.width - 18 > prefix_width)
+                                                    piece_width =
+                                                        (short)MainForm->fonts->TextWidth(text.SubString(1, i - 1));
+                                                    if (edit.width - 18 > piece_width)
                                                     {
-                                                        handle.line_buffer = display_text.SubString(1, m - 1);
-                                                        display_text.Delete(1, m);
+                                                        edit.line_buffer = text.SubString(1, i - 1);
+                                                        text.Delete(1, i);
                                                         break_found = true;
                                                     }
                                                 }
                                                 else
                                                 {
-                                                    handle.line_buffer = display_text.SubString(1, m);
-                                                    display_text.Delete(1, m);
+                                                    edit.line_buffer = text.SubString(1, i);
+                                                    text.Delete(1, i);
                                                     break_found = true;
                                                 }
                                             }
-                                            m--;
                                         }
                                         if (!break_found)
                                         {
-                                            handle.line_buffer = display_text.SubString(1, j);
-                                            display_text.Delete(1, j);
+                                            edit.line_buffer = text.SubString(1, j);
+                                            text.Delete(1, j);
                                         }
                                     }
                                     else
                                     {
-                                        handle.line_buffer = display_text.SubString(1, j);
-                                        display_text.Delete(1, j);
+                                        edit.line_buffer = text.SubString(1, j);
+                                        text.Delete(1, j);
                                     }
                                     break;
                                 }
                             }
                         }
-                        lines->Add(handle.line_buffer);
-                        line_count++;
-                    } while (display_text.Length() > 0);
-                    if (!ends_on_new_line)
-                        line_count--;
-                    if (visible_lines < line_count)
-                        first_line = line_count - visible_lines;
-                    first_line -= handle.scroll_offset;
-                    int lines_below = handle.scroll_offset;
+                        lines->Add(edit.line_buffer);
+                        line++;
+                    } while (text.Length() > 0);
+                    if (!ends_in_return)
+                        line--;
+                    if (max_lines < line)
+                        first_line = line - max_lines;
+                    first_line -= edit.scroll_offset;
+                    int scroll = edit.scroll_offset;
                     if (first_line < 0)
                     {
-                        lines_below -= 0 - first_line;
+                        scroll -= 0 - first_line;
                         first_line = 0;
                     }
-                    for (int line_index = first_line; line_index < lines->Count - lines_below; line_index++)
+                    for (i = first_line; i < lines->Count - scroll; i++)
                     {
-                        MainForm->text_canvas->TextOut(handle.x + 5, (line_height + 3) * row + handle.y + 3,
-                            lines->Strings[line_index]);
-                        row++;
+                        MainForm->fonts->DrawString(edit.x + 5, (short)((line_height + 3) * drawn) + (short)edit.y + 3,
+                            lines->Strings[i]);
+                        drawn++;
                     }
-                    MainForm->edits->SetFirstVisibleLine(handle.id, first_line);
-                    MainForm->edits->SetLineCount(handle.id, lines->Count);
-                    MainForm->edits->SetVisibleLineCount(handle.id, visible_lines);
+                    MainForm->edits->SetFirstVisibleLine(edit.id, first_line);
+                    MainForm->edits->SetLineCount(edit.id, lines->Count);
+                    MainForm->edits->SetVisibleLineCount(edit.id, max_lines);
                 }
                 else
                 {
-                    if (text_width < handle.width - 18)
-                        handle.line_buffer = display_text;
+                    // A single-line text wider than the box shows only its end, so the caret end stays in view.
+                    if (text_width < edit.width - 18)
+                        edit.line_buffer = text;
                     else
                     {
-                        int overflow_width = text_width - (handle.width - 18);
-                        int trimmed_width = 0;
-                        for (int jj = 1; jj <= display_text.Length(); jj++)
+                        int overflow = text_width - (edit.width - 18);
+                        int cut_width = 0;
+                        for (int c = 1; c <= text.Length(); c++)
                         {
-                            trimmed_width += MainForm->text_canvas->TextWidth((char)display_text[jj]);
-                            if (trimmed_width >= overflow_width)
+                            cut_width += (short)MainForm->fonts->TextWidth(text[c]);
+                            if (cut_width >= overflow)
                             {
-                                handle.line_buffer = display_text.SubString(jj, display_text.Length());
+                                edit.line_buffer = text.SubString(c, text.Length());
                                 break;
                             }
                         }
                     }
-                    MainForm->text_canvas->TextOut(handle.x + 5, handle.y + 3, handle.line_buffer);
+                    MainForm->fonts->DrawString(edit.x + 5, (short)edit.y + 3, edit.line_buffer);
+                    if (edit.show_strength)
+                    {
+                        int text_x = edit.width - 55;
+                        int strength[1];
+                        strength[0] = MainForm->edits->GetPasswordStrength(edit.text);
+                        if (edit.redraw_ticks > 0)
+                        {
+                            String length_text = IntToStr(edit.text.Length());
+                            length_text += "/";
+                            length_text += IntToStr(edit.max_length);
+                            text_x -= (short)MainForm->fonts->TextWidth(length_text);
+                            MainForm->fonts->DrawString(edit.x + (short)text_x, (short)edit.y + 3, length_text);
+                        }
+                        String strength_text = "weak";
+                        if (strength[0] > 4)
+                            strength_text = "okay";
+                        if (strength[0] > 6)
+                            strength_text = "good";
+                        if (strength[0] > 9)
+                            strength_text = "strong";
+                        text_x = edit.width - 27;
+                        text_x -= (short)MainForm->fonts->TextWidth(strength_text) / 2;
+                        MainForm->fonts->DrawString(edit.x + (short)text_x, (short)edit.y + 2, strength_text);
+                    }
                 }
-                // The caret blinks after the last shown text of a focused, editable box.
-                if (handle.focused && handle.editable)
+                if (edit.focused && edit.editable)
                 {
-                    caret_offset = MainForm->text_canvas->TextWidth(handle.line_buffer);
+                    text_width = (short)MainForm->fonts->TextWidth(edit.line_buffer);
                     if (MainForm->edits->caret_blink_on && MainForm->edits->caret_enabled)
                     {
-                        MainForm->text_canvas->Brush->Color = (TColor)handle.caret_color;
-                        MainForm->text_canvas->Pen->Color = (TColor)handle.caret_color;
-                        if (handle.multi_line)
+                        caret_visible = true;
+                        caret_x = text_width + edit.x + 7;
+                        caret_y = edit.y + 5;
+                        if (edit.multi_line && !edit.scroll_offset)
                         {
-                            if (!handle.scroll_offset)
+                            int line_height_t = (short)MainForm->fonts->TextHeight("T");
+                            if (ends_in_return)
                             {
-                                int caret_line_height = MainForm->text_canvas->TextHeight("T");
-                                if (ends_on_new_line)
-                                    caret_offset = 0;
-                                MainForm->text_canvas->Rectangle(handle.x + caret_offset + 6,
-                                    (line_count - first_line) * (caret_line_height + 3) + handle.y + 4,
-                                    handle.x + caret_offset + 8,
-                                    (line_count - first_line) * (caret_line_height + 3) +
-                                        (handle.y + caret_line_height) + 2);
                             }
+                            caret_y += (line - first_line) * (line_height_t + 3);
                         }
-                        else
-                            MainForm->text_canvas->Rectangle(handle.x + caret_offset + 6, handle.y + 4,
-                                handle.x + caret_offset + 8, handle.y + handle.height - 4);
                     }
                 }
             }

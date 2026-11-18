@@ -12,11 +12,8 @@ struct ObjectGraphics
 {
     vector<ObjectWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     ObjectGraphics(char preload);
     ~ObjectGraphics();
@@ -26,7 +23,7 @@ struct ObjectGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
-    ObjectWrapper GetGraphic(int graphic_id);
+    ObjectWrapper * GetGraphic(int graphic_id);
     GraphicSize GetGraphicSize(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();

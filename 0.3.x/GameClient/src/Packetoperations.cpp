@@ -25,6 +25,28 @@ void PacketOperator::RequestAccountNameCheck(String account_name)
         MainForm->net_client->SendPacket(AC_REQUEST, OP_ACCOUNT, account_name);
 }
 
+void PacketOperator::RequestPasswordReset(String account_name)
+{
+    MainForm->net_client->SendPacket(AC_NEW, OP_LOGIN, account_name);
+}
+
+void PacketOperator::SendPasswordResetCode(String code)
+{
+    MainForm->net_client->SendPacket(AC_CONFIRM, OP_LOGIN, code);
+}
+
+// Sends the account name, the reset code and the new password, each closed by a byte of 255.
+void PacketOperator::SendPasswordReset(String account_name, String code, String new_password)
+{
+    String packet = packet + account_name;
+    packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+    packet = packet + code;
+    packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+    packet = packet + new_password;
+    packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+    MainForm->net_client->SendPacket(AC_UPDATE, OP_LOGIN, packet);
+}
+
 // Asks where a player is; the caller sends names of 4 to 16 letters.
 void PacketOperator::SendFindPlayer(String name)
 {
@@ -32,12 +54,32 @@ void PacketOperator::SendFindPlayer(String name)
         MainForm->net_client->SendPacket(AC_CONFIRM, OP_PLAYERS, name);
 }
 
+// Asks for a signup code for the account at the email, once a session is open.
+void PacketOperator::RequestSignupCode(String account_name, String email)
+{
+    if (MainForm->net_client->GetSessionId() >= 1)
+    {
+        String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + account_name;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + email;
+        MainForm->net_client->SendPacket(AC_CONFIRM, OP_ACCOUNT, packet);
+    }
+}
+
+void PacketOperator::SendAccountCreateWithoutCode(String account_name, String password, String real_name,
+    String location, String email)
+{
+    SendAccountCreate(account_name, password, real_name, location, email, "");
+}
+
 // Sends the new account form; the computer name and the serial number of drive c: go with it.
 void PacketOperator::SendAccountCreate(String account_name, String password, String real_name, String location,
-    String email)
+    String email, String signup_code)
 {
-    unsigned long n_size;
-    unsigned long volume_serial_number;
+    unsigned long name_size;
+    unsigned long serial;
     unsigned long maximum_component_length;
     unsigned long file_system_flags;
     char buffer[16];
@@ -45,40 +87,44 @@ void PacketOperator::SendAccountCreate(String account_name, String password, Str
     char file_system_name_buffer[FILE_SYSTEM_NAME_BUFFER_SIZE];
     if (MainForm->net_client->GetSessionId() >= 1)
     {
-        n_size = 16;
+        name_size = 16;
         buffer[0] = 0;
-        GetComputerNameA(buffer, &n_size);
+        GetComputerNameA(buffer, &name_size);
         String computer_name = buffer;
-        GetVolumeInformationA("c:\\", volume_name_buffer, 1000, &volume_serial_number, &maximum_component_length,
-            &file_system_flags, file_system_name_buffer, 1000);
-        String serial_text = volume_serial_number;
+        GetVolumeInformationA("c:\\", volume_name_buffer, 1000, &serial, &maximum_component_length, &file_system_flags,
+            file_system_name_buffer, 1000);
+        String serial_text = serial;
         // Each is cut to 32 characters.
         if (computer_name.Length() >= 33)
             computer_name = computer_name.SubString(1, 32);
         if (serial_text.Length() >= 33)
             serial_text = serial_text.SubString(1, 32);
-        String payload = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + account_name;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + password;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + real_name;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + location;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + email;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + computer_name;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        payload = payload + serial_text;
-        payload = payload + String(ByteToChar(TOKEN_BREAK_BYTE));
-        if (payload.Length() >= 1)
-            MainForm->net_client->SendPacket(AC_NEW, OP_ACCOUNT, payload);
+        String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + account_name;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + password;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + real_name;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + location;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + email;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + computer_name;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        packet = packet + serial_text;
+        packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        if (signup_code.Length() == 7)
+        {
+            packet = packet + signup_code;
+            packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+        }
+        MainForm->net_client->SendPacket(AC_NEW, OP_ACCOUNT, packet);
     }
 }
 
-// Sends the account name, the old password and the new one, each ended by a byte of 255.
+// Sends the account name, the old and the new password, each closed by a byte of 255.
 void PacketOperator::SendChangePassword(String account_name, String old_password, String new_password)
 {
     String packet = packet + account_name;
@@ -87,8 +133,7 @@ void PacketOperator::SendChangePassword(String account_name, String old_password
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + new_password;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_UPDATE, OP_ACCOUNT, packet);
+    MainForm->net_client->SendPacket(AC_UPDATE, OP_ACCOUNT, packet);
 }
 
 // Asks to open the new character form.
@@ -96,16 +141,14 @@ void PacketOperator::RequestCharacterCreate()
 {
     String packet = "NEW";
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_CHARACTER, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_CHARACTER, packet);
 }
 
 // Asks to delete a character; the server asks for a confirmation, which ConfirmCharacterDelete sends.
 void PacketOperator::RequestCharacterDelete(int character_id)
 {
     String packet = MainForm->net_client->EncodeNumber(character_id, 4);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_GET, OP_CHARACTER, packet);
+    MainForm->net_client->SendPacket(AC_GET, OP_CHARACTER, packet);
 }
 
 // Confirms the delete of the character the menu asked about.
@@ -113,11 +156,10 @@ void PacketOperator::ConfirmCharacterDelete()
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
     packet = packet + MainForm->net_client->EncodeNumber(MainForm->animation->menu->delete_character_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_DELETE, OP_CHARACTER, packet);
+    MainForm->net_client->SendPacket(AC_DELETE, OP_CHARACTER, packet);
 }
 
-// Sends the new character: gender, hair style, hair color and skin, then the name.
+// Sends the new character: gender, hair style, hair colour and skin, then the name.
 void PacketOperator::SendCharacterCreate(String name, int gender, int hair_style, int hair_color, int skin)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
@@ -128,16 +170,14 @@ void PacketOperator::SendCharacterCreate(String name, int gender, int hair_style
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + name;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_NEW, OP_CHARACTER, packet);
+    MainForm->net_client->SendPacket(AC_NEW, OP_CHARACTER, packet);
 }
 
-// Logs in with one character of the account.
+// Enters the game as the character.
 void PacketOperator::SelectCharacter(int character_id)
 {
     String packet = MainForm->net_client->EncodeNumber(character_id, 4);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAY, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAY, packet);
 }
 
 void PacketOperator::SendPrivateMessagesOn()
@@ -160,7 +200,7 @@ void PacketOperator::SendGlobalChatOpen()
     MainForm->net_client->SendPacket(AC_OPEN, OP_PCHAT, "y");
 }
 
-// A step through the player who has blocked the way for a while: the direction, the action tick, then the tile.
+// A step through a player in the way, with the same fields as SendWalk.
 void PacketOperator::SendWalkGhost(int direction, int x, int y, int blocking_player_id)
 {
     MainForm->net_client->CommitActionTime();
@@ -168,11 +208,10 @@ void PacketOperator::SendWalkGhost(int direction, int x, int y, int blocking_pla
     packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
     packet = packet + MainForm->net_client->EncodeNumber(x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(y, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_HIT, OP_MOVE, packet);
+    MainForm->net_client->SendPacket(AC_HIT, OP_MOVE, packet);
 }
 
-// A step while walking through walls, which only admins of level 3 and up can turn on.
+// A step through walls, with the same fields as SendWalk.
 void PacketOperator::SendWalkNoWall(int direction, int x, int y)
 {
     MainForm->net_client->CommitActionTime();
@@ -180,11 +219,10 @@ void PacketOperator::SendWalkNoWall(int direction, int x, int y)
     packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
     packet = packet + MainForm->net_client->EncodeNumber(x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(y, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_CAST, OP_MOVE, packet);
+    MainForm->net_client->SendPacket(AC_CAST, OP_MOVE, packet);
 }
 
-// A step: the direction, the action tick, then the tile the player walks to.
+// A step in a direction to the tile, with the action tick.
 void PacketOperator::SendWalk(int direction, int x, int y)
 {
     MainForm->net_client->CommitActionTime();
@@ -192,8 +230,7 @@ void PacketOperator::SendWalk(int direction, int x, int y)
     packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
     packet = packet + MainForm->net_client->EncodeNumber(x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(y, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_SET, OP_MOVE, packet);
+    MainForm->net_client->SendPacket(AC_SET, OP_MOVE, packet);
 }
 
 // Sends a private message: the name, a byte of 255, then the text.
@@ -202,8 +239,7 @@ void PacketOperator::SendPrivateMessage(String name, String text)
     String packet = name;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + text;
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_PRIVATE, OP_CHAT, packet);
+    MainForm->net_client->SendPacket(AC_PRIVATE, OP_CHAT, packet);
 }
 
 void PacketOperator::SendAdminChat(String text)
@@ -258,17 +294,24 @@ void PacketOperator::SendReportPlayer(String name, String reason)
     String packet = name;
     packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
     packet = packet + reason;
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_PUBLIC, OP_ADMIN, packet);
+    MainForm->net_client->SendPacket(AC_PUBLIC, OP_ADMIN, packet);
 }
 
 void PacketOperator::SendHelpQuestion(String question)
 {
-    if (question.Length() < 1)
-        return;
     String packet = question;
     if (packet.Length() >= 1)
         MainForm->net_client->SendPacket(AC_PRIVATE, OP_ADMIN, packet);
+}
+
+void PacketOperator::SendChooseTitle(int item_id, String title)
+{
+    if (title.Length() < 1)
+        return;
+    String packet = packet + MainForm->net_client->EncodeNumber(item_id, 2);
+    packet = packet + String(ByteToChar(TOKEN_BREAK_BYTE));
+    packet = packet + title;
+    MainForm->net_client->SendPacket(AC_PUBLIC, OP_ITEM, packet);
 }
 
 // Shows an emote over the player.
@@ -279,44 +322,39 @@ void PacketOperator::SendEmote(int emote)
         MainForm->net_client->SendPacket(AC_PUBLIC, OP_EMOTE, packet);
 }
 
-// Trains a stat: kind 1, then the stat.
+// Spends a point on the stat.
 void PacketOperator::SendTrainStat(int stat_id)
 {
     String packet = MainForm->net_client->EncodeNumber(1, 1);
     packet = packet + MainForm->net_client->EncodeNumber(stat_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
+    MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
 }
 
-// Trains a skill: kind 2, then the skill.
+// Spends a point on the skill.
 void PacketOperator::SendTrainSkill(int skill_id)
 {
     String packet = MainForm->net_client->EncodeNumber(2, 1);
     packet = packet + MainForm->net_client->EncodeNumber(skill_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
+    MainForm->net_client->SendPacket(AC_ADD, OP_SKILL, packet);
 }
 
 // Turns the player to face a direction without walking.
 void PacketOperator::SendFace(int direction)
 {
     String packet = MainForm->net_client->EncodeNumber(direction, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_SET, OP_DIR, packet);
+    MainForm->net_client->SendPacket(AC_SET, OP_DIR, packet);
 }
 
-// Starts a spell: its id and the time it was started.
+// Starts chanting the spell, with the time.
 void PacketOperator::SendSpellChant(int spell_id)
 {
     TTimeStamp now;
     now = DateTimeToTimeStamp(Now());
-    // Hundredths of a second since midnight.
-    int tick = now.Time / 10;
+    int timestamp = now.Time / 10;
     MainForm->net_client->CommitActionTime();
     String packet = MainForm->net_client->EncodeNumber(spell_id, 2);
-    packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_MAGIC, packet);
+    packet = packet + MainForm->net_client->EncodeNumber(timestamp, 3);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_MAGIC, packet);
 }
 
 // Casts a spell in a direction: the direction, the spell and the time.
@@ -328,11 +366,10 @@ void PacketOperator::SendSpellCastDirectional(int direction, int spell_id)
     String packet = MainForm->net_client->EncodeNumber(direction, 1);
     packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_SELF, OP_MAGIC, packet);
+    MainForm->net_client->SendPacket(AC_SELF, OP_MAGIC, packet);
 }
 
-// Casts a spell on the player's group: the spell and the time, with no target.
+// Casts the spell on the group, with the time.
 void PacketOperator::SendSpellCastGroup(int spell_id)
 {
     TTimeStamp now;
@@ -340,11 +377,10 @@ void PacketOperator::SendSpellCastGroup(int spell_id)
     int tick = now.Time / 10;
     String packet = MainForm->net_client->EncodeNumber(spell_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_GROUP, OP_MAGIC, packet);
+    MainForm->net_client->SendPacket(AC_GROUP, OP_MAGIC, packet);
 }
 
-// Casts a spell on a player; the first byte says what the target is: 1 = a player, 2 = an npc.
+// Casts the spell on the player, with the action tick and the time.
 void PacketOperator::SendSpellCastOnPlayer(int spell_id, int player_id)
 {
     TTimeStamp now;
@@ -356,11 +392,10 @@ void PacketOperator::SendSpellCastOnPlayer(int spell_id, int player_id)
     packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
+    MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
 }
 
-// Casts a spell on an npc, with target kind 2.
+// Casts the spell on the npc, with the action tick and the time.
 void PacketOperator::SendSpellCastOnNpc(int spell_id, int npc_index)
 {
     TTimeStamp now;
@@ -372,8 +407,7 @@ void PacketOperator::SendSpellCastOnNpc(int spell_id, int npc_index)
     packet = packet + MainForm->net_client->EncodeNumber(spell_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(npc_index, 2);
     packet = packet + MainForm->net_client->EncodeNumber(tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
+    MainForm->net_client->SendPacket(AC_TARGET, OP_MAGIC, packet);
 }
 
 // An attack in a direction, with the action tick.
@@ -382,8 +416,7 @@ void PacketOperator::SendAttack(int direction)
     MainForm->net_client->CommitActionTime();
     String packet = MainForm->net_client->EncodeNumber(direction, 1);
     packet = packet + MainForm->net_client->EncodeNumber(MainForm->net_client->last_action_tick, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_DO, OP_ATTACK, packet);
+    MainForm->net_client->SendPacket(AC_DO, OP_ATTACK, packet);
 }
 
 // Sits on the chair at a tile: kind 1, then the tile. SendChairStand sends kind 2.
@@ -392,8 +425,7 @@ void PacketOperator::SendChairSit(int x, int y)
     String packet = MainForm->net_client->EncodeNumber(1, 1);
     packet = packet + MainForm->net_client->EncodeNumber(x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(y, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
 }
 
 // Sits on the floor: kind 1, then the tile. SendFloorStand sends kind 2.
@@ -402,22 +434,19 @@ void PacketOperator::SendFloorSit(int x, int y)
     String packet = MainForm->net_client->EncodeNumber(1, 1);
     packet = packet + MainForm->net_client->EncodeNumber(x, 1);
     packet = packet + MainForm->net_client->EncodeNumber(y, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
 }
 
 void PacketOperator::SendFloorStand()
 {
     String packet = MainForm->net_client->EncodeNumber(2, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_REST, packet);
 }
 
 void PacketOperator::SendChairStand()
 {
     String packet = MainForm->net_client->EncodeNumber(2, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_SIT, packet);
 }
 
 // Asks the server to send the map's players, npcs and items again.
@@ -432,50 +461,44 @@ void PacketOperator::RequestRefresh()
 void PacketOperator::RequestPaperdoll(int player_id)
 {
     String packet = MainForm->net_client->EncodeNumber(player_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_PAPERDOLL, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_PAPERDOLL, packet);
 }
 
 // Asks for the book of a player.
 void PacketOperator::RequestBook(int player_id)
 {
     String packet = MainForm->net_client->EncodeNumber(player_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_BOOK, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_BOOK, packet);
 }
 
-// Equips an item in slot 0 or 1 of its kind.
+// Equips the item in the sub slot.
 void PacketOperator::SendEquipItem(int item_id, int sub_slot)
 {
     String packet = MainForm->net_client->EncodeNumber(item_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(sub_slot, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_ADD, OP_PAPERDOLL, packet);
+    MainForm->net_client->SendPacket(AC_ADD, OP_PAPERDOLL, packet);
 }
 
-// Takes off the item in slot 0 or 1 of its kind.
+// Takes off the item from the sub slot.
 void PacketOperator::SendUnequipItem(int item_id, int sub_slot)
 {
     String packet = MainForm->net_client->EncodeNumber(item_id, 2);
     packet = packet + MainForm->net_client->EncodeNumber(sub_slot, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_DELETE, OP_PAPERDOLL, packet);
+    MainForm->net_client->SendPacket(AC_DELETE, OP_PAPERDOLL, packet);
 }
 
 // Asks for the list of players online, for the player list.
 void PacketOperator::RequestOnlinePlayers()
 {
     String packet = ByteToChar(TOKEN_BREAK_BYTE);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAYERS, packet);
+    MainForm->net_client->SendPacket(AC_REQUEST, OP_PLAYERS, packet);
 }
 
 // Asks for the names of players online, for the friend list.
 void PacketOperator::RequestOnlineNames()
 {
     String packet = ByteToChar(TOKEN_BREAK_BYTE);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_LIST, OP_PLAYERS, packet);
+    MainForm->net_client->SendPacket(AC_LIST, OP_PLAYERS, packet);
 }
 
 // Asks for the quests in progress: kind 1.
@@ -493,8 +516,7 @@ void PacketOperator::RequestQuestHistory()
 void PacketOperator::RequestBankOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_BANK, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_BANK, packet);
 }
 
 void PacketOperator::SendGiveUpCitizenship(int session_id)
@@ -537,33 +559,29 @@ void PacketOperator::SendCitizenshipAnswers(int session_value, String answer_fir
 void PacketOperator::RequestInnOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_INN, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_INN, packet);
 }
 
-// Takes gold out of the bank: the amount, then session_value.
+// Takes the amount out of the bank.
 void PacketOperator::SendBankWithdraw(int session_value, int amount)
 {
     String packet = MainForm->net_client->EncodeNumber(amount, 4);
     packet = packet + MainForm->net_client->EncodeNumber(session_value, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_GET, OP_BANK, packet);
+    MainForm->net_client->SendPacket(AC_GET, OP_BANK, packet);
 }
 
-// Puts gold in the bank: the amount, then session_value.
+// Puts the amount in the bank.
 void PacketOperator::SendBankDeposit(int session_value, int amount)
 {
     String packet = MainForm->net_client->EncodeNumber(amount, 4);
     packet = packet + MainForm->net_client->EncodeNumber(session_value, 3);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_ADD, OP_BANK, packet);
+    MainForm->net_client->SendPacket(AC_ADD, OP_BANK, packet);
 }
 
 void PacketOperator::RequestPriestOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_PRIEST, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_PRIEST, packet);
 }
 
 // Asks the priest for a wedding with the named partner.
@@ -590,8 +608,7 @@ void PacketOperator::AcceptWeddingRequest(int request_id)
 void PacketOperator::RequestBarberOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_BARBER, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_BARBER, packet);
 }
 
 // Buys a hair style and color at the barber.
@@ -600,20 +617,18 @@ void PacketOperator::SendBuyHairstyle(int session_value, int hair_style, int hai
     String packet = MainForm->net_client->EncodeNumber(hair_style, 1);
     packet = packet + MainForm->net_client->EncodeNumber(hair_color, 1);
     packet = packet + MainForm->net_client->EncodeNumber(session_value, 4);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_BUY, OP_BARBER, packet);
+    MainForm->net_client->SendPacket(AC_BUY, OP_BARBER, packet);
 }
 
-// Opens the quest dialog of an npc.
+// Asks the npc for the quest's dialog.
 void PacketOperator::RequestQuestDialog(int npc_index, int quest_id)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
     packet = packet + MainForm->net_client->EncodeNumber(quest_id, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_DO, OP_QUEST, packet);
+    MainForm->net_client->SendPacket(AC_DO, OP_QUEST, packet);
 }
 
-// Answers a quest dialog with OK.
+// Answers the quest dialog with ok.
 void PacketOperator::SendQuestDialogOk(int dialog_echo_a, int quest_id, int dialog_echo_b)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
@@ -622,11 +637,10 @@ void PacketOperator::SendQuestDialogOk(int dialog_echo_a, int quest_id, int dial
     packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_b, 2);
     packet = packet + MainForm->net_client->EncodeNumber(1, 1);
     packet = packet + MainForm->net_client->EncodeNumber(0, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
+    MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
 }
 
-// Answers a quest dialog with the link the player clicked; the values come back as the dialog sent them.
+// Picks a link of the quest dialog.
 void PacketOperator::SendQuestDialogLink(int dialog_echo_a, int quest_id, int dialog_echo_b, int link_id)
 {
     String packet = MainForm->net_client->EncodeNumber(MainForm->net_client->GetSessionId(), 2);
@@ -635,23 +649,20 @@ void PacketOperator::SendQuestDialogLink(int dialog_echo_a, int quest_id, int di
     packet = packet + MainForm->net_client->EncodeNumber(dialog_echo_b, 2);
     packet = packet + MainForm->net_client->EncodeNumber(2, 1);
     packet = packet + MainForm->net_client->EncodeNumber(link_id, 1);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
+    MainForm->net_client->SendPacket(AC_CONFIRM, OP_QUEST, packet);
 }
 
 void PacketOperator::RequestSkillMasterOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_SKILL, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_SKILL, packet);
 }
 
-// Asks the skill master for a reset, once the player has said yes.
+// Asks the skill master to reset the skills.
 void PacketOperator::SendSkillReset(int session_value)
 {
     String packet = MainForm->net_client->EncodeNumber(session_value, 4);
-    if (packet.Length() >= 4)
-        MainForm->net_client->SendPacket(AC_JUNK, OP_SKILL, packet);
+    MainForm->net_client->SendPacket(AC_JUNK, OP_SKILL, packet);
 }
 
 // Asks the skill master to take a skill away.
@@ -675,8 +686,7 @@ void PacketOperator::SendLearnSkill(int session_value, int skill_id)
 void PacketOperator::RequestLawOpen(int npc_index)
 {
     String packet = MainForm->net_client->EncodeNumber(npc_index, 2);
-    if (packet.Length() >= 1)
-        MainForm->net_client->SendPacket(AC_OPEN, OP_LAW, packet);
+    MainForm->net_client->SendPacket(AC_OPEN, OP_LAW, packet);
 }
 
 // The first request of the law window: kind 1, session_value, then the text typed in, of 4 letters or more.
@@ -1008,7 +1018,7 @@ void PacketOperator::SendPlayInstrument(int instrument_id, int note_id)
         MainForm->net_client->SendPacket(AC_DO, OP_MUSIC, packet);
 }
 
-// Drops an item on a tile, or where the player stands when x or y is below 0.
+// Drops an item on a tile, or where the player stands when x or y is below 0; a first large gold drop only warns.
 void PacketOperator::SendDropItem(int item_id, int amount, int x, int y)
 {
     char result = 1;
@@ -1241,7 +1251,6 @@ void PacketOperator::SendTradeClose()
 // Asks a player to trade.
 void PacketOperator::RequestTrade(int player_id)
 {
-    // A fixed first byte of 138.
     String packet = MainForm->net_client->EncodeNumber(138, 1);
     packet = packet + MainForm->net_client->EncodeNumber(player_id, 2);
     if (packet.Length() >= 1)

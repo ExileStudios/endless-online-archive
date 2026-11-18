@@ -1,6 +1,7 @@
 #ifndef ClassvaluesH
 #define ClassvaluesH
 
+#include <Classes.hpp>
 #include <fstream>
 #include <new>
 #include <string>
@@ -33,12 +34,13 @@ struct ClassValues
     int header_record_count;
     String file_text;
     int read_position;
-    vector<ClassValue> records;
-    int unused_value;
+    vector<ClassValue *> records;
     vector<PubfileHeader *> part_headers;
     String file_prefix;
+    TStringList *kept_files;
+    char keep_files;
 
-    ClassValues(String path);
+    ClassValues(String folder, char keep);
     ~ClassValues();
     void ReadHeader();
     void Load();
@@ -46,27 +48,15 @@ struct ClassValues
     void DeleteFiles();
     void LoadFrom(String folder);
     void Clear();
-    String GetName(int class_id);
+    ClassValue * GetRecord(int index);
     bool IsDescendantOf(int class_id, int ancestor_id);
-    unsigned int Count();
+    int Count();
     void ClearHeaders();
+    void ClearKeptFiles();
     char ReadByte();
     int DecodeNumber(unsigned char encoded);
 };
 
-
-// Empties the list.
-// Shared body: a class defines its Clear with DEFINE_CLEAR(TheClass); each class has its own Count, records,
-// unused_value.
-#define DEFINE_CLEAR(Class) \
-void Class::Clear() \
-{ \
-    if (Count() >= 1) \
-    { \
-        records.clear(); \
-        unused_value = -1; \
-    } \
-}
 
 // Shared body: a class defines its DecodeNumber with DEFINE_DECODE_NUMBER(TheClass); each class has its own data,
 // read_position.

@@ -114,13 +114,13 @@ void GuildController::MouseDown(int x, int y, int button)
                     {
                         if (!MainForm->animation->interface_controller->status->IsInGuild())
                         {
-                            MainForm->animation->game->OpenInputForm(FormKind_GuildJoin, 2, EditCharFilter_Letters, 12,
+                            MainForm->animation->game->OpenInputForm(FormKind_GuildJoin, 2, EditCharFilter_Letters, 3,
                                 MainForm->strings->GetDialogText(DialogText_JoinGuild, false),
                                 MainForm->strings->GetDialogText(DialogText_JoinGuild, true));
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildTag),
                                 "", EditCharFilter_Letters, 3, EditCaseMode_Upper, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Recruiter),
-                                "", EditCharFilter_Letters, 12, EditCaseMode_None, false);
+                                "", EditCharFilter_Letters, 14, EditCaseMode_None, false);
                         }
                         else
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
@@ -142,15 +142,15 @@ void GuildController::MouseDown(int x, int y, int button)
                     {
                         if (!MainForm->animation->interface_controller->status->IsInGuild())
                         {
-                            MainForm->animation->game->OpenInputForm(FormKind_GuildCreate, 3,
-                                EditCharFilter_LettersSpaces, 12, MainForm->strings->GetText(GameText_RegisterGuild),
+                            MainForm->animation->game->OpenInputForm(FormKind_GuildCreate, 3, EditCharFilter_Password,
+                                12, MainForm->strings->GetText(GameText_RegisterGuild),
                                 MainForm->strings->GetText(GameText_EnterYourGuildDetails));
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildTag),
                                 "", EditCharFilter_Letters, 3, EditCaseMode_Upper, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_GuildName),
-                                "", EditCharFilter_LettersSpaces, 24, EditCaseMode_None, false);
+                                "", EditCharFilter_Alphanumeric, 24, EditCaseMode_None, false);
                             MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Description),
-                                "", EditCharFilter_NoPunctuation, 240, EditCaseMode_None, false);
+                                "", EditCharFilter_Password, 240, EditCaseMode_None, false);
                         }
                         else
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
@@ -160,14 +160,15 @@ void GuildController::MouseDown(int x, int y, int button)
                     if (page == GuildPage_Description)
                     {
                         MainForm->animation->game->OpenInputBox(InputBoxKind_GuildDescription,
-                            MainForm->strings->GetText(GameText_Description), EditCharFilter_Letters, 12);
-                        MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_NoPunctuation);
-                        MainForm->edits->SetMaxLength(EditId_InputBox, 240);
-                        MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_None);
+                            MainForm->strings->GetText(GameText_Description), EditCharFilter_Alphanumeric, 14);
+                        MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_Letters);
+                        MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_Name);
+                        MainForm->edits->SetAllowSpaces(EditId_InputBox, false);
+                        MainForm->edits->SetMaxLength(EditId_InputBox, 14);
                     }
                     if (page == GuildPage_RemoveMember)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_RemoveGuildMember,
-                            MainForm->strings->GetText(GameText_WhoDoYouWantToRemove), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_WhoDoYouWantToRemove), EditCharFilter_Alphanumeric, 14);
                     if (page == GuildPage_Disband)
                         MainForm->animation->game->ShowMessageBox(DialogButtons_OkCancel, ConfirmAction_DisbandGuild,
                             MainForm->strings->GetDialogText(DialogText_DisbandGuild, false),
@@ -189,13 +190,13 @@ void GuildController::MouseDown(int x, int y, int button)
                     }
                     if (page == GuildPage_Rank)
                     {
-                        MainForm->animation->game->OpenInputForm(FormKind_GuildMemberRank, 2,
-                            EditCharFilter_LettersSpaces, 12, MainForm->strings->GetText(GameText_Ranking),
+                        MainForm->animation->game->OpenInputForm(FormKind_GuildMemberRank, 2, EditCharFilter_Password,
+                            12, MainForm->strings->GetText(GameText_Ranking),
                             MainForm->strings->GetText(GameText_AssignRankToMember));
                         MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Name), "",
-                            EditCharFilter_Letters, 12, EditCaseMode_None, false);
+                            EditCharFilter_Letters, 14, EditCaseMode_None, false);
                         MainForm->animation->game->AddInputFormRow(MainForm->strings->GetText(GameText_Rank), "",
-                            EditCharFilter_Letters, 1, EditCaseMode_None, false);
+                            EditCharFilter_Alphanumeric, 1, EditCaseMode_None, false);
                         MainForm->edits->SetNumericRange(EditId_FormSecondRow, 1, 9);
                     }
                 }
@@ -205,18 +206,20 @@ void GuildController::MouseDown(int x, int y, int button)
                 if (!row)
                 {
                     MainForm->animation->game->OpenInputBox(InputBoxKind_GuildInfo,
-                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Letters, 12);
-                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_LettersSpaces);
-                    MainForm->edits->SetMaxLength(EditId_InputBox, 24);
-                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_GuildTag);
+                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Alphanumeric, 3);
+                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_Letters);
+                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_Upper);
+                    MainForm->edits->SetAllowSpaces(EditId_InputBox, false);
+                    MainForm->edits->SetMaxLength(EditId_InputBox, 3);
                 }
                 if (row == 1)
                 {
                     MainForm->animation->game->OpenInputBox(InputBoxKind_GuildMemberList,
-                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Letters, 12);
-                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_LettersSpaces);
-                    MainForm->edits->SetMaxLength(EditId_InputBox, 24);
-                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_GuildTag);
+                        MainForm->strings->GetText(GameText_ToViewInformationAbout), EditCharFilter_Alphanumeric, 3);
+                    MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_Letters);
+                    MainForm->edits->SetCaseMode(EditId_InputBox, EditCaseMode_Upper);
+                    MainForm->edits->SetAllowSpaces(EditId_InputBox, false);
+                    MainForm->edits->SetMaxLength(EditId_InputBox, 3);
                 }
             }
             if (page == GuildPage_Manage && row >= 0 && row <= 4)
@@ -381,6 +384,7 @@ void GuildController::MouseMove(int x, int y)
 {
     int row;
     UpdateScrollHover(x, y);
+    // A dragged window stays inside the game view.
     if (is_dragging)
     {
         window_x = x - drag_offset_x;

@@ -52,84 +52,29 @@ TRect TileResource::GetFrameRect(int frame)
     return frame_rect;
 }
 
-GraphicSize TileResource::LoadSurface(int library, int resource_id)
+// Loads a ground tile picture from the library into its surface, animated when 250 or more wide; its size, or -1,
+// -1 when it cannot be drawn.
+TPoint TileResource::LoadSurface(int library, int resource_id)
 {
-    GraphicSize size;
-    HDC dc;
-    HDC compatible_dc;
-    size.width = -1;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        return size;
-    }
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
+    TPoint size;
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
+    size = *(TPoint *)MainForm->gfx_transfers;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
-    surface_desc->Width = MainForm->resource_bitmap->Width;
-    surface_desc->Height = MainForm->resource_bitmap->Height;
-    if (!surface)
-        surface->Restore();
-    if (surface->Created)
-        surface->Destroy();
-    surface->GetSurfaceDesc(surface_desc);
-    surface->Create(surface_desc, MainForm->Dx_Draw1);
-    size.width = MainForm->resource_bitmap->Width;
-    size.height = MainForm->resource_bitmap->Height;
+    MainForm->gfx_transfers->CreateSurface(surface, surface_desc, size.x, size.y);
     surface_rect.left = 0;
     surface_rect.top = 0;
-    surface_rect.right = MainForm->resource_bitmap->Width;
-    surface_rect.bottom = MainForm->resource_bitmap->Height;
-    // A ground tile sheet this wide holds four animation frames, so the map keeps redrawing it.
-    if (MainForm->resource_bitmap->Width >= 250)
+    surface_rect.right = size.x;
+    surface_rect.bottom = size.y;
+    if (size.x >= 250)
         is_animated = true;
-    // The ground tile bitmap goes on by a canvas Draw, or by BitBlt if configured.
-    if (!MainForm->config->GetUseBitBltDraw())
+    if (MainForm->gfx_transfers->BeginDraw(surface))
     {
-        if (surface->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-                surface->ReleaseDC(dc);
-                size.width = -1;
-                size.height = -1;
-            }
-            surface->ReleaseDC(dc);
-        }
-    }
-    else
-    {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (surface->GetDC(&dc))
-        {
-            try
-            {
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
-            }
-            catch (...)
-            {
-                surface->ReleaseDC(dc);
-                size.width = -1;
-                size.height = -1;
-            }
-            surface->ReleaseDC(dc);
-        }
-        DeleteDC(compatible_dc);
-    }
-    if (size.width > 0)
+        MainForm->gfx_transfers->Draw(surface);
+        MainForm->gfx_transfers->EndDraw(surface);
         surface->SetColorKey(DDCKEY_SRCBLT, color_key);
-    return size;
+        return size;
+    }
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key);
+    return TPoint(-1, -1);
 }

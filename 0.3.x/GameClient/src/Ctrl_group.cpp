@@ -160,6 +160,20 @@ void GroupController::SetMemberHealth(int player_id, int health_percent)
     }
 }
 
+// Sets the level shown for a group member.
+void GroupController::SetMemberLevel(int player_id, int level)
+{
+    for (vector<GroupMember>::iterator member = members.begin(); member != members.end(); member++)
+    {
+        if (player_id == member->player_id)
+        {
+            member->level = level;
+            list_dirty = true;
+            return;
+        }
+    }
+}
+
 // Takes a player out of the group.
 void GroupController::RemoveMember(int player_id)
 {
@@ -264,7 +278,7 @@ void GroupController::DragScrollThumb(int y)
 // the scroll bar grabs its thumb or starts scrolling.
 void GroupController::MouseDown(int x, int y)
 {
-    if (x >= 440 && x <= 520)
+    if (x >= 460 && x <= 520)
     {
         int row = -1;
         if (y >= 350 && y <= 428)
@@ -306,7 +320,7 @@ void GroupController::UpdateMemberHover(int x, int y)
 {
     int hovered_row = -1;
     int index = -1;
-    if (x >= 440 && x <= 520 && y >= 350 && y <= 428)
+    if (x >= 460 && x <= 520 && y >= 350 && y <= 428)
         hovered_row = top_row + (y - 350) / 14;
     for (vector<GroupMember>::iterator it = members.begin(); it != members.end(); it++)
     {

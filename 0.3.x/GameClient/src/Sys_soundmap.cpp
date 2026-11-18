@@ -22,104 +22,104 @@ void SoundMapper::PlayWeaponSound(int weapon, int volume)
     bool sound_played = false;
     if (!weapon)
     {
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_PunchAttack, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_PunchAttack, volume);
         sound_played = true;
     }
     if (weapon == WeaponGraphic_DarkBlade || weapon == WeaponGraphic_ReaperScyth || weapon == WeaponGraphic_Reaper ||
         weapon == WeaponGraphic_AbloStaff)
     {
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_HeavyWeaponAttack, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_HeavyWeaponAttack, volume);
         sound_played = true;
     }
     if (weapon == WeaponGraphic_Bow || weapon == WeaponGraphic_Crossbow || weapon == WeaponGraphic_ScavBow)
     {
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_BowAttack, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_BowAttack, volume);
         sound_played = true;
     }
     if (weapon == WeaponGraphic_Harp)
     {
-        MainForm->sfx->PlayEffectSoundAt(random(3) + SfxSound_Harp, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_Harp, volume);
         sound_played = true;
     }
     if (weapon == WeaponGraphic_Guitar)
     {
-        MainForm->sfx->PlayEffectSoundAt(random(3) + SfxSound_Guitar, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_Guitar, volume);
         sound_played = true;
     }
     if (weapon == WeaponGraphic_Gun)
     {
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_GunAttack, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_GunAttack, volume);
         sound_played = true;
     }
     if (!sound_played)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_MeleeAttack, volume);
+        MainForm->sfx->PlayControlSoundAt(ControlSound_MeleeAttack, volume);
 }
 
 // Plays the sound of the spell effect, by its number, at the volume.
 void SoundMapper::PlayEffectSound(int effect_id, int volume)
 {
     if (!effect_id)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Flames, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Flames, volume);
     if (effect_id == SpellEffect_Hearts)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Learn, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Learn, volume);
     if (effect_id == SpellEffect_WarpDepart)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Warp, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Warp, volume);
     if (effect_id == SpellEffect_WarpArrive)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Warp, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Warp, volume);
     if (effect_id == SpellEffect_Confetti)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Confetti, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Confetti, volume);
     if (effect_id == SpellEffect_Sparkles)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Sparkles, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Sparkles, volume);
     if (effect_id == SpellEffect_Pentagram)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Pentagram, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Pentagram, volume);
     if (effect_id == SpellEffect_LargePentagram)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Pentagram, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Pentagram, volume);
     if (effect_id == SpellEffect_Heal)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Heal, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Heal, volume);
     if (effect_id == SpellEffect_SmallThunder)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Thunder, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Thunder, volume);
     if (effect_id == SpellEffect_UltimaBlast)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_UltimaBlast, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_UltimaBlast, volume);
     if (effect_id == SpellEffect_FireBall)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Flames, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Flames, volume);
     if (effect_id == SpellEffect_MagicShield)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_MagicShield, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_MagicShield, volume);
     if (effect_id == SpellEffect_RingFire)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_RingOfFire, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_RingOfFire, volume);
     if (effect_id == SpellEffect_IceBlast)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_IceBlast, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_IceBlast, volume);
     if (effect_id == SpellEffect_EnergyBall)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_EnergyBall, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_EnergyBall, volume);
     if (effect_id == SpellEffect_Whirl)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Whirl, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Whirl, volume);
     if (effect_id == SpellEffect_Aura)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Aura, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Aura, volume);
     if (effect_id == SpellEffect_Boulders)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Boulders, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Boulders, volume);
     if (effect_id == SpellEffect_Heaven)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Heaven, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Heaven, volume);
     if (effect_id == SpellEffect_IceBall)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_IceBall, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_IceBall, volume);
     if (effect_id == SpellEffect_DarkBeam)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Heaven, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Heaven, volume);
     if (effect_id == SpellEffect_Vanish)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Vanish, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Vanish, volume);
     if (effect_id == SpellEffect_DarkHand)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_DarkHand, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_DarkHand, volume);
     if (effect_id == SpellEffect_DarkSkull)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_DarkHand, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_DarkHand, volume);
     if (effect_id == SpellEffect_FireBlast)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_FireBlast, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_FireBlast, volume);
     if (effect_id == SpellEffect_Tentacles)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Tentacles, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Tentacles, volume);
     if (effect_id == SpellEffect_PowerWind)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_PowerWind, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_PowerWind, volume);
     if (effect_id == SpellEffect_MagicWhirl)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_MagicWhirl, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_MagicWhirl, volume);
     if (effect_id == SpellEffect_DarkBite)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_DarkHand, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_DarkHand, volume);
     if (effect_id == SpellEffect_Shell)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_Aura, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_Aura, volume);
     if (effect_id == SpellEffect_GreenFlame)
-        MainForm->sfx->PlayEffectSoundAt(SfxSound_EnergyBall, volume);
+        MainForm->sfx->PlayEffectSoundAt(EffectSound_EnergyBall, volume);
 }

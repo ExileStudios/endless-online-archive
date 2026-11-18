@@ -16,16 +16,16 @@ enum ButtonState
     ButtonState_Hover = 1
 };
 
-enum DamageDigitStyle
-{
-    DamageDigitStyle_Damage = 0,
-    DamageDigitStyle_Heal = 1
-};
-
 enum SmallTabButton
 {
     SmallTabButton_Friends = 0,
     SmallTabButton_Ignore = 1
+};
+
+enum InventoryButton
+{
+    InventoryButton_Left = 2,
+    InventoryButton_Right = 3
 };
 
 enum StatusIcon
@@ -36,12 +36,6 @@ enum StatusIcon
     StatusIcon_Pvp = 3,
     StatusIcon_Boss = 4,
     StatusIcon_Drain = 5
-};
-
-enum InventoryButton
-{
-    InventoryButton_Left = 0,
-    InventoryButton_Right = 1
 };
 
 enum HudButton
@@ -99,7 +93,9 @@ struct InterfaceGraphics
     TDx_DrawSurface *small_icons;
     TDx_DrawSurface *chat_tabs;
     TDx_DrawSurface *corner_button;
+    TDx_DrawSurface *small_buttons;
     TDx_DrawSurface *minimap_tiles;
+    TDx_DrawSurface *inventory_buttons;
     TDx_DrawSurface *group_icons;
     TDx_DrawSurface *status_icons;
     TDx_DrawSurface *hud_sheet;
@@ -109,22 +105,17 @@ struct InterfaceGraphics
     TDx_DrawSurface *scroll_icons;
     TDx_DrawSurface *panel_background;
     TDx_DrawSurface *loading_icon;
-    TDx_DrawSurface *hud_frame;
-    TDx_DrawSurface *hud_left_frame;
-    TDx_DrawSurface *hud_top_frame;
     TDx_DrawSurface *tile_cursor;
     TDx_DrawSurface *emote_sheet;
     TDx_DrawSurface *weapon_effects;
     TDx_DrawSurface *drag_save_surface;
     TDx_DrawSurface *element_icons;
     TDx_DrawSurface *popup_icons;
+    TDx_DrawSurface *hud_icons;
     TRect hud_background_rect;
     TRect clock_rect;
     TRect tooltip_rect;
     TRect chat_input_rect;
-    TRect hud_frame_rect;
-    TRect hud_left_frame_rect;
-    TRect hud_top_frame_rect;
     TRect panel_rect;
     TRect loading_icon_rect;
     TRect drag_rect;
@@ -134,10 +125,12 @@ struct InterfaceGraphics
     TRect status_bars_frame_rect;
     TRect health_bar_frame_rect;
     TRect health_bar_shadow_rect;
-    TRect miss_label_rect;
     TRect bar_text_box_rect;
     TRect scroll_up_arrow_rect;
     TRect scroll_down_arrow_rect;
+    TRect notification_rect;
+    TRect notification_top_rect;
+    TRect notification_bottom_rect;
     unsigned char minimap_visible;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
@@ -150,7 +143,8 @@ struct InterfaceGraphics
     ~InterfaceGraphics();
     int GetThemeColor(int theme, int shade);
     TRect GetChatTabRect(int tab);
-    TRect GetDamageDigitRect(int style, int digit);
+    TRect GetDamageDigitRect(unsigned char style, int digit);
+    TRect GetMissRect(unsigned char kind);
     TRect GetHealthBarFillRect(int color, int length);
     TRect GetStatusBarFillRect(int bar, int segments);
     TRect GetListIconRect(int row, int column);
@@ -161,6 +155,7 @@ struct InterfaceGraphics
     TRect GetChatModeIconRect(int mode);
     TRect GetSmallIconRect(int icon);
     TRect GetCornerButtonRect(int tab);
+    TRect GetSmallButtonRect(int button);
     TRect GetMinimapTileRect(int row, int edge);
     TRect GetListIconInnerRect(int row, int column);
     TRect GetListIconMarkRect(int row, int column);
@@ -185,11 +180,10 @@ struct InterfaceGraphics
     TRect GetSkillSlotFrameRect(int slot);
     TRect GetInventoryButtonRect(int button, int state);
     TRect GetSmallTabButtonRect(int state, int tab);
-    TRect GetInventoryWideButtonRect(ButtonState state);
+    TRect GetInventoryWideButtonRect(int mark);
     void SaveScreenshot();
     void LoadSurface(TDx_DrawSurface *surface, int library, int resource_id);
-    bool LoadResourceSurface(TDx_DrawSurface *emote_sheet, int library, int resource_id, int fallback_width,
-    int fallback_height);
+    bool LoadSurfaceAt(TDx_DrawSurface *surface, int library, int resource_id, int x, int y);
     void LoadEmoteSheet(int library, int resource_id);
     void LoadWeaponEffects(int library, int resource_id);
     void LoadPanelBackground(int library, int resource_id);
@@ -205,18 +199,18 @@ struct InterfaceGraphics
     void LoadChatTabs(int library, int resource_id);
     void LoadListIcons(int library, int resource_id);
     void LoadCornerButton(int library, int resource_id);
+    void LoadSmallButtons(int library, int resource_id);
+    void LoadInventoryButtons(int library, int resource_id);
     void LoadMinimapTiles(int library, int resource_id);
     void LoadChatModeIcons(int library, int resource_id);
     void LoadHudBackground(int library, int resource_id);
     void LoadTabButtons(int library, int resource_id);
-    void LoadHudFrame(int library, int resource_id);
-    void LoadHudLeftFrame(int library, int resource_id);
-    void LoadHudTopFrame(int library, int resource_id);
     void LoadTileCursor(int library, int resource_id);
     void LoadControlSheet(int library, int resource_id);
     void LoadScrollIcons(int library, int resource_id);
     void LoadElementIcons(int library, int resource_id);
     void LoadPopupIcons(int library, int resource_id);
+    void LoadHudIcons(int library, int resource_id);
     TRect GetWideIconRect(int frame);
     void DrawChatModeIcon();
     void DrawCornerButton();
@@ -234,7 +228,7 @@ struct InterfaceGraphics
     void DrawNewsScrollButtons();
     void DrawHelpScrollButtons();
     void DrawGroupList();
-    void DrawGroupHealthBars();
+    void DrawGroupHealthBars(int dc);
     void DrawGroupText();
     void DrawSettingMarkers();
     void DrawSettingsText();

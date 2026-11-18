@@ -1,6 +1,7 @@
 #ifndef NpcvaluesH
 #define NpcvaluesH
 
+#include <Classes.hpp>
 #include <fstream>
 #include <new>
 #include <string>
@@ -39,34 +40,43 @@ struct NpcValues
     char is_loaded;
     bool has_bad_record;
     bool header_read;
+    bool has_bad_drop;
+    bool has_bad_message;
     String file_name;
+    String drops_path;
+    String chats_path;
     String file_path;
     int records_read;
     int records_expected;
     int checksum_high;
     int checksum_low;
     int record_count;
+    bool drops_loaded;
+    char unused_bytes[7];
+    bool chats_loaded;
+    char second_unused_bytes[7];
     String data;
     int read_position;
-    vector<NpcValue> records;
-    int unused_value;
+    vector<NpcValue *> records;
+    char third_unused_bytes[4];
     vector<PubfileHeader *> headers;
+    String pub_folder;
     String file_prefix;
+    TStringList *file_parts;
+    char keep_file_parts;
 
-    NpcValues(String data_path);
+    NpcValues(String prefix, char keep_parts);
     ~NpcValues();
     void ReadHeader();
     void SaveFilePart(int part_number, String data);
     void Load();
     void DeleteFiles();
     void Clear();
-    NpcValue GetNpcByIndex(int index);
-    int GetGraphic(int npc_id);
-    String GetName(int npc_id);
-    TPoint GetType(int npc_id);
-    unsigned int Count();
+    NpcValue * GetNpc(int index);
+    int Count();
     void ClearHeaders();
-    char ReadByte();
+    void ClearFileParts();
+    unsigned char ReadByte();
     int DecodeNumber(unsigned char encoded);
 };
 

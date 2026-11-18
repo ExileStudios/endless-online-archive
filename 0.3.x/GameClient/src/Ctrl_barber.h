@@ -12,6 +12,7 @@ struct BarberController
     int npc_session_id;
     int base_price;
     int price_per_level;
+    short style_count;
     int hair_style;
     int hair_color;
     int price;
@@ -23,7 +24,7 @@ struct BarberController
 
     BarberController();
     ~BarberController();
-    void Open(int session_id, int base_cost, int level_cost);
+    void Open(int session_id, int styles, int base_cost, int level_cost);
     void Close();
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);

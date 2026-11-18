@@ -1,6 +1,7 @@
 #ifndef SkillvaluesH
 #define SkillvaluesH
 
+#include <Classes.hpp>
 #include <fstream>
 #include <new>
 #include <string>
@@ -32,12 +33,13 @@ struct SkillValues
     int record_count;
     String data;
     int read_position;
-    vector<SkillValue> records;
-    int unused_value;
+    vector<SkillValue *> records;
     vector<PubfileHeader *> headers;
     String file_prefix;
+    TStringList *file_parts;
+    char keep_file_parts;
 
-    SkillValues(String data_path);
+    SkillValues(String prefix, char keep_parts);
     ~SkillValues();
     void ReadHeader();
     void Load();
@@ -45,20 +47,11 @@ struct SkillValues
     void DeleteFiles();
     void LoadFrom(String folder);
     void Clear();
-    int FindByName(String name);
-    SkillValue GetSkill(int skill_id);
-    int GetGraphic(int skill_id);
-    int GetTargetRestriction(int skill_id);
-    int GetCastTime(int skill_id);
-    int GetTpCost(int skill_id);
-    int GetSpCost(int skill_id);
-    int GetType(int skill_id);
-    int GetCategory(int skill_id);
-    int GetIcon(int skill_id);
-    String GetName(int skill_id);
-    String GetShout(int skill_id);
-    unsigned int Count();
+    SkillValue * FindByName(String name);
+    SkillValue * GetSkill(int index);
+    int Count();
     void ClearHeaders();
+    void ClearFileParts();
     char ReadByte();
     int DecodeNumber(unsigned char encoded);
 };

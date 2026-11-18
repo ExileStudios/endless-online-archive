@@ -29,6 +29,5 @@ StatGraphics::~StatGraphics()
     delete color_key;
 }
 
-// Loads the character stats window background from the library into a surface sized to the bitmap; returns its size,
-// or -1 when the bitmap could not be drawn onto the character stats window surface.
+// Loads a picture from the library into the stats surface; its size, or -1, -1 when it cannot be drawn.
 DEFINE_BANK_LOAD_SURFACE(StatGraphics)

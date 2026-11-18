@@ -111,9 +111,9 @@ struct SpellController
     bool RemoveSpell(int spell_id);
     char HasSpell(int spell_id);
     char AddSpell(int spell_id, int level);
+    bool HasSavedSlot(int spell_id);
     void RestoreLayout();
-    void UseSlot(int col, int row);
-    void UseSpell(int col, int row, int spell_id);
+    int UseSpell(int spell_id, int unused);
     bool IsCasting();
     void BeginCast(int spell_id, int target_kind, int target_id, char is_instant);
     void CancelCast();

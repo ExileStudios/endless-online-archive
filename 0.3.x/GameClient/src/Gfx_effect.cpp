@@ -61,186 +61,51 @@ TRect EffectResource::GetFrameRect(int frame)
         return frame_rect;
 }
 
-GraphicSize EffectResource::LoadSurfaces(int library, int base_resource_id)
+// Loads the effect's three layer pictures into surfaces from the library, keyed for transparency, and returns their
+// size; a failed draw is counted.
+TPoint EffectResource::LoadSurfaces(int library, int base_resource_id)
 {
-    int layer;
     int effect_index;
-    GraphicSize size;
-    HDC dc;
-    HDC compatible_dc;
-    layer = 0;
+    TPoint size;
+    int layer = 0;
     // Each effect owns three resource ids in a row, one per layer.
     effect_index = (base_resource_id - 101) / 3;
     // The frame count comes from the effect table.
     frame_count = MainForm->magic_mapper->GetFrameCount(effect_index);
+    size.x = -1;
+    size.y = -1;
     do
     {
         if ((!layer && MainForm->magic_mapper->base_layer[effect_index]) ||
             (layer == 1 && MainForm->magic_mapper->blend_layer[effect_index]) ||
             (layer == 2 && MainForm->magic_mapper->solid_layer[effect_index]))
         {
-            size.width = -1;
-            MainForm->resource_bitmap->Width = 0;
-            MainForm->resource_bitmap->Height = 0;
-            try
-            {
-                MainForm->resource_bitmap->LoadFromResourceID(library, base_resource_id + layer);
-            }
-            catch (...)
-            {
-                return size;
-            }
-            surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
-            surface_desc->SCaps = surface_caps;
-            surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
-            surface_desc->Width = MainForm->resource_bitmap->Width;
-            surface_desc->Height = MainForm->resource_bitmap->Height;
-            if (!layer)
-            {
-                if (!layer0_surface)
-                    layer0_surface->Restore();
-                if (layer0_surface->Created)
-                    layer0_surface->Destroy();
-                layer0_surface->GetSurfaceDesc(surface_desc);
-                layer0_surface->Create(surface_desc, MainForm->Dx_Draw1);
-            }
+            if (!MainForm->gfx_transfers->LoadResourceBitmap(library, base_resource_id + layer))
+                return TPoint(-1, -1);
+            size = *(TPoint *)MainForm->gfx_transfers;
+            TDx_DrawSurface *surface = layer0_surface;
             if (layer == 1)
-            {
-                if (!layer1_surface)
-                    layer1_surface->Restore();
-                if (layer1_surface->Created)
-                    layer1_surface->Destroy();
-                layer1_surface->GetSurfaceDesc(surface_desc);
-                layer1_surface->Create(surface_desc, MainForm->Dx_Draw1);
-            }
+                surface = layer1_surface;
             if (layer == 2)
-            {
-                if (!layer2_surface)
-                    layer2_surface->Restore();
-                if (layer2_surface->Created)
-                    layer2_surface->Destroy();
-                layer2_surface->GetSurfaceDesc(surface_desc);
-                layer2_surface->Create(surface_desc, MainForm->Dx_Draw1);
-            }
-            size.width = MainForm->resource_bitmap->Width / frame_count;
-            size.height = MainForm->resource_bitmap->Height;
+                surface = layer2_surface;
+            surface_desc->SCaps = surface_caps;
+            MainForm->gfx_transfers->CreateSurface(surface, surface_desc, size.x, size.y);
             sheet_left = 0;
             sheet_top = 0;
-            sheet_width = MainForm->resource_bitmap->Width;
-            sheet_height = MainForm->resource_bitmap->Height;
-            if (!MainForm->config->GetUseBitBltDraw())
+            sheet_width = size.x;
+            sheet_height = size.y;
+            if (MainForm->gfx_transfers->BeginDraw(surface))
             {
-                if (!layer && layer0_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        MainForm->draw_canvas->Handle = dc;
-                        MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-                        MainForm->draw_canvas->Handle = 0;
-                    }
-                    catch (Exception &)
-                    {
-                        MainForm->CountDrawError();
-                        layer0_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer0_surface->ReleaseDC(dc);
-                }
-                if (layer == 1 && layer1_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        MainForm->draw_canvas->Handle = dc;
-                        MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-                        MainForm->draw_canvas->Handle = 0;
-                    }
-                    catch (Exception &)
-                    {
-                        MainForm->CountDrawError();
-                        layer1_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer1_surface->ReleaseDC(dc);
-                }
-                if (layer == 2 && layer2_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        MainForm->draw_canvas->Handle = dc;
-                        MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-                        MainForm->draw_canvas->Handle = 0;
-                    }
-                    catch (Exception &)
-                    {
-                        MainForm->CountDrawError();
-                        layer2_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer2_surface->ReleaseDC(dc);
-                }
+                MainForm->gfx_transfers->Draw(surface);
+                MainForm->gfx_transfers->EndDraw(surface);
+                surface->SetColorKey(DDCKEY_SRCBLT, color_key);
             }
             else
-            {
-                compatible_dc = CreateCompatibleDC(0);
-                SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-                if (!layer && layer0_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
-                    }
-                    catch (...)
-                    {
-                        layer0_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer0_surface->ReleaseDC(dc);
-                }
-                if (layer == 1 && layer1_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
-                    }
-                    catch (...)
-                    {
-                        layer1_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer1_surface->ReleaseDC(dc);
-                }
-                if (layer == 2 && layer2_surface->GetDC(&dc))
-                {
-                    try
-                    {
-                        BitBlt(dc, 0, 0, frame_count * size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
-                    }
-                    catch (...)
-                    {
-                        layer2_surface->ReleaseDC(dc);
-                        size.width = -1;
-                        size.height = -1;
-                    }
-                    layer2_surface->ReleaseDC(dc);
-                }
-                DeleteDC(compatible_dc);
-            }
-            if (size.width > 0)
-            {
-                if (!layer)
-                    layer0_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
-                if (layer == 1)
-                    layer1_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
-                if (layer == 2)
-                    layer2_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
-            }
+                MainForm->CountDrawError();
         }
         layer++;
     } while (layer < 3);
+    if (size.x > 0)
+        size.x = size.x / frame_count;
     return size;
 }

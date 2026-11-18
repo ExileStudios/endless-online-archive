@@ -26,7 +26,7 @@ struct EffectResource
     EffectResource();
     ~EffectResource();
     TRect GetFrameRect(int frame);
-    GraphicSize LoadSurfaces(int library, int base_resource_id);
+    TPoint LoadSurfaces(int library, int base_resource_id);
 };
 
 #endif

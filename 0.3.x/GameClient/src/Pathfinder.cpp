@@ -30,6 +30,7 @@ char PathFinder::FindPath(int target_x, int target_y)
     int start_y;
     int j;
     char found = false;
+    // No path to a blocked tile, one with a player or npc on it, or while paths are delayed.
     if (!MainForm->animation->IsPathDelayed() && !MainForm->map->IsBlocked(target_x, target_y) &&
         !MainForm->players->HasPlayerAt(target_x, target_y) && !MainForm->npcs->HasNpcAt(target_x, target_y) &&
         target_x >= 0 && target_y >= 0 && MainForm->map->GetWidth() >= target_x &&
@@ -214,6 +215,7 @@ void PathFinder::FollowPath()
     {
         if (!MainForm->net_client->CanAct())
             return;
+        // The next step waits while actions are blocked or the player casts, attacks or sits.
         if (!MainForm->map->IsActionBlocked() && !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
             !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
             !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
@@ -318,7 +320,7 @@ void PathFinder::FollowPath()
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                     {
                         MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
-                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                        MainForm->sfx->PlaySfx(SfxSound_ItemArmlet);
                     }
                     if (walk_down)
                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,
@@ -352,7 +354,7 @@ void PathFinder::FollowPath()
                     if (MainForm->map->GetTileSpec(next_x, next_y) == TileSpec_Splash)
                     {
                         MainForm->players->StartEffect(MainForm->net_client->GetPlayerId(), SpellEffect_WaterSplash);
-                        MainForm->sfx->PlaySfx(SfxSound_WaterSplash);
+                        MainForm->sfx->PlaySfx(SfxSound_ItemArmlet);
                     }
                     if (walk_up)
                         MainForm->players->StartWalk(MainForm->net_client->GetPlayerId(), next_x, next_y,

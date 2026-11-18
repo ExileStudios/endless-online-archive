@@ -11,8 +11,10 @@
 
 #pragma package(smart_init)
 
+// An empty player: no id or name, facing down, with every animation and effect stopped.
 Player::Player()
 {
+    balloon = 0;
     name = "";
     player_id = PlayerId_Unset;
     record_value_d = 0;
@@ -77,6 +79,7 @@ Player::Player()
 Player::Player(int tile_x, int tile_y, String player_name, int player_gender, int player_skin, int player_hair_style,
     int player_hair_color, char start_pending)
 {
+    balloon = 0;
     x = tile_x;
     y = tile_y;
     direction = FacingDirection_Down;
@@ -142,32 +145,13 @@ Player::~Player()
 {
 }
 
-// Opens a speech balloon over the player, replacing an open one; longer text stays up longer.
-void Player::ShowBalloon(String *lines, int width, int height, int tinted)
-{
-    if (balloon_shown)
-    {
-        CloseBalloon();
-        Sleep(1);
-    }
-    balloon = new Balloon(width, height, lines, tinted);
-    int text_length = 0;
-    for (int i = 0; i <= 5; i++)
-        text_length += lines[i].Length();
-    balloon_width = width;
-    balloon_height = height;
-    balloon_shown = true;
-    balloon_timer = (short)(text_length / 3) + 24;
-    redraw = true;
-}
-
 // The screen position adjusted for the current step, jump, sitting pose or attack lunge.
 Windows::TPoint Player::GetAnimatedPosition(int screen_x, int screen_y)
 {
     TPoint position;
     position.x = screen_x;
     position.y = screen_y;
-    // The player already stands on the new tile; the offset draws them back toward the old one, less each frame.
+    // Already on the new tile, the player is drawn back toward the old one, less each frame.
     if (walking)
     {
         if (walk_direction == FacingDirection_Left)
@@ -308,18 +292,46 @@ void Player::DrawEmote()
             MainForm->gfx->interface_graphics->GetWideIconRect(emote_first_frame + emote_frame - 1), 130);
 }
 
-// Draws the balloon centred above the player.
+// Shows a balloon of the speaker's text for 24 ticks plus one for every 3 characters.
+void Player::ShowBalloon(String speaker, String text, int style)
+{
+    if (balloon)
+    {
+        CloseBalloon();
+        delete balloon;
+    }
+    balloon = new Balloon(speaker, text, style);
+    balloon_timer = (short)(text.Length() / 3) + 24;
+    balloon_shown = true;
+    redraw = true;
+}
+
+void Player::HideBalloon()
+{
+    CloseBalloon();
+}
+
+// Draws the player's balloon over their head, shaken with the screen.
 void Player::DrawBalloon()
 {
-    int screen_x =
-        TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
-    int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 76 - balloon_height - 2 * gender;
+    int screen_x = 32 * x - 32 * y + MainForm->map->GetScrollOffsetX() + 302 - balloon->text_width / 2;
+    int balloon_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 76 - balloon->text_height - 2 * gender;
     if (MainForm->animation->interface_controller->is_shaking)
         screen_x += MainForm->animation->interface_controller->shake_offset;
-    MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
-        GetAnimatedPosition(screen_x, screen_y).y, balloon->fill_surface, balloon->bubble_rect, 160);
-    MainForm->gfx->game->BlitClipped(GetAnimatedPosition(screen_x, screen_y).x,
-        GetAnimatedPosition(screen_x, screen_y).y, balloon->text_surface, balloon->bubble_rect);
+    if (balloon)
+        balloon->Draw(GetAnimatedPosition(screen_x, balloon_y).x, GetAnimatedPosition(screen_x, balloon_y).y);
+}
+
+void Player::CloseBalloon()
+{
+    balloon_shown = false;
+    balloon_timer = 0;
+    if (balloon)
+    {
+        delete balloon;
+        balloon = 0;
+    }
+    redraw = true;
 }
 
 // Draws the shared name label centred above the player.
@@ -352,9 +364,6 @@ void Player::DrawTextLabel()
             GetAnimatedPosition(screen_x, screen_y).y, resources->name_tag_surface, resources->name_tag_text_rect);
     }
 }
-
-// Closes the player's balloon if one is open, and asks for a redraw.
-DEFINE_CLOSE_BALLOON(Player)
 
 void Player::CreateResources()
 {

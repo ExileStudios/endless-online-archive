@@ -36,7 +36,7 @@ void MusicianController::Open()
 {
     MainForm->gfx->CreateMusicianGraphics();
     MainForm->gfx->LoadMusicianGraphics();
-    window_x = 15;
+    window_x = 185;
     window_y = 176;
     is_visible = true;
     MainForm->redraw_needed = true;

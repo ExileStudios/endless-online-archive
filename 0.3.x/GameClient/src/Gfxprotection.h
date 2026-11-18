@@ -6,36 +6,6 @@ enum TileBitmap
     TileBitmap_ItemSlot = 100
 };
 
-enum GfxLibrary
-{
-    GfxLibrary_MenuInterface = 1,
-    GfxLibrary_GameInterface = 2,
-    GfxLibrary_MapTiles = 3,
-    GfxLibrary_MapObjects = 4,
-    GfxLibrary_MapMasks = 5,
-    GfxLibrary_MapWalls = 6,
-    GfxLibrary_MapTops = 7,
-    GfxLibrary_CharacterBodies = 8,
-    GfxLibrary_MaleHair = 9,
-    GfxLibrary_FemaleHair = 10,
-    GfxLibrary_MaleBoots = 11,
-    GfxLibrary_FemaleBoots = 12,
-    GfxLibrary_MaleArmor = 13,
-    GfxLibrary_FemaleArmor = 14,
-    GfxLibrary_MaleHats = 15,
-    GfxLibrary_FemaleHats = 16,
-    GfxLibrary_MaleWeapons = 17,
-    GfxLibrary_FemaleWeapons = 18,
-    GfxLibrary_MaleShields = 19,
-    GfxLibrary_FemaleShields = 20,
-    GfxLibrary_Npcs = 21,
-    GfxLibrary_Shadows = 22,
-    GfxLibrary_MapItems = 23,
-    GfxLibrary_Effects = 24,
-    GfxLibrary_MapIcons = 25,
-    GfxLibrary_VisualDocuments = 26
-};
-
 enum MenuBitmap
 {
     MenuBitmap_Intro = 101,
@@ -61,26 +31,13 @@ enum MenuBitmap
     MenuBitmap_KeySheet = 202
 };
 
-enum BodyBitmap
-{
-    BodyBitmap_StandSheet = 101,
-    BodyBitmap_WalkSheet = 102,
-    BodyBitmap_AttackSheet = 103,
-    BodyBitmap_SpellCastSheet = 104,
-    BodyBitmap_ChairSitSheet = 105,
-    BodyBitmap_FloorSitSheet = 106,
-    BodyBitmap_RangedAttackSheet = 107,
-    BodyBitmap_FaceSheet = 108,
-    BodyBitmap_KindSheet = 109
-};
-
 enum InterfaceBitmap
 {
     InterfaceBitmap_HudBackground = 101,
     InterfaceBitmap_ClockBackground = 120,
     InterfaceBitmap_HudFrame = 121,
-    InterfaceBitmap_HudLeftFrame = 122,
-    InterfaceBitmap_HudTopFrame = 123,
+    InterfaceBitmap_SmallButtons = 122,
+    InterfaceBitmap_InventoryButtons = 123,
     InterfaceBitmap_TileCursor = 124,
     InterfaceBitmap_TabButtons = 125,
     InterfaceBitmap_TooltipBackground = 126,
@@ -127,6 +84,19 @@ enum InterfaceBitmap
     InterfaceBitmap_CaptchaBackground = 177
 };
 
+enum BodyBitmap
+{
+    BodyBitmap_StandSheet = 101,
+    BodyBitmap_WalkSheet = 102,
+    BodyBitmap_AttackSheet = 103,
+    BodyBitmap_SpellCastSheet = 104,
+    BodyBitmap_ChairSitSheet = 105,
+    BodyBitmap_FloorSitSheet = 106,
+    BodyBitmap_RangedAttackSheet = 107,
+    BodyBitmap_FaceSheet = 108,
+    BodyBitmap_KindSheet = 109
+};
+
 #include <vector.h>
 
 struct BankGraphics;
@@ -145,12 +115,15 @@ struct MaskGraphics;
 struct MenuGraphics;
 struct MsgBoardGraphics;
 struct MusicianGraphics;
+struct NpcGlobalGraphics;
 struct NpcGraphics;
+struct NpcWrapper;
 struct ObjectGraphics;
+struct ObjectWrapper;
 struct PlayerNameGraphics;
 struct ShopGraphics;
 struct SocialGraphics;
-struct SpriteGraphics;
+struct SpriteGlobalGraphics;
 struct StatGraphics;
 struct TileGraphics;
 struct TopGraphics;
@@ -171,8 +144,6 @@ struct GfxController
     MenuGraphics *menu;
     InterfaceGraphics *interface_graphics;
     GameGraphics *game;
-    SpriteGraphics *sprites;
-    NpcGraphics *npc_cache;
     PlayerNameGraphics *hover_label;
     TradeGraphics *trade;
     ShopGraphics *shop;
@@ -185,6 +156,9 @@ struct GfxController
     SocialGraphics *social;
     StatGraphics *stat;
     MsgBoardGraphics *message_board;
+    SpriteGlobalGraphics *sprites;
+    NpcGlobalGraphics *npcs;
+    NpcGraphics *npc_cache;
     TileGraphics *tiles;
     ObjectGraphics *objects;
     WallGraphics *walls;
@@ -209,6 +183,7 @@ struct GfxController
     bool social_created;
     bool stat_created;
     bool message_board_created;
+    int side_artwork_id;
 
     GfxController(char preload_tiles, char preload_map_graphics);
     ~GfxController();
@@ -255,6 +230,8 @@ struct GfxController
     void LoadChestGraphics();
     void LoadMenuGraphics(char single_panel);
     void LoadGameGraphics();
+    String GetGfxFileName(int file_number);
+    String DecodePath(String encoded_path);
     void LoadSkillPanel();
     void LoadSpellPanel();
     void LoadHelpPanel();
@@ -266,16 +243,17 @@ struct GfxController
     void LoadSettingsPanel();
     void LoadNewsPanel();
     void LoadMenuBackground();
+    void NextMenuBackground();
     void LoadMainMenuScreen(bool random_artwork);
     void LoadCreateAccountScreen();
+    void LoadSignupCodeScreen(int style, bool random_artwork);
+    void LoadPasswordResetScreen(int step, bool random_artwork);
     void LoadPasswordScreen();
     void LoadLoginScreen();
     void LoadCharacterSelectScreen();
     void LoadSpriteGraphics();
     void LoadCreateCharacterPanel();
     void LoadChangePasswordPanel();
-    String GetGfxFileName(int file_number);
-    String DecodePath(String encoded_path);
 };
 
 #endif

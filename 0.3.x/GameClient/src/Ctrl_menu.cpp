@@ -4,9 +4,11 @@
 #include "Ctrl_menu.h"
 #include "Tmainform.h"
 #include <stdlib.h>
+#include "Gfx_menu.h"
 
 #pragma package(smart_init)
 
+// Starts the menu with every button, form and request flag cleared.
 MenuController::MenuController()
 {
     is_loading_world = false;
@@ -19,12 +21,16 @@ MenuController::MenuController()
     character_select_cooldown = 0;
     connect_for_create_account = 0;
     connect_for_login = false;
+    connect_for_recovery = false;
     create_account_button_hover = false;
     play_button_hover = false;
     credits_button_hover = false;
     exit_button_hover = false;
     account_create_button_hover = false;
     account_cancel_button_hover = false;
+    recover_pending = false;
+    wide_confirm_hover = false;
+    wide_cancel_hover = false;
     change_password_button_hover = false;
     new_character_button_hover = false;
     first_slot_login_hover = false;
@@ -45,6 +51,7 @@ MenuController::MenuController()
     message_confirm_button_hover = false;
     form_ok_button_hover = false;
     form_cancel_button_hover = false;
+    confirm_ok_hover = false;
     login_ok_button_hover = false;
     login_cancel_button_hover = false;
     intro_finished = false;
@@ -62,15 +69,19 @@ MenuController::MenuController()
     scrolling_up = false;
     scrolling_down = false;
     is_form_open = false;
-    form_x = DEFAULT_FORM_X;
-    form_y = DEFAULT_FORM_Y;
+    form_x = 100;
+    form_y = 112;
     text_lines = new TStringList();
     is_dragging_window = false;
     is_dragging_thumb = false;
+    title_idle_ticks = 40;
+    title_idle_cycles = 0;
     new_gender = 0;
     new_hair_style = 1;
     new_hair_color = 0;
     new_skin = 0;
+    skin_count = 4;
+    hair_style_count = 20;
     map_needed = false;
     item_file_needed = false;
     reserved_file_needed = 0;
@@ -86,6 +97,8 @@ MenuController::MenuController()
     delete_key_lit = false;
     letter_delay_ticks = 0;
     retry_ticks = 0;
+    recover_step = 0;
+    activation_step = 0;
 }
 
 MenuController::~MenuController()
@@ -93,7 +106,8 @@ MenuController::~MenuController()
     text_lines->Clear();
 }
 
-// Counts down the scroll repeat, the letter pad delay and the retry delay, and blinks the letter pad cursor.
+// One menu timer tick: held scroll buttons, the title screen's background change, the caret blink, and the account
+// activation and recover steps; a recover request with no reply in time says the server does not support it.
 void MenuController::OnTimer()
 {
     if (scroll_repeat_delay > 0)
@@ -105,6 +119,22 @@ void MenuController::OnTimer()
         if (scrolling_down)
             ScrollDown();
     }
+    if (MainForm->animation->GetSubState() == 1)
+    {
+        title_idle_ticks++;
+        if (title_idle_ticks > 48)
+        {
+            title_idle_cycles++;
+            if (title_idle_cycles > 4)
+            {
+                MainForm->gfx->NextMenuBackground();
+                title_idle_ticks = 0;
+                title_idle_cycles = 0;
+            }
+        }
+    }
+    else
+        title_idle_ticks = 0;
     cursor_blink++;
     if (cursor_blink > 8)
         cursor_blink = 0;
@@ -112,9 +142,44 @@ void MenuController::OnTimer()
         letter_delay_ticks--;
     if (retry_ticks > 0)
         retry_ticks--;
+    if (recover_pending)
+    {
+        if (DateTimeToTimeStamp(Now()).Time - recover_request_time.Time > 2200)
+        {
+            recover_pending = false;
+            ShowMessageBox(MessageBoxKind_RecoverNotice, "Account Recover",
+                "The account recover feature is not supported on this server.");
+        }
+    }
+    if (activation_step == 1)
+    {
+        if (activation_wait > 0)
+            activation_wait--;
+        else
+        {
+            activation_step = 2;
+            ShowActivationStep(1);
+        }
+    }
+    if (recover_step == 1)
+    {
+        if (recover_wait > 0)
+            recover_wait--;
+        else
+        {
+            recover_step = 2;
+            ShowRecoverStep(2);
+        }
+    }
 }
 
-// Opens the form window of this kind and clears the hover of the buttons under it.
+void MenuController::StartRecoverTimeout()
+{
+    recover_pending = true;
+    recover_request_time = DateTimeToTimeStamp(Now());
+}
+
+// Opens the form window of this kind, resetting the new character choices and the hover of the buttons under it.
 void MenuController::OpenFormWindow(int kind)
 {
     is_form_open = true;
@@ -122,6 +187,12 @@ void MenuController::OpenFormWindow(int kind)
     form_kind = kind;
     change_password_button_hover = false;
     new_character_button_hover = false;
+    new_gender = 0;
+    new_hair_style = 1;
+    new_hair_color = 0;
+    hair_page = 0;
+    left_arrow_state = 0;
+    right_arrow_state = 0;
     first_slot_login_hover = false;
     second_slot_login_hover = false;
     third_slot_login_hover = false;
@@ -130,7 +201,7 @@ void MenuController::OpenFormWindow(int kind)
     third_slot_delete_hover = false;
 }
 
-// Opens the text window empty and at the top; AddWrappedText fills it.
+// Opens the text window empty and at the top, and clears the hover of every menu button.
 void MenuController::OpenTextWindow()
 {
     text_lines->Clear();
@@ -150,6 +221,8 @@ void MenuController::OpenTextWindow()
     exit_button_hover = false;
     account_create_button_hover = false;
     account_cancel_button_hover = false;
+    wide_confirm_hover = false;
+    wide_cancel_hover = false;
     change_password_button_hover = false;
     new_character_button_hover = false;
     first_slot_login_hover = false;
@@ -158,28 +231,26 @@ void MenuController::OpenTextWindow()
     first_slot_delete_hover = false;
     second_slot_delete_hover = false;
     third_slot_delete_hover = false;
+    confirm_ok_hover = false;
     login_ok_button_hover = false;
     login_cancel_button_hover = false;
 }
 
-// Adds text to the text window, cut at spaces into lines of at most 280 pixels in MS Sans Serif 7.
+// Adds text to the text window, cut at spaces into lines that fit its width.
 // An empty line follows when add_blank_line is set.
 void MenuController::AddWrappedText(String text, bool add_blank_line)
 {
-    int max_width;
-    HDC dc;
-    max_width = 280;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    int max_width = 280;
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 7;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
             do
             {
                 String fitting_part;
-                if (MainForm->draw_canvas->TextWidth(text) <= max_width)
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width)
                 {
                     text_lines->Add(text);
                     text = "";
@@ -192,7 +263,7 @@ void MenuController::AddWrappedText(String text, bool add_blank_line)
                         if (text[i] == ' ' || i == text.Length())
                         {
                             String prefix = text.SubString(1, i);
-                            if (MainForm->draw_canvas->TextWidth(prefix) >= max_width)
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width)
                             {
                                 text_lines->Add(fitting_part);
                                 text.Delete(1, fitting_part.Length());
@@ -209,12 +280,11 @@ void MenuController::AddWrappedText(String text, bool add_blank_line)
                     }
                 }
             } while (text.Length() > 0);
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (add_blank_line)
         text_lines->Add("");
@@ -252,6 +322,8 @@ void MenuController::ShowMessageBox(int kind, String title, String text)
     exit_button_hover = false;
     account_create_button_hover = false;
     account_cancel_button_hover = false;
+    wide_confirm_hover = false;
+    wide_cancel_hover = false;
     change_password_button_hover = false;
     new_character_button_hover = false;
     first_slot_login_hover = false;
@@ -260,6 +332,7 @@ void MenuController::ShowMessageBox(int kind, String title, String text)
     first_slot_delete_hover = false;
     second_slot_delete_hover = false;
     third_slot_delete_hover = false;
+    confirm_ok_hover = false;
     login_ok_button_hover = false;
     login_cancel_button_hover = false;
 }
@@ -372,7 +445,7 @@ void MenuController::OnMouseDown(int mouse_x, int mouse_y)
             }
         }
     }
-    if (is_form_open && mouse_x >= form_x && mouse_x <= form_x + 360 && mouse_y >= form_y && mouse_y <= form_y + 240)
+    if (is_form_open && mouse_x >= form_x && mouse_x <= form_x + 465 && mouse_y >= form_y && mouse_y <= form_y + 257)
     {
         is_dragging_window = true;
         dragged_window = DraggedWindow_Form;
@@ -439,10 +512,10 @@ void MenuController::OnMouseMove(int mouse_x, int mouse_y)
             form_x = 0;
         if (form_y <= 0)
             form_y = 0;
-        if (form_x >= 280)
-            form_x = 280;
-        if (form_y >= 240)
-            form_y = 240;
+        if (form_x >= 171)
+            form_x = 171;
+        if (form_y >= 220)
+            form_y = 220;
     }
     if (is_dragging_window && dragged_window == DraggedWindow_MessageBox)
     {
@@ -546,6 +619,7 @@ void MenuController::ScrollDown()
 // row 5 = 4 5 6 7 8 9
 void MenuController::AddSelectedLetter()
 {
+    // A password holds at most 16 letters.
     if (password.Length() > GRID_PASSWORD_LIMIT)
         return;
     if (!grid_row)
@@ -669,4 +743,88 @@ void MenuController::StopDragging()
     scrolling_down = false;
     is_dragging_thumb = false;
     is_dragging_window = false;
+}
+
+// Shows the sign-up code screen for the step; step 1 adds the box for the 7-character code.
+void MenuController::ShowActivationStep(int step)
+{
+    if (!step)
+    {
+        MainForm->edits->Clear();
+        activation_step = 1;
+        activation_wait = 40;
+        MainForm->animation->menu->create_account_enabled = true;
+        MainForm->animation->SetSubState(MenuScreen_SignupCode);
+        MainForm->gfx->LoadSignupCodeScreen(step, false);
+    }
+    if (step == 1)
+    {
+        MainForm->gfx->menu->email_text_set = false;
+        MainForm->edits->Clear();
+        MainForm->animation->SetSubState(MenuScreen_SignupCode);
+        MainForm->gfx->LoadSignupCodeScreen(step, false);
+        MainForm->edits->AddEdit(EditId_Code, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, 320, 80, EDIT_LINE_HEIGHT);
+        MainForm->edits->SetAllowSpaces(EditId_Code, false);
+        MainForm->edits->SetCharFilter(EditId_Code, EditCharFilter_Alphanumeric);
+        MainForm->edits->SetCaseMode(EditId_Code, EditCaseMode_Code);
+        MainForm->edits->SetMaxLength(EditId_Code, 7);
+        MainForm->edits->caret_enabled = true;
+        MainForm->edits->FocusEdit(EditId_Code);
+        MainForm->animation->menu->create_account_enabled = true;
+    }
+}
+
+// Shows the account recover screen at the step and adds that step's boxes, the last one a password box with its
+// strength shown.
+void MenuController::ShowRecoverStep(int step)
+{
+    recover_pending = false;
+    MainForm->edits->Clear();
+    if (!step)
+    {
+        recover_step = 0;
+        recover_wait = 70;
+        MainForm->animation->SetSubState(MenuScreen_PasswordReset);
+        MainForm->gfx->LoadPasswordResetScreen(1, true);
+        MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, 300, 242, EDIT_LINE_HEIGHT);
+        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+        MainForm->edits->SetMaxLength(EditId_AccountName, 16);
+        MainForm->edits->caret_enabled = true;
+        MainForm->edits->FocusEdit(EditId_AccountName);
+    }
+    if (step == 2)
+    {
+        recover_step = 2;
+        MainForm->animation->SetSubState(MenuScreen_PasswordReset);
+        MainForm->gfx->LoadPasswordResetScreen(2, false);
+        MainForm->edits->AddEdit(EditId_Code, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, 300, 80, EDIT_LINE_HEIGHT);
+        MainForm->edits->SetAllowSpaces(EditId_Code, false);
+        MainForm->edits->SetCharFilter(EditId_Code, EditCharFilter_Alphanumeric);
+        MainForm->edits->SetCaseMode(EditId_Code, EditCaseMode_Code);
+        MainForm->edits->SetMaxLength(EditId_Code, 7);
+        MainForm->edits->caret_enabled = true;
+        MainForm->edits->FocusEdit(EditId_Code);
+    }
+    if (step == 3)
+    {
+        recover_step = 3;
+        MainForm->animation->SetSubState(MenuScreen_PasswordReset);
+        MainForm->gfx->LoadPasswordResetScreen(3, false);
+        MainForm->edits->AddEdit(EditId_AccountPassword, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, 300, 242,
+            EDIT_LINE_HEIGHT);
+        MainForm->edits->AddEdit(EditId_ConfirmPassword, EditGroup_Menu, ACCOUNT_FORM_EDIT_X, LOGIN_PASSWORD_EDIT_Y,
+            242, EDIT_LINE_HEIGHT);
+        MainForm->edits->SetPasswordMode(EditId_AccountPassword, true);
+        MainForm->edits->SetPasswordMode(EditId_ConfirmPassword, true);
+        MainForm->edits->SetShowStrength(EditId_AccountPassword, true);
+        MainForm->edits->SetAllowSpaces(EditId_AccountPassword, false);
+        MainForm->edits->SetAllowSpaces(EditId_ConfirmPassword, false);
+        MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_Password);
+        MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_Password);
+        MainForm->edits->SetMaxLength(EditId_AccountPassword, 16);
+        MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 16);
+        MainForm->edits->caret_enabled = true;
+        MainForm->edits->FocusEdit(EditId_AccountPassword);
+    }
 }

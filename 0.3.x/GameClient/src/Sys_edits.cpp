@@ -47,6 +47,8 @@ void Edits::TimerTick()
             }
             if (it->change_notify && caret_enabled)
                 text_changed = true;
+            if (it->redraw_ticks > 0)
+                it->redraw_ticks--;
             it->dirty = true;
             break;
         }
@@ -70,110 +72,155 @@ bool Edits::ConsumeTickRedraw()
     return redraw;
 }
 
-// Types into the focused box when it is editable and not full.
+// Types the text into the focused edit box a character at a time, then applies the box's letter case rule.
 void Edits::TypeText(String text)
 {
-    vector<Edit>::iterator it = edits.begin();
-    while (it != edits.end())
+    vector<Edit>::iterator it;
+    if (text.Length() < 1)
+        return;
+    String before = 0;
+    for (it = edits.begin(); it != edits.end(); it++)
     {
         if (it->focused && it->editable && it->text.Length() < it->max_length)
         {
-            String old_text = it->text;
-            if (text.Length() >= 1)
+            before = it->text;
+            for (int i = 1; i <= text.Length(); i++)
+                TypeChar(text[i]);
+            if (it->text.Length() < 1)
+                continue;
+            it->redraw_ticks = 2;
+            // Case modes: 1 and 4 upper case, 2 lower case, 3 a capital first letter,
+            // 5 a capital first letter and at most one more capital, never two in a row.
+            if (it->case_mode == EditCaseMode_Upper)
+                it->text = UpperCase(it->text);
+            if (it->case_mode == EditCaseMode_Code)
+                it->text = UpperCase(it->text);
+            if (it->case_mode == EditCaseMode_Lower)
+                it->text = LowerCase(it->text);
+            if (it->case_mode == EditCaseMode_CapitalFirst)
+                it->text[1] = UpperCase(it->text)[1];
+            if (it->case_mode == EditCaseMode_Name)
             {
-                it->dirty = true;
-                if (it->multi_line)
-                    it->scroll_offset = 0;
-            }
-            if (it->numeric)
-            {
-                if (text == "0" || text == "1" || text == "2" || text == "3" || text == "4" || text == "5" ||
-                    text == "6" || text == "7" || text == "8" || text == "9")
+                it->text[1] = UpperCase(it->text)[1];
+                short letter_count = 0;
+                char after_space = false;
+                for (int k = 1; k <= it->text.Length(); k++)
                 {
-                    if (it->max_value < 10)
+                    if (it->text[k] >= 'A' && it->text[k] <= 'Z')
                     {
-                        if (StrToInt(text) <= it->max_value)
-                            it->text = text;
-                        else
-                            it->text = IntToStr(it->max_value);
-                    }
-                    else
-                    {
-                        String new_text = it->text + text;
-                        if (new_text.Length() > 0)
+                        if (letter_count > 1 || after_space)
                         {
-                            if (StrToInt(new_text) <= it->max_value)
-                            {
-                                if (StrToInt(new_text) >= it->min_value)
-                                    it->AppendText(text);
-                                else
-                                    it->text = IntToStr(it->min_value);
-                            }
-                            else
-                                it->text = IntToStr(it->max_value);
+                            it->text[k] += 32;
+                            after_space = false;
+                        }
+                        else
+                        {
+                            letter_count++;
+                            after_space = true;
                         }
                     }
+                    else
+                        after_space = false;
                 }
             }
-            else
-            {
-                // Case modes: 1 upper case, 2 lower case, 3 a capital first letter.
-                if (it->case_mode == EditCaseMode_Upper)
-                    text = UpperCase(text);
-                if (it->case_mode == EditCaseMode_Lower)
-                    text = LowerCase(text);
-                if (it->case_mode == EditCaseMode_CapitalFirst && it->text.Length() <= 0)
-                    text = UpperCase(text);
-                if (!it->char_filter)
-                    it->AppendText(text);
-                else
-                {
-                    char allowed = true;
-                    String filter_text = text;
-                    // Each filter level refuses more: punctuation, quotes and accented letters,
-                    // then the marks . _ - ~ @, then digits, then spaces.
-                    if (it->char_filter >= EditCharFilter_NoPunctuation)
-                    {
-                        if (filter_text == "'" || filter_text == "," || filter_text == "<" || filter_text == ">" ||
-                            filter_text == ";" || filter_text == ":" || filter_text == "!" || filter_text == "=" ||
-                            filter_text == "#" || filter_text == "$" || filter_text == "%" || filter_text == "&" ||
-                            filter_text == "?" || filter_text == "\\" || filter_text == "+" || filter_text == "/" ||
-                            filter_text == "^" || filter_text == "(" || filter_text == ")" || filter_text == "*" ||
-                            filter_text == '~' || filter_text == '[' || filter_text == ']' || filter_text == '|' ||
-                            filter_text == (char)-27 || filter_text == (char)-10 || filter_text == (char)-28 ||
-                            filter_text == (char)-59 || filter_text == (char)-42 || filter_text == (char)-60 ||
-                            text == '"' || filter_text == (char)-89 || filter_text == (char)-24 ||
-                            filter_text == (char)-25 || filter_text == (char)-32 || filter_text == (char)-23)
-                            allowed = false;
-                    }
-                    if (it->char_filter >= EditCharFilter_AlphanumericSpaces)
-                    {
-                        if (filter_text == "." || filter_text == "_" || filter_text == "-" || filter_text == "~" ||
-                            filter_text == "@")
-                            allowed = false;
-                    }
-                    if (it->char_filter >= EditCharFilter_LettersSpaces)
-                    {
-                        if (filter_text == "0" || filter_text == "1" || filter_text == "2" || filter_text == "3" ||
-                            filter_text == "4" || filter_text == "5" || filter_text == "6" || filter_text == "7" ||
-                            filter_text == "8" || filter_text == "9")
-                            allowed = false;
-                    }
-                    if (it->char_filter >= EditCharFilter_Letters)
-                    {
-                        if (filter_text == " ")
-                            allowed = false;
-                    }
-                    if (allowed)
-                        it->AppendText(text);
-                }
-            }
-            if (it->change_notify && old_text != it->text)
-                text_changed = true;
             break;
         }
-        it++;
     }
+    if (before == 0)
+        return;
+    if (it->change_notify && before != it->text)
+        text_changed = true;
+}
+
+// Adds one typed character to the focused edit box when the box's rules allow it: spaces, a number's upper limit,
+// the character filter's letters, digits and signs, and at most a few dots.
+void Edits::TypeChar(char key)
+{
+    String previous_text = 0;
+    vector<Edit>::iterator it;
+    for (it = edits.begin(); it != edits.end(); it++)
+    {
+        // A character goes to the focused box while it is editable and not full.
+        if (it->focused && it->editable && it->text.Length() < it->max_length)
+        {
+            previous_text = it->text;
+            it->dirty = true;
+            if (it->multi_line)
+                it->scroll_offset = 0;
+            if (it->numeric)
+            {
+                if (key >= '0' && key <= '9')
+                {
+                    it->text += String(key);
+                    if (StrToInt(it->text) > it->max_value)
+                        it->text = IntToStr(it->max_value);
+                }
+                break;
+            }
+            if (key == ' ')
+            {
+                if (it->allow_spaces)
+                    it->AppendChar(key);
+                break;
+            }
+            if (!it->char_filter)
+            {
+                it->AppendChar(key);
+                break;
+            }
+            char allowed = false;
+            if (it->char_filter <= EditCharFilter_Letters)
+            {
+                if (key >= 'A' && key <= 'Z')
+                    allowed = true;
+                if (key >= 'a' && key <= 'z')
+                    allowed = true;
+            }
+            if (it->char_filter <= EditCharFilter_Alphanumeric)
+            {
+                if (key >= '0' && key <= '9')
+                    allowed = true;
+            }
+            if (it->char_filter <= EditCharFilter_Password)
+            {
+                if (key >= '#' && key <= '&')
+                    allowed = true;
+                if (key == '!')
+                    allowed = true;
+                else if (key == '_')
+                    allowed = true;
+                else if (key == '+')
+                    allowed = true;
+                else if (key == '-')
+                    allowed = true;
+                else if (key == '*')
+                    allowed = true;
+                else if (key == '^')
+                    allowed = true;
+                else if (key == '@')
+                    allowed = true;
+                else if (key == '&')
+                    allowed = true;
+                else if (key == '*')
+                    allowed = true;
+            }
+            int filter = it->char_filter;
+            if (filter <= EditCharFilter_Email && key == '.')
+                allowed = true;
+            if (filter <= EditCharFilter_Printable)
+            {
+                if (key >= '!' && key <= '~')
+                    allowed = true;
+            }
+            if (allowed)
+                it->AppendChar(key);
+            break;
+        }
+    }
+    if (previous_text == 0)
+        return;
+    if (it->change_notify && previous_text != it->text)
+        text_changed = true;
 }
 
 // Enter in the focused box: a multi-line box gets a line break.
@@ -244,6 +291,201 @@ void Edits::Backspace()
             return;
         }
     }
+}
+
+// Rates a password from its length and how many kinds of characters it mixes: upper and lower case letters, digits
+// and signs.
+int Edits::GetPasswordStrength(String password)
+{
+    unsigned char symbol_count;
+    int strength = 0;
+    // Each character past the sixth adds 1.
+    if (password.Length() > 6)
+        strength += password.Length() - 6;
+    char has_upper = false;
+    for (int i = 1; i <= password.Length(); i++)
+    {
+        if (password[i] >= 'A' && password[i] <= 'Z')
+        {
+            has_upper = true;
+            strength++;
+            break;
+        }
+    }
+    char has_lower = false;
+    for (int j = 1; j <= password.Length(); j++)
+    {
+        if (password[j] >= 'a')
+        {
+            has_lower = true;
+            strength++;
+            break;
+        }
+    }
+    unsigned char digit_count = 0;
+    for (int k = 1; k <= password.Length(); k++)
+    {
+        if (password[k] >= '0' && password[k] <= '9')
+            digit_count++;
+    }
+    unsigned char kinds = 0;
+    if (digit_count >= 1)
+    {
+        strength++;
+        kinds++;
+    }
+    if (has_upper)
+        kinds++;
+    if (has_lower)
+        kinds++;
+    symbol_count = 0;
+    for (int m = 1; m <= password.Length(); m++)
+    {
+        if (password[m] == '!')
+            symbol_count++;
+        else if (password[m] == '_')
+            symbol_count++;
+        else if (password[m] == '+')
+            symbol_count++;
+        else if (password[m] == '-')
+            symbol_count++;
+        else if (password[m] == '*')
+            symbol_count++;
+        else if (password[m] == '^')
+            symbol_count++;
+        else if (password[m] == '@')
+            symbol_count++;
+        else if (password[m] == '&')
+            symbol_count++;
+        else if (password[m] == '*')
+            symbol_count++;
+    }
+    if (symbol_count >= 1)
+    {
+        strength++;
+        kinds++;
+    }
+    // One kind of character caps the strength at 5, and two at 6, or 7 from 16 characters on;
+    // all four kinds add 1.
+    if (kinds <= 1 && strength > 5)
+        strength = 5;
+    if (kinds <= 2)
+    {
+        char cap = 6;
+        if (password.Length() >= 16)
+            cap = 7;
+        if ((unsigned char)cap < strength)
+            strength = (unsigned char)cap;
+    }
+    if (kinds >= 4)
+        strength++;
+    if (strength > 10)
+        strength = 10;
+    return strength;
+}
+
+// The first problem with the password typed in the edit box: too short, too few different characters, or no
+// uppercase letter, lowercase letter, or digit or sign.
+int Edits::GetPasswordProblem(int id)
+{
+    vector<Edit>::iterator it = edits.begin();
+    while (it != edits.end())
+    {
+        if (id == it->id)
+        {
+            String password = it->text;
+            if (password.Length() < 6)
+                return 4;
+            if (HasFewDistinctChars(password))
+                return 5;
+            bool has_upper = false;
+            for (int i = 1; i <= password.Length(); i++)
+            {
+                if (password[i] >= 'A' && password[i] <= 'Z')
+                {
+                    has_upper = true;
+                    break;
+                }
+            }
+            if (!has_upper)
+                return -1;
+            has_upper = false;
+            for (int k = 1; k <= password.Length(); k++)
+            {
+                if (password[k] >= 'a')
+                {
+                    has_upper = true;
+                    break;
+                }
+            }
+            if (!has_upper)
+                return -2;
+            has_upper = false;
+            for (int j = 1; j <= password.Length(); j++)
+            {
+                if (password[j] >= '0' && password[j] <= '9')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] >= '0' && password[j] <= '9')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '!')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '_')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '+')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '-')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '*')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '^')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '@')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '&')
+                {
+                    has_upper = true;
+                    break;
+                }
+                if (password[j] == '*')
+                {
+                    has_upper = true;
+                    break;
+                }
+            }
+            if (!has_upper)
+                return -3;
+            return 0;
+        }
+        it++;
+    }
+    return -100;
 }
 
 // Adds a box, which takes the focus from the others.
@@ -716,6 +958,30 @@ void Edits::SetPasswordMode(int id, char password)
     }
 }
 
+void Edits::SetShowStrength(int id, char show)
+{
+    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    {
+        if (id == it->id)
+        {
+            it->show_strength = show;
+            return;
+        }
+    }
+}
+
+void Edits::SetAllowSpaces(int id, char allow)
+{
+    for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
+    {
+        if (id == it->id)
+        {
+            it->allow_spaces = allow;
+            return;
+        }
+    }
+}
+
 void Edits::SetCharFilter(int id, int char_filter)
 {
     for (vector<Edit>::iterator it = edits.begin(); it != edits.end(); it++)
@@ -768,6 +1034,7 @@ void Edits::SetText(int id, String text)
     }
 }
 
+// The text of the box with the id; a number box below its least value reads as that value.
 String Edits::GetText(int id)
 {
     String text = "";
@@ -775,6 +1042,11 @@ String Edits::GetText(int id)
     {
         if (id == it->id)
         {
+            if (it->numeric)
+            {
+                if (StrToInt(it->text) < it->min_value)
+                    it->text = IntToStr(it->min_value);
+            }
             text = it->text;
             break;
         }

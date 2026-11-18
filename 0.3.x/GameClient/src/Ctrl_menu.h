@@ -3,8 +3,6 @@
 
 #include <Classes.hpp>
 
-#define DEFAULT_FORM_X 140
-#define DEFAULT_FORM_Y 120
 #define DEFAULT_MESSAGE_BOX_X 175
 #define DEFAULT_MESSAGE_BOX_Y 166
 #define GRID_PASSWORD_LIMIT 15
@@ -33,10 +31,14 @@ struct MenuController
 {
     char connect_for_create_account;
     char connect_for_login;
-    int new_gender;
-    int new_hair_style;
-    int new_hair_color;
-    int new_skin;
+    bool connect_for_recovery;
+    short new_gender;
+    short new_hair_style;
+    short new_hair_color;
+    short new_skin;
+    short hair_page;
+    short hair_style_count;
+    short skin_count;
     bool create_account_button_hover;
     bool play_button_hover;
     bool credits_button_hover;
@@ -46,10 +48,22 @@ struct MenuController
     bool form_ok_button_hover;
     bool form_cancel_button_hover;
     bool text_window_ok_button_hover;
+    unsigned char left_arrow_state;
+    unsigned char right_arrow_state;
     bool text_scroll_up_hover;
     bool text_scroll_down_hover;
     bool account_create_button_hover;
     bool account_cancel_button_hover;
+    bool wide_confirm_hover;
+    bool wide_cancel_hover;
+    bool recover_pending;
+    TTimeStamp recover_request_time;
+    unsigned char reset_anim_ticks;
+    short recover_wait;
+    unsigned char recover_step;
+    unsigned char signup_anim_ticks;
+    short activation_wait;
+    unsigned char activation_step;
     bool change_password_button_hover;
     bool new_character_button_hover;
     bool first_slot_login_hover;
@@ -63,6 +77,7 @@ struct MenuController
     bool hair_color_arrow_hover;
     bool skin_arrow_hover;
     bool corner_close_hover;
+    bool confirm_ok_hover;
     bool login_ok_button_hover;
     bool login_cancel_button_hover;
     bool intro_finished;
@@ -97,7 +112,7 @@ struct MenuController
     int form_kind;
     bool is_loading_world;
     int loading_frame;
-    int loading_tip;
+    String loading_tip;
     String account_name;
     String password;
     int grid_column;
@@ -120,6 +135,8 @@ struct MenuController
     int drag_offset_y;
     char is_dragging_thumb;
     int thumb_grab_offset;
+    int title_idle_ticks;
+    int title_idle_cycles;
     int request_delay_ticks;
     char is_entering_game;
     char map_needed;
@@ -132,6 +149,7 @@ struct MenuController
     MenuController();
     ~MenuController();
     void OnTimer();
+    void StartRecoverTimeout();
     void OpenFormWindow(int kind);
     void OpenTextWindow();
     void AddWrappedText(String text, bool add_blank_line);
@@ -164,6 +182,8 @@ struct MenuController
     void AddSpace();
     void DeleteLastLetter();
     void StopDragging();
+    void ShowActivationStep(int step);
+    void ShowRecoverStep(int step);
 };
 
 #endif

@@ -19,7 +19,7 @@ struct IconResource
     IconResource();
     ~IconResource();
     TRect GetIconRect(int frame);
-    GraphicSize LoadSurface(int library, int resource_id);
+    TPoint LoadSurface(int library, int resource_id);
 };
 
 #endif

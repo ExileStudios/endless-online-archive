@@ -11,10 +11,11 @@
 
 #pragma package(smart_init)
 
-ItemValues::ItemValues(String prefix)
+ItemValues::ItemValues(String prefix, char keep_parts)
 {
     file_prefix = prefix + "dat";
-    unused_value = -1;
+    file_parts = new TStringList();
+    keep_file_parts = keep_parts;
     is_downloading = false;
     is_loaded = false;
     has_bad_record = false;
@@ -26,6 +27,7 @@ ItemValues::ItemValues(String prefix)
 
 ItemValues::~ItemValues()
 {
+    delete file_parts;
 }
 
 // Reads the checksum and record count from the head of the first item file; a missing file is marked.
@@ -94,6 +96,7 @@ void ItemValues::Load()
     {
         Clear();
         ClearHeaders();
+        ClearFileParts();
         file_number = 0;
         records_read = 0;
         records_expected = 0;
@@ -126,6 +129,8 @@ void ItemValues::Load()
                     return;
                 if (data[1] != 'E' || data[2] != 'I' || data[3] != 'F')
                     return;
+                if (keep_file_parts)
+                    file_parts->Add(data);
                 read_position = 4;
                 PubfileHeader *header = new PubfileHeader(file_name);
                 header->file_length = data.Length();
@@ -140,56 +145,55 @@ void ItemValues::Load()
                 for (i = 0; records_read < records_expected && i < 900; i++)
                 {
                     unsigned char name_length = ReadByte();
-                    int name_size = name_length;
                     if (name_length > 50)
                     {
                         has_bad_record = true;
                         header->load_state = 3;
                     }
                     String item_name = data.SubString(read_position, name_length);
-                    ItemValue item(Count() + 1);
-                    item.name = item_name;
+                    ItemValue *item = new ItemValue(Count() + 1);
+                    item->name = item_name;
                     read_position += name_length;
-                    item.graphic = DecodeNumber(2);
-                    item.type = ReadByte();
-                    item.subtype = ReadByte();
-                    item.special = ReadByte();
-                    item.hp = DecodeNumber(2);
-                    item.tp = DecodeNumber(2);
-                    item.min_damage = DecodeNumber(2);
-                    item.max_damage = DecodeNumber(2);
-                    item.accuracy = DecodeNumber(2);
-                    item.evade = DecodeNumber(2);
-                    item.armor = DecodeNumber(2);
-                    item.return_damage = ReadByte();
-                    item.bonus_str = ReadByte();
-                    item.bonus_int = ReadByte();
-                    item.bonus_wis = ReadByte();
-                    item.bonus_agi = ReadByte();
-                    item.bonus_con = ReadByte();
-                    item.bonus_cha = ReadByte();
-                    item.light_resist = ReadByte();
-                    item.dark_resist = ReadByte();
-                    item.earth_resist = ReadByte();
-                    item.air_resist = ReadByte();
-                    item.water_resist = ReadByte();
-                    item.fire_resist = ReadByte();
-                    item.spec_value = DecodeNumber(3);
-                    item.gender = ReadByte();
-                    item.spec3 = ReadByte();
-                    item.required_level = DecodeNumber(2);
-                    item.required_class = DecodeNumber(2);
-                    item.required_str = DecodeNumber(2);
-                    item.required_int = DecodeNumber(2);
-                    item.required_wis = DecodeNumber(2);
-                    item.required_agi = DecodeNumber(2);
-                    item.required_con = DecodeNumber(2);
-                    item.required_cha = DecodeNumber(2);
-                    item.element = ReadByte();
-                    item.element_power = ReadByte();
-                    item.weight = ReadByte();
-                    item.spare_byte = ReadByte();
-                    item.size = ReadByte();
+                    item->graphic = DecodeNumber(2);
+                    item->type = ReadByte();
+                    item->subtype = ReadByte();
+                    item->special = ReadByte();
+                    item->hp = DecodeNumber(2);
+                    item->tp = DecodeNumber(2);
+                    item->min_damage = DecodeNumber(2);
+                    item->max_damage = DecodeNumber(2);
+                    item->accuracy = DecodeNumber(2);
+                    item->evade = DecodeNumber(2);
+                    item->armor = DecodeNumber(2);
+                    item->return_damage = (unsigned char)ReadByte();
+                    item->bonus_str = ReadByte();
+                    item->bonus_int = ReadByte();
+                    item->bonus_wis = ReadByte();
+                    item->bonus_agi = ReadByte();
+                    item->bonus_con = ReadByte();
+                    item->bonus_cha = ReadByte();
+                    item->light_resist = ReadByte();
+                    item->dark_resist = ReadByte();
+                    item->earth_resist = ReadByte();
+                    item->air_resist = ReadByte();
+                    item->water_resist = ReadByte();
+                    item->fire_resist = ReadByte();
+                    item->spec_value = DecodeNumber(3);
+                    item->gender = ReadByte();
+                    item->spec3 = ReadByte();
+                    item->required_level = DecodeNumber(2);
+                    item->required_class = DecodeNumber(2);
+                    item->required_str = DecodeNumber(2);
+                    item->required_int = DecodeNumber(2);
+                    item->required_wis = DecodeNumber(2);
+                    item->required_agi = DecodeNumber(2);
+                    item->required_con = DecodeNumber(2);
+                    item->required_cha = DecodeNumber(2);
+                    item->element = ReadByte();
+                    item->element_power = ReadByte();
+                    item->weight = ReadByte();
+                    item->spare_byte = ReadByte();
+                    item->size = ReadByte();
                     records.insert(records.end(), item);
                     header->records_read++;
                     records_read++;
@@ -242,24 +246,32 @@ void Itemvalues_UnusedLiterals1()
     "dat";
 }
 
-DEFINE_CLEAR(ItemValues)
-
-// The record of an item id; ids start at 1.
-ItemValue ItemValues::GetItem(int item_id)
+// Deletes every item record.
+void ItemValues::Clear()
 {
-    if (item_id < 1)
-        item_id = 1;
-    return records[item_id - 1];
+    for (vector<ItemValue *>::iterator it = records.begin(); it != records.end(); it++)
+        delete *it;
+    records.clear();
+}
+
+// The item record at the index, kept within the list.
+ItemValue *ItemValues::GetItem(int index)
+{
+    if (index < 0)
+        index = 0;
+    if (records.size() <= index)
+        index = records.size() - 1;
+    return records[index];
 }
 
 // The item's weight, at least 0; 0 when the id is not in the list.
 int ItemValues::GetWeight(int item_id)
 {
     int weight = 0;
-    if (item_id > 0 && Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() > item_id)
     {
         weight = 0;
-        weight = records[item_id - 1].weight;
+        weight = records[item_id - 1]->weight;
         if (weight < 0)
             weight = 0;
     }
@@ -270,10 +282,10 @@ int ItemValues::GetWeight(int item_id)
 int ItemValues::GetGender(int item_id)
 {
     int gender = -1;
-    if (item_id > 0 && Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() > item_id)
     {
         gender = 0;
-        gender = records[item_id - 1].gender;
+        gender = records[item_id - 1]->gender;
         if (gender < 0)
             gender = 0;
     }
@@ -283,68 +295,68 @@ int ItemValues::GetGender(int item_id)
 int ItemValues::GetGraphic(int item_id)
 {
     int graphic = -1;
-    if (item_id > 0 && Count() > item_id)
-        graphic = records[item_id - 1].graphic;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        graphic = records[item_id - 1]->graphic;
     return graphic;
 }
 
 int ItemValues::GetSize(int item_id)
 {
     int size = -1;
-    if (item_id > 0 && Count() > item_id)
-        size = records[item_id - 1].size;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        size = records[item_id - 1]->size;
     return size;
 }
 
 int ItemValues::GetSpecial(int item_id)
 {
     int special = -1;
-    if (item_id > 0 && Count() > item_id)
-        special = records[item_id - 1].special;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        special = records[item_id - 1]->special;
     return special;
 }
 
 int ItemValues::GetType(int item_id)
 {
     int type = -1;
-    if (item_id > 0 && Count() > item_id)
-        type = records[item_id - 1].type;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        type = records[item_id - 1]->type;
     return type;
 }
 
 int ItemValues::GetSubType(int item_id)
 {
     int subtype = -1;
-    if (item_id > 0 && Count() > item_id)
-        subtype = records[item_id - 1].subtype;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        subtype = records[item_id - 1]->subtype;
     return subtype;
 }
 
 int ItemValues::GetClassRequirement(int item_id)
 {
     int required_class = -1;
-    if (item_id > 0 && Count() > item_id)
-        required_class = records[item_id - 1].required_class;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        required_class = records[item_id - 1]->required_class;
     return required_class;
 }
 
 int ItemValues::GetSpecValue(int item_id)
 {
     int spec_value = -1;
-    if (item_id > 0 && Count() > item_id)
-        spec_value = records[item_id - 1].spec_value;
+    if (item_id > 0 && (unsigned int)Count() > item_id)
+        spec_value = records[item_id - 1]->spec_value;
     return spec_value;
 }
 
-// The name of the key item (type 9) that opens lock key_id, or "" when there is none.
+// The name of the key item with the key number; empty when there is none.
 String ItemValues::GetKeyName(int key_id)
 {
     String name;
-    for (vector<ItemValue>::iterator it = records.begin(); it != records.end(); it++)
+    for (vector<ItemValue *>::iterator it = records.begin(); it != records.end(); it++)
     {
-        if (it->type == EifItemType_Key && key_id == it->spec_value)
+        if ((*it)->type == EifItemType_Key && key_id == (*it)->spec_value)
         {
-            name = it->name;
+            name = (*it)->name;
             break;
         }
     }
@@ -354,41 +366,29 @@ String ItemValues::GetKeyName(int key_id)
 String ItemValues::GetName(int item_id)
 {
     String name;
-    for (vector<ItemValue>::iterator it = records.begin(); it != records.end(); it++)
+    for (vector<ItemValue *>::iterator it = records.begin(); it != records.end(); it++)
     {
-        if (item_id == it->item_id)
+        if (item_id == (*it)->item_id)
         {
-            name = it->name;
+            name = (*it)->name;
             break;
         }
     }
     return name;
 }
 
-unsigned int ItemValues::Count()
+int ItemValues::Count()
 {
     return records.size();
 }
 
-// Deletes every item record.
 DEFINE_CLEAR_HEADERS(ItemValues)
 
-unsigned char ItemValues::ReadByte()
+void ItemValues::ClearFileParts()
 {
-    unsigned char value;
-    try
-    {
-        value = data[read_position];
-        value--;
-    }
-    catch (...)
-    {
-        value = 0;
-    }
-    read_position++;
-    if (value > 252)
-        value = 0;
-    return value;
+    file_parts->Clear();
 }
+
+DEFINE_READ_BYTE(ItemValues)
 
 DEFINE_DECODE_NUMBER(ItemValues)

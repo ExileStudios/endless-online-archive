@@ -12,50 +12,50 @@
 // An empty npc at the map index, with every animation stopped.
 Npc::Npc(int map_index)
 {
+    balloon = 0;
     index = map_index;
     bar_index = map_index;
     npc_id = 1;
+    hidden = false;
     walk_start = false;
     walking = false;
-    health_bar_start = false;
-    health_bar_shown = false;
-    damage_start = false;
-    damage_shown = false;
     effect_start = false;
     effect_running = false;
     effect_frame = 0;
     effect_id = SpellEffect_None;
-    out_of_view = false;
-    dying = false;
-    label_shown = false;
-    balloon_timer = 0;
-    balloon_shown = false;
-    out_of_view = false;
     dying = false;
     killed_by_hit = false;
+    death_countdown = 0;
+    label_shown = false;
+    idle_frame = 0;
+    queued_balloon_count = 0;
+    balloon_timer = 0;
+    balloon_shown = false;
     frame_width = 0;
     frame_height = 0;
-    health_bar_timer = -1;
+    damage_start = false;
+    damage_shown = false;
     damage_timer = -1;
+    health_bar_start = false;
+    health_bar_shown = false;
+    health_bar_width = 0;
+    health_bar_timer = -1;
 }
 
 // An npc at the tile, facing direction, marked pending.
 Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int tile_x, int tile_y, int facing)
 {
+    balloon = 0;
     index = map_index;
     bar_index = map_index;
     npc_id = record_id;
-    direction = FacingDirection_Down;
     hidden = false;
+    direction = FacingDirection_Down;
     name = display_name;
     graphic = graphic_id;
     x = tile_x;
     y = tile_y;
     direction = facing;
-    health_bar_start = false;
-    health_bar_shown = false;
-    damage_start = false;
-    damage_shown = false;
     effect_start = false;
     effect_running = false;
     effect_frame = 0;
@@ -66,26 +66,31 @@ Npc::Npc(int map_index, int record_id, int graphic_id, String display_name, int 
     alt_attacking = false;
     attack_start = false;
     attacking = false;
-    out_of_view = false;
     dying = false;
     killed_by_hit = false;
-    graphics_pending = true;
-    reload_requested = false;
+    death_countdown = 0;
+    out_of_range = true;
+    graphics_pending = false;
     load_stage = 0;
-    load_failures = 0;
+    reload_requested = false;
     label_shown = false;
     idle_frame = 0;
+    queued_balloon_count = 0;
     balloon_timer = 0;
     balloon_shown = false;
     frame_width = 0;
     frame_height = 0;
-    health_bar_timer = -1;
+    damage_start = false;
+    damage_shown = false;
     damage_timer = -1;
+    health_bar_start = false;
+    health_bar_shown = false;
+    health_bar_width = 0;
+    health_bar_timer = -1;
 }
 
-void Npc::CreateResources()
+Npc::~Npc()
 {
-    resources = new NpcResources();
 }
 
 // The screen position adjusted for the current step or attack lunge.
@@ -117,6 +122,7 @@ TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
             position.y = 4 * walk_frame + position.y - 12;
         }
     }
+    // Frames 1 to 3 of an attack lean the npc 7 pixels toward its target.
     if (attacking)
     {
         if (attack_frame >= 1 && attack_frame <= 3)
@@ -140,64 +146,72 @@ TPoint Npc::GetAnimatedPosition(int screen_x, int screen_y)
     return position;
 }
 
-// Opens a speech balloon over the npc, or queues up to five while one is showing.
-void Npc::ShowBalloon(String *lines, int width, int height, int tinted)
+// Shows a speech balloon over the npc for a time by the text's length; while one is shown, up to six more wait.
+void Npc::ShowBalloon(String speaker, String text, int style)
 {
     if (balloon_timer < 1)
     {
-        if (balloon_shown)
+        if (balloon)
         {
-            CloseBalloon();
-            Sleep(1);
+            FreeBalloon();
+            delete balloon;
         }
-        balloon = new Balloon(width, height, lines, tinted);
-        int text_length = 0;
-        for (int i = 0; i <= 5; i++)
-            text_length += lines[i].Length();
-        balloon_width = width;
-        balloon_height = height;
+        balloon = new Balloon(speaker, text, style);
+        balloon_timer = (short)(text.Length() / 3) + 24;
         balloon_shown = true;
-        balloon_timer = (short)(text_length / 3) + 24;
         redraw = true;
+        return;
     }
-    else if (queued_balloon_count < 5)
+    if (queued_balloon_count < 6)
     {
-        queued_balloon_lines[0][queued_balloon_count] = *lines;
-        queued_balloon_lines[1][queued_balloon_count] = lines[1];
-        queued_balloon_lines[2][queued_balloon_count] = lines[2];
-        queued_balloon_lines[3][queued_balloon_count] = lines[3];
-        queued_balloon_lines[4][queued_balloon_count] = lines[4];
-        queued_balloon_lines[5][queued_balloon_count] = lines[5];
-        queued_balloon_widths[queued_balloon_count] = width;
-        queued_balloon_heights[queued_balloon_count] = height;
-        queued_balloon_tinted[queued_balloon_count] = tinted;
+        queued_balloon_lines[queued_balloon_count] = text;
+        queued_balloon_styles[queued_balloon_count] = style;
         queued_balloon_count++;
     }
 }
 
-// Draws the balloon centred above the npc, raised by the head height of its graphic.
+// Shows the npc's next queued balloon and moves the rest of the queue up.
+void Npc::ShowNextBalloon()
+{
+    FreeBalloon();
+    if (queued_balloon_count > 0)
+    {
+        ShowBalloon(name, queued_balloon_lines[0], queued_balloon_styles[0]);
+        for (int i = 0; i < 6; i++)
+        {
+            queued_balloon_lines[i] = queued_balloon_lines[i + 1];
+            queued_balloon_styles[i] = queued_balloon_styles[i + 1];
+        }
+        queued_balloon_count--;
+    }
+}
+
+// Draws the npc's balloon over its head, shaken with the screen.
 void Npc::DrawBalloon()
 {
-    int screen_x =
-        TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 - balloon_width / 2;
-    int screen_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 112 - balloon_height;
-    screen_y -= MainForm->npcs->head_heights[graphic - 1];
-    if (MainForm->animation->interface_controller->is_shaking)
-        screen_x += MainForm->animation->interface_controller->shake_offset;
-    MainForm->gfx->game->BlitClippedAlpha(GetAnimatedPosition(screen_x, screen_y).x,
-        GetAnimatedPosition(screen_x, screen_y).y, balloon->fill_surface, balloon->bubble_rect, 160);
-    MainForm->gfx->game->BlitClipped(GetAnimatedPosition(screen_x, screen_y).x,
-        GetAnimatedPosition(screen_x, screen_y).y, balloon->text_surface, balloon->bubble_rect);
+    int balloon_y;
+    if (balloon)
+    {
+        int balloon_x =
+            TILE_HALF_WIDTH * x - TILE_HALF_WIDTH * y + MainForm->map->GetScrollOffsetX() + 302 -
+                balloon->text_width / 2;
+        balloon_y = 16 * x + 16 * y + MainForm->map->GetScrollOffsetY() + 112 - balloon->text_height;
+        balloon_y -= MainForm->npcs->head_heights[graphic - 1];
+        if (MainForm->animation->interface_controller->is_shaking)
+            balloon_x += MainForm->animation->interface_controller->shake_offset;
+        if (balloon)
+            balloon->Draw(GetAnimatedPosition(balloon_x, balloon_y).x, GetAnimatedPosition(balloon_x, balloon_y).y);
+    }
 }
 
-// Closes the npc's balloon if one is open, and asks for a redraw.
-DEFINE_CLOSE_BALLOON(Npc)
-
-void Npc::FreeResources()
+void Npc::FreeBalloon()
 {
-    delete resources;
-}
-
-Npc::~Npc()
-{
+    balloon_shown = false;
+    balloon_timer = 0;
+    if (balloon)
+    {
+        delete balloon;
+        balloon = 0;
+    }
+    redraw = true;
 }

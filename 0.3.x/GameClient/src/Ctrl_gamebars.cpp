@@ -35,14 +35,21 @@ void GameBars::ShowAllTexts()
     ToggleExperienceText(true, false);
 }
 
-void GameBars::ToggleHealthText(bool force, bool play_sound)
+// Shows or hides the health bar's text for 40 ticks.
+void GameBars::ToggleHealthText(char force, char play_sound)
+{
+    ToggleHealthTextFor(force, play_sound, 40);
+}
+
+// Shows the health bar's text for the ticks, or hides it when shown and not forced.
+void GameBars::ToggleHealthTextFor(char force, char play_sound, unsigned char ticks)
 {
     if (play_sound)
         MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
     if (!show_health_text || force)
     {
         show_health_text = true;
-        health_text_timer = 40;
+        health_text_timer = ticks;
     }
     else
     {
@@ -53,14 +60,21 @@ void GameBars::ToggleHealthText(bool force, bool play_sound)
     MainForm->redraw_needed = true;
 }
 
-void GameBars::ToggleManaText(bool force, bool play_sound)
+// Shows or hides the mana bar's text for 40 ticks.
+void GameBars::ToggleManaText(char force, char play_sound)
+{
+    ToggleManaTextFor(force, play_sound, 40);
+}
+
+// Shows the mana bar's text for the ticks, or hides it when shown and not forced.
+void GameBars::ToggleManaTextFor(char force, char play_sound, unsigned char ticks)
 {
     if (play_sound)
         MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
     if (!show_mana_text || force)
     {
         show_mana_text = true;
-        mana_text_timer = 40;
+        mana_text_timer = ticks;
     }
     else
     {
@@ -71,14 +85,21 @@ void GameBars::ToggleManaText(bool force, bool play_sound)
     MainForm->redraw_needed = true;
 }
 
-void GameBars::ToggleStaminaText(bool force, bool play_sound)
+// Shows or hides the stamina bar's text for 40 ticks.
+void GameBars::ToggleStaminaText(char force, char play_sound)
+{
+    ToggleStaminaTextFor(force, play_sound, 40);
+}
+
+// Shows the stamina bar's text for the ticks, or hides it when shown and not forced.
+void GameBars::ToggleStaminaTextFor(char force, char play_sound, unsigned char ticks)
 {
     if (play_sound)
         MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
     if (!show_stamina_text || force)
     {
         show_stamina_text = true;
-        stamina_text_timer = 40;
+        stamina_text_timer = ticks;
     }
     else
     {
@@ -89,14 +110,21 @@ void GameBars::ToggleStaminaText(bool force, bool play_sound)
     MainForm->redraw_needed = true;
 }
 
-void GameBars::ToggleExperienceText(bool force, bool play_sound)
+// Shows or hides the experience bar's text for 40 ticks.
+void GameBars::ToggleExperienceText(char force, char play_sound)
+{
+    ToggleExperienceTextFor(force, play_sound, 40);
+}
+
+// Shows the experience bar's text for the ticks, or hides it when shown and not forced.
+void GameBars::ToggleExperienceTextFor(char force, char play_sound, unsigned char ticks)
 {
     if (play_sound)
         MainForm->sfx->PlaySfx(SfxSound_HudBarClick);
     if (!show_experience_text || force)
     {
         show_experience_text = true;
-        experience_text_timer = 40;
+        experience_text_timer = ticks;
     }
     else
     {
@@ -138,9 +166,9 @@ void GameBars::MouseDown(int x, int y, int button)
 {
     if (!button)
     {
-        if (x >= 55 && x <= 74 && y >= 0 && y <= 10)
+        if (x >= 55 && x <= 74 && y >= 0 && y <= 13)
             OpenStats(true);
-        if (x >= 75 && x <= 94 && y >= 0 && y <= 10)
+        if (x >= 75 && x <= 94 && y >= 0 && y <= 13)
             RequestQuestProgress(true);
         if (x >= 99 && x <= 213 && y >= 0 && y <= 10)
             ToggleHealthText(false, true);
@@ -156,6 +184,7 @@ void GameBars::MouseDown(int x, int y, int button)
 // Hides the numbers of a bar 40 ticks after they were shown, and counts down the quest button delay.
 void GameBars::Tick()
 {
+    // Each bar's number shows for a while, then goes.
     if (show_health_text)
     {
         health_text_timer--;
@@ -251,13 +280,9 @@ void GameBars::SetStaminaBar(int stamina, int max_stamina)
     MainForm->redraw_needed = true;
 }
 
-// One segment for each full 5 percent of the way through the level; above 98 percent the bar is full.
-void GameBars::SetExperienceBar(int level_progress, int level_span)
+// Sets the experience bar to one segment for every 5 percent, full above 98 percent.
+void GameBars::SetExperiencePercent(int percent)
 {
-    double fraction = 0.0;
-    if (level_span > 0 && level_progress > 0)
-        fraction = (double)level_progress / level_span;
-    int percent = fraction * PERCENT_SCALE;
     if (percent >= 5)
         experience_segments = percent / 5;
     else
@@ -266,6 +291,18 @@ void GameBars::SetExperienceBar(int level_progress, int level_span)
         experience_segments = BAR_FULL_SEGMENTS;
     is_dirty = true;
     MainForm->redraw_needed = true;
+}
+
+// Sets the experience bar from the value out of the maximum.
+void GameBars::SetExperienceBar(int value, int maximum)
+{
+    if (maximum > 0 && value > 0)
+    {
+        double ratio = (double)value / maximum;
+        SetExperiencePercent((int)(ratio * PERCENT_SCALE));
+    }
+    else
+        SetExperiencePercent(0);
 }
 
 int GameBars::GetHealthBarSegments()

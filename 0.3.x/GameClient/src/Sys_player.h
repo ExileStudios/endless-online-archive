@@ -12,8 +12,6 @@ struct Balloon;
 struct PlayerResources;
 
 #define EMOTE_FRAME_COUNT 3
-#define PLAYER_BAR_LOW_LENGTH 5
-#define PLAYER_BAR_MID_LENGTH 12
 
 enum FacingDirection
 {
@@ -182,19 +180,20 @@ struct Player
     char hidden;
     char health_bar_shown;
     char health_bar_start;
+    unsigned char health_bar_kind;
     int health_bar_timer;
-    int health_bar_width;
+    unsigned char health_bar_width;
+    unsigned char second_bar_width;
+    unsigned char third_bar_width;
     char damage_shown;
     char damage_start;
     int damage_digits;
     int damage_timer;
     int damage_amount;
     char damage_heal;
-    short balloon_timer;
-    short balloon_height;
-    short balloon_width;
-    char balloon_shown;
     short badge_level;
+    short balloon_timer;
+    char balloon_shown;
     PlayerResources *resources;
     Balloon *balloon;
 
@@ -202,7 +201,8 @@ struct Player
     Player(int tile_x, int tile_y, String player_name, int player_gender, int player_skin, int player_hair_style,
     int player_hair_color, char start_pending);
     ~Player();
-    void ShowBalloon(String *lines, int width, int height, int tinted);
+    void ShowBalloon(String speaker, String text, int style);
+    void HideBalloon();
     TPoint GetAnimatedPosition(int screen_x, int screen_y);
     void DrawEmote();
     void DrawBalloon();

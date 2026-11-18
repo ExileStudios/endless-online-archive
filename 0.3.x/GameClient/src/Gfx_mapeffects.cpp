@@ -12,20 +12,10 @@ EffectGraphics::EffectGraphics(char preload)
 {
     last_index = -1;
     pending_count = 0;
-    queue_drained = false;
-    library_open = false;
-    keep_library_open = preload;
-    if (keep_library_open)
-    {
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Effects).c_str());
-        library_open = true;
-    }
 }
 
 EffectGraphics::~EffectGraphics()
 {
-    if (library_open || keep_library_open)
-        FreeLibrary(library);
 }
 
 // Counts, per loaded effect graphic, the frames in a row in which GetGraphic did not fetch it.
@@ -41,34 +31,14 @@ void EffectGraphics::AgeGraphics()
     }
 }
 
-void Gfx_mapeffects_UnusedLiterals1()
-{
-    "";
-}
-
 // Loads one waiting effect graphic from its library each call; one that failed to load twice is freed and waits no
 // longer.
 void EffectGraphics::LoadPendingGraphic()
 {
     vector<EffectWrapper>::iterator it;
-    // The call after the effect graphic queue empties closes the library again, unless it is kept open.
-    if (queue_drained)
-    {
-        if (library_open && !keep_library_open)
-        {
-            FreeLibrary(library);
-            library_open = false;
-        }
-        queue_drained = false;
-        MainForm->redraw_needed = true;
-    }
     if (pending_count > 0)
     {
-        if (!library_open && !keep_library_open)
-        {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Effects).c_str());
-            library_open = true;
-        }
+        library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_Effects);
         it = entries.begin();
         while (it != entries.end())
         {
@@ -81,28 +51,24 @@ void EffectGraphics::LoadPendingGraphic()
                         it->idle_ticks = 250;
                         it->FreeResource();
                         pending_count--;
-                        if (!pending_count)
-                            queue_drained = true;
                     }
                 }
                 else
                 {
-                    int open_library = (int)library;
+                    int open_library = library;
                     it->CreateResource();
-                    GraphicSize size = it->resource->LoadSurfaces(open_library, 3 * it->graphic_id + 101);
-                    it->width = size.width;
-                    it->height = size.height;
-                    if (size.width == -1)
-                    {
+                    TPoint size = it->resource->LoadSurfaces(open_library, 3 * it->graphic_id + 101);
+                    it->width = size.x;
+                    it->height = size.y;
+                    if (size.x == -1)
                         it->idle_ticks++;
-                        break;
+                    else
+                    {
+                        it->is_loaded = true;
+                        it->unfetched_frames = 0;
+                        it->idle_ticks = 0;
+                        pending_count--;
                     }
-                    it->is_loaded = true;
-                    it->unfetched_frames = 0;
-                    it->idle_ticks = 0;
-                    pending_count--;
-                    if (!pending_count)
-                        queue_drained = true;
                     break;
                 }
             }
@@ -121,7 +87,7 @@ void EffectGraphics::PurgeUnusedGraphics()
         result = 0;
         for (vector<EffectWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->unfetched_frames >= 120)
+            if (it->unfetched_frames >= 1000)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -154,7 +120,7 @@ bool EffectGraphics::RequestGraphic(int graphic_id)
 }
 
 // The loaded effect graphic, marked as drawn so AgeGraphics does not count it.
-EffectWrapper EffectGraphics::GetGraphic(int graphic_id)
+EffectWrapper *EffectGraphics::GetGraphic(int graphic_id)
 {
     vector<EffectWrapper>::iterator i;
     for (i = entries.begin(); i != entries.end(); i++)
@@ -162,10 +128,10 @@ EffectWrapper EffectGraphics::GetGraphic(int graphic_id)
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
             i->fetched = true;
-            break;
+            return i;
         }
     }
-    return *i;
+    return 0;
 }
 
 GraphicSize EffectGraphics::GetGraphicSize(int graphic_id)

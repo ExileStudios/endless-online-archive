@@ -10,31 +10,41 @@ enum LayoutKey
     LayoutKey_Hotkeys = 5
 };
 
+#include <Registry.hpp>
+
 // Remembers where each character keeps its items, spells, skills and macros, in the registry of the current user.
 struct WinRegister
 {
+    TRegIniFile *registry;
     String root_key;
     String character_key;
     String inventory_key;
     String spells_key;
     String skills_key;
     String macros_key;
+    String hotkeys_key;
     String value_prefix;
     String separator;
     String current_key;
+    String server_host;
+    String server_port;
     String account_name;
     String character_name;
-    char unused_bytes[1024];
-    int unused_value;
 
     WinRegister();
     ~WinRegister();
+    void SetServerHost(String host);
+    void SetServerPort(int port);
     void SetAccountName(String name);
     void SetCharacterName(String name);
-    void BuildCharacterKeys();
-    void BuildKeyPaths(String account, String character);
-    void WriteSlotValue(int slot_type, int slot_index, int value);
-    int ReadSlotValue(int slot_type, int slot_index);
+    void BuildKeyPaths();
+    String GetSlotKey(int slot_type);
+    void OpenSlotKey(int slot_type);
+    void CloseSlotKey();
+    void WriteSlotValue(int slot_index, int value);
+    int ReadSlotValue(int slot_index);
+    void WriteSlotText(int slot_index, String text);
+    String ReadSlotText(int slot_index);
 };
 
 #endif

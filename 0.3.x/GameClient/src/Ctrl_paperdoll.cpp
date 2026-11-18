@@ -15,8 +15,8 @@
 // A paperdoll with no item in any slot, its window at its default spot.
 PaperdollController::PaperdollController()
 {
-    window_x = 133;
-    window_y = 13;
+    window_x = 120;
+    window_y = 16;
     frame_index = 0;
     admin_level = 0;
     is_visible = false;
@@ -48,8 +48,9 @@ PaperdollController::~PaperdollController()
 {
 }
 
-// An inventory item dropped on the own paperdoll: sends the equip request when its class fits and its box is free.
-// The item's type picks the box, wherever it is dropped; a drop on a right-hand box asks for the second of a pair.
+// An inventory item dropped on the own paperdoll: sends the equip request when its class fits and its box is free,
+// and armor only for the wearer's gender. The item's type picks the box, wherever it is dropped; a drop on a right-hand
+// box asks for the second of a pair.
 void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
 {
     int required_class;
@@ -105,7 +106,9 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
             if (!MainForm->class_values->IsDescendantOf(MainForm->animation->interface_controller->status->class_id,
                 required_class))
             {
-                String required_class_name = MainForm->class_values->GetName(required_class);
+                ClassValue *class_record = MainForm->class_values->GetRecord(required_class - 1);
+                String required_class_name = class_record->name;
+                MainForm->sfx->PlaySfx(SfxSound_Denied);
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                     MainForm->strings->GetText(GameText_ThisItemCanOnly) + required_class_name);
                 return;
@@ -227,11 +230,18 @@ void PaperdollController::EquipDroppedItem(int item_id, int x, int y)
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
                     MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
             if (can_equip)
+            {
+                MainForm->animation->interface_controller->inventory->PlayUseSound(item_type);
                 MainForm->net_client->sender->SendEquipItem(item_id, sub_slot);
-            // Items that are not equipment get their own message
-            else if (item_type < EifItemType_Weapon || item_type > EifItemType_Bracer)
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                    MainForm->strings->GetText(GameText_YouCannotEquipThis));
+            }
+            else
+            {
+                MainForm->sfx->PlaySfx(SfxSound_CommandError);
+                MainForm->animation->interface_controller->HoldStatusMessages();
+                if (item_type < EifItemType_Weapon || item_type > EifItemType_Bracer)
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                        MainForm->strings->GetText(GameText_YouCannotEquipThis));
+            }
         }
     }
 }
@@ -242,6 +252,7 @@ void PaperdollController::Open(int frame_row, String name_text, String home_text
     int new_admin_level, char own_character_flag)
 {
     is_visible = true;
+    is_dragging = false;
     player_name = name_text;
     home_name = home_text;
     partner_name = partner_text;
@@ -275,18 +286,22 @@ void PaperdollController::Open(int frame_row, String name_text, String home_text
 
 void PaperdollController::Close()
 {
-    is_visible = false;
-    MainForm->redraw_needed = true;
+    if (is_visible)
+    {
+        is_visible = false;
+        MainForm->redraw_needed = true;
+    }
 }
 
 // A click on the paperdoll: the left button picks up an equipped item to drag, or starts moving the window.
-// Another button asks to unequip the item under the mouse. Only the own character's items, from the inventory panel.
+// Another button asks to unequip the item under the mouse. Only the own character's items, from the inventory panel,
+// when the inventory has room for them; a cursed item stays on.
 void PaperdollController::MouseDown(int x, int y, int button)
 {
     char slot_clicked = false;
     char no_room = false;
     char cursed = false;
-    int item_id = 0;
+    int item_id = -1;
     int sub_slot = 0;
     int slot_graphic = 0;
     if (!button)
@@ -621,10 +636,14 @@ void PaperdollController::MouseDown(int x, int y, int button)
             if (no_room || cursed)
             {
                 if (no_room)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_Blocked);
                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                         MainForm->strings->GetText(GameText_CouldNotRemoveItem));
+                }
                 else
                 {
+                    MainForm->sfx->PlaySfx(SfxSound_Failed);
                     MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                         MainForm->strings->GetDialogText(DialogText_CursedItem, false),
                         MainForm->strings->GetDialogText(DialogText_CursedItem, true));
@@ -706,7 +725,10 @@ void PaperdollController::MouseDown(int x, int y, int button)
         }
         if (x >= window_x + 151 && y >= window_y + 249 && x <= window_x + 173 && y <= window_y + 271 &&
             bracer1_graphic > 0)
+        {
             item_id = bracer1_item_id;
+            sub_slot = 0;
+        }
         if (x >= window_x + 184 && y >= window_y + 249 && x <= window_x + 206 && y <= window_y + 271 &&
             bracer2_graphic > 0)
         {
@@ -720,17 +742,24 @@ void PaperdollController::MouseDown(int x, int y, int button)
         {
             if (MainForm->item_values->GetSpecial(item_id) == ItemSpecial_Cursed)
             {
+                MainForm->sfx->PlaySfx(SfxSound_Failed);
                 MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                     MainForm->strings->GetDialogText(DialogText_CursedItem, false),
                     MainForm->strings->GetDialogText(DialogText_CursedItem, true));
                 MainForm->edits->caret_enabled = false;
             }
-            else
+            else if (item_id >= 0)
+            {
+                MainForm->sfx->PlaySfx(SfxSound_Unequip);
                 MainForm->net_client->sender->SendUnequipItem(item_id, sub_slot);
+            }
         }
         else
+        {
+            MainForm->sfx->PlaySfx(SfxSound_Blocked);
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                 MainForm->strings->GetText(GameText_CouldNotRemoveItem));
+        }
     }
 }
 
@@ -746,8 +775,8 @@ void PaperdollController::MouseMove(int x, int y)
             window_x = 10;
         if (window_y <= 8)
             window_y = 8;
-        if (window_x >= 250)
-            window_x = 250;
+        if (window_x >= 223)
+            window_x = 223;
         if (window_y >= 19)
             window_y = 19;
         MainForm->redraw_needed = true;
@@ -901,11 +930,13 @@ void PaperdollController::ShowSlotInfo(unsigned char text_id, int item_id, int x
     String message = MainForm->strings->GetText(text_id);
     if (item_id > 0)
     {
+        String carried_text = MainForm->animation->interface_controller->status->GetWeightText();
         tooltip->ShowItem(item_id);
         tooltip->SetAnchorX(window_x + x_offset);
         tooltip->SetAnchorY(window_y + y_offset);
         message += ", " + MainForm->item_values->GetName(item_id);
-        message += ", " + IntToStr(MainForm->item_values->GetWeight(item_id)) + " weight";
+        message += ", " + IntToStr(MainForm->item_values->GetWeight(item_id)) + " weight, ";
+        message += carried_text;
     }
     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, message);
     MainForm->redraw_needed = true;
@@ -1026,6 +1057,7 @@ void PaperdollController::SetAccessorySlot(int item_id)
 bool PaperdollController::RemoveCursedItems()
 {
     bool removed = false;
+    // Special 5 marks a cursed item.
     if (MainForm->item_values->GetSpecial(weapon_item_id) == ItemSpecial_Cursed)
     {
         SetWeaponSlot(ItemId_None);

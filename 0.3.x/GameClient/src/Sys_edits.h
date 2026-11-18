@@ -3,10 +3,11 @@
 
 enum EditCharFilter
 {
-    EditCharFilter_NoPunctuation = 1,
-    EditCharFilter_AlphanumericSpaces = 2,
-    EditCharFilter_LettersSpaces = 3,
-    EditCharFilter_Letters = 4
+    EditCharFilter_Printable = 1,
+    EditCharFilter_Email = 2,
+    EditCharFilter_Password = 3,
+    EditCharFilter_Alphanumeric = 4,
+    EditCharFilter_Letters = 5
 };
 
 enum EditGroup
@@ -24,7 +25,7 @@ enum EditCaseMode
     EditCaseMode_Upper = 1,
     EditCaseMode_Lower = 2,
     EditCaseMode_CapitalFirst = 3,
-    EditCaseMode_GuildTag = 4,
+    EditCaseMode_Code = 4,
     EditCaseMode_Name = 5
 };
 
@@ -75,9 +76,12 @@ struct Edits
     void TimerTick();
     bool ConsumeTickRedraw();
     void TypeText(String text);
+    void TypeChar(char key);
     void TypeLineBreak();
     char ClearFocusedText();
     void Backspace();
+    int GetPasswordStrength(String password);
+    int GetPasswordProblem(int id);
     void AddEdit(int id, int screen_group, int x, int y, int width, int height);
     void RemoveEdit(int id);
     void UnfocusAll();
@@ -114,6 +118,8 @@ struct Edits
     int GetLineCount(int id);
     void SetBorderVisible(int id, char visible);
     void SetPasswordMode(int id, char password);
+    void SetShowStrength(int id, char show);
+    void SetAllowSpaces(int id, char allow);
     void SetCharFilter(int id, int char_filter);
     void SetMaxLength(int id, int max_length);
     void SetEditable(int id, char editable);

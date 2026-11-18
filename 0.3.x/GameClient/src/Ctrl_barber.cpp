@@ -13,6 +13,8 @@ BarberController::BarberController()
 {
     window_x = 165;
     window_y = 53;
+    base_price = 0;
+    price_per_level = 0;
     is_visible = false;
     npc_session_id = -1;
 }
@@ -23,9 +25,12 @@ BarberController::~BarberController()
 
 // Opens the barber window with a preview copy of the player and the first page of hair styles; the price is the base
 // cost plus the cost per level times the character's level.
-void BarberController::Open(int session_id, int base_cost, int level_cost)
+void BarberController::Open(int session_id, int styles, int base_cost, int level_cost)
 {
-    Sleep(1);
+    short count = styles;
+    style_count = count;
+    if (count < 20)
+        style_count = 20;
     hair_style = MainForm->players->GetHairStyle(MainForm->net_client->GetPlayerId());
     hair_color = MainForm->players->GetHairColor(MainForm->net_client->GetPlayerId());
     preview_direction = FacingDirection_Down;
@@ -48,9 +53,10 @@ void BarberController::Open(int session_id, int base_cost, int level_cost)
     if (base_price <= 0)
         base_price = 0;
     if (price_per_level <= 0)
-        price_per_level = 20;
-    price += base_price;
-    price += MainForm->animation->interface_controller->status->level * price_per_level;
+        price_per_level = 0;
+    price = base_price;
+    if (price_per_level > 0)
+        price += MainForm->animation->interface_controller->status->level * price_per_level;
     npc_session_id = session_id;
     is_visible = true;
     MainForm->redraw_needed = true;
@@ -92,7 +98,7 @@ void BarberController::MouseDown(int x, int y, int button)
             {
                 MainForm->sfx->PlaySfx(SfxSound_Select);
                 hair_style++;
-                if (hair_style > 50)
+                if (style_count < hair_style)
                     hair_style = 0;
                 MainForm->players->SetPreviewHairStyle(hair_style);
                 MainForm->players->ReloadGraphics(PlayerId_Preview);

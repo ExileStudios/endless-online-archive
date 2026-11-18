@@ -11,8 +11,6 @@
 // for an element icon when element is set.
 PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int color_index, int element, String name)
 {
-    int name_width;
-    HDC dc;
     if (element > 0)
         label_width += 7;
     text_width = label_width;
@@ -37,59 +35,34 @@ PlayerNameGraphics::PlayerNameGraphics(int label_width, int label_height, int co
     surface->GetSurfaceDesc(surface_desc);
     surface->Create(surface_desc, MainForm->Dx_Draw1);
     surface->Blt(&surface_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
-    name_width = 0;
-    if (surface->GetDC(&dc))
+    int name_width = 0;
+    if (MainForm->fonts->BeginOn(surface))
     {
         try
         {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Color = clBlack;
-            MainForm->draw_canvas->Brush->Style = bsClear;
             if (!color_index)
-            {
-                MainForm->draw_canvas->Pen->Color = clWhite;
-                MainForm->draw_canvas->Font->Color = clWhite;
-            }
+                MainForm->fonts->color = 0xFFFFFF;
             if (color_index == LabelColor_Gray)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xB9B9B9;
-                MainForm->draw_canvas->Font->Color = (TColor)0xB9B9B9;
-            }
+                MainForm->fonts->color = 0xB9B9B9;
             if (color_index == LabelColor_Silver)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xE1E1E1;
-                MainForm->draw_canvas->Font->Color = (TColor)0xE1E1E1;
-            }
+                MainForm->fonts->color = 0xE1E1E1;
             if (color_index == LabelColor_LightBlue)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xE7B790;
-                MainForm->draw_canvas->Font->Color = (TColor)0xE7B790;
-            }
+                MainForm->fonts->color = 0xE7B790;
             if (color_index == LabelColor_Violet)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)14327000;
-                MainForm->draw_canvas->Font->Color = (TColor)14327000;
-            }
+                MainForm->fonts->color = 14327000;
             if (color_index == LabelColor_Gold)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0x5BC8FB;
-                MainForm->draw_canvas->Font->Color = (TColor)0x5BC8FB;
-            }
+                MainForm->fonts->color = 0x5BC8FB;
             if (color_index == LabelColor_Cream)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xD2FAFA;
-                MainForm->draw_canvas->Font->Color = (TColor)0xD2FAFA;
-            }
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            MainForm->draw_canvas->TextOut(1, 0, MainForm->net_client->Capitalize(name));
-            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(name));
-            MainForm->draw_canvas->Handle = 0;
+                MainForm->fonts->color = 0xD2FAFA;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            MainForm->fonts->DrawString(1, 0, MainForm->net_client->Capitalize(name));
+            name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(name));
         }
         catch (Exception &)
         {
         }
-        surface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (element > 0 && element < 7)
         surface->BltFast(name_width + 4, 2, MainForm->gfx->interface_graphics->element_icons,

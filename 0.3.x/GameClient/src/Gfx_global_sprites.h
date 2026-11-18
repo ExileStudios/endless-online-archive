@@ -1,5 +1,5 @@
-#ifndef Gfx_spritesH
-#define Gfx_spritesH
+#ifndef Gfx_global_spritesH
+#define Gfx_global_spritesH
 
 #include <TDDBltFX.H>
 #include <TDDColorKey.H>
@@ -12,13 +12,8 @@ struct EmoteBuffer;
 #include "Sys_player.h"
 
 #define HIDDEN_VIEW_ADMIN_LEVEL 3
-#define RESOURCES_PER_GRAPHIC 40
-#define SIT_DIRECTION_PITCH 48
-#define STAND_DIRECTION_PITCH 36
 
-// The player body sheets (stand, walk, attack, spell cast, chair sit, floor sit, ranged attack, face) and the code
-// that draws players on the map with their emote face, health bar and damage number, and their labels and balloons.
-struct SpriteGraphics
+struct SpriteGlobalGraphics
 {
     TDx_DrawSurface *stand_sheet;
     TDx_DrawSurface *walk_sheet;
@@ -29,6 +24,7 @@ struct SpriteGraphics
     TDx_DrawSurface *ranged_attack_sheet;
     TDx_DrawSurface *face_sheet;
     TDx_DrawSurface *translucent_buffer;
+    TDx_DrawSurface *kind_sheet;
     EmoteBuffer *emote_buffer;
     bool emote_buffer_created;
     int view_left;
@@ -48,21 +44,24 @@ struct SpriteGraphics
     bool emote_pass;
     bool emote_lowered;
     int direction;
-    int height_offset;
-    int player_load_stage;
-    TRect frame_rect;
+    int draw_gender;
+    int draw_progress;
+    TRect player_rect;
     TRect emote_rect;
 
-    SpriteGraphics();
-    ~SpriteGraphics();
-    TRect GetStandFrameRect(int gender, int direction, int skin);
-    TRect GetWalkFrameRect(int gender, int direction, int skin, int frame);
-    TRect GetAttackFrameRect(int gender, int direction, int skin, int frame);
-    TRect GetSpellCastRect(int gender, int direction, int skin);
-    TRect GetChairSitFrameRect(int gender, int direction, int skin);
-    TRect GetFloorSitFrameRect(int gender, int direction, int skin);
-    TRect GetRangedAttackFrameRect(int gender, int direction, int skin);
-    TRect GetFaceFrameRect(int gender, int skin);
+    SpriteGlobalGraphics();
+    ~SpriteGlobalGraphics();
+    TRect GetStandFrameRect(int gender, int facing, int skin);
+    TRect GetWalkFrameRect(int gender, int facing, int skin, int frame);
+    TRect GetAttackFrameRect(int gender, int facing, int skin, int frame);
+    TRect GetSpellCastCellRect(int gender, int facing, int skin);
+    TRect GetChairSitFrameRect(int gender, int facing, int skin);
+    TRect GetFloorSitFrameRect(int gender, int facing, int skin);
+    TRect GetRangedAttackFrameRect(int gender, int facing, int skin);
+    TRect GetFaceStripRect(int gender, int skin);
+    TRect GetKindFrameRect(int unused, int column, int kind);
+    TRect GetHeadRect(int gender, int skin);
+    TRect GetHeadAndNeckRect(int gender, int skin);
     void LoadStandSheet(int library, int resource_id);
     void LoadWalkSheet(int library, int resource_id);
     void LoadAttackSheet(int library, int resource_id);
@@ -71,20 +70,23 @@ struct SpriteGraphics
     void LoadFloorSitSheet(int library, int resource_id);
     void LoadRangedAttackSheet(int library, int resource_id);
     void LoadFaceSheet(int library, int resource_id);
+    void LoadKindSheet(int library, int resource_id);
+    bool LoadSheet(TDx_DrawSurface *sheet, int library, int resource_id);
+    bool DrawLayerToEmoteBuffer(int x_offset, int y_offset, int library, int resource_id);
+    bool DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset, int library, int resource_id);
     void DrawPlayerAt(Player player, int hair_style, int hair_color, int x, int y);
-    void DrawPlayer(Player player, char draw_buffered, int x_offset);
+    void DrawPlayer(Player *player, char draw_buffered, int x_offset);
     void DrawPreviewPlayers(int preview);
-    void BlitFrame(TRect dest_rect, TDx_DrawSurface *sheet, TRect source_rect, bool clip, bool keyed);
+    void BlitFrame(TRect dest_rect, TDx_DrawSurface *sheet, TRect source_rect, bool clip,
+    bool translucent, Player *player);
     void DrawTranslucentBuffer(TRect dest_rect);
     void DrawNameLabel();
-    TRect ClipToView(TRect rect);
-    TRect GetClippedSourceRect(TRect rect);
+    TRect ComputeClip(TRect dest_rect);
+    TRect ApplyClip(TRect source_rect);
     void ShowNameLabel(String text, int color_index, int element);
-    void ShowSpeechBalloon(String text, int player_id, int style);
     void CreateEmoteBuffer();
     void FreeEmoteBuffer();
-    void DrawLayerToEmoteBuffer(int x_offset, int y_offset, int library, int resource_id);
-    void DrawLayerToEmoteBufferPixelKeyed(int x_offset, int y_offset, int library, int resource_id);
+    bool DrawHealthBar(int x, int y, Player *player);
 };
 
 #endif

@@ -129,6 +129,7 @@ void MapController::ReadMapChecksum(int map_number)
         file_size = size;
         data.SetLength(size);
         delete[] file_handle;
+        // A file that does not start with EMF has no checksum.
         if (data[1] != 'E' || data[2] != 'M' || data[3] != 'F')
         {
             checksum_high = 0;
@@ -230,8 +231,8 @@ void MapController::LoadMap(int map_number)
         for (int npc_index = 0; npc_index < count; npc_index++)
         {
             int npc_id = MainForm->net_client->DecodeNumber(data.SubString(3, 2));
-            NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc_id - 1);
-            if (npc_value.boss > 0)
+            NpcValue *npc_value = MainForm->npc_values->GetNpc(npc_id - 1);
+            if (npc_value->boss > 0)
                 has_boss = true;
             data.Delete(1, 8);
         }
@@ -1129,8 +1130,7 @@ void MapController::Animate()
                 }
                 if (MainForm->net_client->IsInSoundRange(door_x, door_y, MainForm->map->GetCenterX(),
                     MainForm->map->GetCenterY()))
-                    MainForm->sfx->PlayEffectSoundAt(SfxSound_DoorClose, MainForm->sfx->GetDistanceVolume(door_x,
-                        door_y));
+                    MainForm->sfx->PlaySfxAt(SfxSound_DoorClose, MainForm->sfx->GetDistanceVolume(door_x, door_y));
                 it->closed_graphic = 0;
                 it->open = false;
                 MainForm->redraw_needed = true;
@@ -1138,6 +1138,12 @@ void MapController::Animate()
             }
         }
         it++;
+    }
+    if (warp_countdown > 0)
+    {
+        warp_countdown--;
+        if (!warp_countdown)
+            warp_pending = false;
     }
     if (warp_delay > 0)
     {

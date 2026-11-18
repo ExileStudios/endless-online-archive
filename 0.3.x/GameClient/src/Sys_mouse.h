@@ -1,16 +1,16 @@
 #ifndef Sys_mouseH
 #define Sys_mouseH
 
-enum WheelDirection
-{
-    WheelDirection_Up = 1,
-    WheelDirection_Down = 2
-};
-
 enum MouseButton
 {
     MouseButton_Left = 0,
     MouseButton_Right = 1
+};
+
+enum WheelDirection
+{
+    WheelDirection_Up = 1,
+    WheelDirection_Down = 2
 };
 
 #define CHANGE_PASSWORD_DIALOG 1

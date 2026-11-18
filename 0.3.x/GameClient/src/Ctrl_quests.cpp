@@ -127,7 +127,7 @@ void QuestController::LoadQuestList(String reply_data, String separator)
         String progress_text = "n/a";
         if (progress_count > 0 || progress_target > 0)
             progress_text = IntToStr(progress_count) + " / " + IntToStr(progress_target);
-        // The step kinds fold into four icons; unknown kinds get the first
+        // The step kinds fold into four icons; any other kind gets the first
         if (icon_type == 3)
             icon_type = 1;
         if (icon_type == 8)
@@ -150,20 +150,17 @@ void QuestController::LoadQuestList(String reply_data, String separator)
 void QuestController::AddText(String icon_type, String text, String detail_text, String progress_text,
     bool add_blank_line)
 {
-    int max_width;
-    HDC dc;
-    max_width = 200;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    int max_width = 200;
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
-            MainForm->text_canvas->Handle = dc;
-            MainForm->text_canvas->Font->Name = "MS Sans Serif";
-            MainForm->text_canvas->Font->Size = 7;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
             do
             {
                 String fitted_text;
-                if (MainForm->text_canvas->TextWidth(text) <= max_width)
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width)
                 {
                     lines->Add(text);
                     line_icon_types->Add(icon_type);
@@ -179,7 +176,7 @@ void QuestController::AddText(String icon_type, String text, String detail_text,
                         if (text[i] == ' ' || i == text.Length())
                         {
                             String prefix = text.SubString(1, i);
-                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width)
                             {
                                 lines->Add(fitted_text);
                                 line_icon_types->Add(icon_type);
@@ -202,12 +199,11 @@ void QuestController::AddText(String icon_type, String text, String detail_text,
                     }
                 }
             } while (text.Length() > 0);
-            MainForm->text_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (add_blank_line)
     {

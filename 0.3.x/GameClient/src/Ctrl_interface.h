@@ -84,6 +84,7 @@ struct InterfaceController
     int status_message_state;
     int screenshot_cooldown;
     int player_list_cooldown;
+    int status_message_hold;
 
     InterfaceController();
     ~InterfaceController();
@@ -99,6 +100,7 @@ struct InterfaceController
     void ClearFullRedraw();
     bool TakeButtonHoverDirty();
     bool TakeCornerHoverDirty();
+    void HoldStatusMessages();
     void ShowStatusMessage(int category, String text);
     int TakeStatusChange();
     String GetStatusMessage();

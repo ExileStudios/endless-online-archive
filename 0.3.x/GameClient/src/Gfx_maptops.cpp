@@ -12,34 +12,16 @@ TopGraphics::TopGraphics(char preload)
 {
     last_index = -1;
     pending_count = 0;
-    queue_drained = false;
-    library_open = false;
-    keep_library_open = preload;
-    if (keep_library_open)
-    {
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTops).c_str());
-        library_open = true;
-    }
 }
 
 TopGraphics::~TopGraphics()
 {
-    if (library_open || keep_library_open)
-        FreeLibrary(library);
 }
 
 // On a map change: frees the top layer graphic library while loads are pending and zeroes the pending count.
 // A kept library is opened again.
 void TopGraphics::ReopenLibrary()
 {
-    if (pending_count > 0 || keep_library_open)
-    {
-        FreeLibrary(library);
-        if (!keep_library_open)
-            pending_count = 0;
-    }
-    if (keep_library_open)
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTops).c_str());
 }
 
 // Counts, per loaded top layer graphic, the frames in a row in which GetGraphic did not fetch it.
@@ -60,23 +42,9 @@ void TopGraphics::AgeGraphics()
 void TopGraphics::LoadPendingGraphic()
 {
     vector<TopWrapper>::iterator it;
-    // The call after the top layer graphic queue empties closes the library again, unless it is kept open.
-    if (queue_drained)
-    {
-        if (library_open && !keep_library_open)
-        {
-            FreeLibrary(library);
-            library_open = false;
-        }
-        queue_drained = false;
-    }
     if (pending_count > 0)
     {
-        if (!library_open && !keep_library_open)
-        {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapTops).c_str());
-            library_open = true;
-        }
+        library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MapTops);
         it = entries.begin();
         while (it != entries.end())
         {
@@ -89,26 +57,22 @@ void TopGraphics::LoadPendingGraphic()
                         it->idle_ticks = 250;
                         it->FreeResource();
                         pending_count--;
-                        if (!pending_count)
-                            queue_drained = true;
                     }
                 }
                 else
                 {
-                    int open_library = (int)library;
+                    int open_library = library;
                     it->CreateResource();
-                    GraphicSize size = it->resource->LoadSurface(open_library, it->graphic_id + 100);
-                    if (size.width == -1)
-                    {
+                    TPoint size = it->resource->LoadSurface(open_library, it->graphic_id + 100);
+                    if (size.x == -1)
                         it->idle_ticks++;
-                        break;
+                    else
+                    {
+                        it->is_loaded = true;
+                        it->unfetched_frames = 0;
+                        it->idle_ticks = 0;
+                        pending_count--;
                     }
-                    it->is_loaded = true;
-                    it->unfetched_frames = 0;
-                    it->idle_ticks = 0;
-                    pending_count--;
-                    if (!pending_count)
-                        queue_drained = true;
                     break;
                 }
             }
@@ -117,16 +81,17 @@ void TopGraphics::LoadPendingGraphic()
     }
 }
 
-// Frees every top layer graphic that has gone unfetched for the purge age.
+// Frees and removes every top layer graphic unused for 500 ticks or more.
 void TopGraphics::PurgeUnusedGraphics()
 {
     bool result;
+    // An erase ends the walk, so it starts over after each top layer graphic it frees.
     do
     {
         result = false;
         for (vector<TopWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->unfetched_frames >= 16)
+            if (it->unfetched_frames >= 500)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -146,11 +111,7 @@ void TopGraphics::ReleaseGraphics()
     {
         entries.clear();
         last_index = -1;
-        if (pending_count > 0)
-        {
-            pending_count = 0;
-            queue_drained = true;
-        }
+        pending_count = 0;
     }
 }
 
@@ -176,7 +137,7 @@ bool TopGraphics::RequestGraphic(int graphic_id)
 }
 
 // The loaded top layer graphic, marked as drawn so AgeGraphics does not count it.
-TopWrapper TopGraphics::GetGraphic(int graphic_id)
+TopWrapper *TopGraphics::GetGraphic(int graphic_id)
 {
     vector<TopWrapper>::iterator i;
     for (i = entries.begin(); i != entries.end(); i++)
@@ -184,10 +145,10 @@ TopWrapper TopGraphics::GetGraphic(int graphic_id)
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
             i->fetched = true;
-            break;
+            return i;
         }
     }
-    return *i;
+    return 0;
 }
 
 void TopGraphics::QueueGraphic(int graphic_id)

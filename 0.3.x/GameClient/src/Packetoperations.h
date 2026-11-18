@@ -18,8 +18,15 @@ struct PacketOperator
     PacketOperator();
     ~PacketOperator();
     void RequestAccountNameCheck(String account_name);
+    void RequestPasswordReset(String account_name);
+    void SendPasswordResetCode(String code);
+    void SendPasswordReset(String account_name, String code, String new_password);
     void SendFindPlayer(String name);
-    void SendAccountCreate(String account_name, String password, String real_name, String location, String email);
+    void RequestSignupCode(String account_name, String email);
+    void SendAccountCreateWithoutCode(String account_name, String password, String real_name, String location,
+    String email);
+    void SendAccountCreate(String account_name, String password, String real_name, String location, String email,
+    String signup_code);
     void SendChangePassword(String account_name, String old_password, String new_password);
     void RequestCharacterCreate();
     void RequestCharacterDelete(int character_id);
@@ -42,6 +49,7 @@ struct PacketOperator
     void SendPublicChat(String text);
     void SendReportPlayer(String name, String reason);
     void SendHelpQuestion(String question);
+    void SendChooseTitle(int item_id, String title);
     void SendEmote(int emote);
     void SendTrainStat(int stat_id);
     void SendTrainSkill(int skill_id);

@@ -14,7 +14,8 @@ struct BossBars
     void HideAll();
     void RenderNames();
     void Update();
-    void ApplyHealth(int npc_index, int percent, char was_hit);
+    void ShowHealth(int npc_index, int npc_id, int percent, char was_hit);
+    void ApplyHealth(BossBar *bar, int percent, char was_hit);
     int FindFreeBar();
     int FindBar(int npc_index);
     int ScanNpcs();

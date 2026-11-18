@@ -19,7 +19,7 @@ struct ItemResource
 
     ItemResource();
     ~ItemResource();
-    GraphicSize LoadSurface(int library, int resource_id);
+    TPoint LoadSurface(int library, int resource_id);
 };
 
 #endif

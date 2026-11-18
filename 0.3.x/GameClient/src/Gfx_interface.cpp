@@ -24,6 +24,7 @@
 #include "Gfx_mapicons.h"
 #include "Gfx_mapitems.h"
 #include "Gfx_game.h"
+#include "Ctrl_bossbars.h"
 
 #pragma package(smart_init)
 
@@ -53,6 +54,8 @@ InterfaceGraphics::InterfaceGraphics()
     small_icons = new TDx_DrawSurface(NULL);
     chat_tabs = new TDx_DrawSurface(NULL);
     corner_button = new TDx_DrawSurface(NULL);
+    small_buttons = new TDx_DrawSurface(NULL);
+    inventory_buttons = new TDx_DrawSurface(NULL);
     minimap_tiles = new TDx_DrawSurface(NULL);
     status_icons = new TDx_DrawSurface(NULL);
     hud_sheet = new TDx_DrawSurface(NULL);
@@ -63,15 +66,13 @@ InterfaceGraphics::InterfaceGraphics()
     panel_background = new TDx_DrawSurface(NULL);
     loading_icon = new TDx_DrawSurface(NULL);
     group_icons = new TDx_DrawSurface(NULL);
-    hud_frame = new TDx_DrawSurface(NULL);
-    hud_left_frame = new TDx_DrawSurface(NULL);
-    hud_top_frame = new TDx_DrawSurface(NULL);
     tile_cursor = new TDx_DrawSurface(NULL);
     emote_sheet = new TDx_DrawSurface(NULL);
     weapon_effects = new TDx_DrawSurface(NULL);
     drag_save_surface = new TDx_DrawSurface(NULL);
     element_icons = new TDx_DrawSurface(NULL);
     popup_icons = new TDx_DrawSurface(NULL);
+    hud_icons = new TDx_DrawSurface(NULL);
     color_key = new TDDColorKey(NULL);
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
@@ -108,34 +109,30 @@ InterfaceGraphics::InterfaceGraphics()
     surface_desc->Height = 32;
     chat_tabs->GetSurfaceDesc(surface_desc);
     chat_tabs->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 51;
-    surface_desc->Height = 106;
+    surface_desc->Width = 39;
+    surface_desc->Height = 44;
     corner_button->GetSurfaceDesc(surface_desc);
     corner_button->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 31;
+    surface_desc->Height = 32;
+    small_buttons->GetSurfaceDesc(surface_desc);
+    small_buttons->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 46;
+    surface_desc->Height = 107;
+    inventory_buttons->GetSurfaceDesc(surface_desc);
+    inventory_buttons->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 297;
     surface_desc->Height = 80;
     minimap_tiles->GetSurfaceDesc(surface_desc);
     minimap_tiles->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 83;
-    surface_desc->Height = 168;
+    surface_desc->Height = 189;
     chat_mode_icons->GetSurfaceDesc(surface_desc);
     chat_mode_icons->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 72;
     surface_desc->Height = 209;
     tab_buttons->GetSurfaceDesc(surface_desc);
     tab_buttons->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 49;
-    surface_desc->Height = 53;
-    hud_frame->GetSurfaceDesc(surface_desc);
-    hud_frame->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 4;
-    surface_desc->Height = 257;
-    hud_left_frame->GetSurfaceDesc(surface_desc);
-    hud_left_frame->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 540;
-    surface_desc->Height = 4;
-    hud_top_frame->GetSurfaceDesc(surface_desc);
-    hud_top_frame->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 320;
     surface_desc->Height = 32;
     tile_cursor->GetSurfaceDesc(surface_desc);
@@ -177,7 +174,7 @@ InterfaceGraphics::InterfaceGraphics()
     status_icons->GetSurfaceDesc(surface_desc);
     status_icons->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 439;
-    surface_desc->Height = 64;
+    surface_desc->Height = 104;
     hud_sheet->GetSurfaceDesc(surface_desc);
     hud_sheet->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 50;
@@ -192,6 +189,10 @@ InterfaceGraphics::InterfaceGraphics()
     surface_desc->Height = 18;
     popup_icons->GetSurfaceDesc(surface_desc);
     popup_icons->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 68;
+    surface_desc->Height = 50;
+    hud_icons->GetSurfaceDesc(surface_desc);
+    hud_icons->Create(surface_desc, MainForm->Dx_Draw1);
     drag_rect.top = 0;
     drag_rect.left = 0;
     drag_rect.bottom = 102;
@@ -212,18 +213,6 @@ InterfaceGraphics::InterfaceGraphics()
     chat_input_rect.left = 0;
     chat_input_rect.bottom = 18;
     chat_input_rect.right = 491;
-    hud_frame_rect.top = 0;
-    hud_frame_rect.left = 0;
-    hud_frame_rect.bottom = 53;
-    hud_frame_rect.right = 49;
-    hud_left_frame_rect.top = 0;
-    hud_left_frame_rect.left = 0;
-    hud_left_frame_rect.bottom = 257;
-    hud_left_frame_rect.right = 4;
-    hud_top_frame_rect.top = 0;
-    hud_top_frame_rect.left = 0;
-    hud_top_frame_rect.bottom = 4;
-    hud_top_frame_rect.right = 540;
     panel_rect.top = 0;
     panel_rect.left = 0;
     panel_rect.bottom = 119;
@@ -232,17 +221,13 @@ InterfaceGraphics::InterfaceGraphics()
     status_bars_frame_rect.left = 0;
     status_bars_frame_rect.bottom = 14;
     status_bars_frame_rect.right = 439;
-    miss_label_rect.top = 28;
-    miss_label_rect.left = 132;
-    miss_label_rect.bottom = 38;
-    miss_label_rect.right = 161;
     health_bar_frame_rect.top = 28;
     health_bar_frame_rect.left = 0;
     health_bar_frame_rect.bottom = 35;
     health_bar_frame_rect.right = 40;
-    health_bar_shadow_rect.top = 56;
+    health_bar_shadow_rect.top = 77;
     health_bar_shadow_rect.left = 0;
-    health_bar_shadow_rect.bottom = 63;
+    health_bar_shadow_rect.bottom = 84;
     health_bar_shadow_rect.right = 40;
     bar_text_box_rect.top = 29;
     bar_text_box_rect.left = 220;
@@ -272,6 +257,18 @@ InterfaceGraphics::InterfaceGraphics()
     scroll_down_arrow_rect.left = 177;
     scroll_down_arrow_rect.bottom = 56;
     scroll_down_arrow_rect.right = 183;
+    notification_rect.top = 0;
+    notification_rect.left = 0;
+    notification_rect.bottom = 50;
+    notification_rect.right = 50;
+    notification_top_rect.top = 0;
+    notification_top_rect.left = 0;
+    notification_top_rect.bottom = 45;
+    notification_top_rect.right = 50;
+    notification_bottom_rect.top = 34;
+    notification_bottom_rect.left = 0;
+    notification_bottom_rect.bottom = 50;
+    notification_bottom_rect.right = 50;
     minimap_visible = 0;
 }
 
@@ -324,15 +321,30 @@ TRect InterfaceGraphics::GetChatTabRect(int tab)
     return chat_tab_rect;
 }
 
-// One damage digit sprite of the HUD sheet; the style picks the row.
-TRect InterfaceGraphics::GetDamageDigitRect(int style, int digit)
+// One damage digit sprite of the interface sheet; the kind picks the row, 0 past 4.
+TRect InterfaceGraphics::GetDamageDigitRect(unsigned char style, int digit)
 {
     TRect damage_digit_rect;
+    if (style > 4)
+        style = 0;
     damage_digit_rect.left = 9 * digit + 40;
     damage_digit_rect.right = 9 * digit + 49;
-    damage_digit_rect.top = 10 * style + 28;
-    damage_digit_rect.bottom = 10 * style + 39;
+    damage_digit_rect.top = 12 * style + 28;
+    damage_digit_rect.bottom = 12 * style + 38;
     return damage_digit_rect;
+}
+
+// The miss sprite of the interface sheet; the kind picks the row, 0 past 4.
+TRect InterfaceGraphics::GetMissRect(unsigned char kind)
+{
+    TRect rect;
+    if (kind > 4)
+        kind = 0;
+    rect.left = 132;
+    rect.right = 161;
+    rect.top = 12 * kind + 28;
+    rect.bottom = 12 * kind + 38;
+    return rect;
 }
 
 // The fill of an overhead health bar of a given length; the colour picks the row.
@@ -430,7 +442,25 @@ TRect InterfaceGraphics::GetSmallIconRect(int icon)
 }
 
 // The interface corner button, plain or lit.
-DEFINE_GET_CORNER_BUTTON_RECT(InterfaceGraphics)
+TRect InterfaceGraphics::GetCornerButtonRect(int tab)
+{
+    TRect corner_button_rect;
+    corner_button_rect.left = 0;
+    corner_button_rect.right = 39;
+    corner_button_rect.top = 22 * tab;
+    corner_button_rect.bottom = 22 * tab + 22;
+    return corner_button_rect;
+}
+
+TRect InterfaceGraphics::GetSmallButtonRect(int button)
+{
+    TRect rect;
+    rect.left = 0;
+    rect.right = 31;
+    rect.top = 16 * button;
+    rect.bottom = 16 * button + 16;
+    return rect;
+}
 
 TRect InterfaceGraphics::GetMinimapTileRect(int row, int edge)
 {
@@ -657,8 +687,8 @@ TRect InterfaceGraphics::GetSpellSlotLabelRect(int slot)
     TRect spell_slot_label_rect;
     spell_slot_label_rect.left = 18 * slot + 148;
     spell_slot_label_rect.right = 18 * slot + 166;
-    spell_slot_label_rect.top = 51;
-    spell_slot_label_rect.bottom = 64;
+    spell_slot_label_rect.top = 91;
+    spell_slot_label_rect.bottom = 104;
     return spell_slot_label_rect;
 }
 
@@ -688,10 +718,10 @@ TRect InterfaceGraphics::GetSkillSlotFrameRect(int slot)
 TRect InterfaceGraphics::GetInventoryButtonRect(int button, int state)
 {
     TRect inventory_button_rect;
-    inventory_button_rect.left = 0;
-    inventory_button_rect.right = 38;
-    inventory_button_rect.top = 74 * button + 37 * state + 15;
-    inventory_button_rect.bottom = 74 * button + 37 * state + 52;
+    inventory_button_rect.left = 23 * state;
+    inventory_button_rect.right = 23 * state + 23;
+    inventory_button_rect.top = 27 * button;
+    inventory_button_rect.bottom = 27 * button + 26;
     return inventory_button_rect;
 }
 
@@ -706,14 +736,14 @@ TRect InterfaceGraphics::GetSmallTabButtonRect(int state, int tab)
     return small_tab_button_rect;
 }
 
-// The inventory paperdoll button, plain or lit.
-TRect InterfaceGraphics::GetInventoryWideButtonRect(ButtonState state)
+// A notification's status mark on the hud icons: row 0 the translucent backing, rows 1 to 3 the marks.
+TRect InterfaceGraphics::GetInventoryWideButtonRect(int mark)
 {
     TRect inventory_wide_button_rect;
-    inventory_wide_button_rect.left = 88 * state + 39;
-    inventory_wide_button_rect.top = 385;
-    inventory_wide_button_rect.right = 88 * state + 126;
-    inventory_wide_button_rect.bottom = 405;
+    inventory_wide_button_rect.left = 52;
+    inventory_wide_button_rect.top = 12 * mark;
+    inventory_wide_button_rect.right = 68;
+    inventory_wide_button_rect.bottom = 12 * mark + 11;
     return inventory_wide_button_rect;
 }
 
@@ -726,6 +756,8 @@ InterfaceGraphics::~InterfaceGraphics()
     chat_input_background->Destroy();
     chat_mode_icons->Destroy();
     corner_button->Destroy();
+    small_buttons->Destroy();
+    inventory_buttons->Destroy();
     chat_tabs->Destroy();
     small_icons->Destroy();
     tab_buttons->Destroy();
@@ -735,6 +767,7 @@ InterfaceGraphics::~InterfaceGraphics()
     hud_sheet->Destroy();
     element_icons->Destroy();
     popup_icons->Destroy();
+    hud_icons->Destroy();
     delete hud_background;
     delete clock_background;
     delete tooltip_background;
@@ -742,6 +775,8 @@ InterfaceGraphics::~InterfaceGraphics()
     delete chat_input_background;
     delete chat_mode_icons;
     delete corner_button;
+    delete small_buttons;
+    delete inventory_buttons;
     delete chat_tabs;
     delete small_icons;
     delete tab_buttons;
@@ -751,9 +786,7 @@ InterfaceGraphics::~InterfaceGraphics()
     delete hud_sheet;
     delete element_icons;
     delete popup_icons;
-    hud_frame->Destroy();
-    hud_left_frame->Destroy();
-    hud_top_frame->Destroy();
+    delete hud_icons;
     tile_cursor->Destroy();
     panel_background->Destroy();
     loading_icon->Destroy();
@@ -762,9 +795,6 @@ InterfaceGraphics::~InterfaceGraphics()
     control_sheet->Destroy();
     scroll_icons->Destroy();
     list_icons->Destroy();
-    delete hud_frame;
-    delete hud_left_frame;
-    delete hud_top_frame;
     delete tile_cursor;
     delete panel_background;
     delete loading_icon;
@@ -820,40 +850,21 @@ void InterfaceGraphics::SaveScreenshot()
 
 void InterfaceGraphics::LoadSurface(TDx_DrawSurface *surface, int library, int resource_id)
 {
-    LoadResourceSurface(surface, library, resource_id, 0, 0);
+    LoadSurfaceAt(surface, library, resource_id, 0, 0);
 }
 
-bool InterfaceGraphics::LoadResourceSurface(TDx_DrawSurface *emote_sheet, int library, int resource_id,
-    int fallback_width, int fallback_height)
+// Loads the library's bitmap onto the surface; false when it cannot.
+bool InterfaceGraphics::LoadSurfaceAt(TDx_DrawSurface *surface, int library, int resource_id, int x, int y)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        MainForm->resource_bitmap->Width = fallback_width;
-        MainForm->resource_bitmap->Height = fallback_height;
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
         return false;
-    }
-    if (emote_sheet->GetDC(&dc))
+    if (MainForm->gfx_transfers->BeginDraw(surface))
     {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-            return false;
-        }
-        emote_sheet->ReleaseDC(dc);
+        MainForm->gfx_transfers->Draw(surface);
+        MainForm->gfx_transfers->EndDraw(surface);
+        return true;
     }
-    return true;
+    return false;
 }
 
 // Draws the interface emote sheet bitmap onto its surface.
@@ -945,6 +956,16 @@ void InterfaceGraphics::LoadCornerButton(int library, int resource_id)
     corner_button->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
+void InterfaceGraphics::LoadSmallButtons(int library, int resource_id)
+{
+    LoadSurface(small_buttons, library, resource_id);
+}
+
+void InterfaceGraphics::LoadInventoryButtons(int library, int resource_id)
+{
+    LoadSurface(inventory_buttons, library, resource_id);
+}
+
 // Draws the interface minimap tiles bitmap onto its surface.
 void InterfaceGraphics::LoadMinimapTiles(int library, int resource_id)
 {
@@ -969,27 +990,6 @@ void InterfaceGraphics::LoadTabButtons(int library, int resource_id)
     LoadSurface(tab_buttons, library, resource_id);
 }
 
-// Draws the interface HUD frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudFrame(int library, int resource_id)
-{
-    LoadSurface(hud_frame, library, resource_id);
-    hud_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface HUD left frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudLeftFrame(int library, int resource_id)
-{
-    LoadSurface(hud_left_frame, library, resource_id);
-    hud_left_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
-// Draws the interface HUD top frame bitmap onto its surface, with black see-through.
-void InterfaceGraphics::LoadHudTopFrame(int library, int resource_id)
-{
-    LoadSurface(hud_top_frame, library, resource_id);
-    hud_top_frame->SetColorKey(DDCKEY_SRCBLT, color_key);
-}
-
 // Draws the interface tile cursor bitmap onto its surface, with black see-through.
 void InterfaceGraphics::LoadTileCursor(int library, int resource_id)
 {
@@ -1006,13 +1006,15 @@ void InterfaceGraphics::ClearChatPanel()
     {
         try
         {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Color = (TColor)0xC0C0C;
+            TCanvas *canvas = new TCanvas();
+            canvas->Handle = dc;
+            canvas->Pen->Style = psClear;
+            canvas->Brush->Color = (TColor)0xC0C0C;
             rect.left = 0;
             rect.top = 0;
             rect.right = 442;
             rect.bottom = 99;
-            MainForm->draw_canvas->FillRect(rect);
+            canvas->FillRect(rect);
         }
         catch (Exception &)
         {
@@ -1035,7 +1037,7 @@ void InterfaceGraphics::LoadScrollIcons(int library, int resource_id)
 
 void InterfaceGraphics::LoadElementIcons(int library, int resource_id)
 {
-    LoadResourceSurface(element_icons, library, resource_id, 17, 47);
+    LoadSurfaceAt(element_icons, library, resource_id, 17, 47);
     element_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
@@ -1043,6 +1045,12 @@ void InterfaceGraphics::LoadPopupIcons(int library, int resource_id)
 {
     LoadSurface(popup_icons, library, resource_id);
     popup_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
+
+void InterfaceGraphics::LoadHudIcons(int library, int resource_id)
+{
+    LoadSurface(hud_icons, library, resource_id);
+    hud_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // One frame of the emote sheet.
@@ -1057,6 +1065,7 @@ TRect InterfaceGraphics::GetWideIconRect(int frame)
 }
 
 // Draws the icon for the chat mode the chat input's first character picks; a locked chat shows its own icon.
+// A mode the character may not use, such as admin, guild or global chat, is refused with a message.
 void InterfaceGraphics::DrawChatModeIcon()
 {
     int mode;
@@ -1070,58 +1079,52 @@ void InterfaceGraphics::DrawChatModeIcon()
     }
     if (input_text.Length() <= 0)
         mode = 0;
+    // A global message on the restricted map, or while global messages are not allowed, clears the input.
     else if (input_text[1] == '!')
         mode = 2;
-    else
+    else if (input_text[1] == '"' || String(input_text[1]) == "'")
+        mode = 4;
+    else if (input_text[1] == '$')
     {
-        bool prefix_matched = false;
-        if (input_text[1] == '"' || String(input_text[1]) == "'")
-        {
-            mode = 4;
-            prefix_matched = true;
-        }
-        // Admin prefixes count only for players with a high enough admin level.
-        if (!prefix_matched && input_text[1] == '@' && MainForm->net_client->GetAdminLevel() > 1)
-        {
-            mode = 3;
-            prefix_matched = true;
-        }
-        if (!prefix_matched && input_text[1] == '+' && MainForm->net_client->GetAdminLevel() > 0)
-        {
-            mode = 5;
-            prefix_matched = true;
-        }
-        if (!prefix_matched && input_text[1] == '&' && MainForm->animation->interface_controller->status->IsInGuild())
-        {
-            mode = 7;
-            prefix_matched = true;
-        }
-        if (!prefix_matched && input_text[1] == '~')
-        {
-            // A global message on the restricted map, or while global messages are not allowed, clears the input.
-            if (MainForm->map->GetMapId() == MainForm->animation->game->restricted_map_id)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                    MainForm->strings->GetText(GameText_YouCannotUseGlobal));
-                MainForm->edits->SetText(EditId_Chat, "");
-                mode = 0;
-                prefix_matched = true;
-            }
-            else if (MainForm->animation->IsGlobalMessageAllowed())
-            {
-                mode = 3;
-                prefix_matched = true;
-            }
-            else
-            {
-                MainForm->edits->SetText(EditId_Chat, "");
-                mode = 0;
-                prefix_matched = true;
-            }
-        }
-        if (!prefix_matched)
-            mode = 1;
+        int admin_level = MainForm->net_client->GetAdminLevel();
+        if (MainForm->net_client->GetAdminLevel() > 1)
+            mode = 8;
     }
+    else if (input_text[1] == '@')
+    {
+        int admin_level_check = MainForm->net_client->GetAdminLevel();
+        if (MainForm->net_client->GetAdminLevel() > 1)
+            mode = 3;
+    }
+    else if (input_text[1] == '+')
+    {
+        if (MainForm->net_client->GetAdminLevel() > 0)
+            mode = 5;
+    }
+    else if (input_text[1] == '&')
+    {
+        if (MainForm->animation->interface_controller->status->IsInGuild())
+            mode = 7;
+    }
+    else if (input_text[1] == '~')
+    {
+        if (MainForm->map->GetMapId() == MainForm->animation->game->restricted_map_id)
+        {
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
+                MainForm->strings->GetText(GameText_YouCannotUseGlobal));
+            MainForm->edits->SetText(EditId_Chat, "");
+            mode = 0;
+        }
+        else if (MainForm->animation->IsGlobalMessageAllowed())
+            mode = 3;
+        else
+        {
+            MainForm->edits->SetText(EditId_Chat, "");
+            mode = 0;
+        }
+    }
+    else
+        mode = 1;
     if (MainForm->edits->chat_locked)
     {
         MainForm->OffscreenSurface->BltFast(16, 309, chat_mode_icons, &GetChatModeIconRect(6), DDBLTFAST_WAIT);
@@ -1141,10 +1144,10 @@ void InterfaceGraphics::DrawChatModeIcon()
 void InterfaceGraphics::DrawCornerButton()
 {
     if (MainForm->animation->interface_controller->corner_button_hover)
-        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->interface_graphics->corner_button,
+        MainForm->OffscreenSurface->BltFast(590, 328, MainForm->gfx->interface_graphics->corner_button,
             &MainForm->gfx->interface_graphics->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->interface_graphics->corner_button,
+        MainForm->OffscreenSurface->BltFast(590, 328, MainForm->gfx->interface_graphics->corner_button,
             &MainForm->gfx->interface_graphics->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
@@ -1372,28 +1375,26 @@ void InterfaceGraphics::DrawPlayerList()
 void InterfaceGraphics::DrawPlayerListText()
 {
     int row;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    int count_width =
-        MainForm->text_canvas->TextWidth(IntToStr(MainForm->animation->interface_controller->player_list->shown_names->Count));
-    MainForm->text_canvas->TextOut(580 - count_width, 332,
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
+    int title_width =
+        (short)MainForm->fonts->TextWidth(IntToStr(MainForm->animation->interface_controller->player_list->shown_names->Count));
+    MainForm->fonts->DrawString(580 - (short)title_width, 332,
         IntToStr(MainForm->animation->interface_controller->player_list->shown_names->Count));
     int top_line = MainForm->animation->interface_controller->player_list->GetTopLine();
     int line_count = MainForm->animation->interface_controller->player_list->shown_names->Count;
     row = 0;
-    MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
-        MainForm->text_canvas->TextOut(124, 14 * row + 350,
+        MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->player_list->shown_names->Strings[i]);
-        MainForm->text_canvas->TextOut(236, 14 * row + 350,
+        MainForm->fonts->DrawString(261, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->player_list->shown_second_texts->Strings[i]);
-        MainForm->text_canvas->TextOut(348, 14 * row + 350,
+        MainForm->fonts->DrawString(405, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->player_list->shown_guild_tags->Strings[i]);
-        MainForm->text_canvas->TextOut(460, 14 * row + 350,
+        MainForm->fonts->DrawString(460, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->player_list->shown_class_names->Strings[i]);
         row++;
     }
@@ -1590,55 +1591,53 @@ void InterfaceGraphics::DrawChatText()
     int private_row;
     int i;
     int local_top_line;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
+    MainForm->fonts->color = 0;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
     if (MainForm->animation->interface_controller->chat->active_tab == 1)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[0])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(141, 434,
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(141, 434,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->first_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 2)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[1])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(273, 434,
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(273, 434,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->chat->second_private_name));
     if (MainForm->animation->interface_controller->chat->active_tab == 3)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[2])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(406, 434, "scr");
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(406, 434, "scr");
     if (MainForm->animation->interface_controller->chat->active_tab == 4)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[3])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(450, 434, "glb");
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(450, 434, "glb");
     if (MainForm->animation->interface_controller->chat->active_tab == 5)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[4])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(494, 434, "grp");
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(494, 434, "grp");
     if (MainForm->animation->interface_controller->chat->active_tab == 6)
-        MainForm->text_canvas->Font->Color = clWhite;
+        MainForm->fonts->color = 0xFFFFFF;
     else if (MainForm->animation->interface_controller->chat->tab_has_unread[5])
-        MainForm->text_canvas->Font->Color = (TColor)0xAAC8DC;
+        MainForm->fonts->color = 0xAAC8DC;
     else
-        MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->TextOut(538, 434, "sys");
+        MainForm->fonts->color = 0;
+    MainForm->fonts->DrawString(538, 434, "sys");
     // Tabs 1 and 2 are the private ones; each tab draws its own lines from its scroll offset.
     if (MainForm->animation->interface_controller->chat->active_tab <= 2)
     {
@@ -1651,24 +1650,24 @@ void InterfaceGraphics::DrawChatText()
         {
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "0")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "1")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 1);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "2")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 2);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "3")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 3);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "4")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 4);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
             if (MainForm->animation->interface_controller->chat->last_private_tab_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i] ==
                 "5")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->text_canvas->TextOut(StrToInt(MainForm->animation->interface_controller->chat->last_private_colors[MainForm->animation->interface_controller->chat->active_tab]->Strings[i]) +
-                124, 14 * private_row + 332,
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->last_private_colors[MainForm->animation->interface_controller->chat->active_tab]->Strings[i]) +
+                124, (short)(14 * private_row) + 332,
                 MainForm->animation->interface_controller->chat->private_lines[MainForm->animation->interface_controller->chat->active_tab]->Strings[i]);
             private_row++;
             i++;
@@ -1683,19 +1682,20 @@ void InterfaceGraphics::DrawChatText()
         while (j < local_line_count && local_top_line + 7 > j)
         {
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "0")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "1")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 1);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "2")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 2);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "3")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 3);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "4")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 4);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
             if (MainForm->animation->interface_controller->chat->local_colors->Strings[j] == "5")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->text_canvas->TextOut(StrToInt(MainForm->animation->interface_controller->chat->local_indents->Strings[j]) +
-                124, 14 * local_row + 332, MainForm->animation->interface_controller->chat->local_lines->Strings[j]);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->local_indents->Strings[j]) +
+                124, (short)(14 * local_row) + 332,
+                MainForm->animation->interface_controller->chat->local_lines->Strings[j]);
             local_row++;
             j++;
         }
@@ -1710,19 +1710,20 @@ void InterfaceGraphics::DrawChatText()
         while (k < global_line_count && global_top_line + 7 > k)
         {
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "0")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "1")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 1);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "2")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 2);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "3")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 3);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "4")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 4);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
             if (MainForm->animation->interface_controller->chat->global_colors->Strings[k] == "5")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->text_canvas->TextOut(StrToInt(MainForm->animation->interface_controller->chat->global_indents->Strings[k]) +
-                124, 14 * global_row + 332, MainForm->animation->interface_controller->chat->global_lines->Strings[k]);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->global_indents->Strings[k]) +
+                124, (short)(14 * global_row) + 332,
+                MainForm->animation->interface_controller->chat->global_lines->Strings[k]);
             global_row++;
             k++;
         }
@@ -1737,19 +1738,20 @@ void InterfaceGraphics::DrawChatText()
         while (m < group_line_count && group_top_line + 7 > m)
         {
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "0")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "1")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 1);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "2")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 2);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "3")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 3);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "4")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 4);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
             if (MainForm->animation->interface_controller->chat->group_colors->Strings[m] == "5")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->text_canvas->TextOut(StrToInt(MainForm->animation->interface_controller->chat->private_lines[0]->Strings[m]) +
-                124, 14 * group_row + 332, MainForm->animation->interface_controller->chat->group_lines->Strings[m]);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            MainForm->fonts->DrawString((short)StrToInt(MainForm->animation->interface_controller->chat->private_lines[0]->Strings[m]) +
+                124, (short)(14 * group_row) + 332,
+                MainForm->animation->interface_controller->chat->group_lines->Strings[m]);
             group_row++;
             m++;
         }
@@ -1764,18 +1766,18 @@ void InterfaceGraphics::DrawChatText()
         while (n < system_line_count && system_top_line + 7 > n)
         {
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "0")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "1")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 1);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 1);
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "2")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 2);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 2);
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "3")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 3);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 3);
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "4")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 4);
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 4);
             if (MainForm->animation->interface_controller->chat->system_colors->Strings[n] == "5")
-                MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 5);
-            MainForm->text_canvas->TextOut(124, 14 * system_row + 332,
+                MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 5);
+            MainForm->fonts->DrawString(124, (short)(14 * system_row) + 332,
                 MainForm->animation->interface_controller->chat->system_lines->Strings[n]);
             system_row++;
             n++;
@@ -1786,43 +1788,40 @@ void InterfaceGraphics::DrawChatText()
 // Draws the status panel's values: the character's name and numbers, and the karma as a word from Demonic to Pure.
 void InterfaceGraphics::DrawStatusValues()
 {
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 7;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
-    MainForm->text_canvas->TextOut(153, 338, IntToStr(MainForm->animation->interface_controller->status->stat_str));
-    MainForm->text_canvas->TextOut(153, 356, IntToStr(MainForm->animation->interface_controller->status->stat_int));
-    MainForm->text_canvas->TextOut(153, 374, IntToStr(MainForm->animation->interface_controller->status->stat_wis));
-    MainForm->text_canvas->TextOut(153, 392, IntToStr(MainForm->animation->interface_controller->status->stat_agi));
-    MainForm->text_canvas->TextOut(153, 410, IntToStr(MainForm->animation->interface_controller->status->stat_con));
-    MainForm->text_canvas->TextOut(153, 428, IntToStr(MainForm->animation->interface_controller->status->stat_cha));
-    MainForm->text_canvas->TextOut(261, 338,
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->DrawString(153, 338, IntToStr(MainForm->animation->interface_controller->status->stat_str));
+    MainForm->fonts->DrawString(153, 356, IntToStr(MainForm->animation->interface_controller->status->stat_int));
+    MainForm->fonts->DrawString(153, 374, IntToStr(MainForm->animation->interface_controller->status->stat_wis));
+    MainForm->fonts->DrawString(153, 392, IntToStr(MainForm->animation->interface_controller->status->stat_agi));
+    MainForm->fonts->DrawString(153, 410, IntToStr(MainForm->animation->interface_controller->status->stat_con));
+    MainForm->fonts->DrawString(153, 428, IntToStr(MainForm->animation->interface_controller->status->stat_cha));
+    MainForm->fonts->DrawString(261, 338,
         IntToStr(MainForm->animation->interface_controller->status->health) + " / " +
             IntToStr(MainForm->animation->interface_controller->status->max_health));
-    MainForm->text_canvas->TextOut(261, 356,
+    MainForm->fonts->DrawString(261, 356,
         IntToStr(MainForm->animation->interface_controller->status->mana) + " / " +
             IntToStr(MainForm->animation->interface_controller->status->max_mana));
-    MainForm->text_canvas->TextOut(261, 374,
+    MainForm->fonts->DrawString(261, 374,
         IntToStr(MainForm->animation->interface_controller->status->damage_min) + "-" +
             IntToStr(MainForm->animation->interface_controller->status->damage_max));
-    MainForm->text_canvas->TextOut(261, 392, IntToStr(MainForm->animation->interface_controller->status->hitrate));
-    MainForm->text_canvas->TextOut(261, 410, IntToStr(MainForm->animation->interface_controller->status->armor));
-    MainForm->text_canvas->TextOut(261, 428, IntToStr(MainForm->animation->interface_controller->status->dodge));
-    MainForm->text_canvas->TextOut(382, 338,
+    MainForm->fonts->DrawString(261, 392, IntToStr(MainForm->animation->interface_controller->status->hitrate));
+    MainForm->fonts->DrawString(261, 410, IntToStr(MainForm->animation->interface_controller->status->armor));
+    MainForm->fonts->DrawString(261, 428, IntToStr(MainForm->animation->interface_controller->status->dodge));
+    MainForm->fonts->DrawString(382, 338,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->character_name));
-    MainForm->text_canvas->TextOut(382, 356,
+    MainForm->fonts->DrawString(382, 356,
         MainForm->net_client->Capitalize(MainForm->animation->interface_controller->status->guild_name));
     String weight_text = IntToStr(MainForm->animation->interface_controller->status->weight);
     weight_text = weight_text + " / ";
     weight_text = weight_text + IntToStr(MainForm->animation->interface_controller->status->max_weight);
-    MainForm->text_canvas->TextOut(382, 374, weight_text);
-    MainForm->text_canvas->TextOut(382, 392, IntToStr(MainForm->animation->interface_controller->status->stat_points));
-    MainForm->text_canvas->TextOut(382, 410, IntToStr(MainForm->animation->interface_controller->status->skill_points));
-    MainForm->text_canvas->TextOut(482, 374, IntToStr(MainForm->animation->interface_controller->status->gold));
-    MainForm->text_canvas->TextOut(482, 392, IntToStr(MainForm->animation->interface_controller->status->experience));
-    MainForm->text_canvas->TextOut(482, 410,
+    MainForm->fonts->DrawString(382, 374, weight_text);
+    MainForm->fonts->DrawString(382, 392, IntToStr(MainForm->animation->interface_controller->status->stat_points));
+    MainForm->fonts->DrawString(382, 410, IntToStr(MainForm->animation->interface_controller->status->skill_points));
+    MainForm->fonts->DrawString(482, 374, IntToStr(MainForm->animation->interface_controller->status->gold));
+    MainForm->fonts->DrawString(482, 392, IntToStr(MainForm->animation->interface_controller->status->experience));
+    MainForm->fonts->DrawString(482, 410,
         IntToStr(MainForm->animation->interface_controller->status->experience_to_next_level));
     int karma = MainForm->animation->interface_controller->status->alignment;
     String karma_text = "";
@@ -1845,8 +1844,8 @@ void InterfaceGraphics::DrawStatusValues()
         karma_text = "Saint";
     if (karma >= 900)
         karma_text = "Pure";
-    MainForm->text_canvas->TextOut(482, 428, karma_text);
-    MainForm->text_canvas->TextOut(554, 338, IntToStr(MainForm->animation->interface_controller->status->level));
+    MainForm->fonts->DrawString(482, 428, karma_text);
+    MainForm->fonts->DrawString(554, 338, IntToStr(MainForm->animation->interface_controller->status->level));
 }
 
 // Draws the group panel scroll arrows, lit under the mouse.
@@ -1923,77 +1922,79 @@ void InterfaceGraphics::DrawGroupList()
         if (MainForm->animation->interface_controller->group->members[i].removable)
         {
             if (MainForm->animation->interface_controller->group->members[i].is_hovered)
-                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(2),
+                MainForm->OffscreenSurface->BltFast(460, 14 * row + 351, group_icons, &GetGroupIconRect(2),
                     DDBLTFAST_WAIT);
             else
-                MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(0),
+                MainForm->OffscreenSurface->BltFast(460, 14 * row + 351, group_icons, &GetGroupIconRect(0),
                     DDBLTFAST_WAIT);
         }
         else
-            MainForm->OffscreenSurface->BltFast(440, 14 * row + 351, group_icons, &GetGroupIconRect(1), DDBLTFAST_WAIT);
+            MainForm->OffscreenSurface->BltFast(460, 14 * row + 351, group_icons, &GetGroupIconRect(1), DDBLTFAST_WAIT);
         row++;
     }
 }
 
 // Draws the health bar of each visible group member, its colour changing at 40 and 20 percent.
-void InterfaceGraphics::DrawGroupHealthBars()
+void InterfaceGraphics::DrawGroupHealthBars(int dc)
 {
     int j;
     int top_row;
     int member_count;
     TRect rc;
-    MainForm->draw_canvas->Pen->Color = clGreen;
-    MainForm->draw_canvas->Pen->Style = psSolid;
+    TCanvas *canvas = new TCanvas();
+    canvas->Handle = (void *)dc;
+    canvas->Pen->Color = clGreen;
+    canvas->Pen->Style = psSolid;
     top_row = MainForm->animation->interface_controller->group->GetTopRow();
     member_count = MainForm->animation->interface_controller->group->members.size();
     int row = 0;
     for (j = top_row; j < member_count && j < top_row + 7; j++)
     {
         if (MainForm->animation->interface_controller->group->members[j].health_percent > 40)
-            MainForm->draw_canvas->Brush->Color = (TColor)33340;
+            canvas->Brush->Color = (TColor)33340;
         if (MainForm->animation->interface_controller->group->members[j].health_percent <= 40)
         {
             if (MainForm->animation->interface_controller->group->members[j].health_percent > 20)
-                MainForm->draw_canvas->Brush->Color = (TColor)42186;
+                canvas->Brush->Color = (TColor)42186;
         }
         if (MainForm->animation->interface_controller->group->members[j].health_percent <= 20)
-            MainForm->draw_canvas->Brush->Color = (TColor)0x3264FF;
-        MainForm->draw_canvas->Brush->Style = bsSolid;
-        rc.left = 331;
-        rc.right = MainForm->animation->interface_controller->group->members[j].health_percent + 331;
+            canvas->Brush->Color = (TColor)0x3264FF;
+        canvas->Brush->Style = bsSolid;
+        rc.left = 351;
+        rc.right = MainForm->animation->interface_controller->group->members[j].health_percent + 351;
         rc.top = 14 * row + 352;
         rc.bottom = 14 * row + 360;
-        MainForm->draw_canvas->FillRect(rc);
+        canvas->FillRect(rc);
         row++;
     }
     row = 0;
-    MainForm->draw_canvas->Brush->Color = clBlack;
-    MainForm->draw_canvas->Brush->Style = bsClear;
-    MainForm->draw_canvas->Pen->Color = clBlack;
-    MainForm->draw_canvas->Pen->Style = psSolid;
+    canvas->Brush->Color = clBlack;
+    canvas->Brush->Style = bsClear;
+    canvas->Pen->Color = clBlack;
+    canvas->Pen->Style = psSolid;
     j = top_row;
     while (j < member_count && j < top_row + 7)
     {
         TPoint outline[9];
-        outline[0].x = 330;
+        outline[0].x = 350;
         outline[0].y = 14 * row + 353;
-        outline[1].x = 332;
+        outline[1].x = 352;
         outline[1].y = 14 * row + 351;
-        outline[2].x = 429;
+        outline[2].x = 449;
         outline[2].y = 14 * row + 351;
-        outline[3].x = 431;
+        outline[3].x = 451;
         outline[3].y = 14 * row + 353;
-        outline[4].x = 431;
+        outline[4].x = 451;
         outline[4].y = 14 * row + 358;
-        outline[5].x = 429;
+        outline[5].x = 449;
         outline[5].y = 14 * row + 360;
-        outline[6].x = 332;
+        outline[6].x = 352;
         outline[6].y = 14 * row + 360;
-        outline[7].x = 330;
+        outline[7].x = 350;
         outline[7].y = 14 * row + 358;
-        outline[8].x = 330;
+        outline[8].x = 350;
         outline[8].y = 14 * row + 353;
-        MainForm->draw_canvas->Polyline(outline, 8);
+        canvas->Polyline(outline, 8);
         row++;
         j++;
     }
@@ -2003,26 +2004,24 @@ void InterfaceGraphics::DrawGroupHealthBars()
 void InterfaceGraphics::DrawGroupText()
 {
     int row;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
     int count_width =
-        MainForm->text_canvas->TextWidth(IntToStr(MainForm->animation->interface_controller->group->members.size()));
-    MainForm->text_canvas->TextOut(580 - count_width, 332,
+        (short)MainForm->fonts->TextWidth(IntToStr(MainForm->animation->interface_controller->group->members.size()));
+    MainForm->fonts->DrawString(580 - (short)count_width, 332,
         IntToStr(MainForm->animation->interface_controller->group->members.size()));
     int top_row = MainForm->animation->interface_controller->group->GetTopRow();
     int member_count = MainForm->animation->interface_controller->group->members.size();
     row = 0;
-    MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
     for (int i = top_row; i < member_count && i < top_row + 7; i++)
     {
-        MainForm->text_canvas->TextOut(124, 14 * row + 350,
+        MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->group->members[i].name);
-        MainForm->text_canvas->TextOut(246, 14 * row + 350,
+        MainForm->fonts->DrawString(266, (short)(14 * row) + 350,
             IntToStr(MainForm->animation->interface_controller->group->members[i].level));
-        MainForm->text_canvas->TextOut(305, 14 * row + 350, "HP");
+        MainForm->fonts->DrawString(325, (short)(14 * row) + 350, "HP");
         row++;
     }
 }
@@ -2070,71 +2069,69 @@ void InterfaceGraphics::DrawSettingMarkers()
         MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(1), DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(557, 427, control_sheet, &GetSettingMarkerRect(0), DDBLTFAST_WAIT);
+    if (MainForm->animation->interface_controller->settings->hovered_option == SettingOption_GameHelp)
+        MainForm->OffscreenSurface->BltFast(556, 330, small_buttons, &GetSmallButtonRect(1), DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(556, 330, small_buttons, &GetSmallButtonRect(0), DDBLTFAST_WAIT);
 }
 
 // Draws the value of each settings row: the sound and music volumes, the keyboard layout and language, and each
 // switch's on or off.
 void InterfaceGraphics::DrawSettingsText()
 {
-    int filter_text_id;
-    int log_text_id;
-    int requests_text_id;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Color = clBlack;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 7;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
     if (MainForm->config->GetSoundVolume() >= 100)
-        MainForm->text_canvas->TextOut(222, 356, MainForm->strings->GetText(GameText_Enabled));
+        MainForm->fonts->DrawString(222, 356, MainForm->strings->GetText(GameText_Enabled));
     else if (MainForm->config->GetSoundVolume() <= 0)
-        MainForm->text_canvas->TextOut(222, 356, MainForm->strings->GetText(GameText_Disabled));
+        MainForm->fonts->DrawString(222, 356, MainForm->strings->GetText(GameText_Disabled));
     else
-        MainForm->text_canvas->TextOut(222, 356, IntToStr(MainForm->config->GetSoundVolume()) + "% vol.");
+        MainForm->fonts->DrawString(222, 356, IntToStr(MainForm->config->GetSoundVolume()) + "% vol.");
     if (MainForm->config->GetMusicVolume() >= 100)
-        MainForm->text_canvas->TextOut(222, 374, MainForm->strings->GetText(GameText_Enabled));
+        MainForm->fonts->DrawString(222, 374, MainForm->strings->GetText(GameText_Enabled));
     else if (MainForm->config->GetMusicVolume() <= 0)
-        MainForm->text_canvas->TextOut(222, 374, MainForm->strings->GetText(GameText_Disabled));
+        MainForm->fonts->DrawString(222, 374, MainForm->strings->GetText(GameText_Disabled));
     else
-        MainForm->text_canvas->TextOut(222, 374, IntToStr(MainForm->config->GetMusicVolume()) + "% vol.");
-    MainForm->text_canvas->TextOut(222, 392, MainForm->strings->GetText(MainForm->config->GetKeyboardLayout() + 254));
+        MainForm->fonts->DrawString(222, 374, IntToStr(MainForm->config->GetMusicVolume()) + "% vol.");
+    MainForm->fonts->DrawString(222, 392, MainForm->strings->GetText(MainForm->config->GetKeyboardLayout() + 254));
     int text_id = GameText_English;
-    MainForm->text_canvas->TextOut(222, 410, MainForm->strings->GetText(text_id));
+    MainForm->fonts->DrawString(222, 410, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetAcceptPrivateMessages())
         text_id = GameText_Enabled;
     else
         text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(222, 428, MainForm->strings->GetText(text_id));
+    MainForm->fonts->DrawString(222, 428, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetShowBalloons())
         text_id = GameText_Enabled;
     else
         text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(462, 356, MainForm->strings->GetText(text_id));
+    MainForm->fonts->DrawString(462, 356, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetShowShadows())
         text_id = GameText_Enabled;
     else
         text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(462, 374, MainForm->strings->GetText(text_id));
+    MainForm->fonts->DrawString(462, 374, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetFilterEnabled())
     {
         if (MainForm->config->GetStrictFilter())
-            filter_text_id = GameText_Exclusive;
+            text_id = GameText_Exclusive;
         else
-            filter_text_id = GameText_Normal;
+            text_id = GameText_Normal;
     }
     else
-        filter_text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(462, 392, MainForm->strings->GetText(filter_text_id));
+        text_id = GameText_Disabled;
+    MainForm->fonts->DrawString(462, 392, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetLogChat())
-        log_text_id = GameText_Enabled;
+        text_id = GameText_Enabled;
     else
-        log_text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(462, 410, MainForm->strings->GetText(log_text_id));
+        text_id = GameText_Disabled;
+    MainForm->fonts->DrawString(462, 410, MainForm->strings->GetText(text_id));
     if (MainForm->config->GetAcceptRequests())
-        requests_text_id = GameText_Enabled;
+        text_id = GameText_Enabled;
     else
-        requests_text_id = GameText_Disabled;
-    MainForm->text_canvas->TextOut(462, 428, MainForm->strings->GetText(requests_text_id));
+        text_id = GameText_Disabled;
+    MainForm->fonts->DrawString(462, 428, MainForm->strings->GetText(text_id));
 }
 
 // Draws the help panel's scroll thumb and an icon before each visible line that has one.
@@ -2161,28 +2158,26 @@ void InterfaceGraphics::DrawHelpList()
 // Draws the seven visible help lines, underlining titles and links.
 void InterfaceGraphics::DrawHelpText()
 {
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
     int top_line = MainForm->animation->interface_controller->help->GetTopLine();
     int line_count = MainForm->animation->interface_controller->help->lines->Count;
     int row = 0;
-    MainForm->text_canvas->Font->Color = (TColor)GetThemeColor(MainForm->config->GetTextTheme(), 0);
+    MainForm->fonts->color = GetThemeColor(MainForm->config->GetTextTheme(), 0);
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
         if (MainForm->animation->interface_controller->help->line_flags->Strings[i] == "1")
-            MainForm->text_canvas->Font->Style = TFontStyles() << fsBold;
+            MainForm->fonts->is_underlined = true;
         else if (MainForm->animation->interface_controller->help->link_targets->Strings[i] != "")
-            MainForm->text_canvas->Font->Style = TFontStyles() << fsUnderline;
+            MainForm->fonts->is_underlined = true;
         else
-            MainForm->text_canvas->Font->Style = TFontStyles();
-        MainForm->text_canvas->TextOut(124, 14 * row + 350,
+            MainForm->fonts->is_underlined = false;
+        MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->help->lines->Strings[i]);
         row++;
     }
-    MainForm->text_canvas->Font->Style = TFontStyles();
+    MainForm->fonts->is_underlined = false;
 }
 
 // Draws the news panel's scroll thumb and a marker before each visible line that has one.
@@ -2206,50 +2201,42 @@ void InterfaceGraphics::DrawNewsList()
     }
 }
 
-// Draws the visible news lines.
+// Draws the seven visible news lines.
 void InterfaceGraphics::DrawNewsText()
 {
     int row;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = clBlack;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0;
     int top_line = MainForm->animation->interface_controller->news->GetTopLine();
     int line_count = MainForm->animation->interface_controller->news->lines->Count;
     row = 0;
-    MainForm->text_canvas->Font->Color = clBlack;
+    MainForm->fonts->color = 0;
     for (int i = top_line; i < line_count && i < top_line + 7; i++)
     {
-        MainForm->text_canvas->TextOut(124, 14 * row + 350,
+        MainForm->fonts->DrawString(124, (short)(14 * row) + 350,
             MainForm->animation->interface_controller->news->lines->Strings[i]);
         row++;
     }
 }
 
-// Draws the inventory's paperdoll and arrow buttons, lit under the mouse.
+// Draws the inventory's two buttons, each lit while the mouse is on it.
 void InterfaceGraphics::DrawInventoryButtons()
 {
-    if (MainForm->animation->interface_controller->inventory->paperdoll_button_hovered)
-        MainForm->OffscreenSurface->BltFast(487, 339, MainForm->gfx->interface_graphics->control_sheet,
-            &MainForm->gfx->interface_graphics->GetInventoryWideButtonRect(ButtonState_Hover), DDBLTFAST_WAIT);
-    else
-        MainForm->OffscreenSurface->BltFast(487, 339, MainForm->gfx->interface_graphics->control_sheet,
-            &MainForm->gfx->interface_graphics->GetInventoryWideButtonRect(ButtonState_Normal), DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->inventory->left_button_hovered)
-        MainForm->OffscreenSurface->BltFast(491, 398, MainForm->gfx->interface_graphics->control_sheet,
+        MainForm->OffscreenSurface->BltFast(558, 391, MainForm->gfx->interface_graphics->inventory_buttons,
             &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Left, ButtonState_Hover),
             DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(491, 398, MainForm->gfx->interface_graphics->control_sheet,
+        MainForm->OffscreenSurface->BltFast(558, 391, MainForm->gfx->interface_graphics->inventory_buttons,
             &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Left, ButtonState_Normal),
             DDBLTFAST_WAIT);
     if (MainForm->animation->interface_controller->inventory->right_button_hovered)
-        MainForm->OffscreenSurface->BltFast(533, 398, MainForm->gfx->interface_graphics->control_sheet,
+        MainForm->OffscreenSurface->BltFast(558, 418, MainForm->gfx->interface_graphics->inventory_buttons,
             &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Right, ButtonState_Hover),
             DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(533, 398, MainForm->gfx->interface_graphics->control_sheet,
+        MainForm->OffscreenSurface->BltFast(558, 418, MainForm->gfx->interface_graphics->inventory_buttons,
             &MainForm->gfx->interface_graphics->GetInventoryButtonRect(InventoryButton_Right, ButtonState_Normal),
             DDBLTFAST_WAIT);
 }
@@ -2258,77 +2245,77 @@ void InterfaceGraphics::DrawInventoryButtons()
 // points left.
 void InterfaceGraphics::DrawSpellInfoText()
 {
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)0xE1E1E1;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xE1E1E1;
     if (MainForm->animation->interface_controller->spells->selected_spell_id >= 0 &&
         MainForm->animation->interface_controller->spells->selected_spell_icon >= 0)
     {
         String spell_name = MainForm->animation->interface_controller->spells->selected_spell_name;
         char truncated = false;
-        while (MainForm->text_canvas->TextWidth(spell_name) > INFO_NAME_MAX_WIDTH)
+        while ((short)MainForm->fonts->TextWidth(spell_name) > INFO_NAME_MAX_WIDTH)
         {
             spell_name.Delete(spell_name.Length(), 1);
             truncated = true;
         }
         if (truncated)
             spell_name = spell_name + "..";
-        int value = 150 - MainForm->text_canvas->TextWidth(spell_name) / 2;
-        MainForm->text_canvas->TextOut(value, 378, spell_name);
+        int value = 150 - (short)MainForm->fonts->TextWidth(spell_name) / 2;
+        MainForm->fonts->DrawString(value, 378, spell_name);
         if (MainForm->animation->interface_controller->spells->selected_spell_level >= 0 &&
             MainForm->animation->interface_controller->spells->selected_spell_level <= 100)
-            MainForm->text_canvas->TextOut(134, 408,
+            MainForm->fonts->DrawString(134, 408,
                 IntToStr(MainForm->animation->interface_controller->spells->selected_spell_level));
     }
     else
-        MainForm->text_canvas->TextOut(134, 408, "0");
+        MainForm->fonts->DrawString(134, 408, "0");
     if (MainForm->animation->interface_controller->spells->has_hover &&
         !MainForm->animation->interface_controller->spells->is_dragging)
         MainForm->animation->interface_controller->spells->tooltip->DrawString();
-    MainForm->text_canvas->TextOut(134, 426, IntToStr(MainForm->animation->interface_controller->status->skill_points));
+    MainForm->fonts->DrawString(134, 426, IntToStr(MainForm->animation->interface_controller->status->skill_points));
 }
 
-// Draws the selected skill's name, cut to fit, its level and the points left to spend.
+// Draws the chosen skill's name, cut to fit with two dots, and its level, and the skill points left.
 void InterfaceGraphics::DrawSkillInfoText()
 {
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
     if (MainForm->animation->interface_controller->skills->selected_skill_id >= 0 &&
         MainForm->animation->interface_controller->skills->selected_skill_icon >= 0)
     {
         String skill_name = MainForm->animation->interface_controller->skills->selected_skill_name;
         char truncated = false;
-        while (MainForm->text_canvas->TextWidth(skill_name) > INFO_NAME_MAX_WIDTH)
+        while ((short)MainForm->fonts->TextWidth(skill_name) > INFO_NAME_MAX_WIDTH)
         {
             skill_name.Delete(skill_name.Length(), 1);
             truncated = true;
         }
         if (truncated)
             skill_name = skill_name + "..";
-        int value = 150 - MainForm->text_canvas->TextWidth(skill_name) / 2;
-        MainForm->text_canvas->TextOut(value, 378, skill_name);
+        int value = 150 - (short)MainForm->fonts->TextWidth(skill_name) / 2;
+        MainForm->fonts->DrawString(value, 378, skill_name);
         if (MainForm->animation->interface_controller->skills->selected_skill_level >= 0 &&
             MainForm->animation->interface_controller->skills->selected_skill_level <= 100)
-            MainForm->text_canvas->TextOut(134, 408,
+            MainForm->fonts->DrawString(134, 408,
                 IntToStr(MainForm->animation->interface_controller->skills->selected_skill_level));
     }
     else
-        MainForm->text_canvas->TextOut(134, 408, "0");
-    MainForm->text_canvas->TextOut(134, 426, IntToStr(MainForm->animation->interface_controller->status->skill_points));
+        MainForm->fonts->DrawString(134, 408, "0");
+    MainForm->fonts->DrawString(134, 426, IntToStr(MainForm->animation->interface_controller->status->skill_points));
 }
 
 // Draws the spell panel: scroll bar, each spell's icon in its cell with its level bar, the hovered and selected
 // spells, the blinking raise button while skill points are left, and the spell tip.
 void InterfaceGraphics::DrawSpellPanel()
 {
+    IconWrapper *selected_icon;
     int blink_on;
     vector<SpellItem>::iterator it;
-    int icon_id;
+    SkillValue *skill;
+    IconWrapper *hover_icon;
+    IconWrapper *icon;
+    int info_icon_id;
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->spells->GetScrollThumbOffset() + 348,
         MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
@@ -2349,10 +2336,11 @@ void InterfaceGraphics::DrawSpellPanel()
     if (MainForm->animation->interface_controller->spells->selected_spell_id >= 0 &&
         MainForm->animation->interface_controller->spells->selected_spell_icon >= 0)
     {
-        int info_icon_id = MainForm->animation->interface_controller->spells->selected_spell_icon;
-        MainForm->OffscreenSurface->BltFast(134, 344, MainForm->gfx->icons->GetGraphic(info_icon_id).resource->surface,
-            &MainForm->gfx->icons->GetGraphic(info_icon_id).resource->GetIconRect(0),
-            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        info_icon_id = MainForm->animation->interface_controller->spells->selected_spell_icon;
+        selected_icon = MainForm->gfx->icons->GetGraphic(info_icon_id);
+        if (selected_icon)
+            MainForm->OffscreenSurface->BltFast(134, 344, selected_icon->resource->surface,
+                &selected_icon->resource->GetIconRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         // With skill points left, the raise button blinks by the selected spell.
         if (MainForm->animation->interface_controller->status->skill_points > 0)
         {
@@ -2368,8 +2356,8 @@ void InterfaceGraphics::DrawSpellPanel()
     for (it = MainForm->animation->interface_controller->spells->spells.begin();
         it != MainForm->animation->interface_controller->spells->spells.end(); it++)
     {
-        icon_id = MainForm->skill_values->GetIcon(it->spell_id);
-        if (MainForm->gfx->icons->RequestGraphic(icon_id))
+        skill = MainForm->skill_values->GetSkill(it->spell_id - 1);
+        if (MainForm->gfx->icons->RequestGraphic(skill->icon))
         {
             if (it->is_visible)
             {
@@ -2379,53 +2367,48 @@ void InterfaceGraphics::DrawSpellPanel()
                 {
                     if (MainForm->animation->interface_controller->spells->hover_col == slot_column &&
                         MainForm->animation->interface_controller->spells->hover_row == slot_row)
-                        MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
-                            MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetIconRect(1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    {
+                        hover_icon = MainForm->gfx->icons->GetGraphic(skill->icon);
+                        if (hover_icon)
+                            MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
+                                hover_icon->resource->surface, &hover_icon->resource->GetIconRect(1),
+                                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    }
                     else
-                        MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
-                            MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetIconRect(0),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    {
+                        icon = MainForm->gfx->icons->GetGraphic(skill->icon);
+                        if (icon)
+                            MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
+                                icon->resource->surface, &icon->resource->GetIconRect(0),
+                                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    }
                     if (it->level > 0 && it->level <= 100)
                         MainForm->blitter->HalfBlendBlt(45 * slot_column + 206, 52 * slot_row + 379,
                             MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(it->level));
                 }
             }
             else
-                MainForm->gfx->icons->GetGraphic(icon_id);
+                MainForm->gfx->icons->GetGraphic(skill->icon);
         }
         else
             MainForm->animation->interface_controller->inventory->MarkItemsDirty();
-    }
-    if (!MainForm->animation->interface_controller->spells->GetTopRow())
-    {
-        for (int j = 0; j < 8; j++)
-            MainForm->OffscreenSurface->BltFast(45 * j + 202, 338, hud_sheet, &GetSpellSlotLabelRect(j),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        for (int k = 8; k < 16; k++)
-            MainForm->OffscreenSurface->BltFast(45 * k - 158, 390, hud_sheet, &GetSpellSlotLabelRect(k),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-    }
-    if (MainForm->animation->interface_controller->spells->GetTopRow() == 1)
-    {
-        for (int m = 8; m < 16; m++)
-            MainForm->OffscreenSurface->BltFast(45 * m - 158, 338, hud_sheet, &GetSpellSlotLabelRect(m),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     if (MainForm->animation->interface_controller->spells->has_hover &&
         !MainForm->animation->interface_controller->spells->is_dragging)
         MainForm->animation->interface_controller->spells->tooltip->DrawFrame();
 }
 
-// Draws the skill panel: scroll thumb, hover frame, the selected skill's icon and raise buttons, and each visible
-// skill's icon with its progress bar.
+// Draws the skill panel: scroll bar, each skill's icon in its cell with its level bar, the hovered and selected
+// skills, and the blinking raise button while skill points are left.
 void InterfaceGraphics::DrawSkillPanel()
 {
+    IconWrapper *selected_icon;
     int blink_on;
     vector<SkillItem>::iterator it;
-    int icon_id;
+    SkillValue *skill;
+    IconWrapper *hover_icon;
+    IconWrapper *icon;
+    int info_icon_id;
     MainForm->OffscreenSurface->BltFast(569,
         MainForm->animation->interface_controller->skills->GetScrollThumbOffset() + 348,
         MainForm->gfx->interface_graphics->scroll_icons, &MainForm->gfx->interface_graphics->GetScrollIconRect(0),
@@ -2446,10 +2429,12 @@ void InterfaceGraphics::DrawSkillPanel()
     if (MainForm->animation->interface_controller->skills->selected_skill_id >= 0 &&
         MainForm->animation->interface_controller->skills->selected_skill_icon >= 0)
     {
-        int info_icon_id = MainForm->animation->interface_controller->skills->selected_skill_icon;
-        MainForm->OffscreenSurface->BltFast(134, 344, MainForm->gfx->icons->GetGraphic(info_icon_id).resource->surface,
-            &MainForm->gfx->icons->GetGraphic(info_icon_id).resource->GetIconRect(0),
-            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        info_icon_id = MainForm->animation->interface_controller->skills->selected_skill_icon;
+        selected_icon = MainForm->gfx->icons->GetGraphic(info_icon_id);
+        if (selected_icon)
+            MainForm->OffscreenSurface->BltFast(134, 344, selected_icon->resource->surface,
+                &selected_icon->resource->GetIconRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        // With skill points left, the raise button blinks by the selected skill.
         if (MainForm->animation->interface_controller->status->skill_points > 0)
         {
             blink_on = false;
@@ -2464,8 +2449,8 @@ void InterfaceGraphics::DrawSkillPanel()
     for (it = MainForm->animation->interface_controller->skills->skills.begin();
         it != MainForm->animation->interface_controller->skills->skills.end(); it++)
     {
-        icon_id = MainForm->skill_values->GetIcon(it->skill_id);
-        if (MainForm->gfx->icons->RequestGraphic(icon_id))
+        skill = MainForm->skill_values->GetSkill(it->skill_id - 1);
+        if (MainForm->gfx->icons->RequestGraphic(skill->icon))
         {
             if (it->is_visible)
             {
@@ -2475,22 +2460,28 @@ void InterfaceGraphics::DrawSkillPanel()
                 {
                     if (MainForm->animation->interface_controller->skills->hover_col == slot_column &&
                         MainForm->animation->interface_controller->skills->hover_row == slot_row)
-                        MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
-                            MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetIconRect(1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    {
+                        hover_icon = MainForm->gfx->icons->GetGraphic(skill->icon);
+                        if (hover_icon)
+                            MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
+                                hover_icon->resource->surface, &hover_icon->resource->GetIconRect(1),
+                                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    }
                     else
-                        MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
-                            MainForm->gfx->icons->GetGraphic(icon_id).resource->surface,
-                            &MainForm->gfx->icons->GetGraphic(icon_id).resource->GetIconRect(0),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    {
+                        icon = MainForm->gfx->icons->GetGraphic(skill->icon);
+                        if (icon)
+                            MainForm->OffscreenSurface->BltFast(45 * slot_column + 207, 52 * slot_row + 341,
+                                icon->resource->surface, &icon->resource->GetIconRect(0),
+                                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    }
                     if (it->level > 0 && it->level <= 100)
                         MainForm->blitter->HalfBlendBlt(45 * slot_column + 206, 52 * slot_row + 379,
                             MainForm->OffscreenSurface, control_sheet, &GetSpellProgressRect(it->level));
                 }
             }
             else
-                MainForm->gfx->icons->GetGraphic(icon_id);
+                MainForm->gfx->icons->GetGraphic(skill->icon);
         }
         else
             MainForm->animation->interface_controller->inventory->MarkItemsDirty();
@@ -2503,6 +2494,7 @@ void InterfaceGraphics::DrawInventoryGrid()
 {
     InventoryItem *it;
     int graphic_index;
+    SubItemWrapper *graphic_item;
     int last_col;
     int last_row;
     int highlight_state;
@@ -2525,7 +2517,7 @@ void InterfaceGraphics::DrawInventoryGrid()
             highlight_state = 2;
         if (MainForm->animation->interface_controller->inventory->hover_col >= 0 &&
             MainForm->animation->interface_controller->inventory->hover_row >= 0 &&
-            MainForm->animation->interface_controller->inventory->hover_col + last_col <= 13 &&
+            MainForm->animation->interface_controller->inventory->hover_col + last_col <= 17 &&
             MainForm->animation->interface_controller->inventory->hover_row + last_row <= 3)
         {
             for (col = 0; col <= last_col; col++)
@@ -2545,10 +2537,13 @@ void InterfaceGraphics::DrawInventoryGrid()
         if (MainForm->gfx->items->RequestSubItemGraphic(graphic_index))
         {
             if (it->is_visible)
-                MainForm->OffscreenSurface->BltFast(26 * it->grid_x + 114, 26 * it->grid_y + 339,
-                    MainForm->gfx->items->GetSubItemGraphic(graphic_index).resource->surface,
-                    &MainForm->gfx->items->GetSubItemGraphic(graphic_index).resource->surface_rect,
-                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            {
+                graphic_item = MainForm->gfx->items->GetSubItemGraphic(graphic_index);
+                if (graphic_item)
+                    MainForm->OffscreenSurface->BltFast(26 * it->grid_x + 114, 26 * it->grid_y + 339,
+                        graphic_item->resource->surface, &graphic_item->resource->surface_rect,
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            }
             else
                 MainForm->gfx->items->GetSubItemGraphic(graphic_index);
         }
@@ -2565,18 +2560,9 @@ void InterfaceGraphics::DrawInventoryGrid()
 // Draws the hovered item's tooltip, unless an item is being dragged.
 void InterfaceGraphics::DrawInventoryText()
 {
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->Font->Color = (TColor)0xE1E1E1;
-    String weight_text = IntToStr(MainForm->animation->interface_controller->status->weight);
-    weight_text = weight_text + " / ";
-    weight_text = weight_text + IntToStr(MainForm->animation->interface_controller->status->max_weight);
-    int spare_width = 86 - MainForm->text_canvas->TextWidth(weight_text);
-    if (spare_width < 0)
-        spare_width = 0;
-    MainForm->text_canvas->TextOut(spare_width / 2 + 488, 369, weight_text);
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xE1E1E1;
     if (MainForm->animation->interface_controller->inventory->has_hover &&
         !MainForm->animation->interface_controller->inventory->is_dragging)
         MainForm->animation->interface_controller->inventory->tooltip->DrawString();
@@ -2603,6 +2589,7 @@ void InterfaceGraphics::DrawDraggedItem()
         drag_rect.right = drag_rect.left + 50;
         drag_height = 102;
         drag_width = DRAG_BACKUP_WIDTH;
+        // The dragged picture is kept on the screen.
         if (drag_rect.top < 0)
         {
             drag_height = 102 - (0 - drag_rect.top);
@@ -2627,7 +2614,7 @@ void InterfaceGraphics::DrawDraggedItem()
         if (MainForm->gfx->items->RequestSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic))
         {
             TRect source_rect =
-                MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic).resource->surface_rect;
+                MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic)->resource->surface_rect;
             int draw_x = MainForm->animation->interface_controller->inventory->drag_x - icon_half_width;
             int draw_y = MainForm->animation->interface_controller->inventory->drag_y - icon_half_height;
             if (draw_x < 0)
@@ -2645,7 +2632,7 @@ void InterfaceGraphics::DrawDraggedItem()
             if (source_rect.bottom + draw_y > 480)
                 source_rect.bottom -= source_rect.bottom + draw_y - 480;
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
-                MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic).resource->surface,
+                MainForm->gfx->items->GetSubItemGraphic(MainForm->animation->interface_controller->inventory->drag_graphic)->resource->surface,
                 &source_rect);
         }
     }
@@ -2686,11 +2673,12 @@ void InterfaceGraphics::DrawDraggedSpell()
             drag_height -= drag_rect.bottom - 480;
             drag_rect.bottom = SCREEN_HEIGHT;
         }
+        // What lies under the icon is saved first, to be put back when it moves.
         drag_save_surface->BltFast(0, 0, MainForm->OffscreenSurface, &drag_rect, DDBLTFAST_WAIT);
         if (MainForm->gfx->icons->RequestGraphic(MainForm->animation->interface_controller->spells->drag_icon))
         {
             TRect source_rect =
-                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon).resource->GetIconRect(1);
+                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon)->resource->GetIconRect(1);
             draw_x = MainForm->animation->interface_controller->spells->drag_x - icon_half_width;
             draw_y = MainForm->animation->interface_controller->spells->drag_y - icon_half_height;
             if (draw_x < 0)
@@ -2708,7 +2696,7 @@ void InterfaceGraphics::DrawDraggedSpell()
             if (draw_y + source_rect.bottom > 480)
                 source_rect.bottom -= draw_y + source_rect.bottom - 480;
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
-                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon).resource->surface,
+                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->spells->drag_icon)->resource->surface,
                 &source_rect);
         }
     }
@@ -2753,7 +2741,7 @@ void InterfaceGraphics::DrawDraggedSkill()
         if (MainForm->gfx->icons->RequestGraphic(MainForm->animation->interface_controller->skills->drag_icon))
         {
             TRect source_rect =
-                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon).resource->GetIconRect(1);
+                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon)->resource->GetIconRect(1);
             draw_x = MainForm->animation->interface_controller->skills->drag_x - icon_half_width;
             draw_y = MainForm->animation->interface_controller->skills->drag_y - icon_half_height;
             if (draw_x < 0)
@@ -2771,7 +2759,7 @@ void InterfaceGraphics::DrawDraggedSkill()
             if (draw_y + source_rect.bottom > 480)
                 source_rect.bottom -= draw_y + source_rect.bottom - 480;
             MainForm->blitter->HalfBlendBlt(draw_x, draw_y, MainForm->OffscreenSurface,
-                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon).resource->surface,
+                MainForm->gfx->icons->GetGraphic(MainForm->animation->interface_controller->skills->drag_icon)->resource->surface,
                 &source_rect);
         }
     }
@@ -2782,6 +2770,8 @@ void InterfaceGraphics::DrawDraggedSkill()
 void InterfaceGraphics::DrawMinimap()
 {
     GfxController *gfx;
+    NpcValue *npc_value;
+    NpcValue *mark_npc_value;
     MapController *map = MainForm->map;
     gfx = MainForm->gfx;
     if (!gfx->interface_graphics->minimap_visible)
@@ -2799,16 +2789,21 @@ void InterfaceGraphics::DrawMinimap()
         origin_y = 10;
     if (MainForm->config->GetRadarPosition() == 3)
     {
-        origin_x = 508;
-        origin_y = 10;
+        if (MainForm->animation->boss_bars->IsAnyVisible())
+            origin_y = 10;
+        else
+        {
+            origin_x = 508;
+            origin_y = 10;
+        }
     }
     short radius = 11;
     Player self = MainForm->players->GetPlayerById(MainForm->net_client->GetPlayerId());
     int first_x = self.x - radius;
     int first_y = self.y - radius;
+    // The tiles within the radius around the player, half blended over the view.
     for (int row = 0; 2 * radius >= row; row++)
     {
-        // The tiles within the radius around the player, half blended over the view.
         for (int col = 0; 2 * radius >= col; col++)
         {
             int x = col + first_x;
@@ -2909,22 +2904,22 @@ void InterfaceGraphics::DrawMinimap()
                         {
                             if (npc.graphic != NpcGraphic_Wraith)
                             {
-                                NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc.npc_id - 1);
-                                if (npc_value.npc_type > NpcType_Friendly && npc_value.npc_type < NpcType_Shop)
+                                npc_value = MainForm->npc_values->GetNpc(npc.npc_id - 1);
+                                if (npc_value->npc_type > NpcType_Friendly && npc_value->npc_type < NpcType_Shop)
                                 {
-                                    if (npc_value.child)
+                                    if (npc_value->child)
                                         gfx->game->BlitClippedAlpha(dot_x, dot_y,
                                             gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
-                                    else if (npc_value.boss >= 2)
+                                    else if (npc_value->boss >= 2)
                                         gfx->game->BlitClippedAlpha(dot_x, dot_y,
                                             gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetStatusIconLowRect(0, 10), 160);
-                                    else if (npc_value.boss == 1)
+                                    else if (npc_value->boss == 1)
                                         gfx->game->BlitClippedAlpha(dot_x, dot_y,
                                             gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
-                                    else if (npc_value.npc_type == NpcType_Untargetable)
+                                    else if (npc_value->npc_type == NpcType_Untargetable)
                                         gfx->game->BlitClippedAlpha(dot_x, dot_y,
                                             gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetStatusIconLowRect(0, 8), 160);
@@ -2933,13 +2928,13 @@ void InterfaceGraphics::DrawMinimap()
                                             gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetStatusIconLowRect(0, 6), 160);
                                 }
-                                else if (npc_value.npc_type == NpcType_Shop)
+                                else if (npc_value->npc_type == NpcType_Shop)
                                     gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetStatusIconLowRect(0, 9), 160);
-                                else if (npc_value.npc_type == NpcType_Bank)
+                                else if (npc_value->npc_type == NpcType_Bank)
                                     gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetStatusIconLowRect(0, 5), 160);
-                                else if (npc_value.npc_type == NpcType_Quest)
+                                else if (npc_value->npc_type == NpcType_Quest)
                                     gfx->game->BlitClippedAlpha(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetStatusIconLowRect(0, 4), 160);
                                 else
@@ -3043,20 +3038,20 @@ void InterfaceGraphics::DrawMinimap()
                         {
                             if (mark_npc.graphic != NpcGraphic_Wraith)
                             {
-                                NpcValue mark_npc_value = MainForm->npc_values->GetNpcByIndex(mark_npc.npc_id - 1);
-                                if (mark_npc_value.npc_type > NpcType_Friendly &&
-                                    mark_npc_value.npc_type < NpcType_Shop)
+                                mark_npc_value = MainForm->npc_values->GetNpc(mark_npc.npc_id - 1);
+                                if (mark_npc_value->npc_type > NpcType_Friendly &&
+                                    mark_npc_value->npc_type < NpcType_Shop)
                                 {
-                                    if (mark_npc_value.child)
+                                    if (mark_npc_value->child)
                                         gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetMinimapMarkRect(2, 7), 150);
-                                    else if (mark_npc_value.boss >= 2)
+                                    else if (mark_npc_value->boss >= 2)
                                         gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetMinimapMarkRect(2, 9), 150);
-                                    else if (mark_npc_value.boss == 1)
+                                    else if (mark_npc_value->boss == 1)
                                         gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetMinimapMarkRect(2, 8), 150);
-                                    else if (mark_npc_value.npc_type == NpcType_Untargetable)
+                                    else if (mark_npc_value->npc_type == NpcType_Untargetable)
                                         gfx->game->BlitClippedAlpha(x, mark_y, gfx->interface_graphics->minimap_tiles,
                                             gfx->interface_graphics->GetMinimapMarkRect(3, 8), 150);
                                     else
@@ -3109,7 +3104,10 @@ void InterfaceGraphics::DrawFullMinimap()
     GfxController *gfx;
     int mark_x;
     int mark_y;
+    NpcValue *npc_value;
+    unsigned short npc_type;
     unsigned char mark_spec;
+    NpcValue *mark_npc_value;
     MapController *map;
     int player_index;
     int npc_index;
@@ -3237,22 +3235,23 @@ void InterfaceGraphics::DrawFullMinimap()
                     {
                         if (npc.graphic != NpcGraphic_Wraith)
                         {
-                            NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc.npc_id - 1);
-                            if (npc_value.npc_type > NpcType_Friendly && npc_value.npc_type < NpcType_Shop)
+                            npc_value = MainForm->npc_values->GetNpc(npc.npc_id - 1);
+                            npc_type = npc_value->npc_type;
+                            if (npc_type > NpcType_Friendly && npc_type < NpcType_Shop)
                             {
-                                if (npc_value.child)
+                                if (npc_value->child)
                                     gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
                                         gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
-                                else if (npc_value.boss >= 2)
+                                else if (npc_value->boss >= 2)
                                     gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
                                         gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconInnerRect(4, npc.direction + 4));
-                                else if (npc_value.boss == 1)
+                                else if (npc_value->boss == 1)
                                     gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
                                         gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
-                                else if (npc_value.npc_type == NpcType_Untargetable)
+                                else if (npc_value->npc_type == NpcType_Untargetable)
                                     gfx->game->BlitClippedHalfBlend(dot_x, dot_y,
                                         gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconInnerRect(0, 8));
@@ -3261,13 +3260,13 @@ void InterfaceGraphics::DrawFullMinimap()
                                         gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconInnerRect(4, npc.direction));
                             }
-                            else if (npc_value.npc_type == NpcType_Shop)
+                            else if (npc_value->npc_type == NpcType_Shop)
                                 gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                     gfx->interface_graphics->GetListIconInnerRect(0, 9));
-                            else if (npc_value.npc_type == NpcType_Bank)
+                            else if (npc_value->npc_type == NpcType_Bank)
                                 gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                     gfx->interface_graphics->GetListIconInnerRect(0, 5));
-                            else if (npc_value.npc_type == NpcType_Quest)
+                            else if (npc_value->npc_type == NpcType_Quest)
                                 gfx->game->BlitClippedHalfBlend(dot_x, dot_y, gfx->interface_graphics->minimap_tiles,
                                     gfx->interface_graphics->GetListIconInnerRect(0, 4));
                             else
@@ -3367,19 +3366,19 @@ void InterfaceGraphics::DrawFullMinimap()
                     {
                         if (mark_npc.graphic != NpcGraphic_Wraith)
                         {
-                            NpcValue mark_npc_value = MainForm->npc_values->GetNpcByIndex(mark_npc.npc_id - 1);
-                            if (mark_npc_value.npc_type > NpcType_Friendly && mark_npc_value.npc_type < NpcType_Shop)
+                            mark_npc_value = MainForm->npc_values->GetNpc(mark_npc.npc_id - 1);
+                            if (mark_npc_value->npc_type > NpcType_Friendly && mark_npc_value->npc_type < NpcType_Shop)
                             {
-                                if (mark_npc_value.child)
+                                if (mark_npc_value->child)
                                     gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconMarkRect(2, 7), 150);
-                                else if (mark_npc_value.boss >= 2)
+                                else if (mark_npc_value->boss >= 2)
                                     gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconMarkRect(2, 9), 150);
-                                else if (mark_npc_value.boss == 1)
+                                else if (mark_npc_value->boss == 1)
                                     gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconMarkRect(2, 8), 150);
-                                else if (mark_npc_value.npc_type == NpcType_Untargetable)
+                                else if (mark_npc_value->npc_type == NpcType_Untargetable)
                                     gfx->game->BlitClippedAlpha(mark_x, mark_y, gfx->interface_graphics->minimap_tiles,
                                         gfx->interface_graphics->GetListIconMarkRect(3, 8), 150);
                                 else
@@ -3454,25 +3453,23 @@ void InterfaceGraphics::DrawStatusBarText()
         MainForm->animation->interface_controller->game_bars->show_stamina_text ||
         MainForm->animation->interface_controller->game_bars->show_experience_text)
     {
-        MainForm->text_canvas->Brush->Color = clWhite;
-        MainForm->text_canvas->Brush->Style = bsClear;
-        MainForm->text_canvas->Font->Name = "MS Sans Serif";
-        MainForm->text_canvas->Font->Size = 8;
-        MainForm->text_canvas->Font->Color = (TColor)0xC8C8C8;
+        MainForm->fonts->face = 1;
+        MainForm->fonts->size = 8;
+        MainForm->fonts->color = 0xC8C8C8;
         if (MainForm->animation->interface_controller->game_bars->show_health_text)
-            MainForm->text_canvas->TextOut(104, 14,
+            MainForm->fonts->DrawString(104, 14,
                 IntToStr(MainForm->animation->interface_controller->status->health) + "/" +
                     IntToStr(MainForm->animation->interface_controller->status->max_health));
         if (MainForm->animation->interface_controller->game_bars->show_mana_text)
-            MainForm->text_canvas->TextOut(213, 14,
+            MainForm->fonts->DrawString(213, 14,
                 IntToStr(MainForm->animation->interface_controller->status->mana) + "/" +
                     IntToStr(MainForm->animation->interface_controller->status->max_mana));
         if (MainForm->animation->interface_controller->game_bars->show_stamina_text)
-            MainForm->text_canvas->TextOut(324, 14,
+            MainForm->fonts->DrawString(324, 14,
                 IntToStr(MainForm->animation->interface_controller->status->stamina) + "/" +
                     IntToStr(MainForm->animation->interface_controller->status->max_stamina));
         if (MainForm->animation->interface_controller->game_bars->show_experience_text)
-            MainForm->text_canvas->TextOut(433, 14,
+            MainForm->fonts->DrawString(433, 14,
                 IntToStr(MainForm->animation->interface_controller->status->experience_to_next_level));
     }
 }

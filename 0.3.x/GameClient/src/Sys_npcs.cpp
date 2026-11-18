@@ -4,23 +4,16 @@
 #include "Tmainform.h"
 #include "Gfx_interface.h"
 #include "Gfx_npc.h"
-#include "Gfx_sprites.h"
+#include "Gfx_global_sprites.h"
+#include "Gfx_mapnpcs.h"
 
 #pragma package(smart_init)
 
-// An empty list and the per-graphic tables: the drawing offsets of the frames and the attack frames,
-// the head height a balloon sits above, and which graphics idle-animate.
-// With preload_graphics the npc library loads now and stays loaded.
+// Fills the tables of the 240 npc graphics: the drawing offsets of the frames and the attack frames, the head height
+// a label sits above, and which graphics idle-animate.
 Npcs::Npcs(char preload_option)
 {
     current_index = -1;
-    library_ref_count = 0;
-    preload_graphics = preload_option;
-    if (preload_graphics)
-    {
-        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
-        library_ref_count++;
-    }
     for (int i = 0; i < MAX_NPC_GRAPHICS; i++)
     {
         frame_offsets[i].x = 0; frame_offsets[i].y = 0; attack_frame_offsets[i].x = 0; attack_frame_offsets[i].y = 0;
@@ -40,15 +33,40 @@ Npcs::Npcs(char preload_option)
     head_heights[8] = 30;
     frame_offsets[9].x = 1; frame_offsets[9].y = -1; attack_frame_offsets[9].x = -6; attack_frame_offsets[9].y = -3;
     head_heights[9] = 8;
-    frame_offsets[10].y = 5; attack_frame_offsets[10].x = -4; attack_frame_offsets[10].y = -2; head_heights[10] = 40;
-    frame_offsets[11].y = 15; attack_frame_offsets[11].x = -6; attack_frame_offsets[11].y = -3; head_heights[11] = 33;
-    frame_offsets[12].y = 13; attack_frame_offsets[12].x = 2; attack_frame_offsets[12].y = -2; head_heights[12] = 10;
-    frame_offsets[13].x = -4; frame_offsets[13].y = 10; attack_frame_offsets[13].x = -2;
-    attack_frame_offsets[13].y = -4; head_heights[13] = 53;
-    frame_offsets[14].x = -1; frame_offsets[14].y = 17; head_heights[14] = 40;
-    frame_offsets[15].y = 14; attack_frame_offsets[15].x = -6; attack_frame_offsets[15].y = -3;
-    frame_offsets[16].y = 14; attack_frame_offsets[16].x = -6; attack_frame_offsets[16].y = -3;
-    frame_offsets[17].y = 14; attack_frame_offsets[17].x = -6; attack_frame_offsets[17].y = -3;
+    frame_offsets[10].y = 5;
+    attack_frame_offsets[10].x = -4;
+    attack_frame_offsets[10].y = -2;
+    head_heights[10] = 40;
+    frame_offsets[10].x = -15;
+    frame_offsets[10].y = 9;
+    attack_frame_offsets[10].x = -4;
+    attack_frame_offsets[10].y = -2;
+    head_heights[10] = 40;
+    frame_offsets[11].y = 15;
+    attack_frame_offsets[11].x = -6;
+    attack_frame_offsets[11].y = -3;
+    head_heights[11] = 33;
+    frame_offsets[12].y = 13;
+    attack_frame_offsets[12].x = 2;
+    attack_frame_offsets[12].y = -2;
+    head_heights[12] = 10;
+    frame_offsets[13].x = -4;
+    frame_offsets[13].y = 10;
+    attack_frame_offsets[13].x = -2;
+    attack_frame_offsets[13].y = -4;
+    head_heights[13] = 53;
+    frame_offsets[14].x = -1;
+    frame_offsets[14].y = 17;
+    head_heights[14] = 40;
+    frame_offsets[15].y = 14;
+    attack_frame_offsets[15].x = -6;
+    attack_frame_offsets[15].y = -3;
+    frame_offsets[16].y = 14;
+    attack_frame_offsets[16].x = -6;
+    attack_frame_offsets[16].y = -3;
+    frame_offsets[17].y = 14;
+    attack_frame_offsets[17].x = -6;
+    attack_frame_offsets[17].y = -3;
     head_heights[15] = 45;
     head_heights[16] = 45;
     head_heights[17] = 45;
@@ -307,203 +325,168 @@ Npcs::Npcs(char preload_option)
 
 Npcs::~Npcs()
 {
-    if (library_ref_count > 0 || preload_graphics)
-        FreeLibrary(graphics_library);
-}
-
-// Frees the npc library if it is loaded; with preload_graphics it is loaded again at once.
-void Npcs::ReloadGraphicsLibrary()
-{
-    if (library_ref_count > 0 || preload_graphics)
-    {
-        FreeLibrary(graphics_library);
-        if (!preload_graphics)
-            library_ref_count = 0;
-    }
-    if (preload_graphics)
-        graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
+        delete *it;
 }
 
 // One step of every npc's timers and animations, with their sounds, then the name label of the npc under the mouse
 // when no player's label is shown.
 void Npcs::Animate()
 {
+    Npc **it;
     int screen_x;
     int screen_y;
     char walk_started;
     int volume;
     walk_started = false;
-    Npc *it = npcs.begin();
+    it = npcs.begin();
     while (it != npcs.end())
     {
         // Graphics with an idle animation step their idle frame on every pass.
-        if (has_idle_animation[it->graphic - 1])
+        if (has_idle_animation[(*it)->graphic - 1])
         {
-            it->idle_frame++;
-            if (it->idle_frame > 3)
-                it->idle_frame = 255;
-            if (it->idle_frame == 0 || it->idle_frame == 2)
-                it->redraw = true;
+            (*it)->idle_frame++;
+            if ((*it)->idle_frame > 3)
+                (*it)->idle_frame = 255;
+            if ((*it)->idle_frame == 0 || (*it)->idle_frame == 2)
+                (*it)->redraw = true;
         }
-        if (it->effect_start)
+        if ((*it)->effect_start)
         {
-            it->effect_start = false;
-            it->effect_running = true;
-            it->effect_frame = 0;
-            volume = MainForm->sfx->GetDistanceVolume((short)it->x, (short)it->y);
-            MainForm->sound_mapper->PlayEffectSound(it->effect_id, volume);
+            (*it)->effect_start = false;
+            (*it)->effect_running = true;
+            (*it)->effect_frame = 0;
+            volume = MainForm->sfx->GetDistanceVolume((short)(*it)->x, (short)(*it)->y);
+            MainForm->sound_mapper->PlayEffectSound((*it)->effect_id, volume);
         }
-        if (it->effect_running)
+        if ((*it)->effect_running)
         {
-            if (it->effect_frame <= it->effect_last_frame)
-                it->effect_frame++;
+            if ((*it)->effect_frame <= (*it)->effect_last_frame)
+                (*it)->effect_frame++;
             else
             {
-                it->effect_loops_left--;
-                it->effect_frame = 0;
-                if (it->effect_loops_left <= 0)
-                    it->effect_running = false;
+                (*it)->effect_loops_left--;
+                (*it)->effect_frame = 0;
+                if ((*it)->effect_loops_left <= 0)
+                    (*it)->effect_running = false;
             }
-            it->redraw = true;
+            (*it)->redraw = true;
         }
         // A step starts at once; the npc is placed on the new tile as it starts.
-        if (it->walk_start)
+        if ((*it)->walk_start)
         {
-            it->walk_start = false;
-            it->x = it->walk_target_x;
-            it->y = it->walk_target_y;
-            it->walk_direction = it->walk_target_direction;
-            it->direction = it->walk_facing;
-            it->walk_frame = -1;
-            it->walking = true;
+            (*it)->walk_start = false;
+            (*it)->x = (*it)->walk_target_x;
+            (*it)->y = (*it)->walk_target_y;
+            (*it)->walk_direction = (*it)->walk_target_direction;
+            (*it)->direction = (*it)->walk_facing;
+            (*it)->walk_frame = -1;
+            (*it)->walking = true;
             walk_started = true;
         }
         // As for players: four frames from the pass the step starts, and the fifth pass ends it.
-        if (it->walking)
+        if ((*it)->walking)
         {
-            if (it->walk_frame <= 2)
-                it->walk_frame++;
+            if ((*it)->walk_frame <= 2)
+                (*it)->walk_frame++;
             else
             {
-                it->walk_frame = 0;
-                it->walking = false;
+                (*it)->walk_frame = 0;
+                (*it)->walking = false;
             }
-            it->redraw = true;
+            (*it)->redraw = true;
         }
-        if (it->attack_start)
+        if ((*it)->attack_start)
         {
-            it->attack_start = false;
-            it->attack_direction = it->direction;
-            it->attack_frame = -1;
-            it->attacking = true;
+            (*it)->attack_start = false;
+            (*it)->attack_direction = (*it)->direction;
+            (*it)->attack_frame = -1;
+            (*it)->attacking = true;
         }
-        if (it->attacking)
+        if ((*it)->attacking)
         {
-            if (it->attack_frame <= 2)
+            if ((*it)->attack_frame <= 2)
             {
-                it->attack_frame++;
-                if (it->attack_frame == 1)
+                (*it)->attack_frame++;
+                if ((*it)->attack_frame == 1)
                     MainForm->sfx->PlaySfx(SfxSound_PunchAttack);
             }
             else
             {
-                it->attack_frame = 0;
-                it->attacking = false;
+                (*it)->attack_frame = 0;
+                (*it)->attacking = false;
             }
-            it->redraw = true;
+            (*it)->redraw = true;
         }
-        if (it->alt_attack_start)
+        if ((*it)->alt_attack_start)
         {
-            it->alt_attack_start = false;
-            it->alt_attack_direction = it->direction;
-            it->alt_attack_frame = -1;
-            it->alt_attacking = true;
+            (*it)->alt_attack_start = false;
+            (*it)->alt_attack_direction = (*it)->direction;
+            (*it)->alt_attack_frame = -1;
+            (*it)->alt_attacking = true;
         }
-        if (it->alt_attacking)
+        if ((*it)->alt_attacking)
         {
-            if (it->alt_attack_frame <= 2)
+            if ((*it)->alt_attack_frame <= 2)
             {
-                it->alt_attack_frame++;
-                if (it->alt_attack_frame == 1)
+                (*it)->alt_attack_frame++;
+                if ((*it)->alt_attack_frame == 1)
                     MainForm->sfx->PlaySfx(SfxSound_NpcAltAttack);
             }
             else
             {
-                it->alt_attack_frame = 0;
-                it->alt_attacking = false;
+                (*it)->alt_attack_frame = 0;
+                (*it)->alt_attacking = false;
             }
-            it->redraw = true;
+            (*it)->redraw = true;
         }
-        if (it->health_bar_start)
+        if ((*it)->health_bar_start)
         {
-            it->health_bar_start = false;
-            if (it->health_bar_timer > 0)
+            (*it)->health_bar_start = false;
+            if ((*it)->health_bar_timer > 0)
             {
-                it->health_bar_shown = true;
-                it->redraw = true;
+                (*it)->health_bar_shown = true;
+                (*it)->redraw = true;
             }
         }
-        if (it->health_bar_shown)
+        if ((*it)->health_bar_shown)
         {
-            it->health_bar_timer--;
-            if (it->health_bar_timer <= 0)
+            (*it)->health_bar_timer--;
+            if ((*it)->health_bar_timer <= 0)
             {
-                it->health_bar_shown = false;
-                it->redraw = true;
+                (*it)->health_bar_shown = false;
+                (*it)->redraw = true;
             }
         }
-        if (it->damage_start)
+        if ((*it)->damage_start)
         {
-            it->damage_start = false;
-            if (it->damage_timer > 0)
+            (*it)->damage_start = false;
+            if ((*it)->damage_timer > 0)
             {
-                it->damage_shown = true;
-                it->redraw = true;
+                (*it)->damage_shown = true;
+                (*it)->redraw = true;
             }
         }
-        if (it->damage_shown)
+        if ((*it)->damage_shown)
         {
-            it->damage_timer--;
-            it->redraw = true;
-            if (it->damage_timer <= 0)
+            (*it)->damage_timer--;
+            (*it)->redraw = true;
+            if ((*it)->damage_timer <= 0)
             {
-                it->damage_shown = false;
-                it->redraw = true;
+                (*it)->damage_shown = false;
+                (*it)->redraw = true;
             }
         }
-        if (it->dying)
+        if ((*it)->dying)
         {
-            it->death_timer--;
+            (*it)->death_countdown--;
             MainForm->redraw_needed = true;
         }
-        if (it->balloon_shown)
+        if ((*it)->balloon_shown)
         {
-            it->balloon_timer--;
-            if (it->balloon_timer <= 1)
-            {
-                it->CloseBalloon();
-                if (it->queued_balloon_count > 0)
-                {
-                    it->queued_balloon_count--;
-                    String file_handle[6];
-                    for (int j = 0; j < 6; j++)
-                        file_handle[j] = it->queued_balloon_lines[j][0];
-                    it->ShowBalloon(file_handle, it->queued_balloon_widths[0], it->queued_balloon_heights[0],
-                        it->queued_balloon_tinted[0]);
-                    for (int queue_slot = 1; queue_slot < 5; queue_slot++)
-                    {
-                        it->queued_balloon_lines[0][queue_slot - 1] = it->queued_balloon_lines[0][queue_slot];
-                        it->queued_balloon_lines[1][queue_slot - 1] = it->queued_balloon_lines[1][queue_slot];
-                        it->queued_balloon_lines[2][queue_slot - 1] = it->queued_balloon_lines[2][queue_slot];
-                        it->queued_balloon_lines[3][queue_slot - 1] = it->queued_balloon_lines[3][queue_slot];
-                        it->queued_balloon_lines[4][queue_slot - 1] = it->queued_balloon_lines[4][queue_slot];
-                        it->queued_balloon_lines[5][queue_slot - 1] = it->queued_balloon_lines[5][queue_slot];
-                        it->queued_balloon_widths[queue_slot - 1] = it->queued_balloon_widths[queue_slot];
-                        it->queued_balloon_heights[queue_slot - 1] = it->queued_balloon_heights[queue_slot];
-                        it->queued_balloon_tinted[queue_slot - 1] = it->queued_balloon_tinted[queue_slot];
-                    }
-                }
-            }
+            (*it)->balloon_timer--;
+            if ((*it)->balloon_timer <= 1)
+                (*it)->ShowNextBalloon();
         }
         it++;
     }
@@ -511,35 +494,44 @@ void Npcs::Animate()
     if (!MainForm->players->hover_label_shown)
     {
         char no_hover_yet = true;
-        vector<Npc>::reverse_iterator reverse_it(npcs.end());
-        for (; reverse_it != vector<Npc>::reverse_iterator(npcs.begin()); reverse_it++)
+        vector<Npc *>::reverse_iterator reverse_it(npcs.end());
+        for (; reverse_it != vector<Npc *>::reverse_iterator(npcs.begin()); reverse_it++)
         {
-            screen_x = 32 * (*reverse_it).x - 32 * (*reverse_it).y + MainForm->map->GetScrollOffsetX() + 319;
-            screen_y = 16 * (*reverse_it).x + 16 * (*reverse_it).y + MainForm->map->GetScrollOffsetY() + 160;
-            if (screen_x - (*reverse_it).frame_width / 2 <= mouse_x &&
-                screen_x + (*reverse_it).frame_width / 2 >= mouse_x &&
-                screen_y - (*reverse_it).frame_height <= mouse_y && screen_y + 5 >= mouse_y)
+            if ((*reverse_it)->frame_width < 1)
             {
-                if (no_hover_yet && !(*reverse_it).dying)
+                NpcWrapper *graphic = MainForm->gfx->npc_cache->GetGraphic((*reverse_it)->graphic);
+                if (graphic)
                 {
-                    if (!(*reverse_it).label_shown)
+                    (*reverse_it)->frame_width = graphic->resource->frame_width;
+                    (*reverse_it)->frame_height = graphic->resource->frame_height;
+                }
+            }
+            screen_x = 32 * (*reverse_it)->x - 32 * (*reverse_it)->y + MainForm->map->GetScrollOffsetX() + 319;
+            screen_y = 16 * (*reverse_it)->x + 16 * (*reverse_it)->y + MainForm->map->GetScrollOffsetY() + 160;
+            if (screen_x - (*reverse_it)->frame_width / 2 <= mouse_x &&
+                screen_x + (*reverse_it)->frame_width / 2 >= mouse_x &&
+                screen_y - (*reverse_it)->frame_height <= mouse_y && screen_y + 5 >= mouse_y)
+            {
+                if (no_hover_yet && !(*reverse_it)->dying)
+                {
+                    if (!(*reverse_it)->label_shown)
                     {
-                        NpcValue npc_name = MainForm->npc_values->GetNpcByIndex((*reverse_it).npc_id - 1);
-                        MainForm->gfx->sprites->ShowNameLabel(npc_name.name, LabelColor_White, npc_name.element);
-                        (*reverse_it).label_shown = true;
+                        NpcValue *npc_name = MainForm->npc_values->GetNpc((*reverse_it)->npc_id - 1);
+                        MainForm->gfx->sprites->ShowNameLabel(npc_name->name, LabelColor_White, npc_name->element);
+                        (*reverse_it)->label_shown = true;
                         MainForm->redraw_needed = true;
                     }
                     no_hover_yet = false;
                 }
-                else if ((*reverse_it).label_shown)
+                else if ((*reverse_it)->label_shown)
                 {
-                    (*reverse_it).label_shown = false;
+                    (*reverse_it)->label_shown = false;
                     MainForm->redraw_needed = true;
                 }
             }
-            else if ((*reverse_it).label_shown)
+            else if ((*reverse_it)->label_shown)
             {
-                (*reverse_it).label_shown = false;
+                (*reverse_it)->label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -550,12 +542,12 @@ void Npcs::Animate()
     }
     else
     {
-        vector<Npc>::reverse_iterator clear_it(npcs.end());
-        for (; clear_it != vector<Npc>::reverse_iterator(npcs.begin()); clear_it++)
+        vector<Npc *>::reverse_iterator clear_it(npcs.end());
+        for (; clear_it != vector<Npc *>::reverse_iterator(npcs.begin()); clear_it++)
         {
-            if ((*clear_it).label_shown)
+            if ((*clear_it)->label_shown)
             {
-                (*clear_it).label_shown = false;
+                (*clear_it)->label_shown = false;
                 MainForm->redraw_needed = true;
             }
         }
@@ -565,329 +557,134 @@ void Npcs::Animate()
         SortByPosition();
 }
 
-// Drops npcs whose death countdown ran out, and npcs that stay out of view of the map centre.
+// Drops npcs whose death countdown ran out, and npcs out of view.
 void Npcs::RemoveExpiredNpcs()
 {
+    bool removed;
     int center_x = MainForm->map->GetCenterX();
     int center_y = MainForm->map->GetCenterY();
-    do
+    vector<Npc *>::iterator it = npcs.begin();
+    while (it != npcs.end())
     {
-        list_changed = false;
-        for (vector<Npc>::iterator i = npcs.begin(); i != npcs.end(); i++)
+        removed = false;
+        // A dying npc goes when its countdown ends; any other npc once it leaves the view range.
+        if ((*it)->dying)
         {
-            if (i->dying)
-            {
-                if (i->death_timer <= 0)
-                {
-                    i->FreeResources();
-                    npcs.erase(i);
-                    list_changed = true;
-                    break;
-                }
-            }
-            else if (!IsInViewRange(center_x, center_y, i->x, i->y))
-            {
-                if (!i->out_of_view)
-                {
-                    i->out_of_view = true;
-                    i->out_of_view_timer = 10;
-                }
-                else
-                {
-                    i->out_of_view_timer--;
-                    if (i->out_of_view_timer <= 0)
-                    {
-                        i->FreeResources();
-                        i->CloseBalloon();
-                        npcs.erase(i);
-                        list_changed = true;
-                        break;
-                    }
-                }
-            }
-            else
-                i->out_of_view = false;
+            (*it)->death_countdown--;
+            if ((*it)->death_countdown <= 0)
+                removed = true;
         }
-    } while (list_changed);
-}
-
-// Loads each pending npc's frames over four calls: standing and idle, then walking, then attacking, then done.
-// At most three pending npcs are worked on in a call.
-void Npcs::LoadPendingGraphics()
-{
-    Npc *i;
-    int frame_index;
-    unsigned char loaded_count;
-    int base_resource;
-    int attack_library[1];
-    if (!Application->Active && MainForm->config->GetFullscreen())
-        return;
-    loaded_count = 0;
-    i = npcs.begin();
-    for (; i != npcs.end() && loaded_count <= 2; i++)
-    {
-        if (i->load_failures > 2)
+        else if (!IsInViewRange(center_x, center_y, (*it)->x, (*it)->y))
+            removed = true;
+        if (removed)
         {
-            if (i->load_failures == 3)
-                i->load_failures = 250;
+            delete *it;
+            npcs.erase(it);
         }
         else
-        {
-            if (i->reload_requested)
-            {
-                i->FreeResources();
-                i->CreateResources();
-                i->reload_requested = false;
-                i->graphics_pending = true;
-                i->load_stage = 0;
-            }
-            if (i->graphics_pending)
-            {
-                loaded_count++;
-                if (!preload_graphics && library_ref_count <= 0)
-                    graphics_library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_Npcs).c_str());
-                base_resource = RESOURCES_PER_GRAPHIC * i->graphic + 61;
-                attack_library[0] = (int)graphics_library;
-                if (!i->load_stage)
-                {
-                    if (!i->resources->CreateSheets((void *)attack_library[0], base_resource,
-                        has_idle_animation[i->graphic - 1]))
-                        i->load_failures++;
-                    else
-                    {
-                        i->frame_width = i->resources->GetFrameWidth();
-                        i->frame_height = i->resources->GetFrameHeight();
-                        i->load_stage++;
-                    }
-                }
-                else if (i->load_stage == 1)
-                {
-                    if (graphics_library)
-                    {
-                        if (!i->resources->LoadFrontFrame(0, (void *)attack_library[0], base_resource))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadBackFrame(0, (void *)attack_library[0], base_resource + 2))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (has_idle_animation[i->graphic - 1])
-                        {
-                            if (!i->resources->LoadFrontFrame(1, (void *)attack_library[0], base_resource + 1))
-                            {
-                                i->load_failures++;
-                                continue;
-                            }
-                            if (!i->resources->LoadBackFrame(1, (void *)attack_library[0], base_resource + 3))
-                            {
-                                i->load_failures++;
-                                continue;
-                            }
-                        }
-                    }
-                    i->load_stage++;
-                }
-                else if (i->load_stage == 2)
-                {
-                    if (graphics_library)
-                    {
-                        for (frame_index = 0; frame_index < 4; frame_index++)
-                        {
-                            if (!i->resources->LoadFrontFrame(frame_index + 2, (void *)attack_library[0],
-                                base_resource + frame_index + 4))
-                                i->load_failures++;
-                            else if (!i->resources->LoadBackFrame(frame_index + 2, (void *)attack_library[0],
-                                base_resource + frame_index + 8))
-                                i->load_failures++;
-                        }
-                    }
-                    i->load_stage++;
-                }
-                else if (i->load_stage == 3)
-                {
-                    if (graphics_library)
-                    {
-                        if (!i->resources->LoadFrontFrame(6, (void *)attack_library[0], base_resource + 12))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadBackFrame(6, (void *)attack_library[0], base_resource + 14))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadFrontFrame(7, (void *)attack_library[0], base_resource + 13))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadBackFrame(7, (void *)attack_library[0], base_resource + 15))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadFrontFrame(8, (void *)attack_library[0], base_resource + 16))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                        if (!i->resources->LoadBackFrame(8, (void *)attack_library[0], base_resource + 17))
-                        {
-                            i->load_failures++;
-                            continue;
-                        }
-                    }
-                    i->load_stage++;
-                }
-                else if (i->load_stage >= 4)
-                {
-                    i->graphics_pending = false;
-                    i->redraw = true;
-                    if (!preload_graphics)
-                    {
-                        if (library_ref_count > 0)
-                            library_ref_count--;
-                        if (!library_ref_count)
-                        {
-                            FreeLibrary(graphics_library);
-                            graphics_library = 0;
-                        }
-                    }
-                }
-            }
-        }
+            it++;
     }
 }
 
 // The record id of the npc with the map index, or -1.
 int Npcs::GetNpcId(int index)
 {
-    int npc_id = -1;
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if ((unsigned int)it->index == index)
-        {
-            npc_id = it->npc_id;
-            break;
-        }
+        if ((unsigned int)(*it)->index == index)
+            return (*it)->npc_id;
     }
-    return npc_id;
+    return -1;
 }
 
 // True when any npc needs a redraw; clears the flags.
 bool Npcs::ConsumeRedraw()
 {
-    bool any_redraw = false;
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (it->redraw)
+        if ((*it)->redraw)
         {
-            it->redraw = false;
-            any_redraw = true;
+            (*it)->redraw = false;
+            return true;
         }
     }
-    return any_redraw;
+    return false;
 }
 
 // True when the tile is in view range of the centre, which reaches further past the centre on both axes.
-DEFINE_IS_IN_VIEW_RANGE(Npcs)
-
-// Sorts the list by y, then by x.
-void Npcs::SortByPosition()
+bool Npcs::IsInViewRange(int center_x, int center_y, int x, int y)
 {
-    char swapped;
-    do
+    bool in_range = false;
+    int dx = x - center_x;
+    int dy = y - center_y;
+    if (dx < 0)
+        dx = 0 - dx;
+    if (dy < 0)
+        dy = 0 - dy;
+    if (center_x < x && center_y < y)
     {
-        swapped = false;
-        for (int i = 0; i < (int)GetCount() - 1; i++)
-        {
-            Npc handle(-1);
-            if (npcs[i].y == npcs[i + 1].y)
-            {
-                if (npcs[i].x > npcs[i + 1].x)
-                {
-                    handle = npcs[i];
-                    npcs[i] = npcs[i + 1];
-                    npcs[i + 1] = handle;
-                    swapped = true;
-                }
-            }
-            if (npcs[i].y > npcs[i + 1].y)
-            {
-                handle = npcs[i];
-                npcs[i] = npcs[i + 1];
-                npcs[i + 1] = handle;
-                swapped = true;
-            }
-        }
-    } while (swapped);
+        if (dx + dy <= 15)
+            in_range = true;
+    }
+    else if (dx + dy <= 12)
+        in_range = true;
+    return in_range;
 }
 
-// True when an npc with the map index is on the list and not dying.
+// True when the npc of the index is on the map and not dying.
 bool Npcs::HasNpc(int index)
 {
-    bool found = false;
-    vector<Npc>::iterator it;
+    vector<Npc *>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index && !it->dying)
+        if (index == (*it)->index)
         {
-            found = true;
-            break;
+            if (!(*it)->dying)
+                return true;
         }
     }
-    return found;
+    return false;
 }
 
 // True when a living npc stands on the tile.
 bool Npcs::HasNpcAt(int x, int y)
 {
-    bool found = false;
-    vector<Npc>::iterator it;
+    vector<Npc *>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (x == it->x && y == it->y && !it->dying)
-        {
-            found = true;
-            break;
-        }
+        if (x == (*it)->x && y == (*it)->y && !(*it)->dying)
+            return true;
     }
-    return found;
+    return false;
 }
 
 // Starts the npc's death for nine ticks, noting whether a hit killed it.
 void Npcs::KillNpc(int index, int damage)
 {
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if (index == (*it)->index)
         {
-            it->dying = true;
+            (*it)->dying = true;
             if (damage > 0)
-                it->killed_by_hit = true;
+                (*it)->killed_by_hit = true;
             if (damage <= 0)
-                it->killed_by_hit = false;
-            it->death_timer = 9;
-            it->index = -1;
-            return;
+                (*it)->killed_by_hit = false;
+            (*it)->death_countdown = 9;
+            break;
         }
     }
 }
 
-// Starts the death countdown of every npc with the record id.
+// Starts the death of every npc of the id.
 void Npcs::KillNpcsById(int npc_id)
 {
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (npc_id == it->npc_id)
+        if (npc_id == (*it)->npc_id)
         {
-            it->dying = true;
-            it->death_timer = 9;
-            it->index = -1;
+            (*it)->dying = true;
+            (*it)->death_countdown = 9;
         }
     }
 }
@@ -897,22 +694,22 @@ Npc Npcs::GetNpc(int index)
 {
     if (index < 0 || GetCount() <= index)
         return Npc(-1);
-    return npcs[index];
+    return *npcs[index];
 }
 
 // Queues a step to the tile, facing direction.
 void Npcs::StartWalk(int index, int x, int y, int direction)
 {
-    vector<Npc>::iterator it;
+    vector<Npc *>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if (index == (*it)->index)
         {
-            it->walk_start = true;
-            it->walk_target_x = x;
-            it->walk_target_y = y;
-            it->walk_target_direction = direction;
-            it->walk_facing = direction;
+            (*it)->walk_start = true;
+            (*it)->walk_target_x = x;
+            (*it)->walk_target_y = y;
+            (*it)->walk_target_direction = direction;
+            (*it)->walk_facing = direction;
             break;
         }
     }
@@ -921,22 +718,22 @@ void Npcs::StartWalk(int index, int x, int y, int direction)
 // Shows a damage or heal number over the npc while its timer runs.
 void Npcs::ShowDamage(int index, int amount, char heal)
 {
-    vector<Npc>::iterator it = npcs.begin();
+    vector<Npc *>::iterator it = npcs.begin();
     while (it != npcs.end())
     {
-        if (index == it->index)
+        if ((unsigned int)(*it)->index == index)
         {
             if (amount >= 0)
             {
                 String amount_text = IntToStr(amount);
-                it->damage_digits = amount_text.Length();
+                (*it)->damage_digits = amount_text.Length();
             }
-            it->damage_start = true;
-            it->damage_shown = false;
-            it->damage_timer = 8;
-            it->damage_amount = amount;
-            it->damage_heal = heal;
-            break;
+            (*it)->damage_start = true;
+            (*it)->damage_shown = false;
+            (*it)->damage_timer = 8;
+            (*it)->damage_amount = amount;
+            (*it)->damage_heal = heal;
+            return;
         }
         it++;
     }
@@ -945,16 +742,27 @@ void Npcs::ShowDamage(int index, int amount, char heal)
 // Shows the npc's health bar for duration passes; percent scales to the bar's width.
 void Npcs::ShowHealthBar(int index, int percent, int duration)
 {
-    vector<Npc>::iterator it;
-    for (it = npcs.begin(); it != npcs.end(); it++)
+    ShowBar(index, 0, percent, duration);
+}
+
+// Shows one of the npc's three bars at the percent for the duration.
+void Npcs::ShowBar(int index, int bar, int percent, int duration)
+{
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if ((unsigned int)(*it)->index == index)
         {
-            double bar_width = percent * HEALTH_BAR_SCALE;
-            it->health_bar_start = true;
-            it->health_bar_shown = false;
-            it->health_bar_timer = duration;
-            it->health_bar_width = bar_width;
+            double width = percent * 0.36;
+            (*it)->health_bar_start = true;
+            (*it)->health_bar_shown = false;
+            (*it)->health_bar_kind = bar;
+            (*it)->health_bar_timer = duration;
+            if (!bar)
+                (*it)->health_bar_width = (int)width;
+            if (bar == 1)
+                (*it)->second_bar_width = (int)width;
+            if (bar == 2)
+                (*it)->third_bar_width = (int)width;
             break;
         }
     }
@@ -963,20 +771,20 @@ void Npcs::ShowHealthBar(int index, int percent, int duration)
 // Starts a spell effect on the npc, with its layers, frames and loops from the magic map.
 void Npcs::StartEffect(int index, int effect_id)
 {
-    vector<Npc>::iterator it;
+    vector<Npc *>::iterator it;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if (index == (*it)->index)
         {
-            it->effect_start = true;
-            it->effect_running = false;
-            it->effect_id = effect_id;
-            it->effect_frame = 0;
-            it->effect_base_layer = MainForm->magic_mapper->base_layer[effect_id];
-            it->effect_blend_layer = MainForm->magic_mapper->blend_layer[effect_id];
-            it->effect_solid_layer = MainForm->magic_mapper->solid_layer[effect_id];
-            it->effect_last_frame = MainForm->magic_mapper->GetFrameCount(effect_id) - 2;
-            it->effect_loops_left = MainForm->magic_mapper->GetLoopCount(effect_id);
+            (*it)->effect_start = true;
+            (*it)->effect_running = false;
+            (*it)->effect_id = effect_id;
+            (*it)->effect_frame = 0;
+            (*it)->effect_base_layer = MainForm->magic_mapper->base_layer[effect_id];
+            (*it)->effect_blend_layer = MainForm->magic_mapper->blend_layer[effect_id];
+            (*it)->effect_solid_layer = MainForm->magic_mapper->solid_layer[effect_id];
+            (*it)->effect_last_frame = MainForm->magic_mapper->GetFrameCount(effect_id) - 2;
+            (*it)->effect_loops_left = MainForm->magic_mapper->GetLoopCount(effect_id);
             break;
         }
     }
@@ -985,37 +793,108 @@ void Npcs::StartEffect(int index, int effect_id)
 // Queues an attack in the direction.
 void Npcs::StartAttack(int index, int direction)
 {
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if (index == (*it)->index)
         {
-            it->attack_start = true;
-            it->direction = direction;
-            return;
+            (*it)->attack_start = true;
+            (*it)->direction = direction;
+            break;
         }
     }
+}
+
+// Sorts the list by y, then by x.
+void Npcs::SortByPosition()
+{
+    char swapped;
+    do
+    {
+        swapped = false;
+        for (int i = 0; i < (int)(GetCount() - 1); i++)
+        {
+            int swap;
+            if (npcs[i]->y == npcs[i + 1]->y)
+            {
+                if (npcs[i]->x > npcs[i + 1]->x)
+                {
+                    swap = (int)npcs[i];
+                    npcs[i] = npcs[i + 1];
+                    npcs[i + 1] = (Npc *)swap;
+                    swapped = true;
+                }
+            }
+            if (npcs[i]->y > npcs[i + 1]->y)
+            {
+                swap = (int)npcs[i];
+                npcs[i] = npcs[i + 1];
+                npcs[i + 1] = (Npc *)swap;
+                swapped = true;
+            }
+        }
+    } while (swapped);
 }
 
 // Adds an npc to the list, or moves the one of that index, keeping the list in drawing order by position.
 void Npcs::AddNpc(int index, int npc_id, int graphic, String name, int x, int y, int direction)
 {
-    if (!HasNpc(index))
+    char is_new = true;
+    short insert_at = 0;
+    for (vector<Npc *>::iterator it = npcs.begin(); it < npcs.end(); it++)
     {
-        Npc handle(index, npc_id, graphic, name, x, y, direction);
-        handle.hidden = false;
-        handle.CreateResources();
-        npcs.insert(npcs.end(), handle);
-        SortByPosition();
+        if ((*it)->index == index)
+        {
+            (*it)->dying = false;
+            (*it)->damage_timer = 0;
+            (*it)->health_bar_timer = 0;
+            (*it)->graphic = graphic;
+            (*it)->name = name;
+            (*it)->direction = direction;
+            (*it)->walk_start = false;
+            (*it)->walking = false;
+            (*it)->attack_start = false;
+            (*it)->attacking = false;
+            (*it)->alt_attack_start = false;
+            (*it)->alt_attacking = false;
+            (*it)->effect_start = false;
+            (*it)->effect_running = false;
+            (*it)->health_bar_start = false;
+            (*it)->health_bar_shown = false;
+            if ((*it)->x != x || y != (*it)->y)
+            {
+                (*it)->x = x;
+                (*it)->y = y;
+                SortByPosition();
+            }
+            return;
+        }
+        if (is_new)
+        {
+            if (y <= (*it)->y)
+            {
+                if ((*it)->y == y)
+                {
+                    if ((*it)->x >= x)
+                        is_new = false;
+                }
+                else
+                    is_new = false;
+            }
+            if (is_new)
+                insert_at++;
+        }
     }
+    Npc *npc = new Npc(index, npc_id, graphic, name, x, y, direction);
+    npcs.insert(npcs.begin() + insert_at, npc);
 }
 
-// Frees every npc's cells and balloon, then empties the list.
+// Deletes every npc with its balloon.
 void Npcs::Clear()
 {
-    for (vector<Npc>::iterator it = npcs.begin(); it != npcs.end(); it++)
+    for (vector<Npc *>::iterator it = npcs.begin(); it != npcs.end(); it++)
     {
-        it->FreeResources();
-        it->CloseBalloon();
+        (*it)->FreeBalloon();
+        delete *it;
     }
     if (GetCount() >= 1)
     {
@@ -1029,15 +908,18 @@ unsigned int Npcs::GetCount()
     return npcs.size();
 }
 
-void Npcs::ShowBalloon(int index, String *lines, int width, int height, int tinted)
+// Shows the text in a balloon over the npc, when balloons are on.
+void Npcs::ShowBalloon(int index, String text)
 {
-    vector<Npc>::iterator it;
+    vector<Npc *>::iterator it;
+    if (!MainForm->config->GetShowBalloons())
+        return;
     for (it = npcs.begin(); it != npcs.end(); it++)
     {
-        if (index == it->index)
+        if ((*it)->index == index)
         {
-            it->ShowBalloon(lines, width, height, tinted);
-            break;
+            (*it)->ShowBalloon((*it)->name, text, MainForm->config->GetNpcColor());
+            return;
         }
     }
 }

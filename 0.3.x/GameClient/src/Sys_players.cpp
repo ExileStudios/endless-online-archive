@@ -3,108 +3,29 @@
 
 #include "Tmainform.h"
 #include "Gfx_interface.h"
-#include "Gfx_sprites.h"
 #include "Gfx_emotebuffer.h"
 #include "Ctrl_game.h"
 #include "Gfx_player.h"
 #include "Ctrl_social.h"
+#include "Gfx_global_sprites.h"
 
 #pragma package(smart_init)
 
 Players::Players(char preload_option)
 {
     current_index = -1;
-    gender_one_libraries_loaded = false;
-    gender_zero_libraries_loaded = false;
     hover_label_shown = false;
-    preload_graphics = preload_option;
-    if (preload_graphics)
-    {
-        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
-        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
-        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
-        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
-        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
-        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
-        gender_one_libraries_loaded = true;
-        gender_one_idle_ticks = 0;
-        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
-        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
-        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
-        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
-        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
-        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
-        gender_zero_libraries_loaded = true;
-        gender_zero_idle_ticks = 0;
-    }
 }
 
 Players::~Players()
 {
-    if (gender_one_libraries_loaded || preload_graphics)
-    {
-        FreeLibrary(hair_library_gender_one);
-        FreeLibrary(boots_library_gender_one);
-        FreeLibrary(armor_library_gender_one);
-        FreeLibrary(hat_library_gender_one);
-        FreeLibrary(weapon_library_gender_one);
-        FreeLibrary(shield_library_gender_one);
-    }
-    if (gender_zero_libraries_loaded || preload_graphics)
-    {
-        FreeLibrary(hair_library_gender_zero);
-        FreeLibrary(boots_library_gender_zero);
-        FreeLibrary(armor_library_gender_zero);
-        FreeLibrary(hat_library_gender_zero);
-        FreeLibrary(weapon_library_gender_zero);
-        FreeLibrary(shield_library_gender_zero);
-    }
+    for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
+        delete it;
 }
 
 // Frees the loaded equipment libraries; with preload_graphics they are loaded again at once.
 void Players::ReloadGraphicsLibraries()
 {
-    if (gender_one_libraries_loaded || preload_graphics)
-    {
-        FreeLibrary(hair_library_gender_one);
-        FreeLibrary(boots_library_gender_one);
-        FreeLibrary(armor_library_gender_one);
-        FreeLibrary(hat_library_gender_one);
-        FreeLibrary(weapon_library_gender_one);
-        FreeLibrary(shield_library_gender_one);
-        if (!preload_graphics)
-            gender_one_libraries_loaded = false;
-    }
-    if (gender_zero_libraries_loaded || preload_graphics)
-    {
-        FreeLibrary(hair_library_gender_zero);
-        FreeLibrary(boots_library_gender_zero);
-        FreeLibrary(armor_library_gender_zero);
-        FreeLibrary(hat_library_gender_zero);
-        FreeLibrary(weapon_library_gender_zero);
-        FreeLibrary(shield_library_gender_zero);
-        if (!preload_graphics)
-            gender_zero_libraries_loaded = false;
-    }
-    if (preload_graphics)
-    {
-        hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
-        boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
-        armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
-        hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
-        weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
-        shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
-        gender_one_libraries_loaded = true;
-        gender_one_idle_ticks = 0;
-        hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
-        boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
-        armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
-        hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
-        weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
-        shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
-        gender_zero_libraries_loaded = true;
-        gender_zero_idle_ticks = 0;
-    }
 }
 
 // One step of every player's timers and animations, then the name label of the player under the mouse.
@@ -250,7 +171,7 @@ void Players::Animate()
                 if (!i->jump_frame)
                 {
                     int step_volume = MainForm->sfx->GetDistanceVolume((short)i->x, (short)i->y);
-                    MainForm->sfx->PlayEffectSoundAt(SfxSound_Jump, step_volume);
+                    MainForm->sfx->PlaySfxAt(SfxSound_Jump, step_volume);
                 }
                 i->jump_frame++;
             }
@@ -418,7 +339,7 @@ void Players::Animate()
         {
             i->level_up_pending = false;
             int arrive_volume = MainForm->sfx->GetDistanceVolume((short)i->x, (short)i->y);
-            MainForm->sfx->PlayEffectSoundAt(SfxSound_LevelUp, arrive_volume);
+            MainForm->sfx->PlaySfxAt(SfxSound_LevelUp, arrive_volume);
             MainForm->map->BlockActionsBriefly();
             i->emote_start = true;
             i->emoting = false;
@@ -430,7 +351,7 @@ void Players::Animate()
         {
             i->balloon_timer--;
             if (i->balloon_timer <= 1)
-                i->CloseBalloon();
+                i->HideBalloon();
         }
         i++;
     }
@@ -541,72 +462,57 @@ void Players::RemoveExpiredPlayers(int center_x, int center_y)
     } while (list_changed);
 }
 
-// Loads one gender's equipment libraries when they are not loaded, and restarts their idle count.
+// Opens the hair, boots, armor, hat, weapon and shield graphics files of the gender.
 void Players::LoadGraphicsLibraries(int gender)
 {
-    if (!preload_graphics)
+    if (gender)
     {
-        if (gender)
-        {
-            if (!gender_one_libraries_loaded)
-            {
-                hair_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHair).c_str());
-                boots_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleBoots).c_str());
-                armor_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleArmor).c_str());
-                hat_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleHats).c_str());
-                weapon_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleWeapons).c_str());
-                shield_library_gender_one = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MaleShields).c_str());
-            }
-            gender_one_libraries_loaded = true;
-            gender_one_idle_ticks = 0;
-        }
-        else
-        {
-            if (!gender_zero_libraries_loaded)
-            {
-                hair_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHair).c_str());
-                boots_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleBoots).c_str());
-                armor_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleArmor).c_str());
-                hat_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleHats).c_str());
-                weapon_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleWeapons).c_str());
-                shield_library_gender_zero = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_FemaleShields).c_str());
-            }
-            gender_zero_libraries_loaded = true;
-            gender_zero_idle_ticks = 0;
-        }
+        hair_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleHair);
+        boots_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleBoots);
+        armor_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleArmor);
+        hat_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleHats);
+        weapon_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleWeapons);
+        shield_library_gender_one = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleShields);
+    }
+    else
+    {
+        hair_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleHair);
+        boots_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleBoots);
+        armor_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleArmor);
+        hat_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleHats);
+        weapon_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleWeapons);
+        shield_library_gender_zero = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleShields);
     }
 }
 
-// Draws each player's body and equipment into their frame cells: standing first, the rest when an action needs them.
-// Cell 0   = standing        1-2 = a step, first two frames    3-4 = a step, last two frames
-// Cell 5-6 = melee attack    10  = ranged attack               7   = spell cast
-// Cell 8   = on a chair      9   = on the floor                The emote faces go to a strip of their own.
-// Once four groups are drawn in a call, the players after wait for the next call. A gender's libraries are freed
-// after a run of calls that draw nothing for that gender.
+// Takes the gender's open graphics files as the ones to draw from.
+void Players::SelectGraphicsLibraries(int gender)
+{
+    if (gender)
+    {
+        hair_library = hair_library_gender_one;
+        boots_library = boots_library_gender_one;
+        armor_library = armor_library_gender_one;
+        hat_library = hat_library_gender_one;
+        weapon_library = weapon_library_gender_one;
+        shield_library = shield_library_gender_one;
+        return;
+    }
+    hair_library = hair_library_gender_zero;
+    boots_library = boots_library_gender_zero;
+    armor_library = armor_library_gender_zero;
+    hat_library = hat_library_gender_zero;
+    weapon_library = weapon_library_gender_zero;
+    shield_library = shield_library_gender_zero;
+}
+
+// Builds the sprite sheets of up to four players whose graphics are waiting: every frame of standing, sitting,
+// walking, attacking and casting, layering skin, clothes, hair and gear in the order each hat and shield needs.
 void Players::LoadPendingGraphics()
 {
-    int loaded_count;
-    Player *i;
-    int gender;
-    int skin;
-    int hair_resource;
-    int boots_resource;
-    int armor_resource;
-    int hat_resource;
-    int weapon_resource;
-    int shield_resource;
-    char hair_hidden;
-    char hair_over_hat;
-    char back_shield;
-    int hair_library;
-    int boots_library;
-    int armor_library;
-    int hat_library;
-    int weapon_library;
-    int shield_library;
-    loaded_count = 0;
-    i = players.begin();
-    while (players.end() != i && loaded_count <= 3)
+    int loaded_count = 0;
+    vector<Player>::iterator i = players.begin();
+    while (i != players.end() && loaded_count <= 3)
     {
         // A reload frees the player's sheets and marks every one of them to load again.
         if (i->reload_requested && Application->Active)
@@ -627,18 +533,18 @@ void Players::LoadPendingGraphics()
         }
         if (i->graphics_pending && !i->reload_requested && (Application->Active || !MainForm->config->GetFullscreen()))
         {
-            gender = i->gender;
-            skin = i->skin;
-            // Each part's first bitmap in its library; a number out of range draws nothing.
-            hair_resource = 40 * i->hair_style + 4 * i->hair_color + 61;
-            boots_resource = 40 * i->boots + 61;
-            armor_resource = 50 * i->armor + 51;
-            hat_resource = 10 * i->hat + 91;
-            weapon_resource = 100 * i->weapon + 1;
-            shield_resource = 50 * i->shield + 51;
-            hair_hidden = false;
-            hair_over_hat = false;
-            back_shield = false;
+            int gender = i->gender;
+            int skin = i->skin;
+            int hair_resource = 40 * i->hair_style + 4 * i->hair_color + 61;
+            int boots_resource = 40 * i->boots + 61;
+            int armor_resource = 50 * i->armor + 51;
+            int hat_resource = 10 * i->hat + 91;
+            int weapon_resource = 100 * i->weapon + 1;
+            int shield_resource = 50 * i->shield + 51;
+            char hair_hidden = false;
+            char hair_over_hat = false;
+            char back_shield = false;
+            char kind_skin = false;
             // A graphic number outside 101 to 10000 draws nothing.
             if (hair_resource < MIN_PAPERDOLL_RESOURCE || hair_resource > 10000)
                 hair_resource = 0;
@@ -672,24 +578,8 @@ void Players::LoadPendingGraphics()
                 i->shield == ShieldGraphic_FireArrows || i->shield == ShieldGraphic_GoodForceWings ||
                 i->shield == ShieldGraphic_FireForceWings)
                 back_shield = true;
-            if (!gender)
-            {
-                hair_library = (int)hair_library_gender_zero;
-                boots_library = (int)boots_library_gender_zero;
-                armor_library = (int)armor_library_gender_zero;
-                hat_library = (int)hat_library_gender_zero;
-                weapon_library = (int)weapon_library_gender_zero;
-                shield_library = (int)shield_library_gender_zero;
-            }
-            else
-            {
-                hair_library = (int)hair_library_gender_one;
-                boots_library = (int)boots_library_gender_one;
-                armor_library = (int)armor_library_gender_one;
-                hat_library = (int)hat_library_gender_one;
-                weapon_library = (int)weapon_library_gender_one;
-                shield_library = (int)shield_library_gender_one;
-            }
+            if (i->skin == 8 || i->skin == 9 || i->skin == 11)
+                kind_skin = true;
             // The standing frames, while the player stands still or gets up.
             if (((!i->sitting_on_chair && !i->sitting_on_floor && !i->walking && !i->jumping && !i->attacking &&
                 !i->casting) || i->stand_up_start) && !i->stand_sheet_loaded)
@@ -697,11 +587,16 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
                     }
+                    if (kind_skin)
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_Stand, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 0,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawFrontLayer(PlayerFrame_Stand, 18, 0, shield_library, shield_resource);
@@ -717,12 +612,11 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawFrontLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource);
                         i->resources->DrawBackLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 2);
                     }
-                    if (!i->resources->front_sheet->BltFast(34, gender + 19, MainForm->gfx->sprites->stand_sheet,
-                        &MainForm->gfx->sprites->GetStandFrameRect(gender, FacingDirection_Down, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT) ||
-                        !i->resources->back_sheet->BltFast(34, gender + 19, MainForm->gfx->sprites->stand_sheet,
-                            &MainForm->gfx->sprites->GetStandFrameRect(gender, FacingDirection_Left, skin),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT))
+                    if (!i->resources->DrawFrontLayerFrom(PlayerFrame_Stand, 34, gender + 19,
+                        MainForm->gfx->sprites->stand_sheet, MainForm->gfx->sprites->GetStandFrameRect(gender,
+                        FacingDirection_Down, skin)) || !i->resources->DrawBackLayerFrom(PlayerFrame_Stand, 34, gender +
+                        19, MainForm->gfx->sprites->stand_sheet, MainForm->gfx->sprites->GetStandFrameRect(gender,
+                        FacingDirection_Left, skin)))
                         i->reload_requested = true;
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -754,6 +648,10 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawFrontLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 1);
                         i->resources->DrawBackLayer(PlayerFrame_Stand, 28, 7, hair_library, hair_resource + 3);
                     }
+                    if (kind_skin && !back_shield)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Stand, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
@@ -763,6 +661,10 @@ void Players::LoadPendingGraphics()
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawBackLayer(PlayerFrame_Stand, 18, 0, shield_library, shield_resource + 1);
+                    if (kind_skin && back_shield)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Stand, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
                     i->redraw = true;
                     i->stand_sheet_loaded = true;
                     loaded_count++;
@@ -777,11 +679,16 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
                     }
+                    if (kind_skin)
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_ChairSit, 39, 23 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 0,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 18, 6, shield_library, shield_resource);
@@ -791,13 +698,12 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawFrontLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource);
                         i->resources->DrawBackLayer(PlayerFrame_ChairSit, 28, 13, hair_library, hair_resource + 2);
                     }
-                    i->resources->front_sheet->BltFast(573 - gender, 27 - gender,
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_ChairSit, 29 - gender, 27 - gender,
                         MainForm->gfx->sprites->chair_sit_sheet,
-                        &MainForm->gfx->sprites->GetChairSitFrameRect(gender, FacingDirection_Down, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(572, 27 - gender, MainForm->gfx->sprites->chair_sit_sheet,
-                        &MainForm->gfx->sprites->GetChairSitFrameRect(gender, FacingDirection_Left, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                        MainForm->gfx->sprites->GetChairSitFrameRect(gender, FacingDirection_Down, skin));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_ChairSit, 28, 27 - gender,
+                        MainForm->gfx->sprites->chair_sit_sheet, MainForm->gfx->sprites->GetChairSitFrameRect(gender,
+                        FacingDirection_Left, skin));
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
@@ -832,6 +738,14 @@ void Players::LoadPendingGraphics()
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawBackLayer(PlayerFrame_ChairSit, 18, 6, shield_library, shield_resource + 1);
+                    if (kind_skin)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_ChairSit, 39, 23 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
+                    if (kind_skin)
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_FloorSit, 39, 24 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 0,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawFrontLayer(PlayerFrame_FloorSit, 18, 6, shield_library, shield_resource);
@@ -842,13 +756,12 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawBackLayer(PlayerFrame_FloorSit, gender + 30, 13, hair_library, hair_resource +
                             2);
                     }
-                    i->resources->front_sheet->BltFast(641 - gender, 27 - gender,
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_FloorSit, 29 - gender, 27 - gender,
                         MainForm->gfx->sprites->floor_sit_sheet,
-                        &MainForm->gfx->sprites->GetFloorSitFrameRect(gender, FacingDirection_Down, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(641, 27 - gender, MainForm->gfx->sprites->floor_sit_sheet,
-                        &MainForm->gfx->sprites->GetFloorSitFrameRect(gender, FacingDirection_Left, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                        MainForm->gfx->sprites->GetFloorSitFrameRect(gender, FacingDirection_Down, skin));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_FloorSit, 29, 27 - gender,
+                        MainForm->gfx->sprites->floor_sit_sheet, MainForm->gfx->sprites->GetFloorSitFrameRect(gender,
+                        FacingDirection_Left, skin));
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
@@ -887,6 +800,10 @@ void Players::LoadPendingGraphics()
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawBackLayer(PlayerFrame_FloorSit, 21, 6, shield_library, shield_resource + 1);
+                    if (kind_skin)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_FloorSit, 39, 24 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet,
+                            MainForm->gfx->sprites->GetKindFrameRect(gender, 1, i->skin));
                     i->redraw = true;
                     i->sit_sheets_loaded = true;
                     loaded_count++;
@@ -896,17 +813,25 @@ void Players::LoadPendingGraphics()
                 }
             }
             // The sitting frames, on a chair or on the floor.
-            // The walking frames; the player's own character loads them even while standing.
             if ((i->walking || i->walk_start || i->jumping || i->jump_start ||
                 MainForm->net_client->GetPlayerId() == i->player_id) && !i->walk_sheets_loaded)
             {
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
+                    // The walking frames; the player's own character loads them even while standing.
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
+                    }
+                    if (kind_skin)
+                    {
+                        for (int kind_walk_frame = 1; kind_walk_frame <= 2; kind_walk_frame++)
+                            i->resources->DrawFrontLayerFrom(kind_walk_frame, 39, 17 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 0, i->skin));
                     }
                     if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
                     {
@@ -941,18 +866,18 @@ void Players::LoadPendingGraphics()
                             }
                         }
                     }
-                    i->resources->front_sheet->BltFast(98 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 0),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->front_sheet->BltFast(166 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 1),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(98, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 0),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(166, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 1),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_Walk1, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Down, skin, 0));
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_Walk2, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Down, skin, 1));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_Walk1, 30, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Left, skin, 0));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_Walk2, 30, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Left, skin, 1));
                     if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
                     {
                         if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1018,19 +943,23 @@ void Players::LoadPendingGraphics()
                             }
                         }
                     }
+                    if (kind_skin && !back_shield)
+                    {
+                        for (int kind_back_walk_frame = 1; kind_back_walk_frame <= 2; kind_back_walk_frame++)
+                            i->resources->DrawBackLayerFrom(kind_back_walk_frame, 39, 17 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 1, i->skin));
+                    }
                     if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
                     {
                         for (int shield_walk_frame = 1; shield_walk_frame <= 2; shield_walk_frame++)
                         {
-                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE)
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                             {
-                                if (!back_shield)
-                                {
-                                    i->resources->DrawFrontLayer(shield_walk_frame, 19, 34, shield_library,
-                                        shield_resource + shield_walk_frame + 1);
-                                    i->resources->DrawBackLayer(shield_walk_frame, 19, 34, shield_library,
-                                        shield_resource + shield_walk_frame + 5);
-                                }
+                                i->resources->DrawFrontLayer(shield_walk_frame, 19, 34, shield_library,
+                                    shield_resource + shield_walk_frame + 1);
+                                i->resources->DrawBackLayer(shield_walk_frame, 19, 34, shield_library,
+                                    shield_resource + shield_walk_frame + 5);
                             }
                         }
                     }
@@ -1043,6 +972,13 @@ void Players::LoadPendingGraphics()
                                 i->resources->DrawBackLayer(back_shield_rear_walk_sheet, 18, 1, shield_library,
                                     shield_resource + 1);
                         }
+                    }
+                    if (kind_skin && back_shield)
+                    {
+                        for (int kind_item_walk_frame = 1; kind_item_walk_frame <= 2; kind_item_walk_frame++)
+                            i->resources->DrawBackLayerFrom(kind_item_walk_frame, 39, 17 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 1, i->skin));
                     }
                     i->redraw = true;
                     i->walk_sheets_loaded = true;
@@ -1057,10 +993,18 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
+                    }
+                    if (kind_skin)
+                    {
+                        for (int kind_tail_frame = 3; kind_tail_frame <= 4; kind_tail_frame++)
+                            i->resources->DrawFrontLayerFrom(kind_tail_frame, 39, 18 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 0, i->skin));
                     }
                     if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
                     {
@@ -1077,8 +1021,8 @@ void Players::LoadPendingGraphics()
                         {
                             if (weapon_resource >= MIN_PAPERDOLL_RESOURCE)
                             {
-                                i->resources->DrawFrontLayer(j, 0, 0, weapon_library, weapon_resource + j + 1);
-                                i->resources->DrawBackLayer(j, 0, 0, weapon_library, weapon_resource + j + 5);
+                                i->resources->DrawFrontLayer(j, 0, 0, weapon_library, j + weapon_resource + 1);
+                                i->resources->DrawBackLayer(j, 0, 0, weapon_library, j + weapon_resource + 5);
                             }
                         }
                     }
@@ -1093,18 +1037,18 @@ void Players::LoadPendingGraphics()
                             }
                         }
                     }
-                    i->resources->front_sheet->BltFast(234 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 2),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->front_sheet->BltFast(302 - gender, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Down, skin, 3),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(234, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 2),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(302, gender + 19, MainForm->gfx->sprites->walk_sheet,
-                        &MainForm->gfx->sprites->GetWalkFrameRect(gender, FacingDirection_Left, skin, 3),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_Walk3, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Down, skin, 2));
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_Walk4, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Down, skin, 3));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_Walk3, 30, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Left, skin, 2));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_Walk4, 30, gender + 19,
+                        MainForm->gfx->sprites->walk_sheet, MainForm->gfx->sprites->GetWalkFrameRect(gender,
+                        FacingDirection_Left, skin, 3));
                     if ((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one))
                     {
                         if (boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1166,19 +1110,21 @@ void Players::LoadPendingGraphics()
                             }
                         }
                     }
+                    if (kind_skin && !back_shield)
+                    {
+                        for (int kind_back_tail_frame = 3; kind_back_tail_frame <= 4; kind_back_tail_frame++)
+                            i->resources->DrawBackLayerFrom(kind_back_tail_frame, 39, 18 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 1, i->skin));
+                    }
                     if ((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one))
                     {
                         for (int kk = 3; kk <= 4; kk++)
                         {
-                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE)
+                            if (shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                             {
-                                if (!back_shield)
-                                {
-                                    i->resources->DrawFrontLayer(kk, 19, 34, shield_library,
-                                        shield_resource + kk + 1);
-                                    i->resources->DrawBackLayer(kk, 19, 34, shield_library,
-                                        shield_resource + kk + 5);
-                                }
+                                i->resources->DrawFrontLayer(kk, 19, 34, shield_library, kk + shield_resource + 1);
+                                i->resources->DrawBackLayer(kk, 19, 34, shield_library, kk + shield_resource + 5);
                             }
                         }
                     }
@@ -1190,6 +1136,16 @@ void Players::LoadPendingGraphics()
                             if (shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                                 i->resources->DrawBackLayer(back_shield_rear_tail_sheet, 18, 1, shield_library,
                                     shield_resource + 1);
+                        }
+                    }
+                    if (kind_skin)
+                    {
+                        if (back_shield)
+                        {
+                            for (int kind_item_tail_frame = 3; kind_item_tail_frame <= 4; kind_item_tail_frame++)
+                                i->resources->DrawBackLayerFrom(kind_item_tail_frame, 39, 18 - i->gender,
+                                    MainForm->gfx->sprites->kind_sheet,
+                                    MainForm->gfx->sprites->GetKindFrameRect(gender, 1, i->skin));
                         }
                     }
                     i->redraw = true;
@@ -1205,10 +1161,23 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
+                    }
+                    if (kind_skin)
+                    {
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_Attack1, 40, 18 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 2,
+                            i->skin));
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_Attack2, 41, 18 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 0,
+                            i->skin));
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_RangedAttack, 43, 16 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 2,
+                            i->skin));
                     }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
@@ -1244,22 +1213,20 @@ void Players::LoadPendingGraphics()
                                 hair_resource + 2);
                         }
                     }
-                    i->resources->front_sheet->BltFast(370 - gender, gender + 19, MainForm->gfx->sprites->attack_sheet,
-                        &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Down, skin, 0),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(370 - gender, gender + 19, MainForm->gfx->sprites->attack_sheet,
-                        &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Left, skin, 0),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_Attack1, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->attack_sheet, MainForm->gfx->sprites->GetAttackFrameRect(gender,
+                        FacingDirection_Down, skin, 0));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_Attack1, 30 - gender, gender + 19,
+                        MainForm->gfx->sprites->attack_sheet, MainForm->gfx->sprites->GetAttackFrameRect(gender,
+                        FacingDirection_Left, skin, 0));
                     if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                     {
-                        i->resources->front_sheet->BltFast(gender + 440, gender + 19,
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_Attack2, gender + 32, gender + 19,
                             MainForm->gfx->sprites->attack_sheet,
-                            &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Down, skin, 1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        i->resources->back_sheet->BltFast(gender + 440, gender + 19,
+                            MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Down, skin, 1));
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Attack2, gender + 32, gender + 19,
                             MainForm->gfx->sprites->attack_sheet,
-                            &MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Left, skin, 1),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                            MainForm->gfx->sprites->GetAttackFrameRect(gender, FacingDirection_Left, skin, 1));
                     }
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
@@ -1326,6 +1293,15 @@ void Players::LoadPendingGraphics()
                                 hair_resource + 3);
                         }
                     }
+                    if (kind_skin && !back_shield)
+                    {
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Attack1, 40, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 3,
+                            i->skin));
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Attack2, 41, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
+                    }
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
@@ -1344,8 +1320,17 @@ void Players::LoadPendingGraphics()
                     {
                         i->resources->DrawBackLayer(PlayerFrame_Attack1, 18, 0, shield_library, shield_resource + 3);
                         if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
-                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 18, 0, shield_library,
-                                shield_resource + 3);
+                            i->resources->DrawBackLayer(PlayerFrame_Attack2, 18, 0, shield_library, shield_resource +
+                                3);
+                    }
+                    if (kind_skin && back_shield)
+                    {
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Attack1, 40, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 3,
+                            i->skin));
+                        i->resources->DrawBackLayerFrom(PlayerFrame_Attack2, 41, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
                     }
                     if (!MainForm->weapon_mapper->IsRangedWeapon(i->weapon))
                     {
@@ -1358,7 +1343,7 @@ void Players::LoadPendingGraphics()
                     {
                         if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                             shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 18, 0, shield_library,
+                            i->resources->DrawFrontLayer(PlayerFrame_RangedAttack, 21, 0, shield_library,
                                 shield_resource + 2);
                         if (((!gender && hair_library_gender_zero) || (gender == 1 && hair_library_gender_one)) &&
                             hair_resource >= MIN_PAPERDOLL_RESOURCE && !hair_hidden)
@@ -1377,14 +1362,12 @@ void Players::LoadPendingGraphics()
                             i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 0, 0, weapon_library,
                                 weapon_resource + 18);
                         }
-                        i->resources->front_sheet->BltFast(710 - gender, gender + 19,
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_RangedAttack, 30 - gender, gender + 19,
                             MainForm->gfx->sprites->ranged_attack_sheet,
-                            &MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Down, skin),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                        i->resources->back_sheet->BltFast(710 - gender, gender + 19,
+                            MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Down, skin));
+                        i->resources->DrawBackLayerFrom(PlayerFrame_RangedAttack, 30 - gender, gender + 19,
                             MainForm->gfx->sprites->ranged_attack_sheet,
-                            &MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Left, skin),
-                            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                            MainForm->gfx->sprites->GetRangedAttackFrameRect(gender, FacingDirection_Left, skin));
                         if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                             boots_resource >= MIN_PAPERDOLL_RESOURCE)
                         {
@@ -1427,8 +1410,23 @@ void Players::LoadPendingGraphics()
                         }
                         if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                             shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
-                            i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 18, 0, shield_library,
-                                shield_resource + 3);
+                        {
+                            unsigned char item_shift = 0;
+                            if (i->gender == 1)
+                                item_shift = 2;
+                            TPoint item_point =
+                                i->resources->DrawBackLayer(PlayerFrame_RangedAttack, 21 - item_shift, 1,
+                                    shield_library, shield_resource + 3);
+                        }
+                        if (kind_skin)
+                        {
+                            unsigned char kind_shift = 0;
+                            if (i->gender == 1)
+                                kind_shift = 2;
+                            i->resources->DrawBackLayerFrom(PlayerFrame_RangedAttack, 42 - kind_shift, 17 - i->gender,
+                                MainForm->gfx->sprites->kind_sheet,
+                                MainForm->gfx->sprites->GetKindFrameRect(gender, 3, i->skin));
+                        }
                     }
                     i->redraw = true;
                     i->attack_sheets_loaded = true;
@@ -1443,11 +1441,16 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
                         i->sheets_cleared = true;
                     }
+                    if (kind_skin)
+                        i->resources->DrawFrontLayerFrom(PlayerFrame_SpellCast, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 0,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 18, 0, shield_library, shield_resource);
@@ -1463,12 +1466,12 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource);
                         i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 2);
                     }
-                    i->resources->front_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &MainForm->gfx->sprites->GetSpellCastRect(gender, FacingDirection_Down, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-                    i->resources->back_sheet->BltFast(510, gender + 15, MainForm->gfx->sprites->spell_cast_sheet,
-                        &MainForm->gfx->sprites->GetSpellCastRect(gender, FacingDirection_Left, skin),
-                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                    i->resources->DrawFrontLayerFrom(PlayerFrame_SpellCast, 34, gender + 15,
+                        MainForm->gfx->sprites->spell_cast_sheet, MainForm->gfx->sprites->GetSpellCastCellRect(gender,
+                        FacingDirection_Down, skin));
+                    i->resources->DrawBackLayerFrom(PlayerFrame_SpellCast, 34, gender + 15,
+                        MainForm->gfx->sprites->spell_cast_sheet, MainForm->gfx->sprites->GetSpellCastCellRect(gender,
+                        FacingDirection_Left, skin));
                     if (((!gender && boots_library_gender_zero) || (gender == 1 && boots_library_gender_one)) &&
                         boots_resource >= MIN_PAPERDOLL_RESOURCE)
                     {
@@ -1500,6 +1503,10 @@ void Players::LoadPendingGraphics()
                         i->resources->DrawFrontLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 1);
                         i->resources->DrawBackLayer(PlayerFrame_SpellCast, 28, 7, hair_library, hair_resource + 3);
                     }
+                    if (kind_skin && !back_shield)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_SpellCast, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && !back_shield)
                     {
@@ -1511,6 +1518,10 @@ void Players::LoadPendingGraphics()
                     if (((!gender && shield_library_gender_zero) || (gender == 1 && shield_library_gender_one)) &&
                         shield_resource >= MIN_PAPERDOLL_RESOURCE && back_shield)
                         i->resources->DrawBackLayer(PlayerFrame_SpellCast, 18, 0, shield_library, shield_resource + 1);
+                    if (kind_skin && back_shield)
+                        i->resources->DrawBackLayerFrom(PlayerFrame_SpellCast, 39, 17 - i->gender,
+                            MainForm->gfx->sprites->kind_sheet, MainForm->gfx->sprites->GetKindFrameRect(gender, 1,
+                            i->skin));
                     i->redraw = true;
                     i->cast_sheets_loaded = true;
                     loaded_count++;
@@ -1524,6 +1535,7 @@ void Players::LoadPendingGraphics()
                 try
                 {
                     LoadGraphicsLibraries(gender);
+                    SelectGraphicsLibraries(gender);
                     if (!i->sheets_cleared)
                     {
                         i->resources->ClearSheets();
@@ -1546,7 +1558,7 @@ void Players::LoadPendingGraphics()
                     if (MainForm->gfx->sprites->emote_buffer_created)
                     {
                         i->resources->emote_strip->BltFast(0, 0, MainForm->gfx->sprites->face_sheet,
-                            &MainForm->gfx->sprites->GetFaceFrameRect(gender, skin), DDBLTFAST_WAIT);
+                            &MainForm->gfx->sprites->GetFaceStripRect(gender, skin), DDBLTFAST_WAIT);
                         for (int face_index = 0; face_index < 11; face_index++)
                             i->resources->emote_strip->BltFast(13 * face_index, 0,
                                 MainForm->gfx->sprites->emote_buffer->surface,
@@ -1571,51 +1583,6 @@ void Players::LoadPendingGraphics()
             }
         }
         i++;
-    }
-    if (!preload_graphics)
-    {
-        if (gender_one_libraries_loaded)
-        {
-            gender_one_idle_ticks++;
-            if (gender_one_idle_ticks > 50)
-            {
-                FreeLibrary(hair_library_gender_one);
-                FreeLibrary(boots_library_gender_one);
-                FreeLibrary(armor_library_gender_one);
-                FreeLibrary(hat_library_gender_one);
-                FreeLibrary(weapon_library_gender_one);
-                FreeLibrary(shield_library_gender_one);
-                hair_library_gender_one = 0;
-                boots_library_gender_one = 0;
-                armor_library_gender_one = 0;
-                hat_library_gender_one = 0;
-                shield_library_gender_one = 0;
-                weapon_library_gender_one = 0;
-                gender_one_libraries_loaded = false;
-                gender_one_idle_ticks++;
-            }
-        }
-        if (gender_zero_libraries_loaded)
-        {
-            gender_zero_idle_ticks++;
-            if (gender_zero_idle_ticks > 50)
-            {
-                FreeLibrary(hair_library_gender_zero);
-                FreeLibrary(boots_library_gender_zero);
-                FreeLibrary(armor_library_gender_zero);
-                FreeLibrary(hat_library_gender_zero);
-                FreeLibrary(weapon_library_gender_zero);
-                FreeLibrary(shield_library_gender_zero);
-                hair_library_gender_zero = 0;
-                boots_library_gender_zero = 0;
-                armor_library_gender_zero = 0;
-                hat_library_gender_zero = 0;
-                shield_library_gender_zero = 0;
-                weapon_library_gender_zero = 0;
-                gender_zero_libraries_loaded = false;
-                gender_zero_idle_ticks++;
-            }
-        }
     }
 }
 
@@ -1668,7 +1635,24 @@ void Players::ReloadGraphics(int player_id)
 }
 
 // True when the tile is near enough to the centre to be in view; the range is larger past the centre on both axes.
-DEFINE_IS_IN_VIEW_RANGE(Players)
+bool Players::IsInViewRange(int center_x, int center_y, int x, int y)
+{
+    bool in_range = false;
+    int dx = x - center_x;
+    int dy = y - center_y;
+    if (dx < 0)
+        dx = 0 - dx;
+    if (dy < 0)
+        dy = 0 - dy;
+    if (center_x < x && center_y < y)
+    {
+        if (dx + dy <= 14)
+            in_range = true;
+    }
+    else if (dx + dy <= 12)
+        in_range = true;
+    return in_range;
+}
 
 // Sorts the list by y, then by x.
 void Players::SortByPosition()
@@ -1712,6 +1696,7 @@ void Players::AddPreviewPlayer(int x, int y)
         handle.hat = HatGraphic_None;
         handle.shield = ShieldGraphic_None;
         handle.weapon = 0;
+        handle.armor = 0;
         handle.player_id = PlayerId_Preview;
         handle.draw_group = CharacterSlotState_Preview;
         players.insert(players.end(), handle);
@@ -1723,7 +1708,7 @@ void Players::AddCharacterSlots()
 {
     if (!HasPlayer(PlayerId_SlotFirst))
     {
-        Player handle(401, 71, "", 0, 0, 0, 0, false);
+        Player handle(390, 71, "", 0, 0, 0, 0, false);
         handle.CreateResources();
         handle.player_id = PlayerId_SlotFirst;
         handle.draw_group = CharacterSlotState_Taken;
@@ -1731,7 +1716,7 @@ void Players::AddCharacterSlots()
     }
     if (!HasPlayer(PlayerId_SlotSecond))
     {
-        Player second_slot(401, 195, "", 0, 0, 0, 0, false);
+        Player second_slot(390, 195, "", 0, 0, 0, 0, false);
         second_slot.CreateResources();
         second_slot.player_id = PlayerId_SlotSecond;
         second_slot.draw_group = CharacterSlotState_Taken;
@@ -1739,7 +1724,7 @@ void Players::AddCharacterSlots()
     }
     if (!HasPlayer(PlayerId_SlotThird))
     {
-        Player third_slot(401, 319, "", 0, 0, 0, 0, false);
+        Player third_slot(390, 319, "", 0, 0, 0, 0, false);
         third_slot.CreateResources();
         third_slot.player_id = PlayerId_SlotThird;
         third_slot.draw_group = CharacterSlotState_Taken;
@@ -1761,19 +1746,6 @@ void Players::SetPreviewPosition(int x, int y)
             it->x = x;
             it->y = y;
             return;
-        }
-    }
-}
-
-void Players::ShowBalloon(int player_id, String *lines, int width, int height, int tinted)
-{
-    vector<Player>::iterator it;
-    for (it = players.begin(); it != players.end(); it++)
-    {
-        if (player_id == it->player_id)
-        {
-            it->ShowBalloon(lines, width, height, tinted);
-            break;
         }
     }
 }
@@ -2015,8 +1987,13 @@ int Players::GetDirection(int player_id)
     return direction;
 }
 
+// Sets the player's gender, kept to 0 or 1.
 void Players::SetGender(int player_id, int gender)
 {
+    if (gender < 0)
+        gender = 0;
+    if (gender > 1)
+        gender = 1;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2051,8 +2028,11 @@ void Players::SetHairStyle(int player_id, int hair_style)
     }
 }
 
+// Sets the player's skin; skins past 11 are 11.
 void Players::SetSkin(int player_id, int skin)
 {
+    if (skin > 11)
+        skin = 11;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
@@ -2181,6 +2161,21 @@ void Players::SetWeapon(int player_id, int weapon)
             return;
         }
     }
+}
+
+int Players::GetPositionExtra(int player_id)
+{
+    int value = 0;
+    vector<Player>::iterator it;
+    for (it = players.begin(); it != players.end(); it++)
+    {
+        if (player_id == it->player_id)
+        {
+            value = it->position_extra;
+            break;
+        }
+    }
+    return value;
 }
 
 int Players::GetX(int player_id)
@@ -2356,64 +2351,91 @@ bool Players::HasPlayer(int player_id)
 
 int Players::GetBoots(int player_id)
 {
-    int boots = 0;
+    int attacking = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            boots = it->boots;
+            attacking = it->boots;
             break;
         }
     }
-    return boots;
+    return attacking;
 }
 
 int Players::GetArmor(int player_id)
 {
-    int armor = 0;
+    int casting = false;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            armor = it->armor;
+            casting = it->armor;
             break;
         }
     }
-    return armor;
+    return casting;
 }
 
 int Players::GetShield(int player_id)
 {
-    int shield = 0;
+    int result = 0;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            shield = it->shield;
+            result = it->shield;
             break;
         }
     }
-    return shield;
+    return result;
 }
 
 int Players::GetWeapon(int player_id)
 {
-    int weapon = 0;
+    int result = 0;
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            weapon = it->weapon;
+            result = it->weapon;
             break;
         }
     }
-    return weapon;
+    return result;
+}
+
+// Shows a speech balloon over the player when balloons are on, named after the player unless a speaker is given; a
+// style below 0 shows no name.
+void Players::ShowBalloonFrom(int player_id, String speaker, String text, int style)
+{
+    vector<Player>::iterator it;
+    if (!MainForm->config->GetShowBalloons())
+        return;
+    for (it = players.begin(); it != players.end(); it++)
+    {
+        if (it->player_id == player_id)
+        {
+            if (speaker.Length() < 1)
+                speaker = it->name;
+            if (style < 0)
+                speaker = "";
+            it->ShowBalloon(speaker, text, style);
+            return;
+        }
+    }
+}
+
+void Players::ShowBalloon(int player_id, String text, int style)
+{
+    ShowBalloonFrom(player_id, "", text, style);
 }
 
 bool Players::HasBalloon(int player_id)
 {
     bool has_balloon = false;
-    for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
+    vector<Player>::iterator it;
+    for (it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
@@ -2500,19 +2522,36 @@ void Players::ShowDamage(int player_id, int amount, char heal)
     }
 }
 
-// Shows the player's health bar for duration passes; percent scales to the bar's width.
+// Shows the player's health bar at the percent for the duration.
 void Players::ShowHealthBar(int player_id, int percent, int duration)
+{
+    ShowBar(player_id, 0, percent, duration);
+}
+
+void Players::ShowManaBar(int player_id, int percent, int duration)
+{
+    ShowBar(player_id, 1, percent, duration);
+}
+
+// Shows one of the player's three bars at the percent for the duration.
+void Players::ShowBar(int player_id, int bar, int percent, int duration)
 {
     vector<Player>::iterator it;
     for (it = players.begin(); it != players.end(); it++)
     {
         if (player_id == it->player_id)
         {
-            double bar_width = percent * HEALTH_BAR_SCALE;
+            double width = percent * HEALTH_BAR_SCALE;
             it->health_bar_start = true;
             it->health_bar_shown = false;
+            it->health_bar_kind = bar;
             it->health_bar_timer = duration;
-            it->health_bar_width = bar_width;
+            if (!bar)
+                it->health_bar_width = (int)width;
+            if (bar == 1)
+                it->second_bar_width = (int)width;
+            if (bar == 2)
+                it->third_bar_width = (int)width;
             break;
         }
     }
@@ -2540,6 +2579,7 @@ void Players::StartEffect(int player_id, int effect_id)
     }
 }
 
+// True while a spell effect on the player is starting or running.
 char Players::IsEffectPlaying(int player_id)
 {
     int playing = false;
@@ -2555,7 +2595,7 @@ char Players::IsEffectPlaying(int player_id)
     return playing;
 }
 
-// Marks the player for the level-up emote; Animate plays it once no other animation runs.
+// Starts the level up effect on the player.
 void Players::StartLevelUpEffect(int player_id)
 {
     for (vector<Player>::iterator it = players.begin(); it != players.end(); it++)
@@ -2660,6 +2700,7 @@ void Players::StartAttack(int player_id, int direction, char silent)
     }
 }
 
+// True while the player's attack is starting or running.
 char Players::IsAttacking(int player_id)
 {
     int attacking = false;
@@ -2690,6 +2731,7 @@ void Players::StartSpellCast(int player_id, int direction)
     }
 }
 
+// True while the player's spell cast is starting or running.
 char Players::IsCasting(int player_id)
 {
     int casting = false;
@@ -2764,6 +2806,7 @@ void Players::StartSitOnChair(int player_id, int x, int y, int direction)
     }
 }
 
+// True while the player sits on the floor or is sitting down there.
 char Players::IsSittingOnFloor(int player_id)
 {
     int sitting = false;
@@ -2779,6 +2822,7 @@ char Players::IsSittingOnFloor(int player_id)
     return sitting;
 }
 
+// True while the player sits on a chair or is sitting down on one.
 char Players::IsSittingOnChair(int player_id)
 {
     int sitting = false;

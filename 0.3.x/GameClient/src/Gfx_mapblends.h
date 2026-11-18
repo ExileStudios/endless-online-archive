@@ -11,11 +11,8 @@ struct BlendGraphics
 {
     vector<BlendWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     BlendGraphics(char preload);
     ~BlendGraphics();
@@ -25,7 +22,7 @@ struct BlendGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
-    BlendWrapper GetGraphic(int graphic_id);
+    BlendWrapper * GetGraphic(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();
 };

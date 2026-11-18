@@ -21,7 +21,6 @@ struct PacketProcessor;
 #define FILE_SYSTEM_NAME_BUFFER_SIZE 1000
 #define GRID_LOGIN_NAME_EDIT_Y 353
 #define LOGIN_EDIT_X 402
-#define LOGIN_NAME_EDIT_Y 315
 #define LOGIN_PASSWORD_EDIT_Y 351
 #define NUMBER_ENCODING_BASE 253
 #define VOLUME_NAME_BUFFER_SIZE 1000
@@ -70,7 +69,6 @@ enum PacketAction
     AC_TARGET = 31,
     AC_GROUP = 33,
     AC_TALK = 34,
-    AC_LOGINGET = 200,
     AC_SYN1 = 240,
     AC_SYN2 = 241,
     AC_SYN3 = 242,
@@ -78,6 +76,7 @@ enum PacketAction
     AC_SYN5 = 244,
     AC_ERROR = 250,
     AC_SWAP = 35,
+    AC_LOGINGET = 200,
     AC_CONFIG = 220
 };
 
@@ -144,6 +143,8 @@ struct Client
     bool is_banned;
     bool account_reply_disconnect;
     bool login_retry_pending;
+    bool lookups_refused;
+    bool server_busy;
     bool is_permanent_ban;
     int ban_minutes;
     int time_offset;

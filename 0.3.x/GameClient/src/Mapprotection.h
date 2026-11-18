@@ -18,6 +18,7 @@ struct PathFinder;
 #include "Mapobject.h"
 #include "Mapsign.h"
 #include "Mapwarp.h"
+#include "Mapglow.h"
 
 #define PVP_MAP_TYPE 3
 #define TILE_HALF_HEIGHT 16
@@ -39,6 +40,7 @@ struct MapController
 {
     bool state_flag;
     bool item_use_restricted;
+    unsigned char warp_countdown;
     bool warp_pending;
     bool loading_map;
     bool map_request_pending;
@@ -74,6 +76,7 @@ struct MapController
     vector<MapDoor> doors;
     vector<MapWarp> warps;
     vector<MapSign> signs;
+    vector<MapGlow> glows;
     PathFinder *path_finder;
     String name;
     int map_type;

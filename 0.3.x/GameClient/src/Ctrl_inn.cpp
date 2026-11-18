@@ -48,6 +48,7 @@ DEFINE_ADD_TEXT(InnController)
 // other npc windows.
 void InnController::Open(int session_id, int citizen_flag)
 {
+    // The other shop-like windows close first.
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->learn->is_visible = false;
@@ -134,7 +135,7 @@ void InnController::MouseDown(int x, int y, int button)
                             question_index = 0;
                             String question_prompt = IntToStr(1) + ". " + questions[0];
                             MainForm->animation->game->OpenInputBox(InputBoxKind_InnAnswer, question_prompt,
-                                EditCharFilter_AlphanumericSpaces, 12);
+                                EditCharFilter_Email, 12);
                         }
                     }
                     if (page == 7)
@@ -268,6 +269,7 @@ void InnController::MouseMove(int x, int y)
         hovered_row = -1;
         MainForm->redraw_needed = true;
     }
+    // Page 0 has only the close button; other pages add a back button.
     if (!page)
     {
         if (x >= window_x + 92 && x <= window_x + 182 && y >= window_y + 253 && y <= window_y + 279)

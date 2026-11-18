@@ -28,12 +28,15 @@ Edit::Edit(int edit_id, int group, int left, int top, int box_width, int box_hei
     scroll_offset = 0;
     numeric = false;
     char_filter = 0;
+    allow_spaces = true;
     border_visible = true;
     background_visible = true;
     editable = true;
     dirty = true;
     change_notify = false;
     password = 0;
+    show_strength = false;
+    redraw_ticks = 0;
     visible = true;
     border_color = 0;
     background_color = 0x6982A5;
@@ -50,14 +53,9 @@ Edit::~Edit()
 {
 }
 
-void Edit::AppendText(String typed_text)
-{
-    text = text + typed_text;
-}
-
 void Edit::AppendChar(char ch)
 {
-    text = text + String(ch);
+    text = text + ch;
 }
 
 void Edit::ClearText()

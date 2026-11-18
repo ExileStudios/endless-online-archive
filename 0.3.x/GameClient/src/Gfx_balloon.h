@@ -13,13 +13,22 @@ struct Balloon
     TDx_DrawSurface *fill_surface;
     TDx_DrawSurface *text_surface;
     TRect bubble_rect;
+    unsigned char style;
+    String sender_name;
+    String lines[7];
+    short text_width;
+    short text_height;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;
     TDDBltFX *fill_fx;
 
-    Balloon(int text_width, int text_height, String *lines, int style);
+    Balloon(String sender, String text, int balloon_style);
     ~Balloon();
+    void WrapText(String text);
+    void CreateSurfaces();
+    void Render();
+    void Draw(int x, int y);
 };
 
 #endif

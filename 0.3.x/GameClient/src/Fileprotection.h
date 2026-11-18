@@ -18,7 +18,39 @@ enum DataFile
     DataFile_Captcha = 13
 };
 
-#define GFX_LIBRARY_COUNT 25
+enum GfxLibrary
+{
+    GfxLibrary_MenuInterface = 1,
+    GfxLibrary_First = 1,
+    GfxLibrary_GameInterface = 2,
+    GfxLibrary_MapTiles = 3,
+    GfxLibrary_MapObjects = 4,
+    GfxLibrary_MapMasks = 5,
+    GfxLibrary_MapWalls = 6,
+    GfxLibrary_MapTops = 7,
+    GfxLibrary_CharacterBodies = 8,
+    GfxLibrary_MaleHair = 9,
+    GfxLibrary_FirstPaperdoll = 9,
+    GfxLibrary_FemaleHair = 10,
+    GfxLibrary_MaleBoots = 11,
+    GfxLibrary_FemaleBoots = 12,
+    GfxLibrary_MaleArmor = 13,
+    GfxLibrary_FemaleArmor = 14,
+    GfxLibrary_MaleHats = 15,
+    GfxLibrary_FemaleHats = 16,
+    GfxLibrary_MaleWeapons = 17,
+    GfxLibrary_FemaleWeapons = 18,
+    GfxLibrary_MaleShields = 19,
+    GfxLibrary_FemaleShields = 20,
+    GfxLibrary_LastPaperdoll = 20,
+    GfxLibrary_Npcs = 21,
+    GfxLibrary_Shadows = 22,
+    GfxLibrary_MapItems = 23,
+    GfxLibrary_Effects = 24,
+    GfxLibrary_MapIcons = 25,
+    GfxLibrary_LastChecked = 25,
+    GfxLibrary_VisualDocuments = 26
+};
 
 #include <Classes.hpp>
 #include <deque.h>
@@ -30,38 +62,30 @@ enum DataFile
 struct FileController
 {
     String error_message;
+    String error_kind;
     TStringList *file_names;
     TStringList *file_sizes;
+    TStringList *file_kinds;
 
     FileController();
     ~FileController();
     void BuildFileList();
     bool VerifyFiles();
-    bool PrefixAppDirectory();
     String GetGfxPath(int file_number);
+    String GetClientSoundPath(int file_number);
+    String GetControlSoundPath(int file_number);
     String GetSoundPath(int file_number);
+    String GetEffectSoundPath(int file_number);
+    String GetAmbientSoundPath(int file_number);
+    String GetInstrumentSoundPath(int instrument);
+    String GetJukeboxPath(int file_number);
     String GetMusicPath(int file_number);
+    String PadFileNumber(int file_number);
     String GetDataFilePath(int file_number);
     String RestorePathSeparators(String path);
     String UnscrambleString(int divisor, char *data_begin, char *data_end);
 };
 
-
-// The path of a graphics file by number, padded to three digits; the path text is kept scrambled.
-// Shared body: a class defines its GetGfxPath with DEFINE_GET_GFX_PATH(TheClass); each class has its own
-// RestorePathSeparators, UnscrambleString.
-#define DEFINE_GET_GFX_PATH(Class) \
-String Class::GetGfxPath(int file_number) \
-{ \
-    string scrambled_name = ".f!ggef.xx!fg"; \
-    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end())); \
-    file_name.Insert(IntToStr(file_number), 10); \
-    if (file_number <= 9) \
-        file_name.Insert("0", 10); \
-    if (file_number <= 99) \
-        file_name.Insert("0", 10); \
-    return file_name; \
-}
 
 // The path of a music file by number, padded to three digits; the path text is kept scrambled.
 // Shared body: a class defines its GetMusicPath with DEFINE_GET_MUSIC_PATH(TheClass); each class has its own
@@ -76,22 +100,6 @@ String Class::GetMusicPath(int file_number) \
         file_name.Insert("0", 10); \
     if (file_number <= 99) \
         file_name.Insert("0", 10); \
-    return file_name; \
-}
-
-// The path of a data file by number, padded to three digits; the path text is kept scrambled.
-// Shared body: a class defines its GetDataFilePath with DEFINE_GET_DATA_FILE_PATH(TheClass); each class has its own
-// RestorePathSeparators, UnscrambleString.
-#define DEFINE_GET_DATA_FILE_PATH(Class) \
-String Class::GetDataFilePath(int file_number) \
-{ \
-    string scrambled_name = ".f!ddea.ttaa!d"; \
-    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end())); \
-    file_name.Insert(IntToStr(file_number), 11); \
-    if (file_number <= 9) \
-        file_name.Insert("0", 11); \
-    if (file_number <= 99) \
-        file_name.Insert("0", 11); \
     return file_name; \
 }
 

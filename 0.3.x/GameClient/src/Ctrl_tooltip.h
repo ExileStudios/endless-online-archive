@@ -21,6 +21,10 @@ struct Tooltip
     int x;
     int y;
     int shown_id;
+    int amount;
+    unsigned char shown_kind;
+    int item_type;
+    int transform_skin;
     int anchor_x;
     int anchor_y;
     int flip_edge_x;
@@ -49,6 +53,7 @@ struct Tooltip
     Tooltip(int left, int top, int fixed);
     ~Tooltip();
     bool Hide();
+    void UpdateItemAmount(int item_id, int new_amount);
     void ClearLines();
     void ShowItem(int item_id);
     void ShowItemCount(int item_id, int count);

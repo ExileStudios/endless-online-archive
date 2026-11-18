@@ -24,7 +24,6 @@
 #include "Ctrl_quests.h"
 #include "Ctrl_report.h"
 #include "Ctrl_social.h"
-#include "Gfx_sprites.h"
 #include "Ctrl_stats.h"
 #include "Ctrl_status.h"
 #include <stdlib.h>
@@ -40,6 +39,7 @@
 #include "Ctrl_trade.h"
 #include <dinput.h>
 #include "Pathfinder.h"
+#include "Ctrl_hotkeys.h"
 
 #pragma package(smart_init)
 
@@ -54,6 +54,7 @@ KeyBoard::KeyBoard()
     walk_key_held = false;
     wasd_key_used = false;
     attack_key_used = false;
+    space_key_used = false;
     delete_pressed = false;
     for (int i = 0; i < 69; i++)
         key_waits[i] = 0;
@@ -190,6 +191,9 @@ bool KeyBoard::UpdateWalkDirection()
 // pick a character, and the letters of the screen that asks for them.
 bool KeyBoard::HandleMenuKeys()
 {
+    unsigned int clip_handle;
+    int clip_text;
+    unsigned int clip_memory;
     if (MainForm->animation->GetScreenMode() != ScreenMode_Menu)
         return true;
     try
@@ -200,7 +204,7 @@ bool KeyBoard::HandleMenuKeys()
         {
             if (!menu_enter_wait)
             {
-                menu_enter_wait = 100;
+                menu_enter_wait = 200;
                 if (!key_waits[60])
                 {
                     if (MainForm->animation->menu->is_message_open)
@@ -217,6 +221,34 @@ bool KeyBoard::HandleMenuKeys()
         }
         else
             menu_enter_wait = 0;
+        if (((MainForm->DIKeyboardState1->Keys[DIK_LCONTROL] & 0x80) != 0 ||
+            (MainForm->DIKeyboardState1->Keys[DIK_RCONTROL] & 0x80) != 0) &&
+            (MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0 && MainForm->animation->IsChatAllowed() &&
+            TakeKeyRepeat(43))
+        {
+            MainForm->animation->RecordChatMessage();
+            String pasted;
+            Clipboard()->Open();
+            try
+            {
+                clip_handle = Clipboard()->GetAsHandle(CF_TEXT);
+                clip_memory = clip_handle;
+                clip_text = (int)GlobalLock((void *)clip_memory);
+                pasted = (char *)clip_text;
+                GlobalUnlock((void *)clip_memory);
+            }
+            catch (...)
+            {
+            }
+            Clipboard()->Close();
+            if (pasted.Length() > 64)
+                pasted = pasted.SubString(1, 64);
+            if (pasted.Length() > 0)
+            {
+                MainForm->edits->TypeText(pasted);
+                return true;
+            }
+        }
         if ((MainForm->DIKeyboardState1->Keys[DIK_ESCAPE] & 0x80) != 0)
         {
             if (MainForm->animation->menu->is_message_open)
@@ -228,7 +260,6 @@ bool KeyBoard::HandleMenuKeys()
             else
                 MainForm->edits->ClearFocusedText();
         }
-        // On the character list, keys 1 to 3 log in with the character in that slot.
         if (MainForm->animation->GetSubState() == MenuScreen_CharacterSelect)
         {
             if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0 ||
@@ -275,6 +306,10 @@ bool KeyBoard::HandleMenuKeys()
                 }
             }
         }
+        // The password grid.
+        // Enter takes the letter under the cursor and Backspace removes the last one.
+        // The arrows move the cursor.
+        // Typing a letter or digit brings up the message box that clicking the grid shows.
         if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid &&
             !MainForm->animation->menu->is_message_open)
         {
@@ -284,30 +319,30 @@ bool KeyBoard::HandleMenuKeys()
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 12;
+                    grid_enter_wait = 24;
                     MainForm->animation->menu->AddSelectedLetter();
                 }
                 else
-                    grid_enter_wait = 12;
+                    grid_enter_wait = 24;
             }
             if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0)
             {
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 12;
+                    grid_enter_wait = 24;
                     MainForm->sfx->PlaySfx(SfxSound_Send);
                     MainForm->animation->menu->DeleteLastLetter();
                 }
                 else
-                    grid_enter_wait = 12;
+                    grid_enter_wait = 24;
             }
             if ((MainForm->DIKeyboardState1->Keys[DIK_LEFT] & 0x80) != 0)
             {
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 8;
+                    grid_enter_wait = 16;
                     if (MainForm->animation->menu->grid_column > 0)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
@@ -321,7 +356,7 @@ bool KeyBoard::HandleMenuKeys()
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 8;
+                    grid_enter_wait = 16;
                     if (MainForm->animation->menu->grid_column < 5)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
@@ -335,7 +370,7 @@ bool KeyBoard::HandleMenuKeys()
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 8;
+                    grid_enter_wait = 16;
                     if (MainForm->animation->menu->grid_row > 0)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
@@ -349,7 +384,7 @@ bool KeyBoard::HandleMenuKeys()
                 unhandled = false;
                 if (grid_enter_wait <= 0)
                 {
-                    grid_enter_wait = 8;
+                    grid_enter_wait = 16;
                     if (MainForm->animation->menu->grid_row < 5)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
@@ -436,7 +471,8 @@ bool KeyBoard::HandleGameKeys()
             return true;
         if (key_delay > 0)
             key_delay--;
-        if ((MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
+        if ((MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0 ||
+            (MainForm->DIKeyboardState1->Keys[DIK_RMENU] & 0x80) != 0)
         {
             if ((MainForm->DIKeyboardState1->Keys[DIK_E] & 0x80) != 0)
             {
@@ -447,7 +483,19 @@ bool KeyBoard::HandleGameKeys()
             if ((MainForm->DIKeyboardState1->Keys[DIK_P] & 0x80) != 0)
             {
                 if (TakeKeyDelay())
+                {
+                    MainForm->animation->hotkeys->Close();
                     MainForm->net_client->sender->RequestPaperdoll(MainForm->animation->game->player_menu_target_id);
+                }
+                return false;
+            }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_H] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                {
+                    MainForm->animation->paperdoll->Close();
+                    MainForm->animation->hotkeys->Open();
+                }
                 return false;
             }
             if ((MainForm->DIKeyboardState1->Keys[DIK_Q] & 0x80) != 0)
@@ -576,6 +624,12 @@ bool KeyBoard::HandleGameKeys()
                     MainForm->animation->game->PlayEmote(Emote_Playful);
                 return false;
             }
+            if ((MainForm->DIKeyboardState1->Keys[DIK_MINUS] & 0x80) != 0)
+            {
+                if (TakeKeyDelay())
+                    MainForm->animation->game->PlayEmote(Emote_Embarrassed);
+                return false;
+            }
             if ((MainForm->DIKeyboardState1->Keys[DIK_F] & 0x80) != 0)
             {
                 if (TakeKeyDelay())
@@ -598,40 +652,45 @@ bool KeyBoard::HandleGameKeys()
         walk_key_held = false;
         wasd_key_used = false;
         attack_key_used = false;
+        space_key_used = false;
+        // Ctrl and V paste the clipboard into an empty chat line.
         // Ctrl attacks; Ctrl and V paste the clipboard into an empty chat line.
         if ((MainForm->DIKeyboardState1->Keys[DIK_LCONTROL] & 0x80) != 0 ||
             (MainForm->DIKeyboardState1->Keys[DIK_RCONTROL] & 0x80) != 0)
         {
             if ((MainForm->DIKeyboardState1->Keys[DIK_V] & 0x80) != 0)
             {
-                if (MainForm->animation->GetScreenMode() == ScreenMode_Game &&
-                    MainForm->edits->IsFocused(EditId_Chat) && MainForm->edits->GetTextLength(EditId_Chat) < 1 &&
-                    MainForm->animation->IsChatAllowed())
+                if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
                 {
-                    MainForm->animation->RecordChatMessage();
-                    String pasted;
-                    Clipboard()->Open();
-                    try
+                    if (MainForm->edits->IsFocused(EditId_Chat) && MainForm->edits->GetTextLength(EditId_Chat) < 1 &&
+                        MainForm->animation->IsChatAllowed())
                     {
-                        clip_handle = Clipboard()->GetAsHandle(CF_TEXT);
-                        clip_memory = clip_handle;
-                        clip_text = (int)GlobalLock((void *)clip_memory);
-                        pasted = (char *)clip_text;
-                        GlobalUnlock((void *)clip_memory);
-                    }
-                    catch (...)
-                    {
+                        MainForm->animation->RecordChatMessage();
+                        String pasted;
+                        Clipboard()->Open();
+                        try
+                        {
+                            clip_handle = Clipboard()->GetAsHandle(CF_TEXT);
+                            clip_memory = clip_handle;
+                            clip_text = (int)GlobalLock((void *)clip_memory);
+                            pasted = (char *)clip_text;
+                            GlobalUnlock((void *)clip_memory);
+                        }
+                        catch (...)
+                        {
+                        }
                         Clipboard()->Close();
+                        if (pasted.Length() > 128)
+                            pasted = pasted.SubString(1, 128);
+                        if (pasted.Length() > 0)
+                        {
+                            MainForm->edits->TypeText(pasted);
+                            TakeKeyRepeat(43);
+                            return true;
+                        }
                     }
-                    Clipboard()->Close();
-                    if (pasted.Length() > 128)
-                        pasted = pasted.SubString(1, 128);
-                    if (pasted.Length() > 0)
-                    {
-                        MainForm->edits->TypeText(pasted);
-                        TakeKeyRepeat(43);
-                        return true;
-                    }
+                    TakeKeyRepeat(43);
+                    return false;
                 }
             }
             else if (MainForm->net_client->CanAct())
@@ -645,7 +704,7 @@ bool KeyBoard::HandleGameKeys()
         {
             if (MainForm->edits->GetText(EditId_Chat).Length() <= 0)
             {
-                attack_key_used = true;
+                space_key_used = true;
                 if (MainForm->net_client->CanAct())
                 {
                     MainForm->map->path_finder->CancelPath();
@@ -653,7 +712,7 @@ bool KeyBoard::HandleGameKeys()
                 }
             }
         }
-        if (!attack_key_used)
+        if (!attack_key_used && !space_key_used)
         {
             for (int i = 0; i < 4; i++)
                 key_flags[i] = false;
@@ -702,9 +761,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(1, 2);
+                    MainForm->animation->hotkeys->UseHotkey(0, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(1, 1);
+                    MainForm->animation->hotkeys->UseHotkey(0, 0);
             }
         }
         else
@@ -716,9 +775,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(2, 2);
+                    MainForm->animation->hotkeys->UseHotkey(1, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(2, 1);
+                    MainForm->animation->hotkeys->UseHotkey(1, 0);
             }
         }
         else
@@ -730,9 +789,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(3, 2);
+                    MainForm->animation->hotkeys->UseHotkey(2, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(3, 1);
+                    MainForm->animation->hotkeys->UseHotkey(2, 0);
             }
         }
         else
@@ -744,9 +803,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(4, 2);
+                    MainForm->animation->hotkeys->UseHotkey(3, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(4, 1);
+                    MainForm->animation->hotkeys->UseHotkey(3, 0);
             }
         }
         else
@@ -758,9 +817,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(5, 2);
+                    MainForm->animation->hotkeys->UseHotkey(4, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(5, 1);
+                    MainForm->animation->hotkeys->UseHotkey(4, 0);
             }
         }
         else
@@ -772,9 +831,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(6, 2);
+                    MainForm->animation->hotkeys->UseHotkey(5, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(6, 1);
+                    MainForm->animation->hotkeys->UseHotkey(5, 0);
             }
         }
         else
@@ -786,9 +845,9 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(7, 2);
+                    MainForm->animation->hotkeys->UseHotkey(6, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(7, 1);
+                    MainForm->animation->hotkeys->UseHotkey(6, 0);
             }
         }
         else
@@ -800,13 +859,14 @@ bool KeyBoard::HandleGameKeys()
                 if ((MainForm->DIKeyboardState1->Keys[DIK_LSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_RSHIFT] & 0x80) != 0 ||
                     (MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) != 0)
-                    MainForm->animation->interface_controller->spells->UseSlot(8, 2);
+                    MainForm->animation->hotkeys->UseHotkey(7, 1);
                 else
-                    MainForm->animation->interface_controller->spells->UseSlot(8, 1);
+                    MainForm->animation->hotkeys->UseHotkey(7, 0);
             }
         }
         else
             ResetKeyRepeat(68);
+        // F11 sits down or stands up.
         if ((MainForm->DIKeyboardState1->Keys[DIK_F11] & 0x80) != 0)
         {
             MainForm->map->path_finder->CancelPath();
@@ -872,19 +932,21 @@ bool KeyBoard::HandleEditKeys()
             {
                 MainForm->edits->FocusNext();
                 MainForm->sfx->PlaySfx(SfxSound_Select);
-                tab_wait = 30;
+                tab_wait = 60;
             }
             else
             {
-                MainForm->mouse->ToggleMinimap(true);
-                tab_wait = 30;
+                if ((MainForm->DIKeyboardState1->Keys[DIK_LMENU] & 0x80) == 0 &&
+                    (MainForm->DIKeyboardState1->Keys[DIK_RMENU] & 0x80) == 0)
+                    MainForm->mouse->ToggleMinimap(true);
+                tab_wait = 60;
             }
         }
         if (enter_wait > 0)
             enter_wait--;
         if ((MainForm->DIKeyboardState1->Keys[DIK_RETURN] & 0x80) != 0)
         {
-            enter_wait = 30;
+            enter_wait = 60;
             MainForm->animation->game->ResetIdleTimer();
             if (MainForm->animation->CanSendChat())
             {
@@ -1014,8 +1076,7 @@ bool KeyBoard::HandleEditKeys()
                                         CHAT_COLOR_DEFAULT,
                                         MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                         say_shown, true);
-                                    MainForm->gfx->sprites->ShowSpeechBalloon(say_shown,
-                                        MainForm->net_client->GetPlayerId(), 0);
+                                    MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(), say_shown, -1);
                                 }
                                 else
                                     MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -1059,8 +1120,8 @@ bool KeyBoard::HandleEditKeys()
                                             CHAT_COLOR_DEFAULT,
                                             MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                             plus_say_shown, true);
-                                        MainForm->gfx->sprites->ShowSpeechBalloon(plus_say_shown,
-                                            MainForm->net_client->GetPlayerId(), 0);
+                                        MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(),
+                                            plus_say_shown, -1);
                                     }
                                     else
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -1120,8 +1181,8 @@ bool KeyBoard::HandleEditKeys()
                                             CHAT_COLOR_NOTICE,
                                             MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                             announce_shown, true, false);
-                                        MainForm->gfx->sprites->ShowSpeechBalloon(announce_shown,
-                                            MainForm->net_client->GetPlayerId(), 0);
+                                        MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(),
+                                            announce_shown, -1);
                                     }
                                     else
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -1140,8 +1201,8 @@ bool KeyBoard::HandleEditKeys()
                                             CHAT_COLOR_DEFAULT,
                                             MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                             at_say_shown, true);
-                                        MainForm->gfx->sprites->ShowSpeechBalloon(at_say_shown,
-                                            MainForm->net_client->GetPlayerId(), 0);
+                                        MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(),
+                                            at_say_shown, -1);
                                     }
                                     else
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -1185,8 +1246,8 @@ bool KeyBoard::HandleEditKeys()
                                             CHAT_COLOR_DEFAULT,
                                             MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
                                             amp_say_shown, true);
-                                        MainForm->gfx->sprites->ShowSpeechBalloon(amp_say_shown,
-                                            MainForm->net_client->GetPlayerId(), 0);
+                                        MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(),
+                                            amp_say_shown, -1);
                                     }
                                     else
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
@@ -1207,8 +1268,8 @@ bool KeyBoard::HandleEditKeys()
                                     {
                                         MainForm->net_client->sender->SendPartyChat(party_text.SubString(2,
                                             party_text.Length() - 1));
-                                        MainForm->gfx->sprites->ShowSpeechBalloon(party_shown,
-                                            MainForm->net_client->GetPlayerId(), MainForm->config->GetGroupColor());
+                                        MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(), party_shown,
+                                            MainForm->config->GetGroupColor());
                                         MainForm->animation->interface_controller->chat->AddGroupMessage(ChatIcon_Party,
                                             CHAT_COLOR_DEFAULT,
                                             MainForm->net_client->Capitalize(MainForm->players->GetName(MainForm->net_client->GetPlayerId())),
@@ -1321,6 +1382,8 @@ bool KeyBoard::HandleEditKeys()
                     "")
                 {
                     MainForm->animation->menu->login_enabled = false;
+                    MainForm->registry->SetServerHost(MainForm->config->GetHost());
+                    MainForm->registry->SetServerPort(MainForm->config->GetPort());
                     MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
@@ -1332,6 +1395,8 @@ bool KeyBoard::HandleEditKeys()
             {
                 if (MainForm->edits->GetText(EditId_AccountName) != "")
                 {
+                    MainForm->registry->SetServerHost(MainForm->config->GetHost());
+                    MainForm->registry->SetServerPort(MainForm->config->GetPort());
                     MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
                     MainForm->animation->menu->account_name = MainForm->edits->GetText(EditId_AccountName);
                     MainForm->animation->menu->account_name =
@@ -1342,7 +1407,7 @@ bool KeyBoard::HandleEditKeys()
                     MainForm->edits->Clear();
                     MainForm->net_client->login_failure_count = 0;
                     MainForm->gfx->LoadPasswordScreen();
-                    MainForm->keyboard->grid_enter_wait = 12;
+                    MainForm->keyboard->grid_enter_wait = 24;
                     MainForm->animation->SetSubState(MenuScreen_PasswordGrid);
                     if (MainForm->animation->menu->retry_ticks > 0)
                     {
@@ -1369,6 +1434,8 @@ bool KeyBoard::HandleEditKeys()
 // them, space, backspace and line breaks, with key repeat.
 bool KeyBoard::HandleTypedKeys()
 {
+    if (key_delay > 0)
+        return true;
     // Each key's repeat wait counts down by one.
     for (int key = 0; key < 61; key++)
     {
@@ -1381,7 +1448,7 @@ bool KeyBoard::HandleTypedKeys()
         return true;
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
-        if (attack_key_used)
+        if (space_key_used)
             return true;
         if (wasd_key_used)
             return true;
@@ -1412,6 +1479,7 @@ bool KeyBoard::HandleTypedKeys()
         }
         else
             ResetKeyRepeat(1);
+        // The digit row; layout 3 is an AZERTY keyboard, whose digits need Shift.
         if ((MainForm->DIKeyboardState1->Keys[DIK_1] & 0x80) != 0)
         {
             if (TakeKeyRepeat(2))
@@ -1942,6 +2010,7 @@ bool KeyBoard::HandleTypedKeys()
         }
         else
             ResetKeyRepeat(59);
+        // The letter keys, with Shift for capitals; layout 3 places them as an AZERTY keyboard does.
         if ((MainForm->DIKeyboardState1->Keys[DIK_A] & 0x80) != 0)
         {
             if (TakeKeyRepeat(21))
@@ -2378,9 +2447,9 @@ bool KeyBoard::HandleTypedKeys()
         if ((MainForm->DIKeyboardState1->Keys[DIK_BACK] & 0x80) != 0 && !typed.Length() && backspace_wait <= 2)
         {
             if (backspace_wait >= 1)
-                backspace_wait = 6;
+                backspace_wait = 16;
             else
-                backspace_wait = 32;
+                backspace_wait = 64;
             MainForm->edits->Backspace();
         }
         if (typed.Length() > 0)
@@ -2399,7 +2468,7 @@ bool KeyBoard::TakeKeyDelay()
 {
     if (key_delay > 0)
         return false;
-    key_delay = 24;
+    key_delay = 48;
     return true;
 }
 
@@ -2407,12 +2476,12 @@ bool KeyBoard::TakeKeyDelay()
 bool KeyBoard::TakeKeyRepeat(unsigned char key)
 {
     int wait = key_waits[key];
-    if (key_waits[key] > 3)
+    if (key_waits[key] > 6)
         return false;
     if (!key_waits[key])
-        key_waits[key] = 40;
+        key_waits[key] = 80;
     else
-        key_waits[key] = 8;
+        key_waits[key] = 16;
     return true;
 }
 
@@ -2431,6 +2500,8 @@ bool KeyBoard::IsAnyWindowOpen()
     if (MainForm->animation->game->input_box_visible)
         return true;
     if (MainForm->animation->game->form_visible)
+        return true;
+    if (MainForm->animation->hotkeys->is_visible)
         return true;
     if (MainForm->animation->paperdoll->is_visible)
         return true;
@@ -2484,4 +2555,5 @@ void KeyBoard::ReleaseModifierKeys()
     walk_key_held = false;
     wasd_key_used = false;
     attack_key_used = false;
+    space_key_used = false;
 }

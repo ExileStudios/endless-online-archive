@@ -2,7 +2,6 @@
 #define Ctrl_statusH
 
 #define GUILD_RANK_LOWEST 9
-#define MAX_LEVEL 240
 
 // The own character's numbers: health, mana, stamina, weight, level and experience, stat and skill points, the
 // guild tag, and the experience totals the stats window shows.
@@ -17,9 +16,9 @@ struct StatusController
     String guild_name;
     int weight;
     int max_weight;
-    int level;
-    int experience_to_next_level;
-    int next_level_experience;
+    short level;
+    long experience_to_next_level;
+    long next_level_experience;
     bool skip_next_exp_gain;
     int last_exp_gain;
     int best_exp_gain;
@@ -33,7 +32,7 @@ struct StatusController
     String stamina_check_text;
     String max_stamina_check_text;
     int unused_value;
-    int experience;
+    long experience;
     int gold;
     int usage_minutes;
     TDateTime usage_start_time;
@@ -54,6 +53,10 @@ struct StatusController
     int stat_agi;
     int stat_con;
     int stat_cha;
+    bool is_low_health;
+    unsigned char low_health_ticks;
+    unsigned char flash_ticks;
+    int flash_color;
     char is_dirty;
     int stamina_regen_ticks;
     int blink_phase;
@@ -61,15 +64,22 @@ struct StatusController
     StatusController();
     ~StatusController();
     void Tick();
+    bool IsLowHealth();
+    char GetLowHealthAlpha();
+    void FlashScreen(int color);
+    unsigned char GetFlashAlpha();
+    int GetFlashColor();
     void MouseDown(int x, int y, int button);
     int GetBlinkPhase();
-    void SetHealth(int new_health);
-    void SetMana(int new_mana);
-    void SetStamina(int new_stamina);
+    void SetHealth(int new_health, char show_change);
+    void SetMana(int new_mana, char show_change);
+    void SetStamina(int new_stamina, char show_change);
     void SetMaxHealth(int new_max_health);
     void SetMaxMana(int new_max_mana);
     void SetMaxStamina(int new_max_stamina);
-    void AddExperience(int gained_experience);
+    short GetHealthPercent();
+    short GetManaPercent();
+    String GetWeightText();
     void SetExperience(int new_experience);
     void SetLevel(int new_level);
     bool IsInGuild();

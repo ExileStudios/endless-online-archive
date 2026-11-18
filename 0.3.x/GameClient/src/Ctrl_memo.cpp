@@ -132,20 +132,17 @@ void MemoController::AddCharacterStats(String stats_data)
 // Adds a text with its right-hand value, wrapped to the page width; each wrapped line repeats the value.
 void MemoController::AddText(String text, String right_text, bool add_blank_line)
 {
-    int max_width;
-    HDC dc;
-    max_width = 200;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    int max_width = 200;
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
-            MainForm->text_canvas->Handle = dc;
-            MainForm->text_canvas->Font->Name = "MS Sans Serif";
-            MainForm->text_canvas->Font->Size = 7;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
             do
             {
                 String fitted_text;
-                if (MainForm->text_canvas->TextWidth(text) <= max_width)
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width)
                 {
                     lines->Add(text);
                     line_values->Add(right_text);
@@ -159,7 +156,7 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
                         if (text[i] == ' ' || i == text.Length())
                         {
                             String prefix = text.SubString(1, i);
-                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width)
                             {
                                 lines->Add(fitted_text);
                                 line_values->Add(right_text);
@@ -178,12 +175,11 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
                     }
                 }
             } while (text.Length() > 0);
-            MainForm->text_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (add_blank_line)
     {

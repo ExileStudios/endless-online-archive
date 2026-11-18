@@ -16,17 +16,14 @@
 
 ReportController::ReportController()
 {
-    int new_list;
-    int new_list_2;
-    int new_list_3;
     lines = new TStringList();
     line_values = new TStringList();
     unused_lines = new TStringList();
     link_line_indices[0] = -1;
-    link_line_indices[1] = -1;
-    link_line_indices[2] = -1;
-    window_x = 49;
-    window_y = 15;
+    report_link_line = -1;
+    question_link_line = -1;
+    window_x = 269;
+    window_y = 16;
     unused_flag = true;
     unused_value = 0;
     scroll_up_hovered = false;
@@ -61,10 +58,10 @@ void Ctrl_report_UnusedLiterals1()
     "";
 }
 
-// Adds a text wrapped to the window's width, with a value shown at the right end of each of its lines.
+// Adds a text wrapped to the window's width, with a value shown at the right end of each of its lines; a link line,
+// marked by a leading star, takes the next free link slot.
 void ReportController::AddText(String text, String right_text, bool add_blank_line)
 {
-    // A text starting with a star becomes the next free link
     if (text.Length() > 0 && text[1] == '*')
     {
         for (int slot = 0; slot < REPORT_MAX_LINKS; slot++)
@@ -77,18 +74,16 @@ void ReportController::AddText(String text, String right_text, bool add_blank_li
         }
     }
     int max_width = 200;
-    HDC dc;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
-            MainForm->text_canvas->Handle = dc;
-            MainForm->text_canvas->Font->Name = "MS Sans Serif";
-            MainForm->text_canvas->Font->Size = 7;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
             do
             {
                 String fitted_text;
-                if (MainForm->text_canvas->TextWidth(text) <= max_width)
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width)
                 {
                     lines->Add(text);
                     line_values->Add(right_text);
@@ -102,7 +97,7 @@ void ReportController::AddText(String text, String right_text, bool add_blank_li
                         if (text[i] == ' ' || i == text.Length())
                         {
                             String prefix = text.SubString(1, i);
-                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width)
                             {
                                 lines->Add(fitted_text);
                                 line_values->Add(right_text);
@@ -121,12 +116,11 @@ void ReportController::AddText(String text, String right_text, bool add_blank_li
                     }
                 }
             } while (text.Length() > 0);
-            MainForm->text_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (add_blank_line)
     {
@@ -212,18 +206,17 @@ void ReportController::MouseDown(int x, int y, int button)
         if (line == report_link_line)
         {
             MainForm->sfx->PlaySfx(SfxSound_Select);
-            MainForm->animation->game->OpenInputForm(FormKind_ReportPlayer, 2, EditCharFilter_AlphanumericSpaces, 32,
+            MainForm->animation->game->OpenInputForm(FormKind_ReportPlayer, 2, EditCharFilter_Email, 32,
                 "Report Player", "Who do you want to report, and why?");
-            MainForm->animation->game->AddInputFormRow("Name", "", EditCharFilter_AlphanumericSpaces, 16,
-                EditCaseMode_None, false);
-            MainForm->animation->game->AddInputFormRow("Reason", "", EditCharFilter_NoPunctuation, 48,
-                EditCaseMode_None, false);
+            MainForm->animation->game->AddInputFormRow("Name", "", EditCharFilter_Email, 16, EditCaseMode_None, false);
+            MainForm->animation->game->AddInputFormRow("Reason", "", EditCharFilter_Printable, 48, EditCaseMode_None,
+                false);
         }
         if (line == link_line_indices[2])
         {
             MainForm->sfx->PlaySfx(SfxSound_Select);
             MainForm->animation->game->OpenInputBox(InputBoxKind_HelpQuestion,
-                "Please enter your question, and we will try to get back to you.", EditCharFilter_NoPunctuation, 48);
+                "Please enter your question, and we will try to get back to you.", EditCharFilter_Printable, 48);
         }
     }
     if (x >= window_x + 252 && x <= window_x + 267 && y >= window_y + 44 && y <= window_y + 59)

@@ -29,9 +29,12 @@
 #include "Configuration.h"
 #include "Filelogger.h"
 #include "Fileprotection.h"
+#include "Fonts.h"
 #include "Gfx_alpha.h"
 #include "Gfx_edits.h"
 #include "Gfxprotection.h"
+#include "Gfxtransfers.h"
+#include "Gfxvault.h"
 #include "Itemvalues.h"
 #include "Mapprotection.h"
 #include "Npcvalues.h"
@@ -53,7 +56,6 @@
 #include "Sys_weaponmap.h"
 
 #define BASE_SCREEN_HEIGHT 480.0
-#define BASE_SCREEN_WIDTH 640.0
 #define GRID_THUMB_TRAVEL 68.0
 #define NPC_LIST_ROW_HEIGHT 37
 #define NPC_TEXT_LINE_HEIGHT 16
@@ -92,13 +94,9 @@ __published:
     TDx_SoundBuffer *Dx_SoundBuffer3;
     TDSBufferDesc *DSBufferDesc3;
     TDx_SoundBuffer *Dx_SoundBuffer4;
-    TDSBufferDesc *DSBufferDesc4;
     TDx_SoundBuffer *Dx_SoundBuffer5;
-    TDSBufferDesc *DSBufferDesc5;
     TDx_SoundBuffer *Dx_SoundBuffer6;
-    TDSBufferDesc *DSBufferDesc6;
     TDx_SoundBuffer *Dx_SoundBuffer7;
-    TDSBufferDesc *DSBufferDesc7;
     TDx_Input *Dx_Input1;
     TDIDevCaps *DIDevCaps1;
     TDIKeyboardState *DIKeyboardState1;
@@ -106,7 +104,6 @@ __published:
     TClientSocket *client;
     TApplicationEvents *ApplicationEvents1;
     TTimer *Timer1;
-    void __fastcall OnIdle(TObject *sender, bool &done);
     void __fastcall FormCreate(TObject *Sender);
     void __fastcall FormDestroy(TObject *Sender);
     void __fastcall Dx_Draw1Create(TObject *Sender);
@@ -141,6 +138,9 @@ __published:
     void __fastcall FormShow(TObject *Sender);
 private:
 public:
+    Fonts *fonts;
+    GfxVault *gfx_vault;
+    GfxTransfers *gfx_transfers;
     StringContainer *strings;
     FileController *files;
     AnimationController *animation;
@@ -167,11 +167,6 @@ public:
     Mouser *mouse;
     ExtBlts *blitter;
     Client *net_client;
-    TCanvas *draw_canvas;
-    TCanvas *status_canvas;
-    TCanvas *text_canvas;
-    Graphics::TBitmap *resource_bitmap;
-    Graphics::TBitmap *interface_bitmap;
     TRect screen_rect;
     TStringList *sound_driver_names;
     TStringList *sound_driver_modules;
@@ -198,19 +193,27 @@ public:
     bool minimized;
     char unused_bytes[1];
     bool active;
+    bool initialized;
     unsigned char login_screen_delay;
     unsigned char full_paint_delay;
     int draw_error_count;
     char second_unused_bytes[4];
+    long start_time;
+    long current_time;
     String clock_text;
     bool flip_needed;
     bool animation_tick_due;
     char keyboard_acquired;
-    TTimeStamp start_time;
+    TTimeStamp start_stamp;
     int time_value_a;
     int time_value_b;
     HMENU scale_menu;
+    HMENU status_widget_menu;
+    HMENU minimap_menu;
     HMENU auto_drop_menu;
+    bool item_drag_drawn;
+    bool spell_drag_drawn;
+    bool skill_drag_drawn;
 
     __fastcall TMainForm(TComponent *owner);
     virtual __fastcall ~TMainForm();
@@ -226,6 +229,19 @@ public:
     String VersionString(int major, int minor, int build, char letter);
     void __fastcall HandleMMTimerEvent();
     void IntroAnimator();
+    void RenderMainLoop();
+    void RenderMainLoop_Game();
+    void RenderGame_ViewPort_Frame();
+    void RenderGame_BottomPanel();
+    void RenderGame_MapLoadScreen();
+    void RenderMainLoop_Menu();
+    void RenderMainLoop_Intro();
+    void RenderFpsOverlay();
+    void RenderOffscreenToPrimary();
+    void RenderDrag();
+    void RenderDragUndo();
+    char FormIsOnPrimaryScreen();
+    String FormatClock(int value);
 
 BEGIN_MESSAGE_MAP
     VCL_MESSAGE_HANDLER(WM_SYSCOMMAND, TWMSysCommand, WMSysCommand)
@@ -248,272 +264,30 @@ TRect Class::GetScrollIconRect(int icon) \
     return scroll_icon_rect; \
 }
 
-// Shared body: a class defines its LoadScrollIcons with DEFINE_LOAD_SCROLL_ICONS(TheClass); each class has its own
-// scroll_icons.
-#define DEFINE_LOAD_SCROLL_ICONS(Class) \
-void Class::LoadScrollIcons(int library, int resource_id) \
-{ \
-    HDC dc; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->Transparent = false; \
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id); \
-    if (scroll_icons->GetDC(&dc)) \
-    { \
-        try \
-        { \
-            MainForm->draw_canvas->Handle = dc; \
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-        } \
-        catch (Exception &) \
-        { \
-        } \
-        scroll_icons->ReleaseDC(dc); \
-    } \
-}
-
-// Shared body: a class defines its LoadCornerButton with DEFINE_LOAD_CORNER_BUTTON(TheClass); each class has its own
-// corner_button, color_key.
-#define DEFINE_LOAD_CORNER_BUTTON(Class) \
-void Class::LoadCornerButton(int library, int resource_id) \
-{ \
-    HDC dc; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->Transparent = false; \
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id); \
-    if (corner_button->GetDC(&dc)) \
-    { \
-        try \
-        { \
-            MainForm->draw_canvas->Handle = dc; \
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-        } \
-        catch (Exception &) \
-        { \
-        } \
-        corner_button->ReleaseDC(dc); \
-    } \
-    corner_button->SetColorKey(DDCKEY_SRCBLT, color_key); \
-}
-
 // Shared body: a class defines its LoadSurface with DEFINE_LOAD_SURFACE(TheClass); each class has its own surface_desc,
 // surface_caps, surface, surface_rect, color_key.
 #define DEFINE_LOAD_SURFACE(Class) \
-GraphicSize Class::LoadSurface(int library, int resource_id) \
+TPoint Class::LoadSurface(int library, int resource_id) \
 { \
-    GraphicSize size; \
-    HDC dc; \
-    HDC compatible_dc; \
-    size.width = -1; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    try \
+    TPoint size; \
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id)) \
+        return TPoint(-1, -1); \
+    size = *(TPoint *)MainForm->gfx_transfers; \
+    surface_desc->SCaps = surface_caps; \
+    MainForm->gfx_transfers->CreateSurface(surface, surface_desc, size.x, size.y); \
+    surface_rect.left = 0; \
+    surface_rect.top = 0; \
+    surface_rect.right = size.x; \
+    surface_rect.bottom = size.y; \
+    if (MainForm->gfx_transfers->BeginDraw(surface)) \
     { \
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id); \
-    } \
-    catch (...) \
-    { \
+        MainForm->gfx_transfers->Draw(surface); \
+        MainForm->gfx_transfers->EndDraw(surface); \
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
         return size; \
     } \
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
-    surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
-    surface_desc->Width = MainForm->resource_bitmap->Width; \
-    surface_desc->Height = MainForm->resource_bitmap->Height; \
-    if (!surface) \
-        surface->Restore(); \
-    if (surface->Created) \
-        surface->Destroy(); \
-    surface->GetSurfaceDesc(surface_desc); \
-    surface->Create(surface_desc, MainForm->Dx_Draw1); \
-    size.width = MainForm->resource_bitmap->Width; \
-    size.height = MainForm->resource_bitmap->Height; \
-    surface_rect.left = 0; \
-    surface_rect.top = 0; \
-    surface_rect.right = MainForm->resource_bitmap->Width; \
-    surface_rect.bottom = MainForm->resource_bitmap->Height; \
-    if (!MainForm->config->GetUseBitBltDraw()) \
-    { \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                MainForm->draw_canvas->Handle = dc; \
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-                MainForm->draw_canvas->Handle = 0; \
-            } \
-            catch (Exception &) \
-            { \
-                MainForm->CountDrawError(); \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
-    } \
-    else \
-    { \
-        compatible_dc = CreateCompatibleDC(0); \
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle); \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY); \
-            } \
-            catch (...) \
-            { \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
-        DeleteDC(compatible_dc); \
-    } \
-    if (size.width > 0) \
-        surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
-    return size; \
-}
-
-// Shared body: a class defines its LoadSurface with DEFINE_BLEND_LOAD_SURFACE(TheClass); each class has its own
-// surface_desc, surface_caps, surface, surface_rect, color_key.
-#define DEFINE_BLEND_LOAD_SURFACE(Class) \
-GraphicSize Class::LoadSurface(int library, int resource_id) \
-{ \
-    GraphicSize size; \
-    HDC dc; \
-    HDC compatible_dc; \
-    size.width = -1; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id); \
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
-    surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
-    surface_desc->Width = MainForm->resource_bitmap->Width; \
-    surface_desc->Height = MainForm->resource_bitmap->Height; \
-    if (!surface) \
-        surface->Restore(); \
-    if (surface->Created) \
-        surface->Destroy(); \
-    surface->GetSurfaceDesc(surface_desc); \
-    surface->Create(surface_desc, MainForm->Dx_Draw1); \
-    size.width = MainForm->resource_bitmap->Width; \
-    size.height = MainForm->resource_bitmap->Height; \
-    surface_rect.left = 0; \
-    surface_rect.top = 0; \
-    surface_rect.right = MainForm->resource_bitmap->Width; \
-    surface_rect.bottom = MainForm->resource_bitmap->Height; \
-    if (!MainForm->config->GetUseBitBltDraw()) \
-    { \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                MainForm->draw_canvas->Handle = dc; \
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-                MainForm->draw_canvas->Handle = 0; \
-            } \
-            catch (Exception &) \
-            { \
-                MainForm->CountDrawError(); \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
-    } \
-    else \
-    { \
-        compatible_dc = CreateCompatibleDC(0); \
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle); \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY); \
-            } \
-            catch (...) \
-            { \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
-        DeleteDC(compatible_dc); \
-    } \
-    if (size.width > 0) \
-        surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
-    return size; \
-}
-
-// Shared body: a class defines its ClipToView with DEFINE_CLIP_TO_VIEW(TheClass); each class has its own clip_left,
-// clip_top, clip_right, clip_bottom, view_left, view_top, view_right, view_bottom.
-#define DEFINE_CLIP_TO_VIEW(Class) \
-TRect Class::ClipToView(TRect rect) \
-{ \
-    TRect clipped; \
-    clipped = rect; \
-    int width = rect.right - rect.left; \
-    int height = rect.bottom - rect.top; \
-    clip_left = 0; \
-    clip_top = 0; \
-    clip_right = 0; \
-    clip_bottom = 0; \
-    if (rect.left < view_left) \
-    { \
-        clip_left = view_left - rect.left; \
-        clipped.left = view_left; \
-    } \
-    if (rect.top < view_top) \
-    { \
-        clip_top = view_top - rect.top; \
-        clipped.top = view_top; \
-    } \
-    if (rect.left + width > view_right) \
-    { \
-        clip_right = rect.left + width - view_right; \
-        clipped.right = view_right; \
-    } \
-    if (rect.top + height > view_bottom) \
-    { \
-        clip_bottom = rect.top + height - view_bottom; \
-        clipped.bottom = view_bottom; \
-    } \
-    return clipped; \
-}
-
-// Shared body: a class defines its GetClippedSourceRect with DEFINE_GET_CLIPPED_SOURCE_RECT(TheClass); each class has
-// its own is_mirrored, clip_left, clip_right, clip_top, clip_bottom.
-#define DEFINE_GET_CLIPPED_SOURCE_RECT(Class) \
-TRect Class::GetClippedSourceRect(TRect rect) \
-{ \
-    TRect clipped; \
-    clipped = rect; \
-    if (!is_mirrored) \
-    { \
-        if (clip_left > 0) \
-            clipped.left += clip_left; \
-        if (clip_right > 0) \
-            clipped.right -= clip_right; \
-    } \
-    else \
-    { \
-        if (clip_right > 0) \
-            clipped.left += clip_right; \
-        if (clip_left > 0) \
-            clipped.right -= clip_left; \
-    } \
-    if (clip_top > 0) \
-        clipped.top += clip_top; \
-    if (clip_bottom > 0) \
-        clipped.bottom -= clip_bottom; \
-    return clipped; \
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
+    return TPoint(-1, -1); \
 }
 
 // Encodes a number as base-253 digits plus one, lowest first, padded to min_length with the filler byte.
@@ -569,41 +343,6 @@ String Class::Capitalize(String text) \
     else \
         result = text; \
     return result; \
-}
-
-// Shared body: a class defines its CloseBalloon with DEFINE_CLOSE_BALLOON(TheClass); each class has its own
-// balloon_shown, balloon_timer, balloon, redraw.
-#define DEFINE_CLOSE_BALLOON(Class) \
-void Class::CloseBalloon() \
-{ \
-    if (balloon_shown) \
-    { \
-        balloon_shown = false; \
-        balloon_timer = 0; \
-        delete balloon; \
-    } \
-    redraw = true; \
-}
-
-// Shared body: a class defines its IsInViewRange with DEFINE_IS_IN_VIEW_RANGE(TheClass).
-#define DEFINE_IS_IN_VIEW_RANGE(Class) \
-bool Class::IsInViewRange(int center_x, int center_y, int x, int y) \
-{ \
-    bool in_range = false; \
-    int dx = x - center_x; \
-    int dy = y - center_y; \
-    if (dx < 0) \
-        dx = 0 - dx; \
-    if (dy < 0) \
-        dy = 0 - dy; \
-    if (center_x < x && center_y < y) \
-    { \
-        if (dx + dy <= 14) \
-            in_range = true; \
-    } \
-    else if (dx + dy <= 11) \
-        in_range = true; \
-    return in_range; \
 }
 
 // Shared body: a class defines its TestAndClearDirty with DEFINE_TEST_AND_CLEAR_DIRTY(TheClass); each class has its own
@@ -748,147 +487,51 @@ int Class::GetItemAmount(int item_id) \
 // Shared body: a class defines its LoadBackground with DEFINE_LOAD_BACKGROUND(TheClass); each class has its own
 // surface_desc, surface_caps, background_surface, background_rect.
 #define DEFINE_LOAD_BACKGROUND(Class) \
-GraphicSize Class::LoadBackground(HMODULE library, int resource_id) \
+TPoint Class::LoadBackground(int library, int resource_id) \
 { \
-    GraphicSize size; \
-    HDC dc; \
-    HDC compatible_dc; \
-    size.width = -1; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id); \
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
+    TPoint size; \
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id)) \
+        return TPoint(-1, -1); \
+    size = *(TPoint *)MainForm->gfx_transfers; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
-    surface_desc->Width = MainForm->resource_bitmap->Width; \
-    surface_desc->Height = MainForm->resource_bitmap->Height; \
-    if (!background_surface) \
-        background_surface->Restore(); \
-    if (background_surface->Created) \
-        background_surface->Destroy(); \
-    background_surface->GetSurfaceDesc(surface_desc); \
-    background_surface->Create(surface_desc, MainForm->Dx_Draw1); \
-    size.width = MainForm->resource_bitmap->Width; \
-    size.height = MainForm->resource_bitmap->Height; \
+    MainForm->gfx_transfers->CreateSurface(background_surface, surface_desc, size.x, size.y); \
     background_rect.left = 0; \
     background_rect.top = 0; \
-    background_rect.right = MainForm->resource_bitmap->Width; \
-    background_rect.bottom = MainForm->resource_bitmap->Height; \
-    if (!MainForm->config->GetUseBitBltDraw()) \
+    background_rect.right = size.x; \
+    background_rect.bottom = size.y; \
+    if (MainForm->gfx_transfers->BeginDraw(background_surface)) \
     { \
-        if (background_surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                MainForm->draw_canvas->Handle = dc; \
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-                MainForm->draw_canvas->Handle = 0; \
-            } \
-            catch (Exception &) \
-            { \
-                MainForm->CountDrawError(); \
-                background_surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            background_surface->ReleaseDC(dc); \
-        } \
+        MainForm->gfx_transfers->Draw(background_surface); \
+        MainForm->gfx_transfers->EndDraw(background_surface); \
+        return size; \
     } \
-    else \
-    { \
-        compatible_dc = CreateCompatibleDC(0); \
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle); \
-        if (background_surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY); \
-            } \
-            catch (...) \
-            { \
-                background_surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            background_surface->ReleaseDC(dc); \
-        } \
-        DeleteDC(compatible_dc); \
-    } \
-    return size; \
+    return TPoint(-1, -1); \
 }
 
 // Shared body: a class defines its LoadItemSlot with DEFINE_LOAD_ITEM_SLOT(TheClass); each class has its own
 // surface_desc, surface_caps, item_slot_surface, item_slot_rect, color_key.
 #define DEFINE_LOAD_ITEM_SLOT(Class) \
-GraphicSize Class::LoadItemSlot(HMODULE library, int resource_id) \
+TPoint Class::LoadItemSlot(int library, int resource_id) \
 { \
-    GraphicSize size; \
-    HDC dc; \
-    HDC compatible_dc; \
-    size.width = -1; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id); \
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
+    TPoint size; \
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id)) \
+        return TPoint(-1, -1); \
+    size = *(TPoint *)MainForm->gfx_transfers; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
-    surface_desc->Width = MainForm->resource_bitmap->Width; \
-    surface_desc->Height = MainForm->resource_bitmap->Height; \
-    if (!item_slot_surface) \
-        item_slot_surface->Restore(); \
-    if (item_slot_surface->Created) \
-        item_slot_surface->Destroy(); \
-    item_slot_surface->GetSurfaceDesc(surface_desc); \
-    item_slot_surface->Create(surface_desc, MainForm->Dx_Draw1); \
-    size.width = MainForm->resource_bitmap->Width; \
-    size.height = MainForm->resource_bitmap->Height; \
+    MainForm->gfx_transfers->CreateSurface(item_slot_surface, surface_desc, size.x, size.y); \
     item_slot_rect.left = 0; \
     item_slot_rect.top = 0; \
-    item_slot_rect.right = MainForm->resource_bitmap->Width; \
-    item_slot_rect.bottom = MainForm->resource_bitmap->Height; \
-    if (!MainForm->config->GetUseBitBltDraw()) \
+    item_slot_rect.right = size.x; \
+    item_slot_rect.bottom = size.y; \
+    if (MainForm->gfx_transfers->BeginDraw(item_slot_surface)) \
     { \
-        if (item_slot_surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                MainForm->draw_canvas->Handle = dc; \
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-                MainForm->draw_canvas->Handle = 0; \
-            } \
-            catch (Exception &) \
-            { \
-                MainForm->CountDrawError(); \
-                item_slot_surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            item_slot_surface->ReleaseDC(dc); \
-        } \
-    } \
-    else \
-    { \
-        compatible_dc = CreateCompatibleDC(0); \
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle); \
-        if (item_slot_surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY); \
-            } \
-            catch (...) \
-            { \
-                item_slot_surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            item_slot_surface->ReleaseDC(dc); \
-        } \
-        DeleteDC(compatible_dc); \
-    } \
-    if (size.width > 0) \
+        MainForm->gfx_transfers->Draw(item_slot_surface); \
+        MainForm->gfx_transfers->EndDraw(item_slot_surface); \
         item_slot_surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
-    return size; \
+        return size; \
+    } \
+    item_slot_surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
+    return TPoint(-1, -1); \
 }
 
 // Hides the window and frees its graphics.
@@ -979,73 +622,25 @@ void Class::UpdateScrollHover(int x, int y) \
 // Shared body: a class defines its LoadSurface with DEFINE_BANK_LOAD_SURFACE(TheClass); each class has its own
 // surface_desc, surface_caps, surface, surface_rect.
 #define DEFINE_BANK_LOAD_SURFACE(Class) \
-GraphicSize Class::LoadSurface(HMODULE library, int resource_id) \
+TPoint Class::LoadSurface(int library, int resource_id) \
 { \
-    GraphicSize size; \
-    HDC dc; \
-    HDC compatible_dc; \
-    size.width = -1; \
-    MainForm->resource_bitmap->Width = 0; \
-    MainForm->resource_bitmap->Height = 0; \
-    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id); \
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH; \
+    TPoint size; \
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id)) \
+        return TPoint(-1, -1); \
+    size = *(TPoint *)MainForm->gfx_transfers; \
     surface_desc->SCaps = surface_caps; \
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY; \
-    surface_desc->Width = MainForm->resource_bitmap->Width; \
-    surface_desc->Height = MainForm->resource_bitmap->Height; \
-    if (!surface) \
-        surface->Restore(); \
-    if (surface->Created) \
-        surface->Destroy(); \
-    surface->GetSurfaceDesc(surface_desc); \
-    surface->Create(surface_desc, MainForm->Dx_Draw1); \
-    size.width = MainForm->resource_bitmap->Width; \
-    size.height = MainForm->resource_bitmap->Height; \
+    MainForm->gfx_transfers->CreateSurface(surface, surface_desc, size.x, size.y); \
     surface_rect.left = 0; \
     surface_rect.top = 0; \
-    surface_rect.right = MainForm->resource_bitmap->Width; \
-    surface_rect.bottom = MainForm->resource_bitmap->Height; \
-    if (!MainForm->config->GetUseBitBltDraw()) \
+    surface_rect.right = size.x; \
+    surface_rect.bottom = size.y; \
+    if (MainForm->gfx_transfers->BeginDraw(surface)) \
     { \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                MainForm->draw_canvas->Handle = dc; \
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap); \
-                MainForm->draw_canvas->Handle = 0; \
-            } \
-            catch (Exception &) \
-            { \
-                MainForm->CountDrawError(); \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
+        MainForm->gfx_transfers->Draw(surface); \
+        MainForm->gfx_transfers->EndDraw(surface); \
+        return size; \
     } \
-    else \
-    { \
-        compatible_dc = CreateCompatibleDC(0); \
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle); \
-        if (surface->GetDC(&dc)) \
-        { \
-            try \
-            { \
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY); \
-            } \
-            catch (...) \
-            { \
-                surface->ReleaseDC(dc); \
-                size.width = -1; \
-                size.height = -1; \
-            } \
-            surface->ReleaseDC(dc); \
-        } \
-        DeleteDC(compatible_dc); \
-    } \
-    return size; \
+    return TPoint(-1, -1); \
 }
 
 // Adds a text to the text page, wrapped to the page width, with an optional blank line after it.
@@ -1054,22 +649,19 @@ GraphicSize Class::LoadSurface(HMODULE library, int resource_id) \
 #define DEFINE_ADD_TEXT(Class) \
 void Class::AddText(String text, bool add_blank_line) \
 { \
-    int max_width; \
-    void *dc; \
     if (text.Length() > 0 && text[1] == '*') \
         link_line_index = lines->Count; \
-    max_width = 200; \
-    if (MainForm->OffscreenSurface->GetDC(&dc)) \
+    int max_width = 200; \
+    if (MainForm->fonts->BeginOffscreenIf(200)) \
     { \
         try \
         { \
-            MainForm->text_canvas->Handle = dc; \
-            MainForm->text_canvas->Font->Name = "MS Sans Serif"; \
-            MainForm->text_canvas->Font->Size = 7; \
+            MainForm->fonts->face = 1; \
+            MainForm->fonts->size = 8; \
             do \
             { \
                 String fitted_text; \
-                if (MainForm->text_canvas->TextWidth(text) <= max_width) \
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width) \
                 { \
                     lines->Add(text); \
                     text = ""; \
@@ -1082,7 +674,7 @@ void Class::AddText(String text, bool add_blank_line) \
                         if (text[i] == ' ' || i == text.Length()) \
                         { \
                             String prefix = text.SubString(1, i); \
-                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width) \
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width) \
                             { \
                                 lines->Add(fitted_text); \
                                 text.Delete(1, fitted_text.Length()); \
@@ -1099,12 +691,11 @@ void Class::AddText(String text, bool add_blank_line) \
                     } \
                 } \
             } while (text.Length() > 0); \
-            MainForm->text_canvas->Handle = 0; \
         } \
         catch (Exception &) \
         { \
         } \
-        MainForm->OffscreenSurface->ReleaseDC(dc); \
+        MainForm->fonts->End(); \
     } \
     if (add_blank_line) \
         lines->Add(""); \
@@ -1213,6 +804,28 @@ bool Class::TestAndClearButtonsDirty() \
     return was_dirty; \
 }
 
+// Shared body: a class defines its LoadSurface with DEFINE_ICON_LOAD_SURFACE(TheClass); each class has its own
+// surface_desc, surface_caps, surface, color_key.
+#define DEFINE_ICON_LOAD_SURFACE(Class) \
+TPoint Class::LoadSurface(int library, int resource_id) \
+{ \
+    TPoint size; \
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id)) \
+        return TPoint(-1, -1); \
+    size = *(TPoint *)MainForm->gfx_transfers; \
+    surface_desc->SCaps = surface_caps; \
+    MainForm->gfx_transfers->CreateSurface(surface, surface_desc, size.x, size.y); \
+    if (MainForm->gfx_transfers->BeginDraw(surface)) \
+    { \
+        MainForm->gfx_transfers->Draw(surface); \
+        MainForm->gfx_transfers->EndDraw(surface); \
+        surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
+        return size; \
+    } \
+    surface->SetColorKey(DDCKEY_SRCBLT, color_key); \
+    return TPoint(-1, -1); \
+}
+
 // Empties the text page and scrolls back to the top.
 // Shared body: a class defines its ClearText with DEFINE_CLEAR_TEXT(TheClass); each class has its own lines,
 // unused_lines, link_line_index, hovered_row, top_line, scroll_thumb_offset.
@@ -1225,6 +838,17 @@ void Class::ClearText() \
     hovered_row = 0; \
     top_line = 0; \
     scroll_thumb_offset = 0; \
+}
+
+// Shared body: a class defines its Close with DEFINE_HOTKEYS_CLOSE(TheClass); each class has its own is_visible.
+#define DEFINE_HOTKEYS_CLOSE(Class) \
+void Class::Close() \
+{ \
+    if (is_visible) \
+    { \
+        is_visible = false; \
+        MainForm->redraw_needed = true; \
+    } \
 }
 
 #endif

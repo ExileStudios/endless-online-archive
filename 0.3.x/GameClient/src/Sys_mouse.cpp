@@ -55,6 +55,8 @@
 #include "Pathfinder.h"
 #include "Ctrl_popupelement.h"
 #include "Ctrl_tooltip.h"
+#include "Ctrl_hotkeys.h"
+#include "Gfx_mapnpcs.h"
 
 #pragma package(smart_init)
 
@@ -79,6 +81,9 @@ void Mouser::SetPosition(int cursor_x, int cursor_y)
 // Acts on a move once: the hover state of the open box or window, or else the map under the cursor and the panels.
 void Mouser::HandleMove()
 {
+    int button_x;
+    int second_button_x;
+    int button_y;
     if (moved)
     {
         moved = 0;
@@ -87,17 +92,18 @@ void Mouser::HandleMove()
             MainForm->animation->game->MouseMove(x, y);
             if (MainForm->animation->game->message_visible || MainForm->animation->game->large_box_visible ||
                 MainForm->animation->game->input_box_visible || MainForm->animation->game->form_visible ||
-                MainForm->animation->paperdoll->is_visible || MainForm->animation->book->is_visible ||
-                MainForm->animation->trade->is_visible || MainForm->animation->bank->is_visible ||
-                MainForm->animation->jukebox->is_visible || MainForm->animation->musician->is_visible ||
-                MainForm->animation->barber->is_visible || MainForm->animation->learn->is_visible ||
-                MainForm->animation->shop->is_visible || MainForm->animation->stat->is_visible ||
-                MainForm->animation->guild->is_visible || MainForm->animation->memo->is_visible ||
-                MainForm->animation->dialog->is_visible || MainForm->animation->report->is_visible ||
-                MainForm->animation->law->is_visible || MainForm->animation->inn->is_visible ||
-                MainForm->animation->locker->is_visible || MainForm->animation->chest->is_visible ||
-                MainForm->animation->social->is_open || MainForm->animation->message_board->is_visible ||
-                MainForm->animation->quests->is_visible || MainForm->animation->game->amount_box_visible)
+                MainForm->animation->hotkeys->is_visible || MainForm->animation->paperdoll->is_visible ||
+                MainForm->animation->book->is_visible || MainForm->animation->trade->is_visible ||
+                MainForm->animation->bank->is_visible || MainForm->animation->jukebox->is_visible ||
+                MainForm->animation->musician->is_visible || MainForm->animation->barber->is_visible ||
+                MainForm->animation->learn->is_visible || MainForm->animation->shop->is_visible ||
+                MainForm->animation->stat->is_visible || MainForm->animation->guild->is_visible ||
+                MainForm->animation->memo->is_visible || MainForm->animation->dialog->is_visible ||
+                MainForm->animation->report->is_visible || MainForm->animation->law->is_visible ||
+                MainForm->animation->inn->is_visible || MainForm->animation->locker->is_visible ||
+                MainForm->animation->chest->is_visible || MainForm->animation->social->is_open ||
+                MainForm->animation->message_board->is_visible || MainForm->animation->quests->is_visible ||
+                MainForm->animation->game->amount_box_visible)
             {
                 char window_handled = false;
                 if (MainForm->animation->game->message_visible)
@@ -140,7 +146,7 @@ void Mouser::HandleMove()
                 {
                     window_handled = true;
                     if (MainForm->animation->game->large_box_x + 184 <= x &&
-                        x <= MainForm->animation->game->large_box_x + 272 &&
+                        MainForm->animation->game->large_box_x + 272 >= x &&
                         MainForm->animation->game->large_box_y + 147 <= y &&
                         MainForm->animation->game->large_box_y + 173 >= y)
                     {
@@ -156,7 +162,7 @@ void Mouser::HandleMove()
                         MainForm->redraw_needed = true;
                     }
                     if (MainForm->animation->game->large_box_x + 91 <= x &&
-                        x <= MainForm->animation->game->large_box_x + 179 &&
+                        MainForm->animation->game->large_box_x + 179 >= x &&
                         MainForm->animation->game->large_box_y + 147 <= y &&
                         MainForm->animation->game->large_box_y + 173 >= y)
                     {
@@ -299,6 +305,11 @@ void Mouser::HandleMove()
                 {
                     window_handled = true;
                     MainForm->animation->trade->MouseMove(x, y);
+                }
+                if (MainForm->animation->hotkeys->is_visible && !window_handled)
+                {
+                    window_handled = true;
+                    MainForm->animation->hotkeys->MouseMove(x, y);
                 }
                 if (MainForm->animation->paperdoll->is_visible && !window_handled)
                 {
@@ -454,19 +465,19 @@ void Mouser::HandleMove()
                     if (MainForm->animation->menu->form_kind == CHANGE_PASSWORD_DIALOG)
                     {
                         MainForm->edits->SetPosition(EditId_AccountName, MainForm->animation->menu->form_x + 200,
-                            MainForm->animation->menu->form_y + 60);
+                            MainForm->animation->menu->form_y + 39);
                         MainForm->edits->SetPosition(EditId_OldPassword, MainForm->animation->menu->form_x + 200,
-                            MainForm->animation->menu->form_y + 89);
+                            MainForm->animation->menu->form_y + 76);
                         MainForm->edits->SetPosition(EditId_NewPassword, MainForm->animation->menu->form_x + 200,
-                            MainForm->animation->menu->form_y + 119);
+                            MainForm->animation->menu->form_y + 128);
                         MainForm->edits->SetPosition(EditId_ConfirmNewPassword, MainForm->animation->menu->form_x + 200,
-                            MainForm->animation->menu->form_y + 149);
+                            MainForm->animation->menu->form_y + 166);
                     }
                     if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
                     {
-                        MainForm->edits->SetPosition(EditId_InputBox, MainForm->animation->menu->form_x + 83,
-                            MainForm->animation->menu->form_y + 56);
-                        MainForm->players->SetPreviewPosition(MainForm->animation->menu->form_x + 275,
+                        MainForm->edits->SetPosition(EditId_InputBox, MainForm->animation->menu->form_x + 113,
+                            MainForm->animation->menu->form_y + 38);
+                        MainForm->players->SetPreviewPosition(MainForm->animation->menu->form_x + 385,
                             MainForm->animation->menu->form_y + 94);
                     }
                     if (MainForm->animation->menu->form_x + 162 <= x && MainForm->animation->menu->form_x + 217 >= x)
@@ -498,13 +509,35 @@ void Mouser::HandleMove()
                         MainForm->animation->menu->hair_color_arrow_hover = false;
                         MainForm->animation->menu->skin_arrow_hover = false;
                     }
-                    if (MainForm->animation->menu->form_x + 157 <= x && MainForm->animation->menu->form_x + 245 >= x &&
-                        MainForm->animation->menu->form_y + 195 <= y && MainForm->animation->menu->form_y + 221 >= y)
+                    button_x = 218;
+                    second_button_x = 311;
+                    button_y = 216;
+                    if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
+                    {
+                        button_x = 79;
+                        second_button_x = 172;
+                    }
+                    if (MainForm->animation->menu->form_x + 25 <= x && MainForm->animation->menu->form_x + 44 >= x &&
+                        MainForm->animation->menu->form_y + 125 <= y && MainForm->animation->menu->form_y + 161 >= y)
+                        MainForm->animation->menu->left_arrow_state = 1;
+                    else
+                        MainForm->animation->menu->left_arrow_state = 0;
+                    if (MainForm->animation->menu->form_x + 292 <= x && MainForm->animation->menu->form_x + 313 >= x &&
+                        MainForm->animation->menu->form_y + 125 <= y && MainForm->animation->menu->form_y + 161 >= y)
+                        MainForm->animation->menu->right_arrow_state = 1;
+                    else
+                        MainForm->animation->menu->right_arrow_state = 0;
+                    if (MainForm->animation->menu->form_x + button_x <= x &&
+                        button_x + MainForm->animation->menu->form_x + 88 >= x &&
+                        MainForm->animation->menu->form_y + button_y <= y &&
+                        MainForm->animation->menu->form_y + button_y + 26 >= y)
                         MainForm->animation->menu->form_ok_button_hover = true;
                     else
                         MainForm->animation->menu->form_ok_button_hover = false;
-                    if (MainForm->animation->menu->form_x + 250 <= x && MainForm->animation->menu->form_x + 338 >= x &&
-                        MainForm->animation->menu->form_y + 195 <= y && MainForm->animation->menu->form_y + 221 >= y)
+                    if (MainForm->animation->menu->form_x + second_button_x <= x &&
+                        second_button_x + MainForm->animation->menu->form_x + 88 >= x &&
+                        MainForm->animation->menu->form_y + button_y <= y &&
+                        button_y + MainForm->animation->menu->form_y + 26 >= y)
                         MainForm->animation->menu->form_cancel_button_hover = true;
                     else
                         MainForm->animation->menu->form_cancel_button_hover = false;
@@ -532,27 +565,27 @@ void Mouser::HandleMove()
                         MainForm->animation->menu->new_character_button_hover = true;
                     else
                         MainForm->animation->menu->new_character_button_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 93 && y <= 120)
+                    if (x >= 485 && x <= 585 && y >= 93 && y <= 120)
                         MainForm->animation->menu->first_slot_login_hover = true;
                     else
                         MainForm->animation->menu->first_slot_login_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 217 && y <= 244)
+                    if (x >= 485 && x <= 585 && y >= 217 && y <= 244)
                         MainForm->animation->menu->second_slot_login_hover = true;
                     else
                         MainForm->animation->menu->second_slot_login_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 341 && y <= 368)
+                    if (x >= 485 && x <= 585 && y >= 341 && y <= 368)
                         MainForm->animation->menu->third_slot_login_hover = true;
                     else
                         MainForm->animation->menu->third_slot_login_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 121 && y <= 148)
+                    if (x >= 485 && x <= 585 && y >= 121 && y <= 148)
                         MainForm->animation->menu->first_slot_delete_hover = true;
                     else
                         MainForm->animation->menu->first_slot_delete_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 245 && y <= 272)
+                    if (x >= 485 && x <= 585 && y >= 245 && y <= 272)
                         MainForm->animation->menu->second_slot_delete_hover = true;
                     else
                         MainForm->animation->menu->second_slot_delete_hover = false;
-                    if (x >= 495 && x <= 615 && y >= 369 && y <= 396)
+                    if (x >= 485 && x <= 585 && y >= 369 && y <= 396)
                         MainForm->animation->menu->third_slot_delete_hover = true;
                     else
                         MainForm->animation->menu->third_slot_delete_hover = false;
@@ -564,11 +597,15 @@ void Mouser::HandleMove()
                     // The OK and Cancel buttons of the two login layouts sit in different places.
                     if (MainForm->config->GetSkipSoftpad())
                     {
-                        if (x >= 360 && x <= 450 && y >= 388 && y <= 417)
+                        if (x >= 360 && x <= 450 && y >= 394 && y <= 423)
+                            MainForm->animation->menu->confirm_ok_hover = true;
+                        else
+                            MainForm->animation->menu->confirm_ok_hover = false;
+                        if (x >= 452 && x <= 542 && y >= 394 && y <= 423)
                             MainForm->animation->menu->login_ok_button_hover = true;
                         else
                             MainForm->animation->menu->login_ok_button_hover = false;
-                        if (x >= 452 && x <= 542 && y >= 388 && y <= 417)
+                        if (x >= 460 && x <= 542 && y >= 374 && y <= 389)
                             MainForm->animation->menu->login_cancel_button_hover = true;
                         else
                             MainForm->animation->menu->login_cancel_button_hover = false;
@@ -576,13 +613,13 @@ void Mouser::HandleMove()
                     else
                     {
                         if (x >= 382 && x <= 472 && y >= 391 && y <= 420)
+                            MainForm->animation->menu->confirm_ok_hover = true;
+                        else
+                            MainForm->animation->menu->confirm_ok_hover = false;
+                        if (x >= 474 && x <= 564 && y >= 391 && y <= 420)
                             MainForm->animation->menu->login_ok_button_hover = true;
                         else
                             MainForm->animation->menu->login_ok_button_hover = false;
-                        if (x >= 474 && x <= 564 && y >= 391 && y <= 420)
-                            MainForm->animation->menu->login_cancel_button_hover = true;
-                        else
-                            MainForm->animation->menu->login_cancel_button_hover = false;
                     }
                 }
                 if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
@@ -636,6 +673,27 @@ void Mouser::HandleMove()
                     else
                         MainForm->animation->menu->account_cancel_button_hover = false;
                 }
+                if (MainForm->animation->GetSubState() == MenuScreen_PasswordReset ||
+                    MainForm->animation->GetSubState() == MenuScreen_SignupCode)
+                {
+                    if ((y > 10 && y < 17 && 3 * y + 560 > x) || (y > 16 && y < 31 && y + 594 > x))
+                    {
+                        if (x >= 594 && x <= 624)
+                            MainForm->animation->menu->corner_close_hover = true;
+                        else
+                            MainForm->animation->menu->corner_close_hover = false;
+                    }
+                    else
+                        MainForm->animation->menu->corner_close_hover = false;
+                    if (x >= 358 && x <= 478 && y >= 416 && y <= 455)
+                        MainForm->animation->menu->wide_confirm_hover = true;
+                    else
+                        MainForm->animation->menu->wide_confirm_hover = false;
+                    if (x >= 480 && x <= 598 && y >= 416 && y <= 455)
+                        MainForm->animation->menu->wide_cancel_hover = true;
+                    else
+                        MainForm->animation->menu->wide_cancel_hover = false;
+                }
                 if (MainForm->animation->GetSubState() == MenuScreen_Main ||
                     MainForm->animation->GetSubState() == MenuScreen_Credits ||
                     MainForm->animation->GetSubState() == MenuScreen_Login ||
@@ -674,11 +732,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
     int npc_height;
     char npc_clicked;
     int near_height;
-    int target_x;
-    char menu_handled = false;
     int target_y;
     int player_screen_y;
     int npc_y;
+    int hair_index;
+    int skin_x;
+    int color_x;
     char handled;
     char box_closed;
     // In the game an open box or window takes the click first; with none open, the panels and the map.
@@ -692,6 +751,9 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
             MainForm->animation->memo->is_visible || MainForm->animation->dialog->is_visible ||
             MainForm->animation->report->is_visible || MainForm->animation->law->is_visible ||
             MainForm->animation->inn->is_visible || MainForm->animation->book->is_visible ||
+            (MainForm->animation->hotkeys->is_visible &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging) ||
             (MainForm->animation->paperdoll->is_visible &&
                 !MainForm->animation->interface_controller->inventory->is_dragging) ||
             (MainForm->animation->trade->is_visible &&
@@ -764,10 +826,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->sound_driver_modules = new TStringList();
                             MainForm->sound_driver_guids = new TList();
                             if (MainForm->Dx_Sound1->Created)
-                            {
                                 MainForm->Dx_Sound1->Destroy();
-                                Sleep(150);
-                            }
                             if (MainForm->Dx_Sound1->DSEnumerate(0) && MainForm->sound_driver_names->Count > 0)
                                 MainForm->Dx_Sound1->Create((_GUID *)MainForm->sound_driver_guids->Items[0]);
                             MainForm->animation->interface_controller->settings->MarkDirty();
@@ -1042,8 +1101,17 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->edits->caret_enabled = true;
                         MainForm->redraw_needed = true;
                     }
+                    if (MainForm->animation->game->message_kind == ConfirmAction_DestroyItem)
+                    {
+                        MainForm->net_client->sender->SendJunkItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                            1);
+                        MainForm->animation->game->message_visible = false;
+                        MainForm->edits->caret_enabled = true;
+                        MainForm->redraw_needed = true;
+                    }
                 }
             }
+            SkillValue *forget_skill;
             if (MainForm->animation->game->large_box_visible && !handled)
             {
                 handled = true;
@@ -1124,7 +1192,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->animation->game->large_box_visible = false;
                         MainForm->edits->caret_enabled = true;
                         MainForm->animation->game->OpenInputBox(InputBoxKind_WeddingPartner,
-                            MainForm->strings->GetText(GameText_EnterNameOfYour), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_EnterNameOfYour), EditCharFilter_Letters, 14);
                     }
                 }
             }
@@ -1259,17 +1327,17 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     }
                     if (MainForm->animation->game->input_box_kind == InputBoxKind_FindSkill)
                     {
-                        String skill_name = LowerCase(MainForm->edits->GetText(EditId_InputBox));
-                        int skill_id = MainForm->skill_values->FindByName(skill_name);
-                        if (skill_id < 0)
+                        String skill_name = MainForm->edits->GetText(EditId_InputBox);
+                        forget_skill = MainForm->skill_values->FindByName(skill_name);
+                        if (!forget_skill)
                         {
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_CouldNotRemoveSkill, false),
                                 MainForm->strings->GetDialogText(DialogText_CouldNotRemoveSkill, true));
                             close_input = false;
                         }
-                        else if (!MainForm->animation->interface_controller->skills->HasSkill(skill_id) &&
-                            !MainForm->animation->interface_controller->spells->HasSpell(skill_id))
+                        else if (!MainForm->animation->interface_controller->skills->HasSkill(forget_skill->skill_id) &&
+                            !MainForm->animation->interface_controller->spells->HasSpell(forget_skill->skill_id))
                         {
                             MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
                                 MainForm->strings->GetDialogText(DialogText_CouldNotRemoveSkill, false),
@@ -1278,7 +1346,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         }
                         else
                             MainForm->net_client->sender->SendForgetSkill(MainForm->animation->learn->npc_session_id,
-                                skill_id);
+                                forget_skill->skill_id);
                     }
                     if (MainForm->animation->game->input_box_kind == InputBoxKind_HelpQuestion)
                     {
@@ -1301,7 +1369,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 String question_prompt = IntToStr(MainForm->animation->inn->question_index + 1) + ". " +
                                     MainForm->animation->inn->questions[MainForm->animation->inn->question_index];
                                 MainForm->animation->game->OpenInputBox(InputBoxKind_InnAnswer, question_prompt,
-                                    EditCharFilter_AlphanumericSpaces, 12);
+                                    EditCharFilter_Email, 12);
                                 close_input = false;
                             }
                             else
@@ -1310,6 +1378,9 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     MainForm->animation->inn->answers[2]);
                         }
                     }
+                    if (MainForm->animation->game->input_box_kind == InputBoxKind_ChooseTitle)
+                        MainForm->net_client->sender->SendChooseTitle(MainForm->animation->interface_controller->inventory->pending_use_item_id,
+                            MainForm->edits->GetText(EditId_InputBox));
                     if (close_input)
                     {
                         MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
@@ -1500,10 +1571,10 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     if (!MainForm->animation->social->list_kind)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_AddFriend,
-                            MainForm->strings->GetText(GameText_WhoDoYouWantTo), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_WhoDoYouWantTo), EditCharFilter_Alphanumeric, 14);
                     if (MainForm->animation->social->list_kind == 1)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_AddIgnore,
-                            MainForm->strings->GetText(GameText_WhoDoYouWant), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_WhoDoYouWant), EditCharFilter_Alphanumeric, 14);
                 }
                 if (x >= MainForm->animation->social->window_x + 144 &&
                     x <= MainForm->animation->social->window_x + 234 &&
@@ -1843,6 +1914,19 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->strings->GetText(GameText_YouCanceledDeal));
                         MainForm->redraw_needed = true;
                     }
+                }
+            }
+            if (MainForm->animation->hotkeys->is_visible && !handled)
+            {
+                handled = true;
+                MainForm->animation->hotkeys->MouseDown(click_x, click_y, button);
+                if (x >= MainForm->animation->hotkeys->window_x + 182 &&
+                    x <= MainForm->animation->hotkeys->window_x + 272 &&
+                    y >= MainForm->animation->hotkeys->window_y + 132 &&
+                    y <= MainForm->animation->hotkeys->window_y + 165)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->hotkeys->Close();
                 }
             }
             if (MainForm->animation->paperdoll->is_visible && !handled)
@@ -2305,8 +2389,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
         {
             // No window is open: the corner close button, the bars along the top, then the map.
             char bar_clicked = false;
-            if ((click_y > 10 && click_y < 17 && click_x > 590 && 3 * click_y + 560 > click_x) ||
-                (click_y > 16 && click_y < 31 && click_x > 590 && click_y + 594 > click_x))
+            if (click_x >= 594 && click_x <= 623 && click_y > 332 && click_y < 350)
             {
                 bar_clicked = true;
                 // During a warp or a map download the close button logs out without asking.
@@ -2321,22 +2404,40 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 }
             }
             // Only the top edge of the strip and its two ends belong to the bars; the rest of it is the map.
-            if (click_x >= 55 && click_x <= 542 && click_y <= 10)
+            if (click_x >= 55 && click_x <= 563 && click_y <= 13)
             {
-                bar_clicked = true;
-                MainForm->animation->interface_controller->game_bars->MouseDown(click_x, click_y, button);
+                char on_bar = false;
+                if (click_y <= 10)
+                    on_bar = true;
+                if (click_x >= 55 && click_x <= 94)
+                    on_bar = true;
+                if (click_x >= 546 && click_x <= 565)
+                    on_bar = true;
+                if (on_bar)
+                {
+                    bar_clicked = true;
+                    MainForm->animation->interface_controller->game_bars->MouseDown(click_x, click_y, button);
+                }
             }
             if (MainForm->gfx->game->view_clip_rect.top < click_y &&
                 MainForm->gfx->game->view_clip_rect.bottom > click_y &&
                 MainForm->gfx->game->view_clip_rect.left < click_x &&
                 MainForm->gfx->game->view_clip_rect.right > click_x && !bar_clicked)
             {
-                // A dragged item goes to the open window under it, or onto the map within reach.
-                if (MainForm->animation->interface_controller->inventory->is_dragging)
+                char drop_handled = false;
+                if (MainForm->animation->interface_controller->spells->is_dragging)
+                {
+                    if (!button && MainForm->animation->hotkeys->is_visible)
+                    {
+                        drop_handled = true;
+                        MainForm->animation->hotkeys->DropSpell(MainForm->animation->interface_controller->spells->drag_spell_id,
+                            click_x, click_y);
+                    }
+                }
+                else if (MainForm->animation->interface_controller->inventory->is_dragging)
                 {
                     if (!MainForm->animation->interface_controller->inventory->dragging_from_paperdoll && !button)
                     {
-                        char drop_handled = false;
                         if (MainForm->animation->trade->is_visible)
                         {
                             drop_handled = true;
@@ -2370,6 +2471,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     MainForm->animation->interface_controller->inventory->input_enabled = true;
                                 }
                             }
+                        }
+                        if (MainForm->animation->hotkeys->is_visible)
+                        {
+                            drop_handled = true;
+                            MainForm->animation->hotkeys->DropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                                click_x, click_y);
                         }
                         if (MainForm->animation->paperdoll->is_visible)
                         {
@@ -2623,6 +2730,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                                     if (!MainForm->animation->game->player_menu_hovered_option)
                                     {
+                                        MainForm->animation->hotkeys->Close();
                                         MainForm->net_client->sender->RequestPaperdoll(MainForm->animation->game->player_menu_target_id);
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                             MainForm->net_client->Capitalize(
@@ -2792,7 +2900,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         // Then, in order: sitting, standing up, a chair, a spell's target, an item to pick up, an npc,
                         // a locker or chest, a sign, a board, a jukebox and a door; a click on none of them walks to the tile.
                         if (!click_used &&
-                            MainForm->animation->game->SitOnChair(MainForm->map->GetCursorX(),
+                            MainForm->animation->game->SitOnChair(MainForm->map->GetCenterX(),
                                 MainForm->map->GetCursorY()))
                             click_used = true;
                         if (!click_used && MainForm->animation->game->StandUp())
@@ -2827,7 +2935,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 click_used = true;
                             }
                         }
-                        if (!click_used && (click_x <= 590 || click_y >= 35))
+                        if (!click_used)
                         {
                             char click_pending = true;
                             char cast_cleared = false;
@@ -2846,23 +2954,24 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 for (int npc_slot = MainForm->npcs->GetCount() - 1; npc_slot >= 0; npc_slot--)
                                 {
                                     Npc target_npc = MainForm->npcs->GetNpc(npc_slot);
-                                    TPoint target_type = MainForm->npc_values->GetType(target_npc.npc_id);
+                                    NpcValue *target_npc_value = MainForm->npc_values->GetNpc(target_npc.npc_id - 1);
                                     if (target_npc.frame_width > 0 && target_npc.frame_height > 0)
                                     {
                                         npc_height = target_npc.frame_height;
                                         if (npc_height > 70)
                                             npc_height = 70;
-                                        target_x =
+                                        int target_x =
                                             TILE_HALF_WIDTH * target_npc.x - TILE_HALF_WIDTH * target_npc.y +
                                                 MainForm->map->GetScrollOffsetX() + 319;
                                         target_y =
                                             16 * target_npc.x + 16 * target_npc.y + MainForm->map->GetScrollOffsetY() +
                                                 160;
                                         if (target_x - target_npc.frame_width / 2 <= click_x &&
-                                            target_x + target_npc.frame_width / 2 >= click_x &&
+                                            target_npc.frame_width / 2 + target_x >= click_x &&
                                             target_y - npc_height <= click_y && target_y + 5 >= click_y)
                                         {
-                                            if (target_type.x == NpcType_Passive || target_type.x == 2)
+                                            if (target_npc_value->npc_type == NpcType_Passive ||
+                                                target_npc_value->npc_type == NpcType_Aggressive)
                                             {
                                                 npc_targeted = true;
                                                 target_npc_index = target_npc.index;
@@ -2875,10 +2984,6 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                         }
                                     }
                                 }
-                                char spell_cast;
-                                char popup_shown;
-                                int caster_id;
-                                int self_id;
                                 for (int player_slot = MainForm->players->GetCount() - 1; player_slot >= 0;
                                     player_slot--)
                                 {
@@ -2897,31 +3002,25 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                         break;
                                     }
                                 }
-                                if (!MainForm->animation->game->IsActionDelayElapsed() ||
-                                    !MainForm->net_client->CanAct())
-                                {
-                                    npc_targeted = false;
-                                    player_targeted = false;
-                                }
-                                spell_cast = false;
+                                char spell_cast = false;
                                 if (!spell_cast && npc_targeted &&
                                     (!MainForm->animation->interface_controller->spells->selected_target_kind ||
                                         MainForm->animation->interface_controller->spells->selected_target_kind == 2))
                                 {
-                                    popup_shown = false;
+                                    char popup_shown = false;
                                     if (MainForm->animation->interface_controller->spells->selected_spell_type == 3)
                                     {
-                                        NpcValue spell_npc_value =
-                                            MainForm->npc_values->GetNpcByIndex(target_npc_id - 1);
-                                        MainForm->animation->popup->Show(230, 244, spell_npc_value.element_weakness,
-                                            spell_npc_value.name);
+                                        NpcValue *spell_npc_value = MainForm->npc_values->GetNpc(target_npc_id - 1);
+                                        MainForm->animation->popup->Show(230, 244, spell_npc_value->element_weakness,
+                                            spell_npc_value->name);
                                         popup_shown = true;
                                     }
-                                    caster_id = MainForm->net_client->GetPlayerId();
-                                    SkillValue npc_spell_shout =
-                                        MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id);
-                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout.shout,
-                                        LabelColor_Silver, true, 4 * npc_spell_shout.cast_time);
+                                    int caster_id = MainForm->net_client->GetPlayerId();
+                                    SkillValue *npc_spell_shout =
+                                        MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id -
+                                            1);
+                                    MainForm->players->ShowTextLabel(caster_id, npc_spell_shout->shout,
+                                        LabelColor_Silver, true, 4 * npc_spell_shout->cast_time);
                                     MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
                                     MainForm->animation->interface_controller->spells->BeginCast(MainForm->animation->interface_controller->spells->selected_spell_id,
                                         CastTarget_Npc, target_npc_index, popup_shown);
@@ -2940,11 +3039,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     }
                                     else
                                     {
-                                        self_id = MainForm->net_client->GetPlayerId();
-                                        SkillValue player_spell =
-                                            MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id);
-                                        MainForm->players->ShowTextLabel(self_id, player_spell.shout, LabelColor_Silver,
-                                            true, 4 * player_spell.cast_time);
+                                        int self_id = MainForm->net_client->GetPlayerId();
+                                        SkillValue *player_spell =
+                                            MainForm->skill_values->GetSkill(MainForm->animation->interface_controller->spells->selected_spell_id -
+                                                1);
+                                        MainForm->players->ShowTextLabel(self_id, player_spell->shout,
+                                            LabelColor_Silver, true, 4 * player_spell->cast_time);
                                         MainForm->net_client->sender->SendSpellChant(MainForm->animation->interface_controller->spells->selected_spell_id);
                                         MainForm->animation->interface_controller->spells->BeginCast(MainForm->animation->interface_controller->spells->selected_spell_id,
                                             CastTarget_Player, target_player_id, false);
@@ -2954,16 +3054,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 MainForm->animation->interface_controller->spells->ClearSelection();
                                 click_pending = false;
                             }
-                            int item_uid;
-                            int owner_id;
-                            char found_npc;
-                            int npc_x;
                             if (click_pending &&
                                 MainForm->net_client->IsWithinReach(MainForm->map->GetCenterX(),
                                     MainForm->map->GetCenterY(), MainForm->map->GetCursorX(),
                                     MainForm->map->GetCursorY()))
                             {
-                                item_uid =
+                                int item_uid =
                                     MainForm->map_items->FindItemAt(MainForm->map->GetCursorX(),
                                         MainForm->map->GetCursorY());
                                 if (item_uid >= 0)
@@ -2974,7 +3070,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                             MainForm->item_values->GetWeight(MainForm->map_items->GetItemId(item_uid)) <=
                                             MainForm->animation->interface_controller->status->max_weight)
                                         {
-                                            owner_id = MainForm->map_items->GetProtectionOwner(item_uid);
+                                            int owner_id = MainForm->map_items->GetProtectionOwner(item_uid);
                                             if (owner_id <= PlayerId_Unset ||
                                                 MainForm->net_client->GetPlayerId() == owner_id)
                                                 MainForm->net_client->sender->SendPickupItem(item_uid);
@@ -3005,7 +3101,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 npc_clicked = false;
                                 if (!npc_clicked)
                                 {
-                                    found_npc = false;
+                                    char found_npc = false;
                                     for (int npc_index = MainForm->npcs->GetCount() - 1;
                                         npc_index >= 0 && found_npc == 0; npc_index--)
                                     {
@@ -3015,7 +3111,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                             near_height = clicked_npc.frame_height;
                                             if (near_height > 70)
                                                 near_height = 70;
-                                            npc_x =
+                                            int npc_x =
                                                 TILE_HALF_WIDTH * clicked_npc.x - TILE_HALF_WIDTH * clicked_npc.y +
                                                     MainForm->map->GetScrollOffsetX() + 319;
                                             npc_y =
@@ -3028,30 +3124,31 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                                 {
                                                     found_npc = true;
                                                     npc_clicked = true;
-                                                    TPoint npc_type = MainForm->npc_values->GetType(clicked_npc.npc_id);
-                                                    if (npc_type.x == NpcType_Shop)
+                                                    NpcValue *clicked_value =
+                                                        MainForm->npc_values->GetNpc(clicked_npc.npc_id - 1);
+                                                    if (clicked_value->npc_type == NpcType_Shop)
                                                         MainForm->net_client->sender->RequestShopOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Inn)
+                                                    if (clicked_value->npc_type == NpcType_Inn)
                                                     {
                                                         MainForm->animation->inn->npc_name = clicked_npc.name;
                                                         MainForm->net_client->sender->RequestInnOpen(clicked_npc.index);
                                                     }
-                                                    if (npc_type.x == NpcType_Bank)
+                                                    if (clicked_value->npc_type == NpcType_Bank)
                                                         MainForm->net_client->sender->RequestBankOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Barber)
+                                                    if (clicked_value->npc_type == NpcType_Barber)
                                                         MainForm->net_client->sender->RequestBarberOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Guild)
+                                                    if (clicked_value->npc_type == NpcType_Guild)
                                                         MainForm->net_client->sender->RequestGuildOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Priest)
+                                                    if (clicked_value->npc_type == NpcType_Priest)
                                                         MainForm->net_client->sender->RequestPriestOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Law)
+                                                    if (clicked_value->npc_type == NpcType_Law)
                                                     {
                                                         MainForm->animation->law->npc_name = clicked_npc.name;
                                                         MainForm->net_client->sender->RequestLawOpen(clicked_npc.index);
                                                     }
-                                                    if (npc_type.x == NpcType_Trainer)
+                                                    if (clicked_value->npc_type == NpcType_Trainer)
                                                         MainForm->net_client->sender->RequestSkillMasterOpen(clicked_npc.index);
-                                                    if (npc_type.x == NpcType_Quest &&
+                                                    if (clicked_value->npc_type == NpcType_Quest &&
                                                         MainForm->animation->dialog->request_cooldown <= 0)
                                                     {
                                                         MainForm->animation->dialog->npc_name = clicked_npc.name;
@@ -3061,15 +3158,18 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                                         MainForm->net_client->sender->RequestQuestDialog(clicked_npc.index,
                                                             QUEST_DEFAULT_DIALOG);
                                                     }
-                                                    if (npc_type.x == 1 || npc_type.x == 2 || npc_type.x ==
-                                                        NpcType_Monster4 || npc_type.x == NpcType_Monster5)
+                                                    if (clicked_value->npc_type == NpcType_Passive ||
+                                                        clicked_value->npc_type == NpcType_Aggressive ||
+                                                        clicked_value->npc_type == NpcType_Monster4 ||
+                                                        clicked_value->npc_type == 5)
                                                     {
                                                         int self_x =
                                                             MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+                                                        int self_y =
+                                                            MainForm->players->GetY(MainForm->net_client->GetPlayerId());
                                                         unsigned char attack_direction =
                                                             MainForm->net_client->GetAdjacentDirection(clicked_npc.x,
-                                                                clicked_npc.y, self_x,
-                                                                MainForm->players->GetY(MainForm->net_client->GetPlayerId()));
+                                                                clicked_npc.y, self_x, self_y);
                                                         if (attack_direction)
                                                         {
                                                             if (MainForm->net_client->CanAct())
@@ -3081,7 +3181,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                                         }
                                                         else
                                                             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Npc,
-                                                                MainForm->npc_values->GetName(clicked_npc.npc_id));
+                                                                clicked_value->name);
                                                     }
                                                 }
                                             }
@@ -3218,7 +3318,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     // On the player's own figure it asks for the player's own paperdoll.
                     if (button == 1)
                     {
-                        menu_handled = false;
+                        char menu_handled = false;
                         if (MainForm->animation->game->player_menu_visible)
                         {
                             MainForm->animation->game->ClosePlayerMenu();
@@ -3244,15 +3344,15 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                             menu_player.name);
                                         MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Action,
                                             MainForm->strings->GetText(GameText_MenuBelongsToPlayer) + " " +
-                                            MainForm->net_client->Capitalize(
-                                            MainForm->animation->game->player_menu_name));
+                                                MainForm->net_client->Capitalize(MainForm->animation->game->player_menu_name));
+                                        menu_handled = true;
                                         break;
                                     }
+                                    MainForm->animation->hotkeys->Close();
                                     MainForm->net_client->sender->RequestPaperdoll(MainForm->net_client->GetPlayerId());
                                 }
                             }
                         }
-                        menu_handled = false;
                     }
                 }
             }
@@ -3279,47 +3379,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 MainForm->animation->interface_controller->skills->MouseDown(click_x, click_y, button);
             // The left column: the minimap, inventory, spell, skill, chat and status buttons; none works
             // while an icon is being dragged.
-            if (click_x >= 62 && click_x <= 98 && click_y >= 410 && click_y <= 428 &&
-                !MainForm->animation->interface_controller->inventory->is_dragging &&
-                !MainForm->animation->interface_controller->spells->is_dragging &&
-                !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenChatPanel(true);
-            if (click_x >= 590 && click_x <= 633 && click_y >= 430 && click_y <= 448 &&
-                !MainForm->animation->interface_controller->inventory->is_dragging &&
-                !MainForm->animation->interface_controller->spells->is_dragging &&
-                !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenHelpPanel(true);
-            if (click_x >= 62 && click_x <= 98 && click_y >= 430 && click_y <= 448 &&
-                !MainForm->animation->interface_controller->inventory->is_dragging &&
-                !MainForm->animation->interface_controller->spells->is_dragging &&
-                !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenStatusPanel(true);
-            if (click_x >= 590 && click_x <= 633 && click_y >= 350 && click_y <= 368 &&
-                !MainForm->animation->interface_controller->inventory->is_dragging &&
-                !MainForm->animation->interface_controller->spells->is_dragging &&
-                !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenPlayerlistPanel(true);
-            if (MainForm->animation->GetSubState() == GamePanel_Playerlist)
-                MainForm->animation->interface_controller->player_list->MouseDown(click_x, click_y, button);
-            if (click_x >= 590 && click_x <= 633 && click_y >= 370 && click_y <= 388 &&
-                !MainForm->animation->interface_controller->inventory->is_dragging &&
-                !MainForm->animation->interface_controller->spells->is_dragging &&
-                !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenGroupPanel(true);
-            if (MainForm->animation->GetSubState() == GamePanel_Group)
-                MainForm->animation->interface_controller->group->MouseDown(click_x, click_y);
             if (click_x >= 62 && click_x <= 98 && click_y >= 330 && click_y <= 348 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-                OpenInventoryPanel(true);
-            // The paperdoll button asks for the player's own paperdoll;
-            // with the setting on, the inventory opens too.
+                ToggleMinimap(true);
             if (click_x >= 62 && click_x <= 98 && click_y >= 350 && click_y <= 368 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
-                ToggleMinimap(true);
+                OpenInventoryPanel(true);
             if (click_x >= 62 && click_x <= 98 && click_y >= 370 && click_y <= 388 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
@@ -3330,7 +3399,69 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
                 OpenSkillPanel(true);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 410 && click_y <= 428 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+                OpenChatPanel(true);
+            if (click_x >= 62 && click_x <= 98 && click_y >= 430 && click_y <= 448 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+                OpenStatusPanel(true);
+            // The paperdoll button asks for the player's own paperdoll;
+            // with the setting on, the inventory opens too.
+            if (click_x >= 590 && click_x <= 633 && click_y >= 350 && click_y <= 368 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+            {
+                if (!MainForm->animation->paperdoll->is_visible)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->animation->hotkeys->Close();
+                    MainForm->net_client->sender->RequestPaperdoll(MainForm->net_client->GetPlayerId());
+                    if (MainForm->config->GetAutoOpenInventory())
+                        OpenInventoryPanel(false);
+                }
+                else
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->paperdoll->Close();
+                }
+            }
+            if (click_x >= 590 && click_x <= 633 && click_y >= 370 && click_y <= 388 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+            {
+                if (!MainForm->animation->hotkeys->is_visible)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->animation->paperdoll->Close();
+                    MainForm->animation->hotkeys->Open();
+                }
+                else
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                    MainForm->animation->hotkeys->Close();
+                }
+            }
+            if (click_x >= 590 && click_x <= 633 && click_y >= 390 && click_y <= 408 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+                OpenPlayerlistPanel(true);
+            if (MainForm->animation->GetSubState() == GamePanel_Playerlist)
+                MainForm->animation->interface_controller->player_list->MouseDown(click_x, click_y, button);
             if (click_x >= 590 && click_x <= 633 && click_y >= 410 && click_y <= 428 &&
+                !MainForm->animation->interface_controller->inventory->is_dragging &&
+                !MainForm->animation->interface_controller->spells->is_dragging &&
+                !MainForm->animation->interface_controller->skills->is_dragging)
+                OpenGroupPanel(true);
+            if (MainForm->animation->GetSubState() == GamePanel_Group)
+                MainForm->animation->interface_controller->group->MouseDown(click_x, click_y);
+            if (click_x >= 590 && click_x <= 633 && click_y >= 430 && click_y <= 448 &&
                 !MainForm->animation->interface_controller->inventory->is_dragging &&
                 !MainForm->animation->interface_controller->spells->is_dragging &&
                 !MainForm->animation->interface_controller->skills->is_dragging)
@@ -3370,11 +3501,30 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
         }
     }
     int preview_direction;
+    unsigned char hair_cell_width;
+    unsigned char hair_cell_height;
+    int skin_left;
+    int skin_top;
+    int skin_width;
+    int skin_gap;
+    int last_hair_page;
+    int color_left;
+    int color_top;
+    int color_width;
+    int color_gap;
+    int ok_x;
+    int cancel_x;
+    int button_y;
     char password_error;
+    int change_problem;
+    unsigned char first_facing;
+    unsigned char second_facing;
+    unsigned char third_facing;
+    char account_error;
+    int account_problem;
     // On the menu screens an open message, text window, form or world load takes the click first.
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
     {
-        char account_error;
         if (MainForm->animation->menu->is_message_open || MainForm->animation->menu->is_text_window_open ||
             MainForm->animation->menu->is_form_open || MainForm->animation->menu->is_loading_world)
         {
@@ -3397,10 +3547,28 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->menu->is_message_open = false;
                     MainForm->edits->caret_enabled = true;
+                    if (MainForm->animation->menu->message_kind == MessageBoxKind_RecoverNotice)
+                    {
+                        if (MainForm->animation->GetSubState() == MenuScreen_PasswordReset)
+                        {
+                            MainForm->animation->StopAccountProgress();
+                            MainForm->edits->Clear();
+                            MainForm->gfx->LoadMainMenuScreen(true);
+                            MainForm->animation->SetSubState(MenuScreen_Main);
+                        }
+                        MainForm->edits->caret_enabled = true;
+                    }
+                    if (MainForm->animation->menu->message_kind == MessageBoxKind_RecoverAccepted)
+                    {
+                        MainForm->animation->menu->recover_step = 1;
+                        MainForm->edits->Clear();
+                        MainForm->gfx->LoadPasswordResetScreen(0, false);
+                    }
                 }
-                if (MainForm->animation->menu->message_kind == MessageBoxKind_Confirm &&
-                    x >= MainForm->animation->menu->message_x + 89 && x <= MainForm->animation->menu->message_x + 177 &&
-                    y >= MainForm->animation->menu->message_y + 114 && y <= MainForm->animation->menu->message_y + 140)
+                if (x >= MainForm->animation->menu->message_x + 89 && x <= MainForm->animation->menu->message_x + 177 &&
+                    y >= MainForm->animation->menu->message_y + 114 &&
+                    y <= MainForm->animation->menu->message_y + 140 &&
+                    MainForm->animation->menu->message_kind == MessageBoxKind_Confirm)
                 {
                     MainForm->net_client->sender->ConfirmCharacterDelete();
                     MainForm->animation->menu->is_message_open = false;
@@ -3411,8 +3579,8 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
             {
                 if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
                 {
-                    if (x >= MainForm->animation->menu->form_x + 244 && x <= MainForm->animation->menu->form_x + 325 &&
-                        y >= MainForm->animation->menu->form_y + 75 && y <= MainForm->animation->menu->form_y + 159)
+                    if (x >= MainForm->animation->menu->form_x + 335 && x <= MainForm->animation->menu->form_x + 448 &&
+                        y >= MainForm->animation->menu->form_y + 38 && y <= MainForm->animation->menu->form_y + 202)
                     {
                         preview_direction = MainForm->players->GetDirection(PlayerId_Preview);
                         if (MainForm->players->GetDirection(PlayerId_Preview) < 3)
@@ -3421,55 +3589,102 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->players->SetDirection(PlayerId_Preview, FacingDirection_Down);
                         MainForm->sfx->PlaySfx(SfxSound_Select);
                     }
-                    if (x >= MainForm->animation->menu->form_x + 162 && x <= MainForm->animation->menu->form_x + 217)
+                    if (x >= MainForm->animation->menu->form_x + 30 && x <= MainForm->animation->menu->form_x + 62 &&
+                        y >= MainForm->animation->menu->form_y + 28 && y <= MainForm->animation->menu->form_y + 60)
                     {
-                        if (y >= MainForm->animation->menu->form_y + 82 && y <= MainForm->animation->menu->form_y + 104)
+                        if (MainForm->animation->menu->new_gender < 1)
+                            MainForm->animation->menu->new_gender++;
+                        else
+                            MainForm->animation->menu->new_gender = 0;
+                        MainForm->players->SetPreviewGender(MainForm->animation->menu->new_gender);
+                        MainForm->players->ReloadGraphics(PlayerId_Preview);
+                        MainForm->sfx->PlaySfx(SfxSound_Select);
+                    }
+                    hair_cell_width = 31;
+                    hair_cell_height = 33;
+                    for (int hair_slot = 0; hair_slot < 8; hair_slot++)
+                    {
+                        if (MainForm->animation->menu->form_x + hair_cell_width * hair_slot + 45 <= x &&
+                            MainForm->animation->menu->form_x + hair_cell_width * hair_slot + hair_cell_width + 45 >=
+                                x && y >= MainForm->animation->menu->form_y + 127 &&
+                            MainForm->animation->menu->form_y + hair_cell_height + 127 >= y)
                         {
-                            if (MainForm->animation->menu->new_gender < 1)
-                                MainForm->animation->menu->new_gender++;
-                            else
-                                MainForm->animation->menu->new_gender = 0;
-                            MainForm->players->SetPreviewGender(MainForm->animation->menu->new_gender);
-                            MainForm->players->ReloadGraphics(PlayerId_Preview);
-                            MainForm->sfx->PlaySfx(SfxSound_Select);
+                            hair_index = 8 * MainForm->animation->menu->hair_page + hair_slot;
+                            if (hair_index >= 0 && hair_index < MainForm->animation->menu->hair_style_count)
+                            {
+                                MainForm->animation->menu->new_hair_style = hair_index + 1;
+                                MainForm->players->SetPreviewHairStyle(MainForm->animation->menu->new_hair_style);
+                                MainForm->players->ReloadGraphics(PlayerId_Preview);
+                                MainForm->sfx->PlaySfx(SfxSound_Select);
+                            }
                         }
-                        if (y >= MainForm->animation->menu->form_y + 111 &&
-                            y <= MainForm->animation->menu->form_y + 133)
+                    }
+                    skin_left = 37;
+                    skin_top = 88;
+                    skin_width = 21;
+                    skin_gap = 1;
+                    for (int skin_slot = 0; skin_slot < 12; skin_slot++)
+                    {
+                        skin_x = skin_slot * skin_width + skin_left + skin_slot * skin_gap;
+                        if (x >= MainForm->animation->menu->form_x + skin_x &&
+                            skin_x + skin_width + MainForm->animation->menu->form_x >= x &&
+                            y >= MainForm->animation->menu->form_y + skin_top - 2 &&
+                            y <= MainForm->animation->menu->form_y + skin_top + 21)
                         {
-                            if (MainForm->animation->menu->new_hair_style < 20)
-                                MainForm->animation->menu->new_hair_style++;
-                            else
-                                MainForm->animation->menu->new_hair_style = 1;
-                            MainForm->players->SetPreviewHairStyle(MainForm->animation->menu->new_hair_style);
-                            MainForm->players->ReloadGraphics(PlayerId_Preview);
-                            MainForm->sfx->PlaySfx(SfxSound_Select);
-                        }
-                        if (y >= MainForm->animation->menu->form_y + 138 &&
-                            y <= MainForm->animation->menu->form_y + 160)
-                        {
-                            if (MainForm->animation->menu->new_hair_color < 9)
-                                MainForm->animation->menu->new_hair_color++;
-                            else
-                                MainForm->animation->menu->new_hair_color = 0;
-                            MainForm->players->SetPreviewHairColor(MainForm->animation->menu->new_hair_color);
-                            MainForm->players->ReloadGraphics(PlayerId_Preview);
-                            MainForm->sfx->PlaySfx(SfxSound_Select);
-                        }
-                        if (y >= MainForm->animation->menu->form_y + 165 &&
-                            y <= MainForm->animation->menu->form_y + 187)
-                        {
-                            if (MainForm->animation->menu->new_skin < 3)
-                                MainForm->animation->menu->new_skin++;
-                            else
-                                MainForm->animation->menu->new_skin = 0;
+                            MainForm->animation->menu->new_skin = skin_slot;
                             MainForm->players->SetPreviewSkin(MainForm->animation->menu->new_skin);
                             MainForm->players->ReloadGraphics(PlayerId_Preview);
                             MainForm->sfx->PlaySfx(SfxSound_Select);
                         }
                     }
+                    if (x >= MainForm->animation->menu->form_x + 25 && x <= MainForm->animation->menu->form_x + 44 &&
+                        y >= MainForm->animation->menu->form_y + 125 && y <= MainForm->animation->menu->form_y + 161 &&
+                        MainForm->animation->menu->hair_page > 0)
+                    {
+                        MainForm->animation->menu->hair_page--;
+                        MainForm->sfx->PlaySfx(SfxSound_Select);
+                    }
+                    if (x >= MainForm->animation->menu->form_x + 292 && x <= MainForm->animation->menu->form_x + 313 &&
+                        y >= MainForm->animation->menu->form_y + 125 && y <= MainForm->animation->menu->form_y + 161)
+                    {
+                        last_hair_page = (MainForm->animation->menu->hair_style_count - 1) / 8;
+                        if (MainForm->animation->menu->hair_page < last_hair_page)
+                        {
+                            MainForm->animation->menu->hair_page++;
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
+                        }
+                    }
+                    color_left = 56;
+                    color_top = 166;
+                    color_width = 21;
+                    color_gap = 1;
+                    for (int color_slot = 0; color_slot < 10; color_slot++)
+                    {
+                        color_x = color_slot * color_width + color_left + color_slot * color_gap;
+                        if (x >= MainForm->animation->menu->form_x + color_x &&
+                            color_x + color_width + MainForm->animation->menu->form_x >= x &&
+                            y >= MainForm->animation->menu->form_y + color_top - 2 &&
+                            y <= MainForm->animation->menu->form_y + color_top + 21)
+                        {
+                            MainForm->animation->menu->new_hair_color = color_slot;
+                            MainForm->players->SetPreviewHairColor(MainForm->animation->menu->new_hair_color);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
+                            MainForm->sfx->PlaySfx(SfxSound_Select);
+                        }
+                    }
                 }
-                if (x >= MainForm->animation->menu->form_x + 158 && x <= MainForm->animation->menu->form_x + 246 &&
-                    y >= MainForm->animation->menu->form_y + 195 && y <= MainForm->animation->menu->form_y + 221)
+                ok_x = 218;
+                cancel_x = 311;
+                button_y = 216;
+                if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
+                {
+                    ok_x = 79;
+                    cancel_x = 172;
+                }
+                if (x >= ok_x + MainForm->animation->menu->form_x &&
+                    x <= MainForm->animation->menu->form_x + ok_x + 88 &&
+                    y >= button_y + MainForm->animation->menu->form_y &&
+                    y <= MainForm->animation->menu->form_y + button_y + 26)
                 {
                     if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG &&
                         MainForm->animation->menu->create_character_enabled)
@@ -3485,6 +3700,12 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                     MainForm->strings->GetDialogText(DialogText_WrongName, true));
                                 MainForm->edits->SetText(EditId_InputBox, "");
                                 MainForm->edits->FocusEdit(EditId_InputBox);
+                            }
+                            else if (MainForm->animation->menu->new_skin >= MainForm->animation->menu->skin_count)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Skin Lock",
+                                    "The selected skin is not supported on this server, please pick another one.");
                             }
                             else
                             {
@@ -3518,24 +3739,30 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 MainForm->edits->FocusEdit(EditId_NewPassword);
                                 password_error = true;
                             }
-                            if (MainForm->edits->GetText(EditId_NewPassword).Length() < 6 && !password_error)
-                            {
-                                MainForm->edits->caret_enabled = false;
+                            change_problem = MainForm->edits->GetPasswordProblem(EditId_NewPassword);
+                            if (change_problem == 4)
                                 MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, false),
-                                    MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, true));
-                                MainForm->edits->SetText(EditId_NewPassword, "");
-                                MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
-                                MainForm->edits->FocusEdit(EditId_NewPassword);
-                                password_error = true;
-                            }
-                            if (MainForm->edits->HasFewDistinctChars(MainForm->edits->GetText(EditId_NewPassword)) &&
-                                !password_error)
-                            {
-                                MainForm->edits->caret_enabled = false;
+                                    MainForm->strings->GetDialogText(change_problem, false),
+                                    MainForm->strings->GetDialogText(change_problem, true));
+                            if (change_problem == 5)
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(change_problem, false),
+                                    MainForm->strings->GetDialogText(change_problem, true));
+                            if (change_problem == -1)
                                 MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                                     MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
-                                    MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, true));
+                                    "At least 1 uppercase character ( A,B etc..) is required in your new password");
+                            if (change_problem == -2)
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                    "At least 1 1owercase character ( a,b etc..) is required in your new password");
+                            if (change_problem == -3)
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                    "At least 1 number or token ( 1,2,#,$ etc..) is required in your new password");
+                            if (change_problem)
+                            {
+                                MainForm->edits->caret_enabled = false;
                                 MainForm->edits->SetText(EditId_NewPassword, "");
                                 MainForm->edits->SetText(EditId_ConfirmNewPassword, "");
                                 MainForm->edits->FocusEdit(EditId_NewPassword);
@@ -3552,8 +3779,10 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         }
                     }
                 }
-                if (x >= MainForm->animation->menu->form_x + 250 && x <= MainForm->animation->menu->form_x + 338 &&
-                    y >= MainForm->animation->menu->form_y + 195 && y <= MainForm->animation->menu->form_y + 221)
+                if (x >= cancel_x + MainForm->animation->menu->form_x &&
+                    x <= MainForm->animation->menu->form_x + cancel_x + 88 &&
+                    y >= button_y + MainForm->animation->menu->form_y &&
+                    y <= MainForm->animation->menu->form_y + button_y + 26)
                 {
                     MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
                     MainForm->animation->menu->is_form_open = false;
@@ -3575,7 +3804,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         ((TAbstractSocket *)MainForm->client)->Close();
                     MainForm->animation->menu->is_loading_world = false;
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 93 && click_y <= 120 &&
+                if (click_x >= 345 && click_x <= 450 && click_y >= 45 && click_y <= 150)
+                {
+                    first_facing = MainForm->players->GetDirection(PlayerId_SlotFirst);
+                    first_facing++;
+                    if (first_facing > 3)
+                        first_facing = 0;
+                    MainForm->players->SetDirection(PlayerId_SlotFirst, first_facing);
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                }
+                if (click_x >= 485 && click_x <= 585 && click_y >= 93 && click_y <= 120 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotFirst))
                 {
@@ -3590,7 +3828,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotFirst));
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 217 && click_y <= 244 &&
+                if (click_x >= 345 && click_x <= 450 && click_y >= 170 && click_y <= 275)
+                {
+                    second_facing = MainForm->players->GetDirection(PlayerId_SlotSecond);
+                    second_facing++;
+                    if (second_facing > 3)
+                        second_facing = 0;
+                    MainForm->players->SetDirection(PlayerId_SlotSecond, second_facing);
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                }
+                if (click_x >= 485 && click_x <= 585 && click_y >= 217 && click_y <= 244 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotSecond))
                 {
@@ -3605,7 +3852,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotSecond));
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 341 && click_y <= 368 &&
+                if (click_x >= 345 && click_x <= 450 && click_y >= 294 && click_y <= 399)
+                {
+                    third_facing = MainForm->players->GetDirection(PlayerId_SlotThird);
+                    third_facing++;
+                    if (third_facing > 3)
+                        third_facing = 0;
+                    MainForm->players->SetDirection(PlayerId_SlotThird, third_facing);
+                    MainForm->sfx->PlaySfx(SfxSound_Select);
+                }
+                if (click_x >= 485 && click_x <= 585 && click_y >= 341 && click_y <= 368 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotThird))
                 {
@@ -3620,7 +3876,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->animation->menu->SetEnteringGame(false);
                     MainForm->net_client->sender->SelectCharacter(MainForm->players->GetCharacterId(PlayerId_SlotThird));
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 121 && click_y <= 148 &&
+                if (click_x >= 485 && click_x <= 585 && click_y >= 121 && click_y <= 148 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotFirst))
                 {
@@ -3640,7 +3896,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 MainForm->strings->GetDialogText(DialogText_DeleteCharacterConfirm, true));
                     }
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 245 && click_y <= 272 &&
+                if (click_x >= 485 && click_x <= 585 && click_y >= 245 && click_y <= 272 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotSecond))
                 {
@@ -3660,7 +3916,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                                 MainForm->strings->GetDialogText(DialogText_DeleteCharacterConfirm, true));
                     }
                 }
-                if (click_x >= 495 && click_x <= 615 && click_y >= 369 && click_y <= 396 &&
+                if (click_x >= 485 && click_x <= 585 && click_y >= 369 && click_y <= 396 &&
                     !MainForm->animation->menu->character_select_cooldown &&
                     !MainForm->players->GetDrawGroup(PlayerId_SlotThird))
                 {
@@ -3688,13 +3944,13 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->edits->Clear();
                     MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                     MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, MainForm->animation->menu->form_x +
-                        200, MainForm->animation->menu->form_y + 60, 132, EDIT_LINE_HEIGHT);
+                        200, MainForm->animation->menu->form_y + 39, 226, EDIT_LINE_HEIGHT);
                     MainForm->edits->AddEdit(EditId_OldPassword, EditGroup_Menu, MainForm->animation->menu->form_x +
-                        200, MainForm->animation->menu->form_y + 89, 132, EDIT_LINE_HEIGHT);
+                        200, MainForm->animation->menu->form_y + 76, 226, EDIT_LINE_HEIGHT);
                     MainForm->edits->AddEdit(EditId_NewPassword, EditGroup_Menu, MainForm->animation->menu->form_x +
-                        200, MainForm->animation->menu->form_y + 119, 132, EDIT_LINE_HEIGHT);
+                        200, MainForm->animation->menu->form_y + 128, 226, EDIT_LINE_HEIGHT);
                     MainForm->edits->AddEdit(EditId_ConfirmNewPassword, EditGroup_Menu,
-                        MainForm->animation->menu->form_x + 200, MainForm->animation->menu->form_y + 149, 132,
+                        MainForm->animation->menu->form_x + 200, MainForm->animation->menu->form_y + 166, 226,
                         EDIT_LINE_HEIGHT);
                     MainForm->edits->SetBackgroundVisible(EditId_AccountName, false);
                     MainForm->edits->SetBorderVisible(EditId_AccountName, false);
@@ -3709,15 +3965,20 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->edits->SetTextColor(EditId_NewPassword, 0xB4C8DC);
                     MainForm->edits->SetTextColor(EditId_ConfirmNewPassword, 0xB4C8DC);
                     MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                    MainForm->edits->SetMaxLength(EditId_OldPassword, 12);
-                    MainForm->edits->SetMaxLength(EditId_NewPassword, 12);
-                    MainForm->edits->SetMaxLength(EditId_ConfirmNewPassword, 12);
-                    MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-                    MainForm->edits->SetCharFilter(EditId_OldPassword, EditCharFilter_AlphanumericSpaces);
-                    MainForm->edits->SetCharFilter(EditId_NewPassword, EditCharFilter_AlphanumericSpaces);
-                    MainForm->edits->SetCharFilter(EditId_ConfirmNewPassword, EditCharFilter_AlphanumericSpaces);
+                    MainForm->edits->SetMaxLength(EditId_OldPassword, 16);
+                    MainForm->edits->SetMaxLength(EditId_NewPassword, 16);
+                    MainForm->edits->SetMaxLength(EditId_ConfirmNewPassword, 16);
+                    MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                    MainForm->edits->SetAllowSpaces(EditId_OldPassword, false);
+                    MainForm->edits->SetAllowSpaces(EditId_NewPassword, false);
+                    MainForm->edits->SetAllowSpaces(EditId_ConfirmNewPassword, false);
+                    MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+                    MainForm->edits->SetCharFilter(EditId_OldPassword, EditCharFilter_Password);
+                    MainForm->edits->SetCharFilter(EditId_NewPassword, EditCharFilter_Password);
+                    MainForm->edits->SetCharFilter(EditId_ConfirmNewPassword, EditCharFilter_Password);
                     MainForm->edits->SetPasswordMode(EditId_NewPassword, true);
                     MainForm->edits->SetPasswordMode(EditId_ConfirmNewPassword, true);
+                    MainForm->edits->SetShowStrength(EditId_NewPassword, true);
                     MainForm->edits->FocusEdit(EditId_AccountName);
                     MainForm->animation->menu->OpenFormWindow(CHANGE_PASSWORD_DIALOG);
                 }
@@ -3798,24 +4059,30 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             MainForm->edits->FocusEdit(EditId_AccountPassword);
                             account_error = true;
                         }
-                        if (MainForm->edits->GetText(EditId_AccountPassword).Length() < 6 && !account_error)
-                        {
-                            MainForm->edits->caret_enabled = false;
+                        account_problem = MainForm->edits->GetPasswordProblem(EditId_AccountPassword);
+                        if (account_problem == 4)
                             MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
-                                MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, false),
-                                MainForm->strings->GetDialogText(DialogText_WrongPasswordSafety, true));
-                            MainForm->edits->SetText(EditId_AccountPassword, "");
-                            MainForm->edits->SetText(EditId_ConfirmPassword, "");
-                            MainForm->edits->FocusEdit(EditId_AccountPassword);
-                            account_error = true;
-                        }
-                        if (MainForm->edits->HasFewDistinctChars(MainForm->edits->GetText(EditId_AccountPassword)) &&
-                            !account_error)
-                        {
-                            MainForm->edits->caret_enabled = false;
+                                MainForm->strings->GetDialogText(account_problem, false),
+                                MainForm->strings->GetDialogText(account_problem, true));
+                        if (account_problem == 5)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(account_problem, false),
+                                MainForm->strings->GetDialogText(account_problem, true));
+                        if (account_problem == -1)
                             MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                                 MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
-                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, true));
+                                "At least 1 uppercase character ( A,B etc..) is required in your new password");
+                        if (account_problem == -2)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                "At least 1 1owercase character ( a,b etc..) is required in your new password");
+                        if (account_problem == -3)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                "At least 1 number or token ( 1,2,#,$ etc..) is required in your new password");
+                        if (account_problem)
+                        {
+                            MainForm->edits->caret_enabled = false;
                             MainForm->edits->SetText(EditId_AccountPassword, "");
                             MainForm->edits->SetText(EditId_ConfirmPassword, "");
                             MainForm->edits->FocusEdit(EditId_AccountPassword);
@@ -3867,24 +4134,206 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->animation->SetSubState(MenuScreen_Main);
                 }
             }
+            if (MainForm->animation->GetSubState() == MenuScreen_SignupCode)
+            {
+                if (click_x >= 358 && click_x <= 476 && click_y >= 416 && click_y <= 455)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    if (MainForm->animation->menu->activation_step >= 2 &&
+                        MainForm->animation->menu->create_account_enabled)
+                    {
+                        if (MainForm->edits->GetText(EditId_Code).Length() < 7)
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Wrong PIN",
+                                "Please enter the 7-digit code you received in your email.");
+                            MainForm->edits->SetText(EditId_Code, "");
+                            MainForm->edits->FocusEdit(EditId_Code);
+                        }
+                        else
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->create_account_enabled = false;
+                            MainForm->net_client->sender->SendAccountCreate(MainForm->animation->account_name,
+                                MainForm->animation->account_password, MainForm->animation->account_detail_a,
+                                MainForm->animation->account_detail_b, MainForm->animation->account_email,
+                                MainForm->edits->GetText(EditId_Code));
+                        }
+                    }
+                }
+                if (((click_y > 10 && click_y < 17 && 3 * click_y + 560 > click_x) ||
+                    (click_y > 16 && click_y < 31 && click_y + 594 > click_x)) && click_x >= 594 && click_x <= 624)
+                {
+                    MainForm->animation->StopAccountProgress();
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->edits->caret_enabled = true;
+                    MainForm->edits->Clear();
+                    MainForm->gfx->LoadMainMenuScreen(true);
+                    MainForm->animation->SetSubState(MenuScreen_Main);
+                }
+                if (click_x >= 480 && click_x <= 598 && click_y >= 416 && click_y <= 455)
+                {
+                    MainForm->animation->StopAccountProgress();
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->edits->caret_enabled = true;
+                    MainForm->edits->Clear();
+                    MainForm->gfx->LoadMainMenuScreen(true);
+                    MainForm->animation->SetSubState(MenuScreen_Main);
+                }
+            }
+            if (MainForm->animation->GetSubState() == MenuScreen_PasswordReset)
+            {
+                if (click_x >= 358 && click_x <= 476 && click_y >= 416 && click_y <= 455)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    if (!MainForm->animation->menu->recover_step)
+                    {
+                        MainForm->animation->account_name = MainForm->edits->GetText(EditId_AccountName);
+                        if (MainForm->edits->GetText(EditId_AccountName) != "")
+                        {
+                            char recover_refused = false;
+                            if (MainForm->edits->GetText(EditId_AccountName).Length() < 4)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                    MainForm->strings->GetDialogText(DialogText_WrongAccount, false),
+                                    MainForm->strings->GetDialogText(DialogText_WrongAccount, true));
+                                MainForm->edits->SetText(EditId_AccountName, "");
+                                MainForm->edits->FocusEdit(EditId_AccountName);
+                                recover_refused = true;
+                            }
+                            if (!recover_refused)
+                            {
+                                MainForm->edits->caret_enabled = false;
+                                MainForm->animation->menu->create_account_enabled = false;
+                                MainForm->net_client->sender->RequestPasswordReset(MainForm->edits->GetText(EditId_AccountName));
+                            }
+                        }
+                    }
+                    if (MainForm->animation->menu->recover_step == 2)
+                    {
+                        MainForm->animation->account_password = MainForm->edits->GetText(EditId_Code);
+                        if (MainForm->edits->GetText(EditId_Code).Length() < 7)
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Wrong PIN",
+                                "Please enter the 7-digit code you received in your email.");
+                            MainForm->edits->SetText(EditId_Code, "");
+                            MainForm->edits->FocusEdit(EditId_Code);
+                        }
+                        else
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->create_account_enabled = false;
+                            MainForm->net_client->sender->SendPasswordResetCode(MainForm->edits->GetText(EditId_Code));
+                        }
+                    }
+                    if (MainForm->animation->menu->recover_step == 3)
+                    {
+                        char reset_refused = false;
+                        if (MainForm->edits->GetText(EditId_AccountPassword) !=
+                            MainForm->edits->GetText(EditId_ConfirmPassword) && !reset_refused)
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, false),
+                                MainForm->strings->GetDialogText(DialogText_WrongPasswordTwo, true));
+                            MainForm->edits->SetText(EditId_AccountPassword, "");
+                            MainForm->edits->SetText(EditId_ConfirmPassword, "");
+                            MainForm->edits->FocusEdit(EditId_AccountPassword);
+                            reset_refused = true;
+                        }
+                        int reset_problem = MainForm->edits->GetPasswordProblem(EditId_AccountPassword);
+                        if (reset_problem == 4)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(reset_problem, false),
+                                MainForm->strings->GetDialogText(reset_problem, true));
+                        if (reset_problem == 5)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(reset_problem, false),
+                                MainForm->strings->GetDialogText(reset_problem, true));
+                        if (reset_problem == -1)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                "At least 1 uppercase character ( A,B etc..) is required in your new password");
+                        if (reset_problem == -2)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                "At least 1 1owercase character ( a,b etc..) is required in your new password");
+                        if (reset_problem == -3)
+                            MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                                MainForm->strings->GetDialogText(DialogText_PasswordTooObvious, false),
+                                "At least 1 number or token ( 1,2,#,$ etc..) is required in your new password");
+                        if (reset_problem)
+                        {
+                            MainForm->edits->SetText(EditId_AccountPassword, "");
+                            MainForm->edits->SetText(EditId_ConfirmPassword, "");
+                            MainForm->edits->FocusEdit(EditId_AccountPassword);
+                            reset_refused = true;
+                        }
+                        if (!reset_refused)
+                        {
+                            MainForm->edits->caret_enabled = false;
+                            MainForm->animation->menu->create_account_enabled = false;
+                            MainForm->net_client->sender->SendPasswordReset(MainForm->animation->account_name,
+                                MainForm->animation->account_password,
+                                MainForm->edits->GetText(EditId_AccountPassword));
+                        }
+                    }
+                }
+                if (((click_y > 10 && click_y < 17 && 3 * click_y + 560 > click_x) ||
+                    (click_y > 16 && click_y < 31 && click_y + 594 > click_x)) && click_x >= 594 && click_x <= 624)
+                {
+                    MainForm->animation->StopAccountProgress();
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->edits->caret_enabled = true;
+                    MainForm->edits->Clear();
+                    MainForm->gfx->LoadMainMenuScreen(true);
+                    MainForm->animation->SetSubState(MenuScreen_Main);
+                }
+                if (click_x >= 580 && click_x <= 600 && click_y >= 353 && click_y <= 373)
+                {
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->edits->FocusEdit(EditId_Email);
+                    MainForm->edits->TypeText("@");
+                }
+                if (click_x >= 480 && click_x <= 598 && click_y >= 416 && click_y <= 455)
+                {
+                    MainForm->animation->StopAccountProgress();
+                    MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                    MainForm->edits->caret_enabled = true;
+                    MainForm->edits->Clear();
+                    MainForm->gfx->LoadMainMenuScreen(true);
+                    MainForm->animation->SetSubState(MenuScreen_Main);
+                }
+            }
             if (MainForm->animation->GetSubState() == MenuScreen_Login ||
                 MainForm->animation->GetSubState() == MenuScreen_GridAccountName ||
                 MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             {
-                if (MainForm->animation->GetSubState() == MenuScreen_Login && x >= 360 && x <= 450 && y >= 388 &&
-                    y <= 417 && MainForm->animation->menu->login_enabled)
+                if (MainForm->animation->GetSubState() == MenuScreen_Login)
                 {
-                    if (MainForm->edits->GetText(EditId_AccountName) != "" &&
-                        MainForm->edits->GetText(EditId_Password) != "")
+                    if (x >= 360 && x <= 450 && y >= 394 && y <= 426 && MainForm->animation->menu->login_enabled)
                     {
-                        MainForm->animation->menu->login_enabled = false;
-                        MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
-                        if (MainForm->animation->GetSubState() == MenuScreen_Login)
+                        if (MainForm->edits->GetText(EditId_AccountName) != "" &&
+                            MainForm->edits->GetText(EditId_Password) != "")
                         {
-                            MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
-                            MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
-                                MainForm->edits->GetText(EditId_Password));
+                            MainForm->animation->menu->login_enabled = false;
+                            MainForm->registry->SetServerHost(MainForm->config->GetHost());
+                            MainForm->registry->SetServerPort(MainForm->config->GetPort());
+                            MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
+                            if (MainForm->animation->GetSubState() == MenuScreen_Login)
+                            {
+                                MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
+                                MainForm->net_client->sender->SendLogin(MainForm->edits->GetText(EditId_AccountName),
+                                    MainForm->edits->GetText(EditId_Password));
+                            }
                         }
+                    }
+                    if (x >= 460 && x <= 542 && y >= 374 && y <= 389 && !MainForm->animation->menu->recover_pending)
+                    {
+                        MainForm->animation->menu->StartRecoverTimeout();
+                        MainForm->net_client->SendPacket(AC_GET, OP_LOGIN, "R");
                     }
                 }
                 if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid && x >= 360 && x <= 450 && y >= 388 &&
@@ -3902,6 +4351,8 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 {
                     if (MainForm->edits->GetText(EditId_AccountName) != "")
                     {
+                        MainForm->registry->SetServerHost(MainForm->config->GetHost());
+                        MainForm->registry->SetServerPort(MainForm->config->GetPort());
                         MainForm->registry->SetAccountName(MainForm->edits->GetText(EditId_AccountName));
                         MainForm->animation->menu->account_name = MainForm->edits->GetText(EditId_AccountName);
                         MainForm->animation->menu->account_name =
@@ -3924,7 +4375,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         }
                     }
                 }
-                if (x >= 452 && x <= 542 && y >= 388 && y <= 417)
+                if (x >= 452 && x <= 542 && y >= 394 && y <= 423)
                 {
                     MainForm->edits->Clear();
                     MainForm->gfx->LoadMainMenuScreen(true);
@@ -4000,6 +4451,7 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     MainForm->gfx->blends->ReleaseGraphics();
                     MainForm->gfx->items->ReleaseGraphics();
                     MainForm->gfx->items->ReleaseSubItemGraphics();
+                    MainForm->gfx->npc_cache->ReleaseGraphics();
                     MainForm->gfx->FreeMenuGraphics();
                     MainForm->gfx->FreeGameGraphics();
                     MainForm->gfx->FreeHoverLabel();
@@ -4032,17 +4484,16 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                     // With no session yet the button only connects; the reply then opens the login screen.
                     if (!MainForm->net_client->is_initialized)
                     {
-                        if (!MainForm->animation->menu->connect_for_login &&
+                        if (!MainForm->animation->menu->connect_for_recovery &&
                             !MainForm->animation->menu->connect_for_create_account &&
+                            !MainForm->animation->menu->connect_for_login &&
                             (MainForm->client->Host.Length() > 0 || MainForm->client->Address.Length() > 0))
                         {
                             if (MainForm->client->Active)
-                            {
                                 MainForm->client->Active = false;
-                                Sleep(100);
-                            }
                             MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
                             MainForm->client->Active = true;
+                            MainForm->animation->menu->connect_for_recovery = false;
                             MainForm->animation->menu->connect_for_login = false;
                             MainForm->animation->menu->connect_for_create_account = 1;
                         }
@@ -4069,18 +4520,19 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                             221, EDIT_LINE_HEIGHT);
                         MainForm->edits->SetPasswordMode(EditId_AccountPassword, true);
                         MainForm->edits->SetPasswordMode(EditId_ConfirmPassword, true);
-                        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-                        MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_AlphanumericSpaces);
-                        MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_AlphanumericSpaces);
-                        MainForm->edits->SetCharFilter(EditId_AccountDetailA, EditCharFilter_LettersSpaces);
-                        MainForm->edits->SetCharFilter(EditId_AccountDetailB, EditCharFilter_LettersSpaces);
-                        MainForm->edits->SetCharFilter(EditId_Email, EditCharFilter_NoPunctuation);
+                        MainForm->edits->SetShowStrength(EditId_AccountPassword, true);
+                        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                        MainForm->edits->SetAllowSpaces(EditId_AccountPassword, false);
+                        MainForm->edits->SetAllowSpaces(EditId_ConfirmPassword, false);
+                        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+                        MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_Password);
+                        MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_Password);
+                        MainForm->edits->SetCharFilter(EditId_AccountDetailA, EditCharFilter_Letters);
+                        MainForm->edits->SetCharFilter(EditId_AccountDetailB, EditCharFilter_Letters);
+                        MainForm->edits->SetCharFilter(EditId_Email, EditCharFilter_Email);
                         MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                        MainForm->edits->SetMaxLength(EditId_AccountPassword, 12);
-                        MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 12);
-                        MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                        MainForm->edits->SetMaxLength(EditId_AccountPassword, 12);
-                        MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 12);
+                        MainForm->edits->SetMaxLength(EditId_AccountPassword, 16);
+                        MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 16);
                         MainForm->edits->FocusEdit(EditId_AccountName);
                         MainForm->edits->caret_enabled = false;
                         MainForm->animation->menu->OpenTextWindow();
@@ -4292,13 +4744,25 @@ void Mouser::HandleMouseUp()
     int gold_amount;
     if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
     {
+        // Only the first open box or window, in this order, takes the click.
+        char over_window = false;
+        if (MainForm->animation->interface_controller->spells->is_dragging)
+        {
+            if (MainForm->animation->hotkeys->is_visible)
+            {
+                over_window = true;
+                if (MainForm->animation->hotkeys->window_y < y && MainForm->animation->hotkeys->window_y + 122 > y &&
+                    MainForm->animation->hotkeys->window_x < x && MainForm->animation->hotkeys->window_x + 398 > x)
+                    MainForm->animation->hotkeys->DropSpell(MainForm->animation->interface_controller->spells->drag_spell_id,
+                        x, y);
+            }
+        }
         // A dragged item goes to the open window under it, or onto the map within reach.
         if (MainForm->animation->interface_controller->inventory->is_dragging &&
             !MainForm->animation->interface_controller->inventory->dragging_from_paperdoll &&
             MainForm->gfx->game->view_clip_rect.top < y && MainForm->gfx->game->view_clip_rect.bottom > y &&
             MainForm->gfx->game->view_clip_rect.left < x && MainForm->gfx->game->view_clip_rect.right > x)
         {
-            char over_window = false;
             if (MainForm->animation->trade->is_visible)
             {
                 over_window = true;
@@ -4329,6 +4793,14 @@ void Mouser::HandleMouseUp()
                         MainForm->animation->interface_controller->inventory->input_enabled = true;
                     }
                 }
+            }
+            if (MainForm->animation->hotkeys->is_visible)
+            {
+                over_window = true;
+                if (MainForm->animation->hotkeys->window_y < y && MainForm->animation->hotkeys->window_y + 122 > y &&
+                    MainForm->animation->hotkeys->window_x < x && MainForm->animation->hotkeys->window_x + 398 > x)
+                    MainForm->animation->hotkeys->DropItem(MainForm->animation->interface_controller->inventory->drag_item_id,
+                        x, y);
             }
             if (MainForm->animation->paperdoll->is_visible)
             {
@@ -4551,6 +5023,7 @@ void Mouser::HandleMouseUp()
         MainForm->animation->interface_controller->inventory->MouseUp();
         MainForm->animation->interface_controller->spells->MouseUp();
         MainForm->animation->interface_controller->skills->MouseUp();
+        MainForm->animation->hotkeys->MouseUp();
         MainForm->animation->paperdoll->MouseUp();
         MainForm->animation->book->MouseUp();
         MainForm->animation->trade->MouseUp();
@@ -4779,9 +5252,11 @@ void Mouser::OpenLoginScreen()
     MainForm->animation->menu->login_enabled = true;
     if (!MainForm->net_client->is_initialized)
     {
-        if (MainForm->animation->menu->connect_for_login || MainForm->animation->menu->connect_for_create_account)
+        if (MainForm->animation->menu->connect_for_recovery || MainForm->animation->menu->connect_for_create_account ||
+            MainForm->animation->menu->connect_for_login)
             return;
-        if (MainForm->animation->menu->connect_for_login || MainForm->animation->menu->connect_for_create_account)
+        if (MainForm->animation->menu->connect_for_recovery || MainForm->animation->menu->connect_for_create_account ||
+            MainForm->animation->menu->connect_for_login)
             return;
         if (MainForm->client->Active)
         {
@@ -4790,8 +5265,9 @@ void Mouser::OpenLoginScreen()
         }
         MainForm->sfx->PlaySfx(SfxSound_ButtonClick);
         MainForm->client->Active = true;
-        MainForm->animation->menu->connect_for_login = true;
+        MainForm->animation->menu->connect_for_recovery = true;
         MainForm->animation->menu->connect_for_create_account = 0;
+        MainForm->animation->menu->connect_for_login = false;
         return;
     }
     if (MainForm->animation->credits->is_running)
@@ -4803,22 +5279,23 @@ void Mouser::OpenLoginScreen()
     if (MainForm->config->GetSkipSoftpad())
     {
         MainForm->animation->SetSubState(MenuScreen_Login);
-        MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_NAME_EDIT_Y, 141,
-            EDIT_LINE_HEIGHT);
-        MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_PASSWORD_EDIT_Y, 141,
-            EDIT_LINE_HEIGHT);
-        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-        MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_NoPunctuation);
+        MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, 308, 141, EDIT_LINE_HEIGHT);
+        MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, 339, 141, EDIT_LINE_HEIGHT);
+        MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+        MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_Password);
+        MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+        MainForm->edits->SetAllowSpaces(EditId_Password, false);
         MainForm->edits->SetPasswordMode(EditId_Password, true);
         MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-        MainForm->edits->SetMaxLength(EditId_Password, 12);
+        MainForm->edits->SetMaxLength(EditId_Password, 16);
         MainForm->edits->FocusEdit(EditId_AccountName);
         return;
     }
     MainForm->animation->SetSubState(MenuScreen_GridAccountName);
     MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, GRID_LOGIN_NAME_EDIT_Y, 161,
         EDIT_LINE_HEIGHT);
-    MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
+    MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Letters);
+    MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
     MainForm->edits->SetMaxLength(EditId_AccountName, 16);
     MainForm->edits->FocusEdit(EditId_AccountName);
 }

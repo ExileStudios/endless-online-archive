@@ -430,6 +430,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 handled = true;
         }
     }
+    // Elsewhere the scroll bar takes the click.
     if (!handled)
     {
         if (window_x + 252 <= x && window_x + 267 >= x && window_y + scroll_thumb_offset + 58 <= y &&
@@ -501,20 +502,32 @@ void ShopController::MouseMove(int x, int y)
         }
         if (row != hovered_row)
         {
-            if (row != -1 && (page == ShopPage_Buy || page == ShopPage_Craft))
+            if (row != -1 && (page == ShopPage_Buy || page == ShopPage_Sell || page == ShopPage_Craft))
             {
+                int index = GetTopRow() + row;
                 String tooltip_text =
-                    MainForm->net_client->Capitalize(MainForm->item_values->GetName(shown_items[row].item_id));
+                    MainForm->net_client->Capitalize(MainForm->item_values->GetName(shown_items[index].item_id));
+                int required_class = MainForm->item_values->GetClassRequirement(shown_items[index].item_id);
+                int item_weight = MainForm->item_values->GetWeight(shown_items[index].item_id);
                 if (page == ShopPage_Buy)
                 {
                     tooltip_text = tooltip_text + ", ";
                     tooltip_text =
-                        tooltip_text + IntToStr((unsigned int)shown_items[row].price) + " " +
+                        tooltip_text + IntToStr((unsigned int)shown_items[index].price) + " " +
                             MainForm->item_values->GetName(ItemId_Gold);
                 }
-                int required_class = MainForm->item_values->GetClassRequirement(shown_items[row].item_id);
                 if (required_class > 0)
-                    tooltip_text = tooltip_text + ", " + MainForm->class_values->GetName(required_class);
+                {
+                    ClassValue *class_record = MainForm->class_values->GetRecord(required_class);
+                    tooltip_text = tooltip_text + ", " + class_record->name;
+                }
+                if (item_weight > 0)
+                {
+                    tooltip_text = tooltip_text + ", " + IntToStr(item_weight) + " weight";
+                    if (page == ShopPage_Buy)
+                        tooltip_text =
+                            tooltip_text + ", " + MainForm->animation->interface_controller->status->GetWeightText();
+                }
                 MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information, tooltip_text);
             }
             hovered_row = row;

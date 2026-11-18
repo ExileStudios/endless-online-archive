@@ -20,8 +20,11 @@ struct Edit
     int min_value;
     int max_value;
     int char_filter;
+    char allow_spaces;
     int max_length;
     char password;
+    char show_strength;
+    int redraw_ticks;
     char border_visible;
     char background_visible;
     char editable;
@@ -29,6 +32,8 @@ struct Edit
     char dirty;
     bool change_notify;
     char visible;
+    short unused_word;
+    short second_unused_word;
     int border_color;
     int background_color;
     int caret_color;
@@ -41,7 +46,6 @@ struct Edit
 
     Edit(int edit_id, int group, int left, int top, int box_width, int box_height);
     ~Edit();
-    void AppendText(String typed_text);
     void AppendChar(char ch);
     void ClearText();
     void RemoveLastChar();

@@ -19,6 +19,7 @@ struct BossBar
     String unused_text;
     int npc_index;
     int npc_id;
+    int name_width;
     int health_percent;
     int health_color;
     bool has_health;

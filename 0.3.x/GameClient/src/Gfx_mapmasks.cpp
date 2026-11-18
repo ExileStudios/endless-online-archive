@@ -12,34 +12,16 @@ MaskGraphics::MaskGraphics(char preload)
 {
     last_index = -1;
     pending_count = 0;
-    queue_drained = false;
-    library_open = false;
-    keep_library_open = preload;
-    if (keep_library_open)
-    {
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapMasks).c_str());
-        library_open = false;
-    }
 }
 
 MaskGraphics::~MaskGraphics()
 {
-    if (library_open || keep_library_open)
-        FreeLibrary(library);
 }
 
 // On a map change: frees the map mask library while loads are pending and zeroes the pending count.
 // A kept library is opened again.
 void MaskGraphics::ReopenLibrary()
 {
-    if (pending_count > 0 || keep_library_open)
-    {
-        FreeLibrary(library);
-        if (!keep_library_open)
-            pending_count = 0;
-    }
-    if (keep_library_open)
-        library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapMasks).c_str());
 }
 
 // Counts, per loaded map mask, the frames in a row in which GetGraphic did not fetch it.
@@ -60,24 +42,9 @@ void MaskGraphics::AgeGraphics()
 void MaskGraphics::LoadPendingGraphic()
 {
     vector<MaskWrapper>::iterator it;
-    // The call after the map mask queue empties closes the library again, unless it is kept open.
-    if (queue_drained)
-    {
-        if (library_open && !keep_library_open)
-        {
-            FreeLibrary(library);
-            library_open = false;
-        }
-        queue_drained = false;
-        MainForm->redraw_needed = true;
-    }
     if (pending_count > 0)
     {
-        if (!library_open && !keep_library_open)
-        {
-            library = LoadLibraryA(MainForm->strings->GetGfxPath(GfxLibrary_MapMasks).c_str());
-            library_open = true;
-        }
+        library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MapMasks);
         it = entries.begin();
         while (it != entries.end())
         {
@@ -90,28 +57,24 @@ void MaskGraphics::LoadPendingGraphic()
                         it->idle_ticks = 250;
                         it->FreeResource();
                         pending_count--;
-                        if (!pending_count)
-                            queue_drained = true;
                     }
                 }
                 else
                 {
-                    int library_handle = (int)library;
+                    int open_library = library;
                     it->CreateResource();
-                    GraphicSize size = it->resource->LoadSurface(library_handle, it->graphic_id + 100);
-                    it->width = size.width;
-                    it->height = size.height;
-                    if (size.width == -1)
-                    {
+                    TPoint size = it->resource->LoadSurface(open_library, it->graphic_id + 100);
+                    it->width = size.x;
+                    it->height = size.y;
+                    if (size.x == -1)
                         it->idle_ticks++;
-                        break;
+                    else
+                    {
+                        it->is_loaded = true;
+                        it->unfetched_frames = 0;
+                        it->idle_ticks = 0;
+                        pending_count--;
                     }
-                    it->is_loaded = true;
-                    it->unfetched_frames = 0;
-                    it->idle_ticks = 0;
-                    pending_count--;
-                    if (!pending_count)
-                        queue_drained = true;
                     break;
                 }
             }
@@ -130,7 +93,7 @@ void MaskGraphics::PurgeUnusedGraphics()
         result = false;
         for (vector<MaskWrapper>::iterator it = entries.begin(); it != entries.end(); it++)
         {
-            if (it->unfetched_frames >= 16)
+            if (it->unfetched_frames >= 1000)
             {
                 it->FreeResource();
                 entries.erase(it);
@@ -150,11 +113,7 @@ void MaskGraphics::ReleaseGraphics()
     {
         entries.clear();
         last_index = -1;
-        if (pending_count > 0)
-        {
-            pending_count = 0;
-            queue_drained = true;
-        }
+        pending_count = 0;
     }
 }
 
@@ -180,7 +139,7 @@ bool MaskGraphics::RequestGraphic(int graphic_id)
 }
 
 // The loaded map mask, marked as drawn so AgeGraphics does not count it.
-MaskWrapper MaskGraphics::GetGraphic(int graphic_id)
+MaskWrapper *MaskGraphics::GetGraphic(int graphic_id)
 {
     vector<MaskWrapper>::iterator i;
     for (i = entries.begin(); i != entries.end(); i++)
@@ -188,10 +147,10 @@ MaskWrapper MaskGraphics::GetGraphic(int graphic_id)
         if (graphic_id == i->graphic_id && i->is_loaded)
         {
             i->fetched = true;
-            break;
+            return i;
         }
     }
-    return *i;
+    return 0;
 }
 
 GraphicSize MaskGraphics::GetGraphicSize(int graphic_id)

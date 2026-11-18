@@ -301,6 +301,7 @@ void ChatController::DragScrollbar(int mouse_y)
 // Adds a line to the system tab (the last 100 are kept) and writes it to the chat log.
 void ChatController::AddSystemMessage(int icon, int color, String text, bool silent)
 {
+    // The tab keeps its last 100 lines.
     if (system_lines->Count > MAX_SYSTEM_LINES)
     {
         do
@@ -337,12 +338,12 @@ void ChatController::AddSystemMessage(int icon, int color, String text, bool sil
     MainForm->chat_log->WriteLine(3, text);
 }
 
-// Adds a message to a private tab, wrapped to 420 pixels with the later lines set in under the name.
+// Adds a message to a private tab, wrapped with the later lines set in under the name, kept to 100 lines; it follows
+// the scroll, marks the tab unread when another tab is open and writes the line to the chat log.
 void ChatController::AddPrivateMessage(int tab_index, int color, String sender, String text, bool silent)
 {
     int j;
     int line_start;
-    HDC dc;
     text = sender + "  " + text;
     if (private_tab_lines[tab_index]->Count > 100)
     {
@@ -357,18 +358,16 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
     int line_count = 0;
     int next_start = 1;
     String wrapped_lines[5];
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
             int name_width;
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Style = bsClear;
-            MainForm->draw_canvas->Font->Color = clBlack;
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
-            if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
+            MainForm->fonts->color = 0;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
+            if ((short)MainForm->fonts->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
                 {
@@ -384,12 +383,12 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
                                 indent = name_width;
                             // A line ends at a space 40 pixels before the width, or at the width, with a hyphen past it.
                             if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - 40 - indent) ||
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - indent || j == text.Length())
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
+                                if ((short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) <=
                                     wrap_width || j == text.Length())
                                 {
                                     wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
@@ -421,12 +420,11 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
                 else
                     private_indents[tab_index]->Add("0");
             }
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     // Stays at the bottom while auto scroll is on or the thumb is down.
     if (auto_scroll || (!auto_scroll && scrollbar_positions[tab_index] == 50))
@@ -453,12 +451,12 @@ void ChatController::AddPrivateMessage(int tab_index, int color, String sender, 
     MainForm->chat_log->WriteLine(1, text);
 }
 
-// Adds a message to the local tab, wrapped like a private one; the last 300 lines are kept.
+// Adds a message to the local chat tab, wrapped at spaces to the tab's width, dropping the oldest lines past 300;
+// it follows the scroll, marks the tab unread when another tab is open and writes the line to the chat log.
 void ChatController::AddLocalMessage(int icon, int color, String sender, String text, bool silent)
 {
     int j;
     int line_start;
-    HDC dc;
     text = sender + "  " + text;
     // The tab keeps its last 300 lines.
     if (local_lines->Count > MAX_CHAT_LINES)
@@ -476,18 +474,16 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
     int line_count = 0;
     int next_start = 1;
     String wrapped_lines[5];
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
             int name_width;
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Style = bsClear;
-            MainForm->draw_canvas->Font->Color = clBlack;
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
-            if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
+            MainForm->fonts->color = 0;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
+            if ((short)MainForm->fonts->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
                 {
@@ -502,12 +498,12 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
                             if (i > 0)
                                 indent = name_width;
                             if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - 40 - indent) ||
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - indent || j == text.Length())
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
+                                if ((short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) <=
                                     wrap_width || j == text.Length())
                                 {
                                     wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
@@ -546,12 +542,11 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
                     local_indents->Add("0");
                 }
             }
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     // With auto scroll on, or the bar at the bottom, the view follows the new line.
     if (auto_scroll || (!auto_scroll && scrollbar_positions[2] == 50))
@@ -582,12 +577,12 @@ void ChatController::AddLocalMessage(int icon, int color, String sender, String 
         MainForm->chat_log->WriteLine(0, text);
 }
 
-// Adds a message to the group tab (party, guild and admin chat), wrapped like a private one.
+// Adds a message to the group chat tab as the local tab does: wrapped, kept to 300 lines, followed by the scroll
+// and marked unread when another tab is open.
 void ChatController::AddGroupMessage(int icon, int color, String sender, String text, bool silent)
 {
     int j;
     int line_start;
-    HDC dc;
     text = sender + "  " + text;
     // The tab keeps its last 300 lines.
     if (group_lines->Count > MAX_CHAT_LINES)
@@ -605,18 +600,16 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
     int line_count = 0;
     int next_start = 1;
     String wrapped_lines[5];
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
             int name_width;
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Style = bsClear;
-            MainForm->draw_canvas->Font->Color = clBlack;
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
-            if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
+            MainForm->fonts->color = 0;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
+            if ((short)MainForm->fonts->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
                 {
@@ -631,12 +624,12 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
                             if (i > 0)
                                 indent = name_width;
                             if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - 40 - indent) ||
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - indent || j == text.Length())
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
+                                if ((short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) <=
                                     wrap_width || j == text.Length())
                                 {
                                     wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
@@ -675,12 +668,11 @@ void ChatController::AddGroupMessage(int icon, int color, String sender, String 
                     private_lines[0]->Add("0");
                 }
             }
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (auto_scroll || (!auto_scroll && scrollbar_positions[4] == 50))
     {
@@ -714,7 +706,7 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
     int j;
     int m;
     int line_start;
-    HDC dc;
+    int unused_value;
     text = sender + "  " + text;
     if (global_lines->Count > MAX_CHAT_LINES)
     {
@@ -731,18 +723,16 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
     int line_count = 0;
     int next_start = 1;
     String wrapped_lines[5];
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
             int name_width;
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Style = bsClear;
-            MainForm->draw_canvas->Font->Color = clBlack;
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            name_width = MainForm->draw_canvas->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
-            if (MainForm->draw_canvas->TextWidth(text) >= wrap_width)
+            MainForm->fonts->color = 0;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            name_width = (short)MainForm->fonts->TextWidth(MainForm->net_client->Capitalize(sender) + "  ");
+            if ((short)MainForm->fonts->TextWidth(text) >= wrap_width)
             {
                 for (int i = 0; i <= 5; i++)
                 {
@@ -757,12 +747,12 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
                             if (i > 0)
                                 indent = name_width;
                             if ((text[j] == ' ' &&
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - 40 - indent) ||
-                                MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) >=
+                                (short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) >=
                                     wrap_width - indent || j == text.Length())
                             {
-                                if (MainForm->draw_canvas->TextWidth(text.SubString(line_start, j - line_start)) <=
+                                if ((short)MainForm->fonts->TextWidth(text.SubString(line_start, j - line_start)) <=
                                     wrap_width || j == text.Length())
                                 {
                                     wrapped_lines[i] = text.SubString(line_start, j - line_start + 1);
@@ -813,12 +803,11 @@ void ChatController::AddGlobalMessage(int icon, int color, String sender, String
                     }
                 }
             }
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (auto_scroll || (!auto_scroll && scrollbar_positions[3] == 50))
     {

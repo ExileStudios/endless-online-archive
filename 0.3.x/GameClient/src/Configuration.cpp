@@ -17,13 +17,16 @@ Config::Config()
     force_buffer = false;
     ddraw_hardware = false;
     fullscreen = false;
+    lighting = 2;
     skip_intro = true;
     skip_softpad = true;
     use_page_flip = true;
     use_bit_blt_draw = false;
     music_volume = 50;
     sound_volume = 100;
+    sound_buffers = 6;
     stay_on_top = false;
+    force_client_size = 0;
     sizeable = true;
     scale = 1;
     window_position.x = -1;
@@ -34,6 +37,7 @@ Config::Config()
     language = 0;
     keyboard_layout = 0;
     wasd_keys = false;
+    always_ghost = false;
     filter_enabled = true;
     strict_filter = false;
     log_chat = false;
@@ -41,8 +45,15 @@ Config::Config()
     accept_requests = true;
     idle_disconnect = false;
     show_balloons = true;
+    show_balloon_name = true;
+    auto_open_inventory = true;
     extended_tooltip = true;
     elemental_icons = true;
+    hotkey_notifications = true;
+    status_widget = 0;
+    auto_drop_damage_bar = true;
+    auto_drop_recover_bar = true;
+    auto_drop_exp_bar = false;
     minimap_mode = 0;
     radar_position = 0;
     minimap_icons = true;
@@ -51,8 +62,10 @@ Config::Config()
     show_shadows = true;
     chat_log_path = "chatlog.txt";
     debug = false;
-    group_color = 4;
-    npc_color = 0;
+    show_grid_cursor = true;
+    default_color = 0;
+    group_color = 2;
+    npc_color = 4;
     text_theme = 0;
     settings_read = 0;
     standard_settings_read = 0;
@@ -333,6 +346,11 @@ bool Config::LoadSettings()
                     fullscreen = setting_switch;
                     standard_settings_read++;
                 }
+                else if (ReadInteger("LIGHTING"))
+                {
+                    lighting = (char)setting_number;
+                    standard_settings_read++;
+                }
                 else if (ReadSwitch("SKIPINTRO"))
                 {
                     skip_intro = setting_switch;
@@ -361,6 +379,11 @@ bool Config::LoadSettings()
                 else if (ReadSwitch("STAYONTOP"))
                 {
                     stay_on_top = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("FORCECLIENTSIZE"))
+                {
+                    force_client_size = setting_switch;
                     standard_settings_read++;
                 }
                 else if (ReadSwitch("SIZEABLE"))
@@ -408,6 +431,11 @@ bool Config::LoadSettings()
                     wasd_keys = setting_switch;
                     standard_settings_read++;
                 }
+                else if (ReadSwitch("ALWAYSGHOST"))
+                {
+                    always_ghost = setting_switch;
+                    standard_settings_read++;
+                }
                 else if (ReadSwitch("FILTER"))
                 {
                     filter_enabled = setting_switch;
@@ -428,9 +456,24 @@ bool Config::LoadSettings()
                     music_volume = setting_number;
                     standard_settings_read++;
                 }
+                else if (ReadVolume("SOUNDBUFFERS"))
+                {
+                    sound_buffers = setting_number;
+                    standard_settings_read++;
+                }
                 else if (ReadSwitch("SHOWBALOONS"))
                 {
                     show_balloons = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("SHOWBALOONNAME"))
+                {
+                    show_balloon_name = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("AUTOOPENINVENTORY"))
+                {
+                    auto_open_inventory = setting_switch;
                     standard_settings_read++;
                 }
                 else if (ReadSwitch("EXTENDEDTOOLTIP"))
@@ -441,6 +484,31 @@ bool Config::LoadSettings()
                 else if (ReadSwitch("ELEMENTALICONS"))
                 {
                     elemental_icons = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("HOTKEYNOTIFICATIONS"))
+                {
+                    hotkey_notifications = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadColor("STATUSWIDGET"))
+                {
+                    status_widget = setting_number;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("AUTODROPGAMEBARSDAMAGE"))
+                {
+                    auto_drop_damage_bar = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("AUTODROPGAMEBARSRECOVER"))
+                {
+                    auto_drop_recover_bar = setting_switch;
+                    standard_settings_read++;
+                }
+                else if (ReadSwitch("AUTODROPGAMEBARSEXP"))
+                {
+                    auto_drop_exp_bar = setting_switch;
                     standard_settings_read++;
                 }
                 else if (ReadInteger("MINIMAPMODE"))
@@ -498,6 +566,11 @@ bool Config::LoadSettings()
                     chat_log_path = value_text;
                     standard_settings_read++;
                 }
+                else if (ReadColor("DEFAULTCOLOR"))
+                {
+                    default_color = setting_number;
+                    standard_settings_read++;
+                }
                 else if (ReadColor("NPCCOLOR"))
                 {
                     npc_color = setting_number;
@@ -516,6 +589,11 @@ bool Config::LoadSettings()
                 else if (ReadSwitch("DEBUG"))
                 {
                     debug = setting_switch;
+                    extra_settings_read++;
+                }
+                else if (ReadSwitch("SHOWGRIDCURSOR"))
+                {
+                    show_grid_cursor = setting_switch;
                     extra_settings_read++;
                 }
             }
@@ -545,6 +623,14 @@ bool Config::LoadSettings()
         text_theme = 0;
     if (text_theme > 1)
         text_theme = 1;
+    if (status_widget < 0)
+        status_widget = 0;
+    if (status_widget > 3)
+        status_widget = 3;
+    if (sound_buffers < 2)
+        sound_buffers = 2;
+    if (sound_buffers > 6)
+        sound_buffers = 6;
     return true;
 }
 
@@ -571,6 +657,11 @@ void Config::SetSoundVolume(int enabled)
     sound_volume = enabled;
 }
 
+void Config::SetSoundBuffers(int count)
+{
+    sound_buffers = count;
+}
+
 void Config::SetScale(int count)
 {
     scale = count;
@@ -584,6 +675,26 @@ void Config::SetExtendedTooltip(bool value)
 void Config::SetElementalIcons(bool enabled)
 {
     elemental_icons = enabled;
+}
+
+void Config::SetStatusWidget(int value)
+{
+    status_widget = value;
+}
+
+void Config::SetAutoDropDamageBar(bool enabled)
+{
+    auto_drop_damage_bar = enabled;
+}
+
+void Config::SetAutoDropRecoverBar(bool enabled)
+{
+    auto_drop_recover_bar = enabled;
+}
+
+void Config::SetAutoDropExpBar(bool enabled)
+{
+    auto_drop_exp_bar = enabled;
 }
 
 void Config::SetMinimapMode(int mode)
@@ -606,9 +717,14 @@ void Config::SetLanguage(int new_language)
     language = new_language;
 }
 
-char Config::SetShowBalloons(char show)
+char Config::SetShowBalloons(bool enabled)
 {
-    return show_balloons = show;
+    return show_balloons = enabled;
+}
+
+char Config::SetShowBalloonName(bool enabled)
+{
+    return show_balloon_name = enabled;
 }
 
 char Config::SetShowShadows(char show)
@@ -651,6 +767,26 @@ void Config::SetWasdKeys(bool value)
     wasd_keys = value;
 }
 
+void Config::SetAlwaysGhost(bool enabled)
+{
+    always_ghost = enabled;
+}
+
+void Config::SetMusicAvailable(int available)
+{
+    music_available = available;
+}
+
+void Config::SetSoundAvailable(int available)
+{
+    sound_available = available;
+}
+
+char Config::SetShowGridCursor(bool enabled)
+{
+    return show_grid_cursor = enabled;
+}
+
 bool Config::GetScreenFolderExists()
 {
     return screen_folder_exists;
@@ -664,6 +800,11 @@ int Config::GetDDrawHardware()
 char Config::GetFullscreen()
 {
     return fullscreen;
+}
+
+int Config::GetLighting()
+{
+    return lighting;
 }
 
 char Config::GetSkipIntro()
@@ -696,9 +837,19 @@ int Config::GetSoundVolume()
     return sound_volume;
 }
 
+int Config::GetSoundBuffers()
+{
+    return sound_buffers;
+}
+
 char Config::GetStayOnTop()
 {
     return stay_on_top;
+}
+
+char Config::GetForceClientSize()
+{
+    return force_client_size;
 }
 
 char Config::GetSizeable()
@@ -716,6 +867,11 @@ TPoint Config::GetWindowPosition()
     return window_position;
 }
 
+char Config::GetAutoOpenInventory()
+{
+    return auto_open_inventory;
+}
+
 bool Config::GetExtendedTooltip()
 {
     return extended_tooltip;
@@ -724,6 +880,31 @@ bool Config::GetExtendedTooltip()
 bool Config::GetElementalIcons()
 {
     return elemental_icons;
+}
+
+char Config::GetHotkeyNotifications()
+{
+    return hotkey_notifications;
+}
+
+int Config::GetStatusWidget()
+{
+    return status_widget;
+}
+
+bool Config::GetAutoDropDamageBar()
+{
+    return auto_drop_damage_bar;
+}
+
+bool Config::GetAutoDropRecoverBar()
+{
+    return auto_drop_recover_bar;
+}
+
+bool Config::GetAutoDropExpBar()
+{
+    return auto_drop_exp_bar;
 }
 
 int Config::GetMinimapMode()
@@ -781,6 +962,11 @@ bool Config::GetWasdKeys()
     return wasd_keys;
 }
 
+bool Config::GetAlwaysGhost()
+{
+    return always_ghost;
+}
+
 String Config::GetHost()
 {
     return host;
@@ -831,9 +1017,14 @@ char Config::GetIdleDisconnect()
     return idle_disconnect;
 }
 
-char Config::GetShowBalloons()
+bool Config::GetShowBalloons()
 {
     return show_balloons;
+}
+
+bool Config::GetShowBalloonName()
+{
+    return show_balloon_name;
 }
 
 char Config::GetShowShadows()
@@ -850,6 +1041,11 @@ String Config::GetChatLogPath()
 int Config::GetPort()
 {
     return port;
+}
+
+int Config::GetDefaultColor()
+{
+    return default_color;
 }
 
 int Config::GetNpcColor()
@@ -882,12 +1078,7 @@ char Config::GetDebug()
     return debug;
 }
 
-void Config::SetMusicAvailable(int available)
+bool Config::GetShowGridCursor()
 {
-    music_available = available;
-}
-
-void Config::SetSoundAvailable(int available)
-{
-    sound_available = available;
+    return show_grid_cursor;
 }

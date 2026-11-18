@@ -31,6 +31,7 @@ struct GameGraphics
     TDx_DrawSurface *extra_surface;
     TDx_DrawSurface *button_sheet;
     TDx_DrawSurface *paperdoll_surface;
+    TDx_DrawSurface *spare_surface;
     TDx_DrawSurface *book_surface;
     TDDBltFX *black_fill_fx;
     TDDBltFX *view_fill_fx;
@@ -41,6 +42,7 @@ struct GameGraphics
     TRect input_box_rect;
     TRect player_menu_shadow_rect;
     TRect player_menu_rect;
+    TRect hotkeys_rect;
     TRect book_rect;
     TRect list_scrollbar_rect;
     TRect amount_box_rect;
@@ -67,6 +69,7 @@ struct GameGraphics
     TPoint GetPaperdollSlotOffset(int item_size);
     void BlitClippedAlpha(int x, int y, TDx_DrawSurface *source, TRect source_rect, int alpha);
     void BlitClippedHalfBlend(int x, int y, TDx_DrawSurface *source, TRect source_rect);
+    bool IsInView(int x, int y, TRect *source_rect);
     bool BlitClipped(int x, int y, TDx_DrawSurface *source, TRect source_rect);
     void DrawMessageBoxText();
     void DrawTextBoxText();
@@ -97,7 +100,9 @@ struct GameGraphics
     void DrawLearnWindow();
     void DrawTradeWindow();
     void DrawBookWindow();
+    void DrawSubItem(int x, int y, int sub_item_id);
     void DrawPaperdollWindow();
+    void DrawHotkeys();
     void DrawChestButtons();
     void DrawBarberButtons();
     void DrawMusicianButtons();
@@ -124,8 +129,9 @@ struct GameGraphics
     TRect GetPopupItemRect(int row);
     TRect GetButtonRect(int button, int state);
     TRect ClipSourceRect(int x, int y, TRect source_rect);
-    void LoadButtonSheet(int library, int resource_id);
-    void LoadPopupMenu(int library, int resource_id);
+    char LoadSurface(TDx_DrawSurface *surface, int library, int resource_id);
+    char LoadButtonSheet(int library, int resource_id);
+    char LoadPopupMenu(int library, int resource_id);
     void LoadListBoxBackground(int library, int resource_id);
     void LoadInputBoxBackground(int library, int resource_id);
     void LoadMessageBoxBackground(int library, int resource_id);
@@ -151,8 +157,11 @@ struct GameGraphics
     void DrawTradeText();
     void DrawBookText();
     void DrawPaperdollText();
+    void DrawNothing();
+    void DrawInfoLine(int window_x, int window_y, int line_y, String text);
     void LoadPaperdollBackground(int library, int resource_id);
-    void LoadBookBackground(int library, int resource_id);
+    char LoadSpareSurface(int library, int resource_id);
+    void LoadSpareSurface2(int library, int resource_id);
 };
 
 #endif

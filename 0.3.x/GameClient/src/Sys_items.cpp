@@ -2,7 +2,7 @@
 #pragma hdrstop
 
 #include "Tmainform.h"
-#include "Gfx_sprites.h"
+#include "Gfx_global_sprites.h"
 
 #pragma package(smart_init)
 
@@ -18,45 +18,49 @@ MapItems::~MapItems()
 // Shows the name label of the item on the cursor tile, with its amount; player and npc labels take precedence.
 void MapItems::UpdateHoverLabel()
 {
+    ItemValue *item_value;
     if (!MainForm->players->hover_label_shown && !MainForm->npcs->hover_label_shown)
     {
-        char first_match = true;
+        bool searching = true;
         vector<MapItem>::reverse_iterator it(items.end());
         for (; it != vector<MapItem>::reverse_iterator(items.begin()); it++)
         {
             if (MainForm->map->GetCursorX() == (*it).x && MainForm->map->GetCursorY() == (*it).y)
             {
-                if (first_match)
+                if (searching)
                 {
                     if (!(*it).label_shown)
                     {
-                        ItemValue handle = MainForm->item_values->GetItem((*it).item_id);
+                        item_value = MainForm->item_values->GetItem((*it).item_id - 1);
                         if ((*it).amount > 1)
                         {
                             // Gold, item 1, shows its amount first; other stacks show it after the name.
                             if ((*it).item_id == ItemId_Gold)
                             {
-                                String label_text = IntToStr((*it).amount) + " " + handle.name;
-                                MainForm->gfx->sprites->ShowNameLabel(label_text, handle.special + 2, handle.element);
+                                String label_text = IntToStr((*it).amount) + " " + item_value->name;
+                                MainForm->gfx->sprites->ShowNameLabel(label_text, item_value->special + 2,
+                                    item_value->element);
                             }
                             else
                             {
-                                String stack_label = handle.name + " x" + IntToStr((*it).amount);
-                                MainForm->gfx->sprites->ShowNameLabel(stack_label, handle.special + 2, handle.element);
+                                String stack_label = item_value->name + " x" + IntToStr((*it).amount);
+                                MainForm->gfx->sprites->ShowNameLabel(stack_label, item_value->special + 2,
+                                    item_value->element);
                             }
                         }
                         else if ((*it).item_id == ItemId_Gold)
                         {
-                            String single_gold_label = "1 " + handle.name;
-                            MainForm->gfx->sprites->ShowNameLabel(single_gold_label, handle.special + 2,
-                                handle.element);
+                            String single_gold_label = "1 " + item_value->name;
+                            MainForm->gfx->sprites->ShowNameLabel(single_gold_label, item_value->special + 2,
+                                item_value->element);
                         }
                         else
-                            MainForm->gfx->sprites->ShowNameLabel(handle.name, handle.special + 2, handle.element);
+                            MainForm->gfx->sprites->ShowNameLabel(item_value->name, item_value->special + 2,
+                                item_value->element);
                         (*it).label_shown = true;
                         MainForm->redraw_needed = true;
                     }
-                    first_match = false;
+                    searching = false;
                 }
                 else if ((*it).label_shown)
                 {
@@ -70,7 +74,7 @@ void MapItems::UpdateHoverLabel()
                 MainForm->redraw_needed = true;
             }
         }
-        if (first_match)
+        if (searching)
             hover_label_shown = false;
         else
             hover_label_shown = true;

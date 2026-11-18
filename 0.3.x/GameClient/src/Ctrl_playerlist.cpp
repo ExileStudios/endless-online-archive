@@ -84,13 +84,6 @@ void PlayerlistController::Clear()
 // is cut off the shown entries.
 void PlayerlistController::ApplyFilter()
 {
-    int prefix_length;
-    char social_match;
-    char icon_match;
-    char same_guild;
-    int shown_prefix_length;
-    int i;
-    int j;
     shown_record_values->Clear();
     shown_icon_types->Clear();
     shown_names->Clear();
@@ -127,17 +120,10 @@ void PlayerlistController::ApplyFilter()
             entry_value.Delete(1, prefix_length);
             String guild_tag = LowerCase(entry_value);
             String own_guild_tag = LowerCase(MainForm->animation->interface_controller->status->guild_tag);
-            // A two-letter tag padded with a space matches its unpadded form
-            if (guild_tag.Length() == 3)
-            {
-                if (guild_tag[3] == ' ')
-                    guild_tag = guild_tag.SubString(1, 2);
-            }
-            if (own_guild_tag.Length() == 3)
-            {
-                if (own_guild_tag[3] == ' ')
-                    own_guild_tag = own_guild_tag.SubString(1, 2);
-            }
+            if (guild_tag.Length() == 3 && guild_tag[3] == ' ')
+                guild_tag = guild_tag.SubString(1, 2);
+            if (own_guild_tag.Length() == 3 && own_guild_tag[3] == ' ')
+                own_guild_tag = own_guild_tag.SubString(1, 2);
             if (guild_tag == own_guild_tag)
                 same_guild = true;
         }

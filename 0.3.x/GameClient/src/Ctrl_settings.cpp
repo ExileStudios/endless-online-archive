@@ -213,178 +213,47 @@ void SettingsController::MouseDown(int x, int y)
                 MainForm->config->SetAcceptRequests(true);
         }
     }
+    if (x >= 558 && x <= 588 && y >= 331 && y <= 348)
+        MainForm->mouse->OpenHelpPanel(true);
 }
 
-// Shows help text 54 while the mouse is over a switch.
+// Marks the setting under the mouse in either column, or the top button with its tip on the status line.
 void SettingsController::MouseMove(int x, int y)
 {
-    char result = SettingOption_None;
+    int old_option = hovered_option;
+    hovered_option = SettingOption_None;
     if (x >= 317 && x <= 336)
     {
         if (y >= 355 && y <= 370)
-        {
-            if (hovered_option != SettingOption_Sound)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Sound;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Sound)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Sound;
         if (y >= 373 && y <= 388)
-        {
-            if (hovered_option != SettingOption_Music)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Music;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Music)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Music;
         if (y >= 391 && y <= 406)
-        {
-            if (hovered_option != SettingOption_Keyboard)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Keyboard;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Keyboard)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Keyboard;
         if (y >= 409 && y <= 424)
-        {
-            if (hovered_option != SettingOption_Language)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Language;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Language)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Language;
         if (y >= 427 && y <= 443)
-        {
-            if (hovered_option != SettingOption_PrivateMessages)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_PrivateMessages;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_PrivateMessages)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
-    }
-    else if (hovered_option > SettingOption_None && hovered_option < SettingOption_Balloons)
-    {
-        hovered_option = SettingOption_None;
-        result = 1;
+            hovered_option = SettingOption_PrivateMessages;
     }
     if (x >= 557 && x <= 576)
     {
         if (y >= 355 && y <= 370)
-        {
-            if (hovered_option != SettingOption_Balloons)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Balloons;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Balloons)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Balloons;
         if (y >= 373 && y <= 388)
-        {
-            if (hovered_option != SettingOption_Shadows)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Shadows;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Shadows)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Shadows;
         if (y >= 391 && y <= 406)
-        {
-            if (hovered_option != SettingOption_Filter)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Filter;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Filter)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Filter;
         if (y >= 409 && y <= 424)
-        {
-            if (hovered_option != SettingOption_LogChat)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_LogChat;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_LogChat)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_LogChat;
         if (y >= 427 && y <= 443)
-        {
-            if (hovered_option != SettingOption_Requests)
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                    MainForm->strings->GetText(GameText_ClickOnThisButton));
-                hovered_option = SettingOption_Requests;
-                result = 1;
-            }
-        }
-        else if (hovered_option == SettingOption_Requests)
-        {
-            hovered_option = SettingOption_None;
-            result = 1;
-        }
+            hovered_option = SettingOption_Requests;
     }
-    else if (hovered_option > SettingOption_PrivateMessages && hovered_option < SettingOption_GameHelp)
+    if (x >= 558 && x <= 588 && y >= 331 && y <= 348)
     {
-        hovered_option = SettingOption_None;
-        result = 1;
+        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
+            MainForm->strings->GetText(GameText_GameHelp));
+        hovered_option = SettingOption_GameHelp;
     }
-    if (result)
+    if (hovered_option != old_option)
         is_dirty = true;
 }

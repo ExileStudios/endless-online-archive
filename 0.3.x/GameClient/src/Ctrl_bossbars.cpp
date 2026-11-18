@@ -49,8 +49,8 @@ void BossBars::Update()
     }
 }
 
-// Sets the bar's health percent and its time; a hit starts it blinking from empty.
-void BossBars::ApplyHealth(int npc_index, int percent, char was_hit)
+// Sets the health percent of a boss's bar, kept to 0 to 100, giving the npc a free bar when it has none.
+void BossBars::ShowHealth(int npc_index, int npc_id, int percent, char was_hit)
 {
     BossBar *bar;
     if (percent < 0)
@@ -60,19 +60,28 @@ void BossBars::ApplyHealth(int npc_index, int percent, char was_hit)
     for (int i = 0; i < 3; i++)
     {
         bar = bars[i];
-        if (npc_index == bar->npc_index)
+        if (bar->npc_index == npc_index)
         {
-            bar->health_percent = percent;
-            if (was_hit)
-            {
-                bar->is_blinking = true;
-                bar->blink_counter = 0;
-                bar->health_percent = 0;
-            }
-            bar->shown_time = clock();
-            break;
+            ApplyHealth(bar, percent, was_hit);
+            return;
         }
     }
+    unsigned char slot = FindFreeBar();
+    bars[slot]->Show(npc_index, npc_id - 1);
+    ApplyHealth(bars[slot], percent, was_hit);
+}
+
+// Sets the bar's health percent and its time; a hit starts it blinking from empty.
+void BossBars::ApplyHealth(BossBar *bar, int percent, char was_hit)
+{
+    bar->health_percent = percent;
+    if (was_hit)
+    {
+        bar->is_blinking = true;
+        bar->blink_counter = 0;
+        bar->health_percent = 0;
+    }
+    bar->shown_time = clock();
 }
 
 // The first bar no npc holds, or the last one when all are taken.
@@ -102,6 +111,7 @@ int BossBars::FindBar(int npc_index)
 int BossBars::ScanNpcs()
 {
     BossBar *bar;
+    NpcValue *npc_record;
     int index;
     int slot;
     for (int i = 0; i < MainForm->npcs->GetCount(); i++)
@@ -109,10 +119,10 @@ int BossBars::ScanNpcs()
         Npc npc = MainForm->npcs->GetNpc(i);
         if (false)
             continue;
-        NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc.npc_id - 1);
-        if (npc_value.npc_id < 0)
+        npc_record = MainForm->npc_values->GetNpc(npc.npc_id - 1);
+        if (npc_record->npc_id < 0)
             continue;
-        if (npc_value.boss < 1)
+        if (npc_record->boss < 1)
             continue;
         index = FindBar(npc.bar_index);
         if (index < 0)
@@ -133,12 +143,6 @@ int BossBars::ScanNpcs()
                     if (bar->health_percent > 100)
                         bar->health_percent = 100;
                     bar->has_health = true;
-                    if (npc.health_bar_width <= 5)
-                        bar->health_color = 2;
-                    else if (npc.health_bar_width > 12)
-                        bar->health_color = 0;
-                    else
-                        bar->health_color = 1;
                 }
                 if (npc.killed_by_hit)
                 {
@@ -168,8 +172,6 @@ bool BossBars::IsAnyVisible()
 void BossBars::Draw()
 {
     int bar_x = x;
-    if (MainForm->gfx->interface_graphics->minimap_visible == 2 && MainForm->config->GetRadarPosition() == 3)
-        bar_x = 25;
     int offset_y = 0;
     for (int i = 0; i < 3; i++)
     {

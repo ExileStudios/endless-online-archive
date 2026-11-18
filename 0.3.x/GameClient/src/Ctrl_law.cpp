@@ -104,10 +104,10 @@ void LawController::MouseDown(int x, int y, int button)
                     MainForm->sfx->PlaySfx(SfxSound_Select);
                     if (page == 6)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_LawOption1,
-                            MainForm->strings->GetText(GameText_EnterNameOfPerson), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_EnterNameOfPerson), EditCharFilter_Alphanumeric, 14);
                     if (page == 7)
                         MainForm->animation->game->OpenInputBox(InputBoxKind_LawOption2,
-                            MainForm->strings->GetText(GameText_EnterNameOfPersonYou), EditCharFilter_Letters, 12);
+                            MainForm->strings->GetText(GameText_EnterNameOfPersonYou), EditCharFilter_Alphanumeric, 14);
                 }
             }
             if (page == 1)
@@ -139,6 +139,7 @@ void LawController::MouseDown(int x, int y, int button)
             }
         }
     }
+    // Elsewhere the scroll bar takes the click.
     if (!handled)
     {
         if (x >= window_x + 252 && x <= window_x + 267)

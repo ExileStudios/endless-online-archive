@@ -22,21 +22,15 @@ struct Npcs
     char has_idle_animation[MAX_NPC_GRAPHICS];
     short head_heights[MAX_NPC_GRAPHICS];
     char hover_label_shown;
-    char list_changed;
-    vector<Npc> npcs;
+    vector<Npc *> npcs;
     int current_index;
     int mouse_x;
     int mouse_y;
-    int library_ref_count;
-    HMODULE graphics_library;
-    char preload_graphics;
 
     Npcs(char preload_option);
     ~Npcs();
-    void ReloadGraphicsLibrary();
     void Animate();
     void RemoveExpiredNpcs();
-    void LoadPendingGraphics();
     int GetNpcId(int index);
     bool ConsumeRedraw();
     bool IsInViewRange(int center_x, int center_y, int x, int y);
@@ -49,12 +43,13 @@ struct Npcs
     void StartWalk(int index, int x, int y, int direction);
     void ShowDamage(int index, int amount, char heal);
     void ShowHealthBar(int index, int percent, int duration);
+    void ShowBar(int index, int bar, int percent, int duration);
     void StartEffect(int index, int effect_id);
     void StartAttack(int index, int direction);
     void AddNpc(int index, int npc_id, int graphic, String name, int x, int y, int direction);
     void Clear();
     unsigned int GetCount();
-    void ShowBalloon(int index, String *lines, int width, int height, int tinted);
+    void ShowBalloon(int index, String text);
     void SetMousePosition(int cursor_x, int cursor_y);
 };
 

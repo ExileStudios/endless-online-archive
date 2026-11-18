@@ -32,9 +32,7 @@ TradeGraphics::~TradeGraphics()
     delete color_key;
 }
 
-// Loads the trade window background from the library into a surface sized to the bitmap; returns its size,
-// or -1 when the bitmap could not be drawn onto the trade background surface.
-// The trade background bitmap goes on by a canvas Draw, or by BitBlt if configured.
+// Loads the trade window's background from the library; its size, or -1, -1 when it cannot be drawn.
 DEFINE_LOAD_BACKGROUND(TradeGraphics)
 
 // Loads the trade item slot frame into its own surface; returns its size, or -1 when it could not be drawn.

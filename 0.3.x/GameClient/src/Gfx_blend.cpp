@@ -31,4 +31,4 @@ BlendResource::~BlendResource()
 
 // Loads bitmap resource_id from the library into the blended overlay surface and returns its size.
 // The size is -1 when the bitmap could not be drawn onto the blended overlay surface.
-DEFINE_BLEND_LOAD_SURFACE(BlendResource)
+DEFINE_LOAD_SURFACE(BlendResource)

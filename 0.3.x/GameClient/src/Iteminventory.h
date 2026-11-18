@@ -9,6 +9,7 @@ struct InventoryItem
     int item_id;
     unsigned int amount;
     char is_visible;
+    short highlight_ticks;
     char is_placed;
 
     InventoryItem(int id);

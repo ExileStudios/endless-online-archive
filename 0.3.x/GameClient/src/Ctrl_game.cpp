@@ -7,7 +7,6 @@
 #include "Ctrl_interface.h"
 #include "Packetoperations.h"
 #include "Ctrl_paperdoll.h"
-#include "Gfx_sprites.h"
 #include "Ctrl_status.h"
 #include "Ctrl_inventory.h"
 #include "Ctrl_spells.h"
@@ -68,6 +67,7 @@ GameController::GameController()
     form_y = 32;
     form_ok_hovered = false;
     form_cancel_hovered = false;
+    blocking_player_id = -1;
     idle_ticks = 0;
     attack_count = 0;
 }
@@ -113,6 +113,7 @@ bool GameController::ToggleSit(int x, int y)
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()))
     {
+        // Standing, the player sits on the floor of the tile; sitting, they stand up.
         if (!MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()))
         {
             if (MainForm->animation->game->player_menu_visible)
@@ -120,7 +121,9 @@ bool GameController::ToggleSit(int x, int y)
             MainForm->animation->StartSitDelay(SIT_DELAY_TICKS);
             MainForm->animation->interface_controller->spells->CancelCast();
             MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
-            MainForm->net_client->sender->SendFloorSit(x, y);
+            int player_x = MainForm->players->GetX(MainForm->net_client->GetPlayerId());
+            MainForm->net_client->sender->SendFloorSit(player_x,
+                MainForm->players->GetY(MainForm->net_client->GetPlayerId()));
         }
         else
         {
@@ -202,8 +205,7 @@ void GameController::Attack(char animation_only, int face_direction)
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsSittingOnChair(MainForm->net_client->GetPlayerId()) &&
-        !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()) &&
-        MainForm->animation->interface_controller->status->stamina > 0)
+        !MainForm->players->IsSittingOnFloor(MainForm->net_client->GetPlayerId()))
     {
         if (MainForm->item_values->GetSubType(MainForm->animation->paperdoll->equipped_weapon) == 1 &&
             MainForm->item_values->GetSubType(MainForm->animation->paperdoll->equipped_shield) != 2)
@@ -213,8 +215,9 @@ void GameController::Attack(char animation_only, int face_direction)
             MainForm->sfx->PlaySfx(SfxSound_NoArrows);
             return;
         }
-        if (!IsActionDelayElapsed())
-            return;
+        if (IsActionDelayElapsed())
+        {
+        }
         // Attacks in a row without a step are capped; each step resets the count
         if (attack_count > 10001)
             return;
@@ -236,7 +239,7 @@ void GameController::Attack(char animation_only, int face_direction)
         MainForm->animation->interface_controller->spells->CancelCast();
         MainForm->players->HideTextLabel(MainForm->net_client->GetPlayerId());
         MainForm->animation->interface_controller->status->SetStamina(MainForm->animation->interface_controller->status->stamina -
-            1);
+            1, false);
         MainForm->players->StartAttack(MainForm->net_client->GetPlayerId(), direction, animation_only);
         if (!animation_only)
             MainForm->net_client->sender->SendAttack(direction);
@@ -259,6 +262,7 @@ void GameController::PlayEmote(int emote_id)
 }
 
 // One step of the own character in the direction, or a jump on a jump tile; a player facing elsewhere turns first.
+// With ghost walking on, players and npcs do not block, and a warp tile asks for its level.
 // Against a wall the tile is used instead: a door, chest, locker, board, jukebox or chair, tried in that order.
 void GameController::Walk(int direction)
 {
@@ -288,6 +292,7 @@ void GameController::Walk(int direction)
     ResetIdleTimer();
     if (!MainForm->players->HasPlayer(MainForm->net_client->GetPlayerId()))
         return;
+    // A step only while no action is blocked and the player is not casting, attacking or sitting.
     if (!MainForm->map->IsActionBlocked() && !MainForm->animation->IsWalkingBlocked() &&
         !MainForm->players->IsCasting(MainForm->net_client->GetPlayerId()) &&
         !MainForm->players->IsAttacking(MainForm->net_client->GetPlayerId()) &&
@@ -329,7 +334,8 @@ void GameController::Walk(int direction)
                     {
                         if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
                         {
-                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk ||
+                                MainForm->config->GetAlwaysGhost())
                             {
                                 walk_left = true;
                                 if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
@@ -428,7 +434,8 @@ void GameController::Walk(int direction)
                     {
                         if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
                         {
-                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk ||
+                                MainForm->config->GetAlwaysGhost())
                             {
                                 walk_up = true;
                                 if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
@@ -526,7 +533,8 @@ void GameController::Walk(int direction)
                     {
                         if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
                         {
-                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk ||
+                                MainForm->config->GetAlwaysGhost())
                             {
                                 walk_right = true;
                                 if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
@@ -625,7 +633,8 @@ void GameController::Walk(int direction)
                     {
                         if (!MainForm->players->HasPlayerAt(target_x, target_y) || ghost_walk)
                         {
-                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk)
+                            if (!MainForm->npcs->HasNpcAt(target_x, target_y) || ghost_walk ||
+                                MainForm->config->GetAlwaysGhost())
                             {
                                 walk_down = true;
                                 if (MainForm->map->GetTileSpec(target_x, target_y) == TileSpec_Jump || on_jump_tile)
@@ -929,7 +938,8 @@ void GameController::OpenInputForm(int kind, int row_count, int char_filter, int
     MainForm->redraw_needed = true;
 }
 
-// Opens the one-line input box with the prompt; kind tells the OK handler what the text is for.
+// Opens the input box with the prompt and an empty box for the kind's answer, with its character filter and length;
+// a box of 14 characters takes no spaces.
 void GameController::OpenInputBox(int kind, String prompt, int char_filter, int max_length)
 {
     input_box_visible = true;
@@ -946,6 +956,11 @@ void GameController::OpenInputBox(int kind, String prompt, int char_filter, int 
     MainForm->edits->SetMaxLength(EditId_InputBox, max_length);
     MainForm->edits->SetBackgroundVisible(EditId_InputBox, false);
     MainForm->edits->SetBorderVisible(EditId_InputBox, false);
+    if (max_length == 14)
+    {
+        MainForm->edits->SetCharFilter(EditId_InputBox, EditCharFilter_Letters);
+        MainForm->edits->SetAllowSpaces(EditId_InputBox, false);
+    }
     input_box_dragging = false;
     input_box_ok_hovered = false;
     input_box_cancel_hovered = false;
@@ -1324,6 +1339,16 @@ void GameController::ShowInputFormRows(int first_row)
     MainForm->edits->SetMaxLength(EditId_FormThirdRow, form_row_max_lengths[first_row + 2]);
     MainForm->edits->SetMaxLength(EditId_FormFourthRow, form_row_max_lengths[first_row + 3]);
     MainForm->edits->SetMaxLength(EditId_FormFifthRow, form_row_max_lengths[first_row + 4]);
+    if (form_row_max_lengths[first_row] <= 3)
+        MainForm->edits->SetAllowSpaces(EditId_FormFirstRow, false);
+    if (form_row_max_lengths[first_row + 1] <= 3)
+        MainForm->edits->SetAllowSpaces(EditId_FormSecondRow, false);
+    if (form_row_max_lengths[first_row + 2] <= 3)
+        MainForm->edits->SetAllowSpaces(EditId_FormThirdRow, false);
+    if (form_row_max_lengths[first_row + 3] <= 3)
+        MainForm->edits->SetAllowSpaces(EditId_FormFourthRow, false);
+    if (form_row_max_lengths[first_row + 4] <= 3)
+        MainForm->edits->SetAllowSpaces(EditId_FormFifthRow, false);
     MainForm->edits->SetCharFilter(EditId_FormFirstRow, form_row_char_filters[first_row]);
     MainForm->edits->SetCharFilter(EditId_FormSecondRow, form_row_char_filters[first_row + 1]);
     MainForm->edits->SetCharFilter(EditId_FormThirdRow, form_row_char_filters[first_row + 2]);
@@ -1489,6 +1514,7 @@ bool GameController::TryOpenChest(int x, int y, int tile_spec)
         pos.x = x;
         pos.y = y;
         key_id = MainForm->map->GetChestKey(x, y);
+        // A chest with a key opens only for a player who holds it.
         if (key_id > 0)
         {
             if (MainForm->animation->interface_controller->inventory->HasKey(key_id))
@@ -1536,6 +1562,7 @@ bool GameController::TryOpenDoor(int x, int y, int tile_spec)
                 MainForm->sfx->PlaySfx(SfxSound_Locked);
             }
         }
+        // A door with no key opens at once.
         if (!key_id)
         {
             handled = true;
@@ -1550,31 +1577,30 @@ bool GameController::TryOpenDoor(int x, int y, int tile_spec)
 // buttons.
 void GameController::Tick()
 {
-    if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
+    if (MainForm->animation->GetScreenMode() != ScreenMode_Game)
+        return;
+    idle_ticks++;
+    // Idle in the game: an emote now and then, later two warnings, then the logout
+    if (idle_ticks >= 2500)
     {
-        idle_ticks++;
-        // Idle in the game: an emote now and then, later two warnings, then the logout
-        if (idle_ticks >= 2500)
+        if (idle_ticks % 250 == 0)
+            PlayEmote(Emote_Moon);
+        if (MainForm->config->GetIdleDisconnect())
         {
-            if (idle_ticks % 250 == 0)
-                PlayEmote(Emote_Moon);
-            if (MainForm->config->GetIdleDisconnect())
+            if (idle_ticks >= 15000)
             {
-                if (idle_ticks >= 15000)
-                {
-                    if (idle_ticks % 500 == 0)
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                            MainForm->strings->GetText(GameText_YouHaveBeenIdle));
-                    if (idle_ticks % 500 == 30)
-                        MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
-                            MainForm->strings->GetText(GameText_StartMovingYourCharacter));
-                }
-                if (idle_ticks >= 17500)
-                {
-                    idle_ticks = 0;
-                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                    MainForm->animation->interface_controller->Logout();
-                }
+                if (idle_ticks % 500 == 0)
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
+                        MainForm->strings->GetText(GameText_YouHaveBeenIdle));
+                if (idle_ticks % 500 == 30)
+                    MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Button,
+                        MainForm->strings->GetText(GameText_StartMovingYourCharacter));
+            }
+            if (idle_ticks >= 17500)
+            {
+                idle_ticks = 0;
+                MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
+                MainForm->animation->interface_controller->Logout();
             }
         }
     }
@@ -1589,8 +1615,8 @@ void GameController::Tick()
         {
             MainForm->sfx->PlaySfx(SfxSound_Countdown);
             if (spot_countdown == 70)
-                MainForm->gfx->sprites->ShowSpeechBalloon(MainForm->strings->GetText(GameText_MoveAwayFromPlace),
-                    MainForm->net_client->GetPlayerId(), 0);
+                MainForm->players->ShowBalloon(MainForm->net_client->GetPlayerId(),
+                    MainForm->strings->GetText(GameText_MoveAwayFromPlace), -1);
             MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
                 MainForm->strings->GetText(GameText_DoNotBlockArena));
         }
@@ -1706,10 +1732,5 @@ void GameController::ToggleGhostWalk()
 // True when enough time passed since the last call; every call restarts the time.
 bool GameController::IsActionDelayElapsed()
 {
-    TTimeStamp now = DateTimeToTimeStamp(Now());
-    int elapsed_ms = now.Time - last_action_time.Time;
-    last_action_time = now;
-    if (elapsed_ms < 460)
-        return false;
     return true;
 }

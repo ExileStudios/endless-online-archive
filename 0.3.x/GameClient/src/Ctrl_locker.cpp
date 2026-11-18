@@ -27,6 +27,7 @@ LockerController::LockerController()
     reserved_value = -1;
     locker_x = -1;
     locker_y = -1;
+    items_changed = false;
     unused_flag = true;
     unused_value = 0;
     top_row = 0;
@@ -51,7 +52,55 @@ void LockerController::AddItem(int item_id, int amount)
 {
     InventoryItem handle(item_id);
     handle.amount = amount;
+    handle.is_placed = true;
     items.insert(items.end(), handle);
+}
+
+// Sets the amount of the item in the locker, or adds the item when the locker does not hold it.
+void LockerController::UpdateItem(int item_id, int amount)
+{
+    for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
+    {
+        if (item_id == it->item_id)
+        {
+            if (amount != it->amount)
+            {
+                MainForm->redraw_needed = true;
+                items_changed = true;
+                it->highlight_ticks = 3;
+            }
+            it->amount = amount;
+            it->is_placed = true;
+            return;
+        }
+    }
+    AddItem(item_id, amount);
+}
+
+// Scrolls the locker list so the item's row is in view.
+void LockerController::ScrollToItem(int item_id)
+{
+    int row;
+    int new_top = GetTopRow();
+    for (int i = 0; i < items.size(); i++)
+    {
+        if (items[i].item_id == item_id)
+        {
+            row = i / 4;
+            if (row < new_top)
+            {
+                top_row = row;
+                UpdateScrollThumb();
+                break;
+            }
+            if (row >= new_top + 5)
+            {
+                top_row = row - 4;
+                UpdateScrollThumb();
+            }
+            break;
+        }
+    }
 }
 
 // Shows the locker at the map tile with an empty list, closing other npc windows.
@@ -86,8 +135,33 @@ void LockerController::Close()
     MainForm->redraw_needed = true;
 }
 
-// Repeats a held scroll arrow.
-DEFINE_TICK(LockerController)
+// Repeats a held scroll arrow once its delay is over, and counts down the marks of changed items.
+void LockerController::Tick()
+{
+    if (scroll_repeat_delay > 0)
+        scroll_repeat_delay--;
+    else
+    {
+        if (scroll_up_held)
+            ScrollUp();
+        if (scroll_down_held)
+            ScrollDown();
+    }
+    if (items_changed)
+    {
+        items_changed = false;
+        for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
+        {
+            if (it->highlight_ticks > 0)
+            {
+                items_changed = true;
+                it->highlight_ticks--;
+                if (it->highlight_ticks <= 0)
+                    MainForm->redraw_needed = true;
+            }
+        }
+    }
+}
 
 int LockerController::GetScrollThumbOffset()
 {
@@ -112,13 +186,48 @@ void LockerController::ClearList()
     items.clear();
 }
 
-void LockerController::AdjustScroll()
+void LockerController::ClearSeenFlags()
 {
-    int row_count = items.size() >> 2;
+    for (vector<InventoryItem>::iterator it = items.begin(); it != items.end(); it++)
+        it->is_placed = false;
+}
+
+// Removes every item not seen since ClearSeenFlags.
+void LockerController::RemoveUnseenItems()
+{
+    vector<InventoryItem>::iterator it = items.begin();
+    while (it != items.end())
+    {
+        if (!it->is_placed)
+        {
+            items.erase(it);
+            continue;
+        }
+        it++;
+    }
+}
+
+// Places the scroll thumb by the top row, for a list of more than five rows of four items.
+void LockerController::UpdateScrollThumb()
+{
+    int rows = items.size() >> 2;
     if ((items.size() & 3) != 0)
-        row_count++;
-    if (row_count - top_row < 5)
-        ScrollDown();
+        rows++;
+    if (rows >= 6)
+    {
+        double ratio = (double)top_row / (rows - 5);
+        double offset = 152.0 * ratio;
+        if (offset > 152.0)
+        {
+            if (top_row <= 0)
+                return;
+            top_row--;
+            ratio = (double)top_row / (rows - 5);
+            offset = 152.0 * ratio;
+        }
+        scroll_thumb_offset = offset;
+        scroll_changed = true;
+    }
 }
 
 // A right-click on an item asks to take it out when it fits the inventory and the weight limit. Otherwise the
@@ -247,10 +356,18 @@ void LockerController::MouseMove(int x, int y)
             hovered_row = row;
             MainForm->redraw_needed = true;
             int item_id = items[slot].item_id;
-            unsigned int amount = items[slot].amount;
+            int amount = items[slot].amount;
             tooltip->ShowItemCount(item_id, amount);
             tooltip->SetAnchorX(57 * col + window_x);
             tooltip->SetAnchorY(37 * row + window_y);
+            ItemValue *item_value = MainForm->item_values->GetItem(item_id - 1);
+            String weight_text = MainForm->animation->interface_controller->status->GetWeightText();
+            int item_weight = item_value->weight;
+            String status_text = item_value->name + ", " + IntToStr(item_weight) + " weight, ";
+            if (item_weight > 0 && amount > 1)
+                status_text = status_text + IntToStr(item_weight * amount) + " total, ";
+            status_text = status_text + weight_text;
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Locker, status_text);
         }
     }
     else if (hovered_slot >= 0)

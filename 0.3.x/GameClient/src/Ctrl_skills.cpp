@@ -52,6 +52,7 @@ void SkillController::Tick()
 {
     if (train_confirm_ticks > 0)
         train_confirm_ticks--;
+    // With points to spend and a skill selected, the raise button blinks.
     if (MainForm->animation->interface_controller->status->skill_points > 0 && selected_skill_id > 0)
     {
         if (blink_phase < 10)
@@ -105,14 +106,14 @@ DEFINE_SKILL_UPDATE_SCROLL_HOVER(SkillController)
 // Tracks the skill under the mouse and shows its name in the status bar. While a skill is dragged, any cell counts.
 void SkillController::UpdateHover(int x, int y)
 {
-    SkillItem *it;
+    vector<SkillItem>::iterator it;
+    SkillValue *skill;
     int message_type;
-    char found;
-    HDC dc;
     int col = (x - 201) / SLOT_GRID_CELL_WIDTH;
     int result = (y - 339) / SLOT_GRID_CELL_HEIGHT;
     last_mouse_x = x;
     last_mouse_y = y;
+    // Only the panel's grid of two rows and eight columns counts.
     if (result >= 0 && result <= 1 && col >= 0 && col <= 7 && x > 201 && y > 333)
     {
         if (is_dragging)
@@ -128,9 +129,8 @@ void SkillController::UpdateHover(int x, int y)
         }
         else
         {
-            found = false;
-            it = skills.begin();
-            while (it != skills.end())
+            char found = false;
+            for (it = skills.begin(); it != skills.end(); it++)
             {
                 int grid_row = top_row + result;
                 if (col == it->grid_x && grid_row == it->grid_y && it->is_visible)
@@ -138,13 +138,14 @@ void SkillController::UpdateHover(int x, int y)
                     found = true;
                     if (hover_col == it->grid_x && hover_row == it->grid_y)
                         break;
+                    skill = MainForm->skill_values->GetSkill(it->skill_id - 1);
                     hover_skill_id = it->skill_id;
                     hover_col = it->grid_x;
                     hover_row = it->grid_y - top_row;
                     last_hover_col = it->grid_x;
                     last_hover_row = it->grid_y - top_row;
-                    hover_text = MainForm->skill_values->GetName(it->skill_id);
-                    message_type = MainForm->skill_values->GetCategory(it->skill_id) + 7;
+                    hover_text = skill->name;
+                    message_type = skill->category + 7;
                     if (hover_message_delay < 1)
                         MainForm->animation->interface_controller->ShowStatusMessage(message_type, hover_text);
                     hover_alt_frame = 0;
@@ -152,22 +153,19 @@ void SkillController::UpdateHover(int x, int y)
                     selection_dirty = true;
                     is_dirty = true;
                     hover_text_width = 0;
-                    if (MainForm->OffscreenSurface->GetDC(&dc))
+                    if (MainForm->fonts->BeginOffscreenIf(240))
                     {
                         try
                         {
-                            MainForm->text_canvas->Handle = dc;
-                            hover_text_width = MainForm->text_canvas->TextWidth(hover_text);
-                            MainForm->text_canvas->Handle = 0;
+                            hover_text_width = (short)MainForm->fonts->TextWidth(hover_text);
                         }
                         catch (Exception &)
                         {
                         }
-                        MainForm->OffscreenSurface->ReleaseDC(dc);
+                        MainForm->fonts->End();
                     }
                     break;
                 }
-                it++;
             }
             if (!found)
             {
@@ -208,11 +206,13 @@ void SkillController::MouseDown(int x, int y, int button)
     vector<SkillItem>::iterator skill_item;
     int view_row;
     int grid_row;
+    SkillValue *clicked_skill;
     int drag_col;
     vector<SkillItem>::iterator it;
     vector<SkillItem>::iterator other;
     vector<SkillItem>::iterator moved;
     vector<SkillItem>::iterator placed;
+    SkillValue *dragged_skill;
     char cancel_drag = false;
     if (x >= 201 && x <= 560)
     {
@@ -233,10 +233,11 @@ void SkillController::MouseDown(int x, int y, int button)
                                 grid_row = top_row + view_row;
                                 if (col == skill_item->grid_x && grid_row == skill_item->grid_y)
                                 {
+                                    clicked_skill = MainForm->skill_values->GetSkill(skill_item->skill_id - 1);
                                     has_selection = true;
                                     selected_skill_id = skill_item->skill_id;
-                                    selected_skill_icon = MainForm->skill_values->GetIcon(skill_item->skill_id);
-                                    selected_skill_name = MainForm->skill_values->GetName(skill_item->skill_id);
+                                    selected_skill_icon = clicked_skill->icon;
+                                    selected_skill_name = clicked_skill->name;
                                     clicked_skill_id = skill_item->skill_id;
                                     clicked_col = skill_item->grid_x;
                                     clicked_row = skill_item->grid_y;
@@ -309,6 +310,7 @@ void SkillController::MouseDown(int x, int y, int button)
                             if (col == skill_item->grid_x && view_row == skill_item->grid_y)
                             {
                                 MainForm->sfx->PlaySfx(SfxSound_ItemPickup);
+                                dragged_skill = MainForm->skill_values->GetSkill(skill_item->skill_id - 1);
                                 found = true;
                                 is_dragging = true;
                                 drag_started = false;
@@ -316,13 +318,13 @@ void SkillController::MouseDown(int x, int y, int button)
                                 drag_x = x;
                                 drag_y = y;
                                 drag_skill_id = skill_item->skill_id;
-                                drag_icon = MainForm->skill_values->GetIcon(skill_item->skill_id);
+                                drag_icon = dragged_skill->icon;
                                 has_selection = true;
                                 selected_skill_id = skill_item->skill_id;
                                 selected_skill_level = skill_item->level;
-                                selected_skill_icon = MainForm->skill_values->GetIcon(skill_item->skill_id);
-                                selected_skill_category = MainForm->skill_values->GetCategory(skill_item->skill_id);
-                                selected_skill_name = MainForm->skill_values->GetName(skill_item->skill_id);
+                                selected_skill_icon = dragged_skill->icon;
+                                selected_skill_category = dragged_skill->category;
+                                selected_skill_name = dragged_skill->name;
                                 clicked_skill_id = skill_item->skill_id;
                                 clicked_col = skill_item->grid_x;
                                 clicked_row = skill_item->grid_y;
@@ -331,19 +333,16 @@ void SkillController::MouseDown(int x, int y, int button)
                                 selection_dirty = true;
                                 is_dirty = true;
                                 selected_text_width = 0;
-                                HDC dc;
-                                if (MainForm->OffscreenSurface->GetDC(&dc))
+                                if (MainForm->fonts->BeginOffscreenIf(240))
                                 {
                                     try
                                     {
-                                        MainForm->text_canvas->Handle = dc;
-                                        selected_text_width = MainForm->text_canvas->TextWidth(hover_text);
-                                        MainForm->text_canvas->Handle = 0;
+                                        selected_text_width = (short)MainForm->fonts->TextWidth(hover_text);
                                     }
                                     catch (Exception &)
                                     {
                                     }
-                                    MainForm->OffscreenSurface->ReleaseDC(dc);
+                                    MainForm->fonts->End();
                                 }
                                 break;
                             }
@@ -468,12 +467,13 @@ void SkillController::CancelDrag()
         it->is_visible = true;
 }
 
-// Writes the skill in each grid cell, or 0 for an empty one, to the registry.
+// Writes the skill in each of the 4 rows of 8 cells to the registry, 0 for an empty cell.
 void SkillController::SaveLayout()
 {
     int skill_id;
     vector<SkillItem>::iterator it;
     int slot;
+    MainForm->registry->OpenSlotKey(LayoutKey_Skills);
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 8; j++)
@@ -488,9 +488,10 @@ void SkillController::SaveLayout()
                 }
             }
             slot = j + 8 * i;
-            MainForm->registry->WriteSlotValue(LayoutKey_Skills, slot, skill_id);
+            MainForm->registry->WriteSlotValue(slot, skill_id);
         }
     }
+    MainForm->registry->CloseSlotKey();
 }
 
 // Sets a raised skill's level; true when the skill is on the grid.
@@ -527,6 +528,7 @@ bool SkillController::RemoveSkill(int skill_id)
 
 char SkillController::HasSkill(int skill_id)
 {
+    skills.end() - skills.begin();
     for (vector<SkillItem>::iterator it = skills.begin(); it != skills.end(); it++)
     {
         if (skill_id == it->skill_id)

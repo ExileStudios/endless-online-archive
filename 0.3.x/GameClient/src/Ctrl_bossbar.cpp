@@ -62,6 +62,7 @@ void BossBar::Show(int new_npc_index, int new_npc_id)
         blink_frame = 0;
         has_health = false;
         is_blinking = false;
+        health_percent = 0;
         needs_render = true;
         is_rendered = false;
         is_visible = true;
@@ -83,32 +84,29 @@ void BossBar::Hide()
 // Draws the boss's name on the bar's name surface once, with one rank icon per boss level up to two.
 void BossBar::RenderName()
 {
-    HDC dc;
     if (needs_render)
     {
-        NpcValue npc_value = MainForm->npc_values->GetNpcByIndex(npc_id);
+        NpcValue *npc_record = MainForm->npc_values->GetNpc(npc_id);
         name_surface->Blt(&name_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, blt_fx);
         rank_icons = 0;
-        if (npc_value.boss >= 1)
+        if (npc_record->boss >= 1)
             rank_icons++;
-        if (npc_value.boss >= 2)
+        if (npc_record->boss >= 2)
             rank_icons++;
-        if (name_surface->GetDC(&dc))
+        if (MainForm->fonts->BeginOn(name_surface))
         {
             try
             {
-                MainForm->text_canvas->Handle = dc;
-                MainForm->text_canvas->Brush->Style = bsClear;
-                MainForm->text_canvas->Font->Color = clWhite;
-                MainForm->text_canvas->Font->Name = "MS Sans Serif";
-                MainForm->text_canvas->Font->Size = 7;
-                MainForm->text_canvas->TextOut(0, 0, npc_value.name);
-                MainForm->text_canvas->Handle = 0;
+                MainForm->fonts->color = 0xFFFFFF;
+                MainForm->fonts->face = 1;
+                MainForm->fonts->size = 8;
+                name_width = (short)MainForm->fonts->TextWidth(npc_record->name) + 20;
+                MainForm->fonts->DrawString(0, 0, npc_record->name);
             }
             catch (Exception &)
             {
             }
-            name_surface->ReleaseDC(dc);
+            MainForm->fonts->End();
         }
         MainForm->redraw_needed = true;
         needs_render = false;
@@ -166,16 +164,28 @@ void BossBar::Draw(int x, int y, int offset_y)
         int top = y + offset_y;
         MainForm->gfx->game->BlitClippedHalfBlend(x - 9, top + 7, MainForm->gfx->interface_graphics->popup_icons,
             MainForm->gfx->interface_graphics->GetBarRowRect(0));
+        int name_left = 190 - name_width;
         for (int i = 0; i < rank_icons; i++)
-            MainForm->OffscreenSurface->BltFast(10 * i + x + 3, top + 3, MainForm->gfx->interface_graphics->popup_icons,
-                &GetRankIconRect(blink_frame), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        MainForm->gfx->game->BlitClippedAlpha(10 * rank_icons + x, top - 8, name_surface, name_rect,
+            MainForm->OffscreenSurface->BltFast(10 * i + x + name_left + 3, top + 3,
+                MainForm->gfx->interface_graphics->popup_icons, &GetRankIconRect(blink_frame),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        name_rect.right = name_width;
+        MainForm->gfx->game->BlitClippedAlpha(10 * rank_icons + x + name_left, top - 8, name_surface, name_rect,
             200 - 10 * blink_frame);
         if (!is_blinking && !has_health && health_percent <= 0)
             MainForm->OffscreenSurface->BltFast(x + 4, top + 17, MainForm->gfx->interface_graphics->popup_icons,
                 &MainForm->gfx->interface_graphics->GetPercentBarRect(100, 3), DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(x + 4, top + 17, MainForm->gfx->interface_graphics->popup_icons,
+        {
+            unsigned char bar_x = 2 * (100 - (char)health_percent);
+            if (health_percent < 14)
+                health_color = 2;
+            else if (health_percent > 35)
+                health_color = 0;
+            else
+                health_color = 1;
+            MainForm->OffscreenSurface->BltFast(bar_x + x + 4, top + 17, MainForm->gfx->interface_graphics->popup_icons,
                 &MainForm->gfx->interface_graphics->GetPercentBarRect(health_percent, health_color), DDBLTFAST_WAIT);
+        }
     }
 }

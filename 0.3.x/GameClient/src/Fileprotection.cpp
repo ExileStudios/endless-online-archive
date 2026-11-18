@@ -4,6 +4,7 @@
 #include "Fileprotection.h"
 #include <io.h>
 #include <Forms.hpp>
+#include <stdlib.h>
 
 #pragma package(smart_init)
 
@@ -11,6 +12,9 @@ FileController::FileController()
 {
     file_names = new TStringList();
     file_sizes = new TStringList();
+    file_kinds = new TStringList();
+    error_message = "";
+    error_kind = "";
     BuildFileList();
 }
 
@@ -18,73 +22,65 @@ FileController::~FileController()
 {
     file_names->Clear();
     file_sizes->Clear();
+    file_kinds->Clear();
     delete file_names;
     delete file_sizes;
+    delete file_kinds;
 }
 
-// Lists the program, its data files and every graphics, sound and music file the client needs.
+// Lists the files to check, each with its kind: the program, 13 data files, 25 graphics files, 41 music files and
+// three sound files.
 void FileController::BuildFileList()
 {
+    int data_number;
+    int gfx_number;
+    int music_number;
     file_names->Add("Endless.exe");
+    file_kinds->Add("D");
     file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_Credits));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_CreditsCheck));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_WordFilter));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_SongNames));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_EnglishDialogTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_EnglishUiTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_DutchDialogTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_DutchUiTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_SwedishDialogTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_SwedishUiTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_PortugueseDialogTexts));
-    file_sizes->Add("");
-    file_names->Add(GetDataFilePath(DataFile_PortugueseUiTexts));
-    file_sizes->Add("");
-    for (int i = 1; i <= GFX_LIBRARY_COUNT; i++)
+    // Then 13 data files, 25 graphics files and 41 music files, and the first sound of each kind.
+    for (data_number = DataFile_Credits; data_number <= DataFile_PortugueseUiTexts; data_number++)
     {
-        file_names->Add(GetGfxPath(i));
+        file_names->Add(GetDataFilePath(data_number));
+        file_kinds->Add("D");
         file_sizes->Add("");
     }
-    for (int j = 1; j <= 72; j++)
+    for (gfx_number = GfxLibrary_First; gfx_number <= GfxLibrary_LastChecked; gfx_number++)
     {
-        file_names->Add(GetSoundPath(j));
+        file_names->Add(GetGfxPath(gfx_number));
+        file_kinds->Add("G");
         file_sizes->Add("");
     }
-    for (int k = 1; k <= 41; k++)
+    for (music_number = 1; music_number <= 41; music_number++)
     {
-        file_names->Add(GetMusicPath(k));
+        file_names->Add(GetMusicPath(music_number));
+        file_kinds->Add("M");
         file_sizes->Add("");
     }
+    file_names->Add(GetClientSoundPath(1));
+    file_kinds->Add("V3");
+    file_sizes->Add("");
+    file_names->Add(GetControlSoundPath(1));
+    file_kinds->Add("V3");
+    file_sizes->Add("");
+    file_names->Add(GetInstrumentSoundPath(1));
+    file_kinds->Add("V3");
+    file_sizes->Add("");
 }
 
 // Checks that every listed file is there and, where a size is given, has that size; a missing or unreadable file
 // names itself in the error.
 bool FileController::VerifyFiles()
 {
+    int file_handle;
     bool all_ok = true;
     for (int i = 0; i < file_names->Count; i++)
     {
-        if (!all_ok)
-            return false;
         String lp_file_name = file_names->Strings[i];
-        // Set before each file, so after a failure it names that file.
-        error_message = "Corrupt file : " + lp_file_name;
         if (!access(lp_file_name.c_str(), 0))
         {
             if (file_sizes->Strings[i] != "")
             {
-                int file_handle;
                 try
                 {
                     file_handle = open(lp_file_name.c_str(), 0);
@@ -98,67 +94,122 @@ bool FileController::VerifyFiles()
                 }
                 catch (...)
                 {
+                    error_message = "Corrupt file : " + lp_file_name;
+                    error_kind = file_kinds->Strings[i];
                     all_ok = false;
-                    close(file_handle);
                 }
             }
         }
         else
         {
+            error_message = "Corrupt file : " + lp_file_name;
+            error_kind = file_kinds->Strings[i];
             all_ok = false;
-            if (!i)
-                all_ok = PrefixAppDirectory();
             break;
         }
     }
     return all_ok;
 }
 
-// Puts the program's folder in front of every listed file name; false when the program path has no folder.
-bool FileController::PrefixAppDirectory()
+// The path of a data file by number, padded to three digits; the path text is kept scrambled.
+String FileController::GetDataFilePath(int file_number)
 {
-    int position;
-    bool prefixed = false;
-    String app_dir = Application->ExeName;
-    if (app_dir.Length() > 0)
-    {
-        position = app_dir.Length();
-        for (; position > 0; position--)
-        {
-            if (app_dir[position] == '/' || app_dir[position] == '\\')
-            {
-                app_dir = app_dir.SubString(1, position);
-                for (int i = 0; i < file_names->Count; i++)
-                    file_names->Strings[i] = app_dir + file_names->Strings[i];
-                prefixed = true;
-                break;
-            }
-        }
-    }
-    return prefixed;
+    string scrambled_name = ".f!ddea.ttaa!d";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(file_number), 11);
+    return file_name;
 }
 
 // The path of a graphics file by number, padded to three digits; the path text is kept scrambled.
-DEFINE_GET_GFX_PATH(FileController)
+String FileController::GetGfxPath(int file_number)
+{
+    string scrambled_name = ".f!ggef.xx!fg";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(file_number), 10);
+    return file_name;
+}
+
+String FileController::GetClientSoundPath(int file_number)
+{
+    string scrambled_name = ".v!aswf.xx!fcsl!iten";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(file_number), 17);
+    return file_name;
+}
+
+// The path of the numbered control sound, one of its four variants at random.
+String FileController::GetControlSoundPath(int file_number)
+{
+    string scrambled_name = ".v!aswf.xx!fcst!rl";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    String variant_name = PadFileNumber(file_number) + "-" + IntToStr(random(4) + 1);
+    file_name.Insert(variant_name, 15);
+    return file_name;
+}
 
 // The path of a sound file by number, padded to three digits; the path text is kept scrambled.
 String FileController::GetSoundPath(int file_number)
 {
     string scrambled_name = ".v!aswf.xx!fs";
     String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
-    file_name.Insert(IntToStr(file_number), 10);
+    file_name.Insert(PadFileNumber(file_number), 10);
+    return file_name;
+}
+
+String FileController::GetEffectSoundPath(int file_number)
+{
+    string scrambled_name = ".v!aswf.xx!feef!ftec";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(file_number), 17);
+    return file_name;
+}
+
+String FileController::GetAmbientSoundPath(int file_number)
+{
+    string scrambled_name = ".v!aswf.xx!fs";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(file_number), 10);
+    return file_name;
+}
+
+// The path of the instrument's sound; instruments 49 and 50 play as 1 and 2.
+String FileController::GetInstrumentSoundPath(int instrument)
+{
+    if (instrument == 49)
+        instrument = 1;
+    if (instrument == 50)
+        instrument = 2;
+    string scrambled_name = ".v!aswf.xx!fiin!srt";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(PadFileNumber(instrument), 16);
+    return file_name;
+}
+
+// The path of the numbered jukebox song, the number padded to three digits.
+String FileController::GetJukeboxPath(int file_number)
+{
+    string scrambled_name = ".d!ijmb.oxxo!bj";
+    String file_name = RestorePathSeparators(UnscrambleString(4, scrambled_name.begin(), scrambled_name.end()));
+    file_name.Insert(IntToStr(file_number), 12);
     if (file_number <= 9)
-        file_name.Insert("0", 10);
+        file_name.Insert("0", 12);
     if (file_number <= 99)
-        file_name.Insert("0", 10);
+        file_name.Insert("0", 12);
     return file_name;
 }
 
 // The path of a music file by number, padded to three digits; the path text is kept scrambled.
 DEFINE_GET_MUSIC_PATH(FileController)
 
-// The path of a data file by number, padded to three digits; the path text is kept scrambled.
-DEFINE_GET_DATA_FILE_PATH(FileController)
+// The number padded with zeros to three digits.
+String FileController::PadFileNumber(int file_number)
+{
+    if (file_number < 10)
+        return "00" + IntToStr(file_number);
+    if (file_number < 100)
+        return "0" + IntToStr(file_number);
+    return IntToStr(file_number);
+}
 
 // Turns each marker sign of an unscrambled path into a backslash.
 DEFINE_RESTORE_PATH_SEPARATORS(FileController)

@@ -11,11 +11,8 @@ struct TopGraphics
 {
     vector<TopWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     TopGraphics(char preload);
     ~TopGraphics();
@@ -25,7 +22,7 @@ struct TopGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
-    TopWrapper GetGraphic(int graphic_id);
+    TopWrapper * GetGraphic(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();
 };

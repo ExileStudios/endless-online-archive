@@ -13,10 +13,10 @@ enum EifItemType
     EifItemType_Currency = 2,
     EifItemType_Heal = 3,
     EifItemType_Teleport = 4,
-    EifItemType_Spell = 5,
+    EifItemType_Transformation = 5,
     EifItemType_ExpReward = 6,
-    EifItemType_StatReward = 7,
-    EifItemType_SkillReward = 8,
+    EifItemType_SkillBook = 7,
+    EifItemType_VisualDocument = 8,
     EifItemType_Key = 9,
     EifItemType_Weapon = 10,
     EifItemType_Shield = 11,
@@ -86,6 +86,7 @@ struct ItemValue
     unsigned char element;
     unsigned char element_power;
 
+    ItemValue();
     ItemValue(int record_id);
     ~ItemValue();
 };

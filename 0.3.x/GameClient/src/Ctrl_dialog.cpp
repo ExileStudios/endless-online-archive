@@ -41,10 +41,10 @@ DialogController::~DialogController()
 {
 }
 
-// Adds a text with its right-hand value, wrapped to the page width; a link line takes the next free link slot.
+// Adds a text with its right-hand value, wrapped to the page width; a link line, marked by a leading star, takes the
+// next free link slot.
 void DialogController::AddText(String text, String right_text, bool add_blank_line)
 {
-    // A line starting with an asterisk is a reply link
     if (text.Length() > 0 && text[1] == '*')
     {
         for (int slot = 0; slot < DIALOG_MAX_LINKS; slot++)
@@ -57,18 +57,16 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
         }
     }
     int max_width = 200;
-    HDC dc;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(200))
     {
         try
         {
-            MainForm->text_canvas->Handle = dc;
-            MainForm->text_canvas->Font->Name = "MS Sans Serif";
-            MainForm->text_canvas->Font->Size = 7;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
             do
             {
                 String fitted_text;
-                if (MainForm->text_canvas->TextWidth(text) <= max_width)
+                if ((short)MainForm->fonts->TextWidth(text) <= max_width)
                 {
                     lines->Add(text);
                     line_right_texts->Add(right_text);
@@ -82,7 +80,7 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
                         if (text[i] == ' ' || i == text.Length())
                         {
                             String prefix = text.SubString(1, i);
-                            if (MainForm->text_canvas->TextWidth(prefix) >= max_width)
+                            if ((short)MainForm->fonts->TextWidth(prefix) >= max_width)
                             {
                                 lines->Add(fitted_text);
                                 line_right_texts->Add(right_text);
@@ -101,12 +99,11 @@ void DialogController::AddText(String text, String right_text, bool add_blank_li
                     }
                 }
             } while (text.Length() > 0);
-            MainForm->text_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (add_blank_line)
     {
@@ -361,6 +358,7 @@ void DialogController::MouseMove(int x, int y)
             window_y = 119;
         MainForm->redraw_needed = true;
     }
+    // Over the seven rows of text, the row under the mouse lights.
     if (y > window_y + 43 && y < window_y + 143 && x > window_x + 17 && x < window_x + 252 && !is_dragging)
     {
         int row = (y - window_y - 47) / 16;

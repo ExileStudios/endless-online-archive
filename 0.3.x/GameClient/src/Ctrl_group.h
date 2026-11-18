@@ -44,6 +44,7 @@ struct GroupController
     void AddMember(int player_id, String name, int level, int leader_flag, int health_percent, char removable);
     void MarkMembersRemovable();
     void SetMemberHealth(int player_id, int health_percent);
+    void SetMemberLevel(int player_id, int level);
     void RemoveMember(int player_id);
     void OnMemberAdded();
     int GetTopRow();

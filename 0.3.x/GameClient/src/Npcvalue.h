@@ -1,6 +1,10 @@
 #ifndef NpcvalueH
 #define NpcvalueH
 
+#include <vector.h>
+
+#include "Npcdrop.h"
+
 // One NPC of the NPC file.
 struct NpcValue
 {
@@ -26,6 +30,12 @@ struct NpcValue
     short element_weakness_damage;
     unsigned char level;
     int experience;
+    bool talk_interval;
+    bool talk_rate;
+    bool unused_flag;
+    short drop_rate_total;
+    vector<NpcDropItem> drops;
+    vector<AnsiString> talk_lines;
 
     NpcValue(int record_id);
     ~NpcValue();

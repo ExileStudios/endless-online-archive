@@ -22,6 +22,7 @@ struct KeyBoard
     char walk_key_held;
     bool wasd_key_used;
     bool attack_key_used;
+    bool space_key_used;
     bool delete_pressed;
     unsigned char walk_direction;
     unsigned char last_walk_direction;

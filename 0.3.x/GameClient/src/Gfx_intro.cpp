@@ -34,24 +34,13 @@ IntroGraphics::~IntroGraphics()
     delete fill_fx;
 }
 
-// Draws bitmap resource_id of the library onto the intro surface, opaque.
+// Loads the library's bitmap onto the intro surface.
 void IntroGraphics::LoadSurface(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (surface->GetDC(&dc))
+    if (MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id) &&
+        MainForm->gfx_transfers->BeginDraw(surface))
     {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        surface->ReleaseDC(dc);
+        MainForm->gfx_transfers->Draw(surface);
+        MainForm->gfx_transfers->EndDraw(surface);
     }
 }

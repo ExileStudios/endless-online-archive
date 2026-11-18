@@ -12,11 +12,8 @@ struct WallGraphics
 {
     vector<WallWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     WallGraphics(char preload);
     ~WallGraphics();
@@ -27,7 +24,7 @@ struct WallGraphics
     void ReleaseGraphics();
     void LoadGraphicNow(int graphic_id);
     bool RequestGraphic(int graphic_id);
-    WallWrapper GetGraphic(int graphic_id);
+    WallWrapper * GetGraphic(int graphic_id);
     GraphicSize GetGraphicSize(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();

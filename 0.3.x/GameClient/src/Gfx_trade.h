@@ -21,8 +21,8 @@ struct TradeGraphics
 
     TradeGraphics();
     ~TradeGraphics();
-    GraphicSize LoadBackground(HMODULE library, int resource_id);
-    GraphicSize LoadItemSlot(HMODULE library, int resource_id);
+    TPoint LoadBackground(int library, int resource_id);
+    TPoint LoadItemSlot(int library, int resource_id);
 };
 
 #endif

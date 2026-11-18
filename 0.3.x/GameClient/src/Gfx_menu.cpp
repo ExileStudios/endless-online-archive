@@ -7,9 +7,11 @@
 #include "Gfx_game.h"
 #include "Gfx_interface.h"
 #include <stdlib.h>
+#include "Gfx_global_sprites.h"
 
 #pragma package(smart_init)
 
+// Creates the menu surfaces and picks one of the seven backgrounds at random.
 MenuGraphics::MenuGraphics()
 {
     background = new TDx_DrawSurface(NULL);
@@ -25,13 +27,18 @@ MenuGraphics::MenuGraphics()
     animation_sheet = new TDx_DrawSurface(NULL);
     corner_button = new TDx_DrawSurface(NULL);
     lower_panel = new TDx_DrawSurface(NULL);
+    checkbox_sheet = new TDx_DrawSurface(NULL);
+    form_sheet = new TDx_DrawSurface(NULL);
     upper_panel = new TDx_DrawSurface(NULL);
     key_sheet = new TDx_DrawSurface(NULL);
     slot_frame = new TDx_DrawSurface(NULL);
     label_sheet = new TDx_DrawSurface(NULL);
     scroll_icons = new TDx_DrawSurface(NULL);
+    hair_styles = new TDx_DrawSurface(NULL);
+    hair_surface = new TDx_DrawSurface(NULL);
     randomize();
     background_id = random(7) + 130;
+    shown_gender = 1;
     background_desc = new TDDSurfaceDesc(NULL);
     background_caps = new TDDSCaps(NULL);
     surface_desc = new TDDSurfaceDesc(NULL);
@@ -39,6 +46,8 @@ MenuGraphics::MenuGraphics()
     color_key = new TDDColorKey(NULL);
     progress_fill_fx = new TDDBltFX(NULL);
     progress_fill_fx->FillColor = 0xDCDCB4;
+    clear_fx = new TDDBltFX(NULL);
+    clear_fx->FillColor = 0;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
     background_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
@@ -67,6 +76,14 @@ MenuGraphics::MenuGraphics()
     surface_desc->Height = 159;
     lower_panel->GetSurfaceDesc(surface_desc);
     lower_panel->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 199;
+    surface_desc->Height = 30;
+    checkbox_sheet->GetSurfaceDesc(surface_desc);
+    checkbox_sheet->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 243;
+    surface_desc->Height = 136;
+    form_sheet->GetSurfaceDesc(surface_desc);
+    form_sheet->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 253;
     surface_desc->Height = 119;
     key_sheet->GetSurfaceDesc(surface_desc);
@@ -80,7 +97,7 @@ MenuGraphics::MenuGraphics()
     slot_frame->GetSurfaceDesc(surface_desc);
     slot_frame->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 240;
-    surface_desc->Height = 160;
+    surface_desc->Height = 200;
     wide_buttons->GetSurfaceDesc(surface_desc);
     wide_buttons->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 182;
@@ -95,8 +112,8 @@ MenuGraphics::MenuGraphics()
     surface_desc->Height = 240;
     list_box_background->GetSurfaceDesc(surface_desc);
     list_box_background->Create(surface_desc, MainForm->Dx_Draw1);
-    surface_desc->Width = 360;
-    surface_desc->Height = 240;
+    surface_desc->Width = 465;
+    surface_desc->Height = 257;
     create_character_background->GetSurfaceDesc(surface_desc);
     create_character_background->Create(surface_desc, MainForm->Dx_Draw1);
     surface_desc->Width = 260;
@@ -119,6 +136,16 @@ MenuGraphics::MenuGraphics()
     surface_desc->Height = 255;
     scroll_icons->GetSurfaceDesc(surface_desc);
     scroll_icons->Create(surface_desc, MainForm->Dx_Draw1);
+    surface_desc->Width = 252;
+    surface_desc->Height = 32;
+    hair_styles->GetSurfaceDesc(surface_desc);
+    hair_styles->Create(surface_desc, MainForm->Dx_Draw1);
+    hair_styles->SetColorKey(DDCKEY_SRCBLT, color_key);
+    surface_desc->Width = 28;
+    surface_desc->Height = 54;
+    hair_surface->GetSurfaceDesc(surface_desc);
+    hair_surface->Create(surface_desc, MainForm->Dx_Draw1);
+    hair_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
     background_rect.top = 0;
     background_rect.left = 0;
     background_rect.bottom = 480;
@@ -129,12 +156,16 @@ MenuGraphics::MenuGraphics()
     message_box_rect.right = 290;
     create_character_rect.top = 0;
     create_character_rect.left = 0;
-    create_character_rect.bottom = 240;
-    create_character_rect.right = 360;
+    create_character_rect.bottom = 257;
+    create_character_rect.right = 465;
     list_box_rect.top = 0;
     list_box_rect.left = 0;
     list_box_rect.bottom = 240;
     list_box_rect.right = 360;
+    hair_styles_rect.top = 0;
+    hair_styles_rect.left = 0;
+    hair_styles_rect.bottom = 32;
+    hair_styles_rect.right = 248;
     up_key_rect.top = 0;
     up_key_rect.left = 154;
     up_key_rect.bottom = 20;
@@ -167,6 +198,10 @@ MenuGraphics::MenuGraphics()
     message_icon_rect.left = 181;
     message_icon_rect.bottom = 99;
     message_icon_rect.right = 252;
+    cursor_rect.left = 234;
+    cursor_rect.right = 240;
+    cursor_rect.top = 4;
+    cursor_rect.bottom = 12;
 }
 
 // One key of the soft keypad sheet, by column and row, with a one-pixel gap between keys.
@@ -219,6 +254,27 @@ TRect MenuGraphics::GetSmallButtonRect(int button, int state)
 // The menu corner button, plain or lit.
 DEFINE_GET_CORNER_BUTTON_RECT(MenuGraphics)
 
+TRect MenuGraphics::GetArrowRect(int arrow)
+{
+    TRect rect;
+    rect.left = 8 * arrow + 65;
+    rect.right = 8 * arrow + 72;
+    rect.top = 0;
+    rect.bottom = 11;
+    return rect;
+}
+
+TRect MenuGraphics::GetCheckboxRect(int checked)
+{
+    TRect rect;
+    rect.left = 0;
+    rect.right = 199;
+    rect.top = 15 * checked;
+    rect.bottom = 15 * checked + 14;
+    return rect;
+}
+
+// Destroys and frees every menu surface.
 MenuGraphics::~MenuGraphics()
 {
     background->Destroy();
@@ -227,6 +283,8 @@ MenuGraphics::~MenuGraphics()
     wide_buttons->Destroy();
     small_buttons->Destroy();
     lower_panel->Destroy();
+    checkbox_sheet->Destroy();
+    form_sheet->Destroy();
     upper_panel->Destroy();
     key_sheet->Destroy();
     slot_frame->Destroy();
@@ -239,6 +297,8 @@ MenuGraphics::~MenuGraphics()
     animation_sheet->Destroy();
     corner_button->Destroy();
     scroll_icons->Destroy();
+    hair_styles->Destroy();
+    hair_surface->Destroy();
     delete background;
     delete artwork;
     delete main_menu_buttons;
@@ -254,12 +314,18 @@ MenuGraphics::~MenuGraphics()
     delete upper_panel;
     delete key_sheet;
     delete lower_panel;
+    delete checkbox_sheet;
+    delete form_sheet;
     delete slot_frame;
     delete label_sheet;
     delete scroll_icons;
+    delete hair_styles;
+    delete hair_surface;
     progress_fill_fx->Clear();
+    clear_fx->Clear();
     color_key->Clear();
     delete progress_fill_fx;
+    delete clear_fx;
     delete color_key;
     background_desc->Clear();
     background_caps->Clear();
@@ -271,369 +337,146 @@ MenuGraphics::~MenuGraphics()
     delete surface_caps;
 }
 
+// Loads the library's bitmap onto the surface; false when it cannot.
+bool MenuGraphics::LoadSurface(TDx_DrawSurface *surface, int library, int resource_id)
+{
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return false;
+    if (MainForm->gfx_transfers->BeginDraw(surface))
+    {
+        MainForm->gfx_transfers->Draw(surface);
+        MainForm->gfx_transfers->EndDraw(surface);
+        return true;
+    }
+    return false;
+}
+
 // Draws the menu backdrop bitmap onto the background surface, opaque.
 void MenuGraphics::LoadBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        background->ReleaseDC(dc);
-    }
+    LoadSurface(background, library, resource_id);
 }
 
 // Draws the menu scroll icons bitmap onto its surface.
-DEFINE_LOAD_SCROLL_ICONS(MenuGraphics)
+void MenuGraphics::LoadScrollIcons(int library, int resource_id)
+{
+    LoadSurface(scroll_icons, library, resource_id);
+}
 
 // Draws the menu label sheet bitmap onto its surface, with black see-through.
 void MenuGraphics::LoadLabelSheet(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (label_sheet->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        label_sheet->ReleaseDC(dc);
-    }
+    LoadSurface(label_sheet, library, resource_id);
     label_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu upper panel bitmap onto its surface.
 void MenuGraphics::LoadUpperPanel(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (upper_panel->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        upper_panel->ReleaseDC(dc);
-    }
+    LoadSurface(upper_panel, library, resource_id);
 }
 
 // Draws the menu key sheet bitmap onto its surface.
 void MenuGraphics::LoadKeySheet(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (key_sheet->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        key_sheet->ReleaseDC(dc);
-    }
+    LoadSurface(key_sheet, library, resource_id);
 }
 
 // Draws the menu lower panel bitmap onto its surface.
 void MenuGraphics::LoadLowerPanel(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (lower_panel->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        lower_panel->ReleaseDC(dc);
-    }
+    LoadSurface(lower_panel, library, resource_id);
+}
+
+void MenuGraphics::LoadCheckboxSheet(int library, int resource_id)
+{
+    LoadSurface(checkbox_sheet, library, resource_id);
+}
+
+void MenuGraphics::LoadFormSheet(int library, int resource_id)
+{
+    LoadSurface(form_sheet, library, resource_id);
+    form_sheet->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu slot frame bitmap onto its surface.
 void MenuGraphics::LoadSlotFrame(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (slot_frame->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        slot_frame->ReleaseDC(dc);
-    }
+    LoadSurface(slot_frame, library, resource_id);
 }
 
-// Draws a menu artwork bitmap onto the artwork surface and keeps its size, with black see-through.
+// Loads the artwork and keeps its size.
 void MenuGraphics::LoadArtwork(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    artwork_width = MainForm->resource_bitmap->Width;
-    artwork_height = MainForm->resource_bitmap->Height;
-    if (artwork->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        artwork->ReleaseDC(dc);
-    }
+    LoadSurface(artwork, library, resource_id);
+    artwork_width = MainForm->gfx_transfers->width;
+    artwork_height = MainForm->gfx_transfers->height;
     artwork->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu main menu buttons bitmap onto its surface, with black see-through.
 void MenuGraphics::LoadMainMenuButtons(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (main_menu_buttons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        main_menu_buttons->ReleaseDC(dc);
-    }
+    LoadSurface(main_menu_buttons, library, resource_id);
     main_menu_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu wide buttons bitmap onto its surface, with black see-through.
 void MenuGraphics::LoadWideButtons(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (wide_buttons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        wide_buttons->ReleaseDC(dc);
-    }
+    LoadSurface(wide_buttons, library, resource_id);
     wide_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu small buttons bitmap onto its surface, with black see-through.
 void MenuGraphics::LoadSmallButtons(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (small_buttons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        small_buttons->ReleaseDC(dc);
-    }
+    LoadSurface(small_buttons, library, resource_id);
     small_buttons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu corner button bitmap onto its surface, with black see-through.
-DEFINE_LOAD_CORNER_BUTTON(MenuGraphics)
+void MenuGraphics::LoadCornerButton(int library, int resource_id)
+{
+    LoadSurface(corner_button, library, resource_id);
+    corner_button->SetColorKey(DDCKEY_SRCBLT, color_key);
+}
 
 // Draws the menu list box background bitmap onto its surface.
 void MenuGraphics::LoadListBoxBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (list_box_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        list_box_background->ReleaseDC(dc);
-    }
+    LoadSurface(list_box_background, library, resource_id);
 }
 
 // Draws the menu message box background bitmap onto its surface.
 void MenuGraphics::LoadMessageBoxBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (message_box_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        message_box_background->ReleaseDC(dc);
-    }
+    LoadSurface(message_box_background, library, resource_id);
 }
 
 // Draws the menu create character background bitmap onto its surface.
 void MenuGraphics::LoadCreateCharacterBackground(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (create_character_background->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        create_character_background->ReleaseDC(dc);
-    }
+    LoadSurface(create_character_background, library, resource_id);
 }
 
 // Draws the menu progress bar bitmap onto its surface.
 void MenuGraphics::LoadProgressBar(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (progress_bar->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        progress_bar->ReleaseDC(dc);
-    }
+    LoadSurface(progress_bar, library, resource_id);
 }
 
 // Draws the menu slot icons bitmap onto its surface.
 void MenuGraphics::LoadSlotIcons(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (slot_icons->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        slot_icons->ReleaseDC(dc);
-    }
+    LoadSurface(slot_icons, library, resource_id);
+    slot_icons->SetColorKey(DDCKEY_SRCBLT, color_key);
 }
 
 // Draws the menu animation sheet bitmap onto its surface.
 void MenuGraphics::LoadAnimationSheet(int library, int resource_id)
 {
-    HDC dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->Transparent = false;
-    MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    if (animation_sheet->GetDC(&dc))
-    {
-        try
-        {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-        }
-        catch (Exception &)
-        {
-        }
-        animation_sheet->ReleaseDC(dc);
-    }
+    LoadSurface(animation_sheet, library, resource_id);
 }
 
 // Copies the loaded artwork onto the menu backdrop at x, y, with black see-through.
@@ -685,52 +528,142 @@ void MenuGraphics::DrawFormLabels(int origin_x, int origin_y)
 {
     TRect label_left;
     label_left.left = 3;
-    label_left.top = 93;
     label_left.right = 23;
+    label_left.top = 93;
     label_left.bottom = 113;
     background->BltFast(580, 362, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 0;
     label_left.right = 110;
+    label_left.top = 0;
     label_left.bottom = 13;
     background->BltFast(358, 50, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 14;
     label_left.right = 61;
+    label_left.top = 14;
     label_left.bottom = 27;
     background->BltFast(360, 102, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 28;
     label_left.right = 124;
+    label_left.top = 28;
     label_left.bottom = 44;
     background->BltFast(362, 153, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 44;
     label_left.right = 124;
+    label_left.top = 44;
     label_left.bottom = 59;
     background->BltFast(362, 243, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 59;
     label_left.right = 124;
+    label_left.top = 59;
     label_left.bottom = 75;
     background->BltFast(361, 293, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     label_left.left = 0;
-    label_left.top = 75;
     label_left.right = 70;
+    label_left.top = 75;
     label_left.bottom = 89;
     background->BltFast(361, 344, label_sheet, &label_left, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
-// Draws the account name and, as stars, the password on the soft keypad login screen.
+// Copies the sign-up form's background onto the menu backdrop for the style.
+void MenuGraphics::DrawSignupFormBackground(int x, int y, int style)
+{
+    TRect rect;
+    if (style == 1)
+    {
+        rect.left = 7;
+        rect.right = 80;
+        rect.top = 13;
+        rect.bottom = 27;
+        background->BltFast(362, 303, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    rect.left = 0;
+    rect.right = 110;
+    rect.top = 0;
+    rect.bottom = 13;
+    background->BltFast(362, 123, label_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    rect.left = 0;
+    rect.right = 243;
+    rect.top = 28;
+    rect.bottom = 32;
+    background->BltFast(357, 140, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    background->BltFast(357, 210, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    rect.left = 1;
+    rect.right = 242;
+    rect.top = 30;
+    rect.bottom = 97;
+    MainForm->blitter->AlphaBlt(358, 143, background, form_sheet, &rect, 94);
+    rect.left = 0;
+    rect.right = 243;
+    rect.top = 28;
+    rect.bottom = 32;
+    background->BltFast(357, 220, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    background->BltFast(357, 270, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    rect.left = 1;
+    rect.right = 242;
+    rect.top = 30;
+    rect.bottom = 77;
+    MainForm->blitter->AlphaBlt(358, 224, background, form_sheet, &rect, 94);
+}
+
+// Copies the password reset form's background for the step onto the menu backdrop.
+void MenuGraphics::DrawPasswordResetBackground(int x, int y, int step)
+{
+    TRect rect;
+    if (step == 1)
+    {
+        rect.left = 0;
+        rect.right = 110;
+        rect.top = 0;
+        rect.bottom = 13;
+        background->BltFast(362, 283, label_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (step == 2)
+    {
+        rect.left = 7;
+        rect.right = 80;
+        rect.top = 13;
+        rect.bottom = 27;
+        background->BltFast(362, 283, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (step == 3)
+    {
+        rect.left = 0;
+        rect.right = 61;
+        rect.top = 14;
+        rect.bottom = 27;
+        background->BltFast(362, 283, label_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        rect.left = 0;
+        rect.right = 124;
+        rect.top = 28;
+        rect.bottom = 44;
+        background->BltFast(360, 333, label_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    rect.left = 7;
+    rect.right = 107;
+    rect.top = 1;
+    rect.bottom = 13;
+    background->BltFast(362, 123, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    rect.left = 0;
+    rect.right = 243;
+    rect.top = 28;
+    rect.bottom = 32;
+    background->BltFast(357, 140, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    background->BltFast(357, 240, form_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    rect.left = 1;
+    rect.right = 242;
+    rect.top = 30;
+    rect.bottom = 127;
+    MainForm->blitter->AlphaBlt(358, 143, background, form_sheet, &rect, 94);
+}
+
+// Draws the account name typed on the login screen and the password as stars.
 void MenuGraphics::DrawLoginText()
 {
     int password_length;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Color = (TColor)0x8CA0B4;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
-    MainForm->text_canvas->TextOut(450, 261, MainForm->animation->menu->account_name);
+    MainForm->fonts->color = 0x8CA0B4;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->DrawString(450, 261, MainForm->animation->menu->account_name);
     if (MainForm->animation->menu->password != "")
     {
         String masked_password = MainForm->animation->menu->password;
@@ -738,20 +671,17 @@ void MenuGraphics::DrawLoginText()
         password_length = password_text->Length();
         for (int i = 1; i <= password_length; i++)
             masked_password[i] = '*';
-        MainForm->text_canvas->TextOut(450, 305, masked_password);
+        MainForm->fonts->DrawString(450, 305, masked_password);
     }
 }
 
 // Draws each character's name, centred, and the number sent with it in its slot on the character selection screen.
 void MenuGraphics::DrawCharacterSlotText()
 {
-    int i;
     int name_x;
-    MainForm->text_canvas->Brush->Color = clWhite;
-    MainForm->text_canvas->Brush->Style = bsClear;
-    MainForm->text_canvas->Font->Color = (TColor)0x8CA0B4;
-    MainForm->text_canvas->Font->Name = "MS Sans Serif";
-    MainForm->text_canvas->Font->Size = 8;
+    MainForm->fonts->color = 0x8CA0B4;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
     if (MainForm->players->GetCount() >= 1)
     {
         for (int i = 0; i < (int)MainForm->players->GetCount(); i++)
@@ -759,48 +689,48 @@ void MenuGraphics::DrawCharacterSlotText()
             Player handle = MainForm->players->GetPlayer(i);
             if (!handle.draw_group)
             {
-                name_x = 539 - MainForm->text_canvas->TextWidth(handle.name) / 2;
+                name_x = 529 - (short)MainForm->fonts->TextWidth(handle.name) / 2;
                 if (handle.player_id == PlayerId_SlotFirst)
                 {
-                    MainForm->text_canvas->TextOut(name_x, 66, handle.name);
-                    MainForm->text_canvas->TextOut(364, 136, IntToStr(handle.display_number));
+                    MainForm->fonts->DrawString(name_x, 66, handle.name);
+                    MainForm->fonts->DrawString(356, 136, IntToStr(handle.display_number));
                 }
                 if (handle.player_id == PlayerId_SlotSecond)
                 {
-                    MainForm->text_canvas->TextOut(name_x, 190, handle.name);
-                    MainForm->text_canvas->TextOut(364, 260, IntToStr(handle.display_number));
+                    MainForm->fonts->DrawString(name_x, 190, handle.name);
+                    MainForm->fonts->DrawString(356, 260, IntToStr(handle.display_number));
                 }
                 if (handle.player_id == PlayerId_SlotThird)
                 {
-                    MainForm->text_canvas->TextOut(name_x, 313, handle.name);
-                    MainForm->text_canvas->TextOut(364, 384, IntToStr(handle.display_number));
+                    MainForm->fonts->DrawString(name_x, 313, handle.name);
+                    MainForm->fonts->DrawString(356, 384, IntToStr(handle.display_number));
                 }
             }
         }
     }
 }
 
-// Draws the visible lines of the menu text window, from its scroll offset.
+// Draws the menu text window's seven visible lines from its scroll position.
 void MenuGraphics::DrawListBoxText()
 {
-    MainForm->draw_canvas->Brush->Color = clWhite;
-    MainForm->draw_canvas->Brush->Style = bsClear;
-    MainForm->draw_canvas->Font->Color = clBlack;
-    MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-    MainForm->draw_canvas->Font->Size = 7;
-    MainForm->draw_canvas->Font->Color = (TColor)0xC8C8C8;
+    int row;
+    int text_x;
+    int text_y;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->color = 0xC8C8C8;
     int first_index = MainForm->animation->menu->GetScrollOffset();
     int entry_count = MainForm->animation->menu->text_lines->Count;
-    int row = 0;
+    row = 0;
     for (int i = first_index; i < entry_count && i < first_index + 7; i++)
     {
         String entry = MainForm->animation->menu->text_lines->Strings[i];
         if (entry.Length() > 0)
         {
-            MainForm->draw_canvas->Font->Color = (TColor)0xC8C8C8;
-            int text_x = MainForm->animation->menu->text_window_x + 30;
-            int text_y = MainForm->animation->menu->text_window_y + 16 * row + 70;
-            MainForm->draw_canvas->TextOut(text_x, text_y, entry);
+            MainForm->fonts->color = 0xC8C8C8;
+            text_x = MainForm->animation->menu->text_window_x + 30;
+            text_y = MainForm->animation->menu->text_window_y + 16 * row + 70;
+            MainForm->fonts->DrawString(text_x, text_y, entry);
         }
         row++;
     }
@@ -813,11 +743,9 @@ void MenuGraphics::DrawMessageBoxText()
     int break_at;
     int line_start;
     int line_end;
-    MainForm->draw_canvas->Brush->Color = clWhite;
-    MainForm->draw_canvas->Brush->Style = bsClear;
-    MainForm->draw_canvas->Font->Color = (TColor)0xC8F0F0;
-    MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-    MainForm->draw_canvas->Font->Size = 10;
+    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 10;
     int wrap_width = 250;
     int text_x = 20;
     // A box with an image keeps the text clear of it, narrower.
@@ -826,7 +754,7 @@ void MenuGraphics::DrawMessageBoxText()
         wrap_width = 170;
         text_x = 100;
     }
-    if (MainForm->draw_canvas->TextWidth(MainForm->animation->menu->message_lines[0]) > wrap_width)
+    if ((short)MainForm->fonts->TextWidth(MainForm->animation->menu->message_lines[0]) > wrap_width)
     {
         String message = MainForm->animation->menu->message_lines[0];
         line_start = 1;
@@ -834,7 +762,7 @@ void MenuGraphics::DrawMessageBoxText()
         int line_index = 0;
         do
         {
-            if (MainForm->draw_canvas->TextWidth(message.SubString(line_start, line_end)) >= wrap_width ||
+            if ((short)MainForm->fonts->TextWidth(message.SubString(line_start, line_end)) >= wrap_width ||
                 line_end == message.Length())
             {
                 char seeking_break = true;
@@ -864,12 +792,75 @@ void MenuGraphics::DrawMessageBoxText()
                 line_end++;
         } while (message.Length() >= line_end && line_index <= 1);
     }
-    MainForm->draw_canvas->TextOut(MainForm->animation->menu->message_x + 60, MainForm->animation->menu->message_y + 26,
-        MainForm->animation->menu->message_title);
-    MainForm->draw_canvas->TextOut(text_x + MainForm->animation->menu->message_x,
-        MainForm->animation->menu->message_y + 61, MainForm->animation->menu->message_lines[0]);
-    MainForm->draw_canvas->TextOut(text_x + MainForm->animation->menu->message_x,
-        MainForm->animation->menu->message_y + 77, MainForm->animation->menu->message_lines[1]);
+    MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + 60,
+        (short)MainForm->animation->menu->message_y + 26, MainForm->animation->menu->message_title);
+    MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + text_x,
+        (short)MainForm->animation->menu->message_y + 61, MainForm->animation->menu->message_lines[0]);
+    MainForm->fonts->DrawString((short)MainForm->animation->menu->message_x + text_x,
+        (short)MainForm->animation->menu->message_y + 77, MainForm->animation->menu->message_lines[1]);
+}
+
+// Draws the password reset steps, with the account name once it has been entered.
+void MenuGraphics::DrawPasswordResetText()
+{
+    MainForm->fonts->color = 0xDCDCDC;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    MainForm->fonts->DrawString(370, 152, "Password reset instructions:");
+    if (!MainForm->animation->menu->recover_step)
+        MainForm->fonts->DrawString(378, 178, "1. Enter your accountname.");
+    else
+        MainForm->fonts->DrawString(378, 178, "1. Account: " + MainForm->animation->account_name);
+    MainForm->fonts->DrawString(378, 192, "2. Receive an email with 7-digit code.");
+    MainForm->fonts->DrawString(378, 206, "3. Enter the code in the next step.");
+    MainForm->fonts->DrawString(378, 220, "4. Setup and confirm a new password.");
+}
+
+// Sets the email text; text wider than 175 scrolls.
+void MenuGraphics::SetEmailText(String email)
+{
+    email_text = email;
+    email_text_set = true;
+    MainForm->fonts->TextWidth(email);
+    if ((short)MainForm->fonts->TextWidth(email) <= 175)
+    {
+        email_scrolls = false;
+        return;
+    }
+    email_scrolls = true;
+    email_scroll_length = (short)(10 * email.Length()) + 120;
+    email_scroll_tick = 0;
+}
+
+// Draws the sign-up code notice with the account and the email, a long email scrolling through 26 characters.
+void MenuGraphics::DrawSignupCodeText()
+{
+    MainForm->fonts->color = 0xDCDCDC;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 8;
+    if (!email_text_set)
+        SetEmailText(MainForm->animation->account_email);
+    if (email_scrolls)
+    {
+        email_scroll_tick++;
+        if (email_scroll_tick > email_scroll_length)
+            email_scroll_tick = 0;
+        int start = 1;
+        if (email_scroll_tick > 59)
+        {
+            start = (email_scroll_tick - 50) / 10;
+            if (start > email_text.Length() - 25)
+                start = email_text.Length() - 25;
+        }
+        MainForm->fonts->DrawString(416, 186, email_text.SubString(start, 26));
+    }
+    else
+        MainForm->fonts->DrawString(416, 186, email_text);
+    MainForm->fonts->DrawString(370, 152, "A signup code has been send to your email.");
+    MainForm->fonts->DrawString(370, 172, "account: " + MainForm->animation->account_name);
+    MainForm->fonts->DrawString(370, 186, "email:");
+    MainForm->fonts->DrawString(378, 232, "1. Receive an email with 7-digit code.");
+    MainForm->fonts->DrawString(378, 246, "2. Enter the code in the next step.");
 }
 
 // Draws the menu text window's scroll arrows, scroll thumb and OK button, each lit under the mouse.
@@ -953,93 +944,226 @@ void MenuGraphics::DrawMessageBoxControls()
             MainForm->animation->menu->message_y + 56, key_sheet, &message_icon_rect, DDBLTFAST_WAIT);
 }
 
-// Draws the create-character choices (gender, hair style, hair colour, skin) with their arrows, and the form buttons.
+// Draws the change password form's four labels.
+void MenuGraphics::DrawChangePasswordText()
+{
+    if (MainForm->animation->menu->form_kind == CHANGE_PASSWORD_DIALOG && MainForm->fonts->BeginOffscreen())
+    {
+        try
+        {
+            MainForm->fonts->color = 0x8CA0B4;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            MainForm->fonts->DrawString((short)MainForm->animation->menu->form_x + 40,
+                (short)MainForm->animation->menu->form_y + 40, "Account name");
+            MainForm->fonts->DrawString((short)MainForm->animation->menu->form_x + 40,
+                (short)MainForm->animation->menu->form_y + 78, "Current password");
+            MainForm->fonts->DrawString((short)MainForm->animation->menu->form_x + 40,
+                (short)MainForm->animation->menu->form_y + 130, "New password");
+            MainForm->fonts->DrawString((short)MainForm->animation->menu->form_x + 40,
+                (short)MainForm->animation->menu->form_y + 168, "Retype password");
+        }
+        catch (Exception &)
+        {
+        }
+        MainForm->fonts->End();
+    }
+}
+
+// Draws the create character form's controls: the skin choices, the hair styles of the page with its arrows, and
+// the ok and cancel buttons, each lit when hovered.
 void MenuGraphics::DrawCreateCharacterControls()
 {
-    TRect icon_left;
-    TRect arrow_rect;
-    TRect arrow_pressed_rect;
-    // Only the create-character form has the choices; other forms show just the buttons.
+    int skin_marker_x;
+    TRect marker_rect;
+    TRect lock_rect;
+    TRect gender_rect;
+    int left_button_x = 218;
+    int right_button_x = 311;
+    int button_y = 216;
+    // Form kind 2 is the create-character form: its head and the arrows of each choice.
     if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
     {
+        left_button_x = 79;
+        right_button_x = 172;
         int gender = MainForm->animation->menu->new_gender;
         int hair_style = MainForm->animation->menu->new_hair_style;
         int hair_color = MainForm->animation->menu->new_hair_color;
         int skin = MainForm->animation->menu->new_skin;
-        icon_left.left = 23 * gender;
-        icon_left.right = 23 * gender + 22;
-        icon_left.top = 38;
-        icon_left.bottom = 56;
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 84, slot_icons, &icon_left, DDBLTFAST_WAIT);
-        // Hair styles count from one; the other choices count from zero.
-        icon_left.left = 23 * hair_style - 23;
-        icon_left.right = 23 * hair_style - 1;
-        icon_left.top = 19;
-        icon_left.bottom = 38;
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 111, slot_icons, &icon_left, DDBLTFAST_WAIT);
-        icon_left.left = 23 * hair_color;
-        icon_left.right = 23 * hair_color + 22;
-        icon_left.top = 0;
-        icon_left.bottom = 19;
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 138, slot_icons, &icon_left, DDBLTFAST_WAIT);
-        icon_left.left = 23 * skin + 46;
-        icon_left.right = 23 * skin + 68;
-        icon_left.top = 38;
-        icon_left.bottom = 56;
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 170,
-            MainForm->animation->menu->form_y + 165, slot_icons, &icon_left, DDBLTFAST_WAIT);
-        arrow_rect.left = 184;
-        arrow_rect.top = 38;
-        arrow_rect.right = 204;
-        arrow_rect.bottom = 56;
-        arrow_pressed_rect.left = 205;
-        arrow_pressed_rect.top = 38;
-        arrow_pressed_rect.right = 225;
-        arrow_pressed_rect.bottom = 56;
-        if (MainForm->animation->menu->gender_arrow_hover)
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
-        else
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 84, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
-        if (MainForm->animation->menu->hair_style_arrow_hover)
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
-        else
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 111, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
-        if (MainForm->animation->menu->hair_color_arrow_hover)
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
-        else
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 138, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
-        if (MainForm->animation->menu->skin_arrow_hover)
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_pressed_rect, DDBLTFAST_WAIT);
-        else
-            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 194,
-                MainForm->animation->menu->form_y + 165, slot_icons, &arrow_rect, DDBLTFAST_WAIT);
+        marker_rect.left = 66;
+        marker_rect.right = 70;
+        marker_rect.top = 13;
+        marker_rect.bottom = 17;
+        lock_rect.left = 72;
+        lock_rect.right = 76;
+        lock_rect.top = 23;
+        lock_rect.bottom = 31;
+        gender_rect.left = 32 * gender;
+        gender_rect.right = 32 * gender + 32;
+        gender_rect.top = 0;
+        gender_rect.bottom = 32;
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 30,
+            MainForm->animation->menu->form_y + 28, slot_icons, &gender_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        int skin_x = 41;
+        int skin_y = 87;
+        int skin_step = 17;
+        int skin_gap = 5;
+        for (int i = 0; i < 12; i++)
+        {
+            int x = i * skin_step + skin_x + i * skin_gap;
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + x,
+                MainForm->animation->menu->form_y + skin_y, MainForm->gfx->sprites->stand_sheet,
+                &MainForm->gfx->sprites->GetHeadRect(0, i), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            if (i >= MainForm->animation->menu->skin_count)
+                MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + x + 16,
+                    MainForm->animation->menu->form_y + skin_y + 8, slot_icons, &lock_rect,
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        }
+        if (MainForm->animation->menu->skin_count <= skin)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 410,
+                MainForm->animation->menu->form_y + 90, slot_icons, &lock_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        skin_marker_x = skin * skin_step + skin_x + skin * skin_gap + 6;
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + skin_marker_x,
+            MainForm->animation->menu->form_y + skin_y, slot_icons, &marker_rect,
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (MainForm->animation->menu->hair_page > 0)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 35,
+                MainForm->animation->menu->form_y + 137, slot_icons,
+                &GetArrowRect(MainForm->animation->menu->left_arrow_state), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (8 * MainForm->animation->menu->hair_page + 8 < MainForm->animation->menu->hair_style_count)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 297,
+                MainForm->animation->menu->form_y + 137, slot_icons,
+                &GetArrowRect(MainForm->animation->menu->right_arrow_state + 2),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (RenderHairStyles(gender, skin, hair_color, MainForm->animation->menu->hair_page))
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 41,
+                MainForm->animation->menu->form_y + 127, hair_styles, &hair_styles_rect,
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (8 * MainForm->animation->menu->hair_page < hair_style)
+        {
+            if (8 * MainForm->animation->menu->hair_page + 8 >= hair_style)
+            {
+                if (MainForm->animation->menu->hair_style_count >= hair_style)
+                {
+                    int column = hair_style % 8;
+                    if (!column)
+                        column = 8;
+                    MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 31 * column + 28,
+                        MainForm->animation->menu->form_y + 126, slot_icons, &marker_rect,
+                        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                }
+            }
+        }
+        int color_x = 60;
+        int color_y = 165;
+        int color_step = 17;
+        int color_gap = 5;
+        int color_marker_x = color_x + hair_color * color_step + hair_color * color_gap + 6;
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + color_marker_x,
+            MainForm->animation->menu->form_y + color_y, slot_icons, &marker_rect,
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     if (MainForm->animation->menu->form_ok_button_hover)
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 157,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(4, 1),
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + left_button_x,
+            MainForm->animation->menu->form_y + button_y, small_buttons, &GetSmallButtonRect(4, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 157,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(4, 0),
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + left_button_x,
+            MainForm->animation->menu->form_y + button_y, small_buttons, &GetSmallButtonRect(4, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->form_cancel_button_hover)
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 250,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(1, 1),
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + right_button_x,
+            MainForm->animation->menu->form_y + button_y, small_buttons, &GetSmallButtonRect(1, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 250,
-            MainForm->animation->menu->form_y + 195, small_buttons, &GetSmallButtonRect(1, 0),
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + right_button_x,
+            MainForm->animation->menu->form_y + button_y, small_buttons, &GetSmallButtonRect(1, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+// Draws the page's eight hair styles on a head, by gender, skin and hair colour, for the create character form;
+// nothing new when the same page is shown already.
+bool MenuGraphics::RenderHairStyles(int gender, int skin, int hair_color, int page)
+{
+    int male_library;
+    int female_library;
+    int x;
+    TRect hair_rect;
+    bool result;
+    // Drawn again only when the gender, skin, page or hair colour changed.
+    if (gender == shown_gender && shown_skin == skin && shown_page == page && shown_hair_color == hair_color)
+        result = true;
+    else
+    {
+        hair_styles->Blt(&hair_styles_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, clear_fx);
+        int style = 8 * page;
+        int shown = 0;
+        male_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MaleHair);
+        female_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_FemaleHair);
+        int male_hair_library = male_library;
+        int female_hair_library = female_library;
+        for (; MainForm->animation->menu->hair_style_count > style && shown < 8; style++)
+        {
+            int head_x = 12;
+            int head_y = 2 * gender + 7;
+            int head_step = 22;
+            int head_gap = 9;
+            hair_rect.left = 0;
+            hair_rect.top = 5;
+            hair_rect.right = 28;
+            hair_rect.bottom = 32;
+            if (!gender)
+                hair_rect.bottom += 2;
+            int resource_id = 40 * style + 4 * MainForm->animation->menu->new_hair_color + 101;
+            if (!gender)
+            {
+                if (!MainForm->gfx_transfers->LoadResourceBitmap(female_hair_library, resource_id))
+                    continue;
+            }
+            if (gender == 1)
+            {
+                if (!MainForm->gfx_transfers->LoadResourceBitmap(male_hair_library, resource_id))
+                    continue;
+            }
+            if (MainForm->gfx_transfers->BeginDraw(hair_surface))
+            {
+                MainForm->gfx_transfers->Draw(hair_surface);
+                MainForm->gfx_transfers->EndDraw(hair_surface);
+                hair_styles->BltFast(31 * shown + 6, 2 * gender, hair_surface, &hair_rect,
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            }
+            x = shown * head_step + head_x + shown * head_gap;
+            hair_styles->BltFast(x, head_y, MainForm->gfx->sprites->stand_sheet,
+                &MainForm->gfx->sprites->GetHeadAndNeckRect(gender, skin), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            resource_id = 40 * style + 4 * MainForm->animation->menu->new_hair_color + 102;
+            if (!gender)
+            {
+                if (!MainForm->gfx_transfers->LoadResourceBitmap(female_hair_library, resource_id))
+                    continue;
+            }
+            if (gender == 1)
+            {
+                if (!MainForm->gfx_transfers->LoadResourceBitmap(male_hair_library, resource_id))
+                    continue;
+            }
+            if (MainForm->gfx_transfers->BeginDraw(hair_surface))
+            {
+                MainForm->gfx_transfers->Draw(hair_surface);
+                MainForm->gfx_transfers->EndDraw(hair_surface);
+                hair_styles->BltFast(31 * shown + 6, 2 * gender, hair_surface, &hair_rect,
+                    DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                shown++;
+                if (shown > 8)
+                    break;
+            }
+        }
+        shown_gender = gender;
+        shown_skin = skin;
+        result = true;
+        shown_hair_color = hair_color;
+        shown_page = page;
+    }
+    return result;
 }
 
 // Draws the four main menu buttons, each lit under the mouse.
@@ -1094,6 +1218,74 @@ void MenuGraphics::DrawAccountCreationButtons()
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
+// Draws the arrow beside the current reset step, the corner close button, and the confirm and cancel buttons, each
+// lit while hovered; no confirm button on step 1.
+void MenuGraphics::DrawPasswordResetControls()
+{
+    MainForm->animation->menu->reset_anim_ticks++;
+    if (MainForm->animation->menu->reset_anim_ticks > 60)
+        MainForm->animation->menu->reset_anim_ticks = 0;
+    MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->reset_anim_ticks / 20 + 370,
+        14 * MainForm->animation->menu->recover_step + 181, MainForm->gfx->menu->form_sheet, &cursor_rect,
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->menu->corner_close_hover)
+        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
+            &MainForm->gfx->menu->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
+            &MainForm->gfx->menu->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->menu->recover_step != 1)
+    {
+        if (MainForm->animation->menu->wide_confirm_hover)
+            MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(4, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(4, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (MainForm->animation->menu->wide_cancel_hover)
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+// Draws the arrow beside the current sign-up step, the corner close button, the confirm button from step 2 and the
+// cancel button, each lit while hovered.
+void MenuGraphics::DrawSignupCodeControls()
+{
+    MainForm->animation->menu->signup_anim_ticks++;
+    if (MainForm->animation->menu->signup_anim_ticks > 60)
+        MainForm->animation->menu->signup_anim_ticks = 0;
+    unsigned char row = MainForm->animation->menu->activation_step - 1;
+    if (row > 1)
+        row = 1;
+    MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->signup_anim_ticks / 20 + 369, 14 * row + 235,
+        MainForm->gfx->menu->form_sheet, &cursor_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->menu->corner_close_hover)
+        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
+            &MainForm->gfx->menu->GetCornerButtonRect(1), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(589, 0, MainForm->gfx->menu->corner_button,
+            &MainForm->gfx->menu->GetCornerButtonRect(0), DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->menu->activation_step >= 2)
+    {
+        if (MainForm->animation->menu->wide_confirm_hover)
+            MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(0, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(358, 416, wide_buttons, &GetWideButtonRect(0, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (MainForm->animation->menu->wide_cancel_hover)
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(480, 416, wide_buttons, &GetWideButtonRect(1, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
 // Draws the soft keypad's blinking cursor key and the keys lit by the keyboard.
 void MenuGraphics::DrawKeyHighlights()
 {
@@ -1125,23 +1317,27 @@ void MenuGraphics::DrawKeyHighlights()
         MainForm->OffscreenSurface->BltFast(548, 283, key_sheet, &small_key_rect, DDBLTFAST_WAIT);
 }
 
-// Draws the two buttons of the login screen.
+// Draws the login screen's two buttons, each lit while hovered, with the checkbox when the soft keypad is skipped.
 void MenuGraphics::DrawConfirmButtons()
 {
     if (MainForm->config->GetSkipSoftpad())
     {
-        if (MainForm->animation->menu->login_ok_button_hover)
-            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(0, 1),
+        if (MainForm->animation->menu->confirm_ok_hover)
+            MainForm->OffscreenSurface->BltFast(360, 394, small_buttons, &GetSmallButtonRect(0, 1),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(360, 388, small_buttons, &GetSmallButtonRect(0, 0),
+            MainForm->OffscreenSurface->BltFast(360, 394, small_buttons, &GetSmallButtonRect(0, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (MainForm->animation->menu->login_ok_button_hover)
+            MainForm->OffscreenSurface->BltFast(452, 394, small_buttons, &GetSmallButtonRect(1, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(452, 394, small_buttons, &GetSmallButtonRect(1, 0),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (MainForm->animation->menu->login_cancel_button_hover)
-            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(1, 1),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            MainForm->OffscreenSurface->BltFast(344, 371, checkbox_sheet, &GetCheckboxRect(1), DDBLTFAST_WAIT);
         else
-            MainForm->OffscreenSurface->BltFast(452, 388, small_buttons, &GetSmallButtonRect(1, 0),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            MainForm->OffscreenSurface->BltFast(344, 371, checkbox_sheet, &GetCheckboxRect(0), DDBLTFAST_WAIT);
     }
     else
     {
@@ -1149,13 +1345,13 @@ void MenuGraphics::DrawConfirmButtons()
         // On the keypad's password step the first button is the login button.
         if (MainForm->animation->GetSubState() == MenuScreen_PasswordGrid)
             confirm_button = 2;
-        if (MainForm->animation->menu->login_ok_button_hover)
+        if (MainForm->animation->menu->confirm_ok_hover)
             MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(confirm_button, 1),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
             MainForm->OffscreenSurface->BltFast(382, 391, small_buttons, &GetSmallButtonRect(confirm_button, 0),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
-        if (MainForm->animation->menu->login_cancel_button_hover)
+        if (MainForm->animation->menu->login_ok_button_hover)
             MainForm->OffscreenSurface->BltFast(474, 391, small_buttons, &GetSmallButtonRect(1, 1),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         else
@@ -1188,40 +1384,40 @@ void MenuGraphics::DrawCharacterSelect()
         MainForm->OffscreenSurface->BltFast(332, 416, wide_buttons, &GetWideButtonRect(0, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->first_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(2, 1),
+        MainForm->OffscreenSurface->BltFast(485, 93, small_buttons, &GetSmallButtonRect(2, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 93, small_buttons, &GetSmallButtonRect(2, 0),
+        MainForm->OffscreenSurface->BltFast(485, 93, small_buttons, &GetSmallButtonRect(2, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->second_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(2, 1),
+        MainForm->OffscreenSurface->BltFast(485, 217, small_buttons, &GetSmallButtonRect(2, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 217, small_buttons, &GetSmallButtonRect(2, 0),
+        MainForm->OffscreenSurface->BltFast(485, 217, small_buttons, &GetSmallButtonRect(2, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->third_slot_login_hover)
-        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(2, 1),
+        MainForm->OffscreenSurface->BltFast(485, 341, small_buttons, &GetSmallButtonRect(2, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 341, small_buttons, &GetSmallButtonRect(2, 0),
+        MainForm->OffscreenSurface->BltFast(485, 341, small_buttons, &GetSmallButtonRect(2, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->first_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(3, 1),
+        MainForm->OffscreenSurface->BltFast(485, 121, small_buttons, &GetSmallButtonRect(3, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 121, small_buttons, &GetSmallButtonRect(3, 0),
+        MainForm->OffscreenSurface->BltFast(485, 121, small_buttons, &GetSmallButtonRect(3, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->second_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(3, 1),
+        MainForm->OffscreenSurface->BltFast(485, 245, small_buttons, &GetSmallButtonRect(3, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 245, small_buttons, &GetSmallButtonRect(3, 0),
+        MainForm->OffscreenSurface->BltFast(485, 245, small_buttons, &GetSmallButtonRect(3, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     if (MainForm->animation->menu->third_slot_delete_hover)
-        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(3, 1),
+        MainForm->OffscreenSurface->BltFast(485, 369, small_buttons, &GetSmallButtonRect(3, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
-        MainForm->OffscreenSurface->BltFast(495, 369, small_buttons, &GetSmallButtonRect(3, 0),
+        MainForm->OffscreenSurface->BltFast(485, 369, small_buttons, &GetSmallButtonRect(3, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     for (i = 0; i < (int)MainForm->players->GetCount(); i++)
     {
@@ -1236,7 +1432,7 @@ void MenuGraphics::DrawCharacterSelect()
                 single_badge_rect.top = 39;
                 single_badge_rect.right = 269;
                 single_badge_rect.bottom = 55;
-                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &single_badge_rect,
+                MainForm->OffscreenSurface->BltFast(handle.x + 40, handle.y + 62, slot_icons, &single_badge_rect,
                     DDBLTFAST_WAIT);
             }
             if (handle.badge_level > 1)
@@ -1246,7 +1442,7 @@ void MenuGraphics::DrawCharacterSelect()
                 badge_rect.top = 39;
                 badge_rect.right = 250;
                 badge_rect.bottom = 55;
-                MainForm->OffscreenSurface->BltFast(handle.x + 42, handle.y + 62, slot_icons, &badge_rect,
+                MainForm->OffscreenSurface->BltFast(handle.x + 40, handle.y + 62, slot_icons, &badge_rect,
                     DDBLTFAST_WAIT);
             }
         }

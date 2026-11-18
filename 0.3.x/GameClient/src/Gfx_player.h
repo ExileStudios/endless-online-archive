@@ -43,10 +43,13 @@ struct PlayerResources
     PlayerResources();
     ~PlayerResources();
     void ClearSheets();
-    bool DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    bool DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    bool DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
-    bool DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    TPoint DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    TPoint DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    TPoint DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    TPoint DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library, int resource_id);
+    char DrawFrontLayerFrom(int frame_slot, int x_offset, int y_offset, TDx_DrawSurface *source,
+    TRect source_rect);
+    char DrawBackLayerFrom(int frame_slot, int x_offset, int y_offset, TDx_DrawSurface *source, TRect source_rect);
     void RenderNameTag(String text, int color_index);
     TRect GetFrameRect(int frame);
     TRect GetEmoteFaceRect(int emote_index);

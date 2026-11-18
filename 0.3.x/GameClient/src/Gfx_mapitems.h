@@ -18,10 +18,9 @@ struct ItemGraphics
     vector<SubItemWrapper> sub_items;
     int sub_item_last_index;
     int sub_item_pending_count;
-    bool sub_items_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
+    char unused_bytes[4];
+    int library;
+    char second_unused_bytes[4];
 
     ItemGraphics(char preload);
     ~ItemGraphics();
@@ -34,8 +33,8 @@ struct ItemGraphics
     void ReleaseSubItemGraphics();
     bool RequestGraphic(int graphic_id);
     bool RequestSubItemGraphic(int graphic_id);
-    ItemWrapper GetGraphic(int graphic_id);
-    SubItemWrapper GetSubItemGraphic(int graphic_id);
+    ItemWrapper * GetGraphic(int graphic_id);
+    SubItemWrapper * GetSubItemGraphic(int graphic_id);
     void QueueGraphic(int graphic_id);
     void QueueSubItemGraphic(int graphic_id);
     unsigned int GetGraphicCount();

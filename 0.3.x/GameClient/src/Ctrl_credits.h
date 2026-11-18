@@ -21,8 +21,6 @@ struct CreditsController
 
     CreditsController();
     ~CreditsController();
-    void LoadCredits();
-    bool VerifyCredits();
     void Stop();
     void Start();
 };

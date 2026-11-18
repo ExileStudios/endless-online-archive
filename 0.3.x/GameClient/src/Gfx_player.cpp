@@ -82,315 +82,132 @@ void PlayerResources::ClearSheets()
     back_sheet->Blt(&sheet_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
 }
 
-bool PlayerResources::DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
+TPoint PlayerResources::DrawFrontLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
 {
-    HDC dc;
-    HDC compatible_dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        return false;
-    }
-    MainForm->resource_bitmap->TransparentColor = clBlack;
-    MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (front_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            front_sheet->ReleaseDC(dc);
-        }
-    }
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
     else
     {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (front_sheet->GetDC(&dc))
+        TPoint size = *(TPoint *)MainForm->gfx_transfers;
+        MainForm->gfx_transfers->SetTransparentColor(clBlack);
+        if (MainForm->gfx_transfers->BeginDraw(front_sheet))
         {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
-            }
-            catch (Exception &)
-            {
-            }
-            front_sheet->ReleaseDC(dc);
+            MainForm->gfx_transfers->DrawAt(front_sheet, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset);
+            MainForm->gfx_transfers->EndDraw(front_sheet);
+            return size;
         }
-        DeleteDC(compatible_dc);
+        return TPoint(-1, -1);
     }
-    return true;
 }
 
-bool PlayerResources::DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
+// Draws a picture from the library onto the back sheet at the frame slot and offset, black as transparent; its
+// size, or -1, -1.
+TPoint PlayerResources::DrawBackLayer(int frame_slot, int x_offset, int y_offset, int library, int resource_id)
 {
-    HDC dc;
-    HDC compatible_dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        return false;
-    }
-    MainForm->resource_bitmap->TransparentColor = clBlack;
-    MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (back_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            back_sheet->ReleaseDC(dc);
-        }
-    }
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
     else
     {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (back_sheet->GetDC(&dc))
+        TPoint size = *(TPoint *)MainForm->gfx_transfers;
+        MainForm->gfx_transfers->SetTransparentColor(clBlack);
+        if (MainForm->gfx_transfers->BeginDraw(back_sheet))
         {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, 0);
-            }
-            catch (Exception &)
-            {
-            }
-            back_sheet->ReleaseDC(dc);
+            MainForm->gfx_transfers->DrawAt(back_sheet, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset);
+            MainForm->gfx_transfers->EndDraw(back_sheet);
+            return size;
         }
-        DeleteDC(compatible_dc);
+        return TPoint(-1, -1);
     }
-    return true;
 }
 
-bool PlayerResources::DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
+TPoint PlayerResources::DrawFrontLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
     int resource_id)
 {
-    char key_red;
-    int get_b_value;
-    unsigned char key_blue;
-    unsigned char key_green;
-    HDC dc;
-    HDC compatible_dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        return false;
-    }
-    get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
-    key_red = get_b_value;
-    key_blue = get_b_value >> 16;
-    key_green = (unsigned short)get_b_value >> 8;
-    MainForm->resource_bitmap->TransparentColor =
-        (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
-    MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (front_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            front_sheet->ReleaseDC(dc);
-        }
-    }
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
     else
     {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (front_sheet->GetDC(&dc))
+        TPoint size = *(TPoint *)MainForm->gfx_transfers;
+        MainForm->gfx_transfers->SetTransparentPixel(1, 32);
+        if (MainForm->gfx_transfers->BeginDraw(front_sheet))
         {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
-                    (unsigned int)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16)));
-            }
-            catch (Exception &)
-            {
-            }
-            front_sheet->ReleaseDC(dc);
+            MainForm->gfx_transfers->DrawAt(front_sheet, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset);
+            MainForm->gfx_transfers->EndDraw(front_sheet);
+            return size;
         }
-        DeleteDC(compatible_dc);
+        return TPoint(-1, -1);
     }
-    return true;
 }
 
-bool PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
+TPoint PlayerResources::DrawBackLayerPixelKeyed(int frame_slot, int x_offset, int y_offset, int library,
     int resource_id)
 {
-    char key_red;
-    int get_b_value;
-    unsigned char key_blue;
-    unsigned char key_green;
-    HDC dc;
-    HDC compatible_dc;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    try
-    {
-        MainForm->resource_bitmap->LoadFromResourceID(library, resource_id);
-    }
-    catch (...)
-    {
-        return false;
-    }
-    get_b_value = MainForm->resource_bitmap->Canvas->Pixels[1][32];
-    key_red = get_b_value;
-    key_blue = get_b_value >> 16;
-    key_green = (unsigned short)get_b_value >> 8;
-    MainForm->resource_bitmap->TransparentColor =
-        (TColor)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16));
-    MainForm->resource_bitmap->Transparent = true;
-    if (!MainForm->config->GetUseBitBltDraw())
-    {
-        if (back_sheet->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-            }
-            back_sheet->ReleaseDC(dc);
-        }
-    }
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
     else
     {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (back_sheet->GetDC(&dc))
+        TPoint size = *(TPoint *)MainForm->gfx_transfers;
+        MainForm->gfx_transfers->SetTransparentPixel(1, 32);
+        if (MainForm->gfx_transfers->BeginDraw(back_sheet))
         {
-            try
-            {
-                TransparentBlt(dc, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height, compatible_dc, 0, 0,
-                    MainForm->resource_bitmap->Width, MainForm->resource_bitmap->Height,
-                    (unsigned int)((unsigned char)key_red | ((unsigned short)key_green << 8) | (key_blue << 16)));
-            }
-            catch (Exception &)
-            {
-            }
-            back_sheet->ReleaseDC(dc);
+            MainForm->gfx_transfers->DrawAt(back_sheet, PLAYER_FRAME_WIDTH * frame_slot + x_offset, y_offset);
+            MainForm->gfx_transfers->EndDraw(back_sheet);
+            return size;
         }
-        DeleteDC(compatible_dc);
+        return TPoint(-1, -1);
     }
-    return true;
 }
 
-// Draws a name onto the name tag surface in the colour that color_index picks.
-// The measured text size is kept for the draw, cut to the tag surface.
+char PlayerResources::DrawFrontLayerFrom(int frame_slot, int x_offset, int y_offset, TDx_DrawSurface *source,
+    TRect source_rect)
+{
+    front_sheet->BltFast(68 * frame_slot + x_offset, y_offset, source, &source_rect,
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+char PlayerResources::DrawBackLayerFrom(int frame_slot, int x_offset, int y_offset, TDx_DrawSurface *source,
+    TRect source_rect)
+{
+    back_sheet->BltFast(68 * frame_slot + x_offset, y_offset, source, &source_rect,
+        DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+}
+
+// Draws the name on the name tag surface in the colour of its index and sizes the tag to it, at most 240 by 26.
 void PlayerResources::RenderNameTag(String text, int color_index)
 {
-    HDC dc;
     name_tag_surface->Blt(&name_tag_rect, 0, 0, DDBLT_COLORFILL | DDBLT_WAIT, fill_fx);
-    if (name_tag_surface->GetDC(&dc))
+    if (MainForm->fonts->BeginOn(name_tag_surface))
     {
         try
         {
-            MainForm->draw_canvas->Handle = dc;
-            MainForm->draw_canvas->Brush->Color = clBlack;
-            MainForm->draw_canvas->Brush->Style = bsClear;
             if (!color_index)
-            {
-                MainForm->draw_canvas->Pen->Color = clWhite;
-                MainForm->draw_canvas->Font->Color = clWhite;
-            }
+                MainForm->fonts->color = 0xFFFFFF;
             if (color_index == LabelColor_Gray)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xB9B9B9;
-                MainForm->draw_canvas->Font->Color = (TColor)0xB9B9B9;
-            }
+                MainForm->fonts->color = 0xB9B9B9;
             if (color_index == LabelColor_Silver)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xE1E1E1;
-                MainForm->draw_canvas->Font->Color = (TColor)0xE1E1E1;
-            }
+                MainForm->fonts->color = 0xE1E1E1;
             if (color_index == LabelColor_LightBlue)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
-                MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
-            }
+                MainForm->fonts->color = 0x9CC8F5;
             if (color_index == LabelColor_Violet)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0x9CC8F5;
-                MainForm->draw_canvas->Font->Color = (TColor)0x9CC8F5;
-            }
+                MainForm->fonts->color = 0x9CC8F5;
             if (color_index == LabelColor_Gold)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xA5F0FF;
-                MainForm->draw_canvas->Font->Color = (TColor)0xA5F0FF;
-            }
+                MainForm->fonts->color = 0xA5F0FF;
             if (color_index == LabelColor_Cream)
-            {
-                MainForm->draw_canvas->Pen->Color = (TColor)0xD2FAFA;
-                MainForm->draw_canvas->Font->Color = (TColor)0xD2FAFA;
-            }
-            MainForm->draw_canvas->Font->Name = "MS Sans Serif";
-            MainForm->draw_canvas->Font->Size = 8;
-            MainForm->draw_canvas->TextOut(1, 0, text);
-            name_tag_text_rect.right = MainForm->draw_canvas->TextWidth(text) + 4;
-            name_tag_text_rect.bottom = MainForm->draw_canvas->TextHeight(text) + 1;
+                MainForm->fonts->color = 0xD2FAFA;
+            MainForm->fonts->face = 1;
+            MainForm->fonts->size = 8;
+            MainForm->fonts->DrawString(1, 0, text);
+            name_tag_text_rect.right = (short)MainForm->fonts->TextWidth(text) + 4;
+            name_tag_text_rect.bottom = (short)MainForm->fonts->TextHeight(text) + 1;
             if (name_tag_text_rect.right > 240)
                 name_tag_text_rect.right = 240;
             if (name_tag_text_rect.bottom > 26)
                 name_tag_text_rect.bottom = 26;
-            MainForm->draw_canvas->Handle = 0;
         }
         catch (Exception &)
         {
         }
-        name_tag_surface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     name_tag_surface->SetColorKey(DDCKEY_SRCBLT, color_key);
 }

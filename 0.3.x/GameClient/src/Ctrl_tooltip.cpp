@@ -5,6 +5,7 @@
 #include "Tmainform.h"
 #include "Ctrl_paperdoll.h"
 #include "Gfx_interface.h"
+#include "Gfx_global_sprites.h"
 
 #pragma package(smart_init)
 
@@ -50,10 +51,24 @@ bool Tooltip::Hide()
 {
     if (line_count > 0)
     {
+        shown_id = 0;
+        shown_kind = 0;
         line_count = 0;
         return true;
     }
     return false;
+}
+
+// Updates the count in a shown item tooltip, or hides it when none is left.
+void Tooltip::UpdateItemAmount(int item_id, int new_amount)
+{
+    if (IsVisible() && shown_kind == 1 && item_id == shown_id)
+    {
+        if (new_amount > 0)
+            ShowItemCount(item_id, new_amount);
+        else
+            Hide();
+    }
 }
 
 void Tooltip::ClearLines()
@@ -81,17 +96,21 @@ void Tooltip::ShowItemCount(int item_id, int count)
         ClearLines();
         return;
     }
-    if (MainForm->item_values->Count() < item_id)
+    if ((unsigned int)MainForm->item_values->Count() < item_id)
         return;
-    if (line_count > 0 && item_id == shown_id)
+    if (line_count > 0 && item_id == shown_id && amount == count)
         return;
     shown_id = item_id;
+    amount = count;
+    shown_kind = 1;
     ClearLines();
-    ItemValue item = MainForm->item_values->GetItem(item_id);
-    int type = item.type;
-    String item_name = item.name;
+    ItemValue *item = MainForm->item_values->GetItem(item_id - 1);
+    int type = item->type;
+    String item_name = item->name;
     if (item_name.Length() < 1)
-        item_name = "NoName-" + IntToStr(item.item_id);
+        item_name = "NoName-" + IntToStr(item->item_id);
+    item_type = item->type;
+    transform_skin = item->spec_value;
     if (count > 1)
     {
         if (type == EifItemType_General)
@@ -111,13 +130,13 @@ void Tooltip::ShowItemCount(int item_id, int count)
             lines[line_count] = item_name;
     }
     if (MainForm->config->GetElementalIcons())
-        element = item.element;
+        element = item->element;
     else
         element = 0;
-    line_colors[line_count] = item.special;
+    line_colors[line_count] = item->special;
     if (line_colors[line_count] > 5)
         line_colors[line_count] = 0;
-    if (show_cursed && item.special == 5)
+    if (show_cursed && item->special == 5)
         line_colors[line_count] = 8;
     line_count++;
     if (!MainForm->config->GetExtendedTooltip())
@@ -134,26 +153,26 @@ void Tooltip::ShowItemCount(int item_id, int count)
         lines[line_count] += "potion";
     else if (type == EifItemType_Teleport)
         lines[line_count] += "teleport";
-    else if (type == EifItemType_Spell)
-        lines[line_count] += "spell";
+    else if (type == EifItemType_Transformation)
+        lines[line_count] += "transformation";
     else if (type == EifItemType_ExpReward)
         lines[line_count] += "exp reward";
-    else if (type == EifItemType_StatReward)
-        lines[line_count] += "stat reward";
-    else if (type == EifItemType_SkillReward)
-        lines[line_count] += "skill reward";
+    else if (type == EifItemType_SkillBook)
+        lines[line_count] += "skill book";
+    else if (type == EifItemType_VisualDocument)
+        lines[line_count] += "reserved";
     else if (type == EifItemType_Key)
         lines[line_count] += "key";
     else if (type == EifItemType_Armor)
     {
-        if (item.gender == 1)
+        if (item->gender == 1)
             lines[line_count] += "male";
         else
             lines[line_count] += "female";
     }
     else if (type <= EifItemType_Bracer)
     {
-        if (show_cursed && item.special == 5)
+        if (show_cursed && item->special == 5)
             lines[line_count] += "cursed";
         else
             lines[line_count] += "wearable";
@@ -166,17 +185,23 @@ void Tooltip::ShowItemCount(int item_id, int count)
         lines[line_count] += "hairdye";
     else if (type == EifItemType_CureCurse)
         lines[line_count] += "medicine";
+    else if (type == EifItemType_Buff)
+        lines[line_count] += "buff*";
+    else if (type == EifItemType_Debuff)
+        lines[line_count] += "debuff*";
+    else if (type == EifItemType_TitleCertificate)
+        lines[line_count] += "title certificate";
     else
         lines[line_count] += "unknown";
     if (type == EifItemType_Heal)
     {
-        if (item.hp > 0)
-            lines[line_count] += " + " + IntToStr(item.hp) + "hp";
-        if (item.tp > 0)
-            lines[line_count] += " + " + IntToStr(item.tp) + "tp";
+        if (item->hp > 0)
+            lines[line_count] += " + " + IntToStr(item->hp) + "hp";
+        if (item->tp > 0)
+            lines[line_count] += " + " + IntToStr(item->tp) + "tp";
     }
-    if (type == EifItemType_ExpReward && item.spec_value > 0)
-        lines[line_count] += " + " + IntToStr(item.spec_value);
+    if (type == EifItemType_ExpReward && item->spec_value > 0)
+        lines[line_count] += " + " + IntToStr(item->spec_value);
     if (type == EifItemType_Weapon)
         lines[line_count] += " weapon";
     else if (type == EifItemType_Shield)
@@ -190,7 +215,7 @@ void Tooltip::ShowItemCount(int item_id, int count)
     else if (type == EifItemType_Gloves)
         lines[line_count] += " gloves";
     else if (type == EifItemType_Accessory)
-        lines[line_count] += " pants";
+        lines[line_count] += " accessory";
     else if (type == EifItemType_Belt)
         lines[line_count] += " belt";
     else if (type == EifItemType_Necklace)
@@ -205,134 +230,134 @@ void Tooltip::ShowItemCount(int item_id, int count)
     line_count++;
     if (type >= EifItemType_Weapon && type <= EifItemType_Bracer)
     {
-        if (item.min_damage > 0 || item.max_damage > 0)
+        if (item->min_damage > 0 || item->max_damage > 0)
         {
-            if (item.spare_byte >= 1 && item.spare_byte <= 5)
+            if (item->spare_byte >= 1 && item->spare_byte <= 5)
                 lines[line_count] += "aoe: ";
             else
                 lines[line_count] += "damage: ";
-            lines[line_count] += IntToStr(item.min_damage) + "-" + IntToStr(item.max_damage);
-            if (item.spare_byte == 2)
+            lines[line_count] += IntToStr(item->min_damage) + "-" + IntToStr(item->max_damage);
+            if (item->spare_byte == 2)
                 lines[line_count] += " (3x3)";
-            if (item.spare_byte == 3)
+            if (item->spare_byte == 3)
                 lines[line_count] += " (5x5)";
-            if (item.spare_byte == 4)
+            if (item->spare_byte == 4)
                 lines[line_count] += " (7x7)";
-            if (item.spare_byte == 5)
+            if (item->spare_byte == 5)
                 lines[line_count] += " (9x9)";
             line_count++;
         }
-        if (item.element > 0)
+        if (item->element > 0)
         {
-            lines[line_count] += "damage: " + IntToStr(item.element_power);
-            if (item.element == 1)
+            lines[line_count] += "damage: " + IntToStr(item->element_power);
+            if (item->element == 1)
                 lines[line_count] += " light";
-            if (item.element == 2)
+            if (item->element == 2)
                 lines[line_count] += " dark";
-            if (item.element == 3)
+            if (item->element == 3)
                 lines[line_count] += " earth";
-            if (item.element == 4)
+            if (item->element == 4)
                 lines[line_count] += " air";
-            if (item.element == 5)
+            if (item->element == 5)
                 lines[line_count] += " water";
-            if (item.element == 6)
+            if (item->element == 6)
                 lines[line_count] += " fire";
             line_count++;
         }
-        if (item.hp > 0 || item.tp > 0)
+        if (item->hp > 0 || item->tp > 0)
         {
             lines[line_count] = "add+";
-            if (item.hp > 0)
-                lines[line_count] += " " + IntToStr(item.hp) + "hp";
-            if (item.tp > 0)
-                lines[line_count] += " " + IntToStr(item.tp) + "tp";
+            if (item->hp > 0)
+                lines[line_count] += " " + IntToStr(item->hp) + "hp";
+            if (item->tp > 0)
+                lines[line_count] += " " + IntToStr(item->tp) + "tp";
             line_count++;
         }
-        if (item.accuracy > 0)
-            lines[line_count] += " " + IntToStr(item.accuracy) + "hit";
-        if (item.evade > 0)
-            lines[line_count] += " " + IntToStr(item.evade) + "eva";
-        if (item.armor > 0)
-            lines[line_count] += " " + IntToStr(item.armor) + "ar";
-        if (item.return_damage > 0)
-            lines[line_count] += " " + IntToStr(item.return_damage) + "rd";
-        if (item.accuracy > 0)
+        if (item->accuracy > 0)
+            lines[line_count] += " " + IntToStr(item->accuracy) + "hit";
+        if (item->evade > 0)
+            lines[line_count] += " " + IntToStr(item->evade) + "eva";
+        if (item->armor > 0)
+            lines[line_count] += " " + IntToStr(item->armor) + "ar";
+        if (item->return_damage > 0)
+            lines[line_count] += " " + IntToStr(item->return_damage) + "rd";
+        if (item->accuracy > 0)
         {
             lines[line_count] = "plus+" + lines[line_count];
             line_count++;
         }
-        else if (item.evade > 0 || item.armor > 0)
+        else if (item->evade > 0 || item->armor > 0)
         {
             lines[line_count] = "def+" + lines[line_count];
             line_count++;
         }
-        else if (item.return_damage > 0)
+        else if (item->return_damage > 0)
         {
             lines[line_count] = "r.dam+" + lines[line_count];
             line_count++;
         }
         int stat_count = 0;
-        if (item.bonus_str > 0 && stat_count < 4)
+        if (item->bonus_str > 0 && stat_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.bonus_str) + "s";
+            lines[line_count] += " " + IntToStr(item->bonus_str) + "s";
             stat_count++;
         }
-        if (item.bonus_int > 0 && stat_count < 4)
+        if (item->bonus_int > 0 && stat_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.bonus_int) + "i";
+            lines[line_count] += " " + IntToStr(item->bonus_int) + "i";
             stat_count++;
         }
-        if (item.bonus_wis > 0 && stat_count < 4)
+        if (item->bonus_wis > 0 && stat_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.bonus_wis) + "w";
+            lines[line_count] += " " + IntToStr(item->bonus_wis) + "w";
             stat_count++;
         }
-        if (item.bonus_agi > 0 && stat_count < 4)
+        if (item->bonus_agi > 0 && stat_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.bonus_agi) + "a";
+            lines[line_count] += " " + IntToStr(item->bonus_agi) + "a";
             stat_count++;
         }
-        if (item.bonus_con > 0 && stat_count < 4)
+        if (item->bonus_con > 0 && stat_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.bonus_con) + "c";
+            lines[line_count] += " " + IntToStr(item->bonus_con) + "c";
             stat_count++;
         }
-        if (item.bonus_cha > 0 && stat_count < 4)
-            lines[line_count] += " " + IntToStr(item.bonus_cha) + "ch";
+        if (item->bonus_cha > 0 && stat_count < 4)
+            lines[line_count] += " " + IntToStr(item->bonus_cha) + "ch";
         if (lines[line_count].Length() > 0)
         {
             lines[line_count] = "stat+" + lines[line_count];
             line_count++;
         }
         int resist_count = 0;
-        if (item.light_resist > 0 && resist_count < 4)
+        if (item->light_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.light_resist) + "l";
+            lines[line_count] += " " + IntToStr(item->light_resist) + "l";
             resist_count++;
         }
-        if (item.dark_resist > 0 && resist_count < 4)
+        if (item->dark_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.dark_resist) + "d";
+            lines[line_count] += " " + IntToStr(item->dark_resist) + "d";
             resist_count++;
         }
-        if (item.earth_resist > 0 && resist_count < 4)
+        if (item->earth_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.earth_resist) + "e";
+            lines[line_count] += " " + IntToStr(item->earth_resist) + "e";
             resist_count++;
         }
-        if (item.air_resist > 0 && resist_count < 4)
+        if (item->air_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.air_resist) + "a";
+            lines[line_count] += " " + IntToStr(item->air_resist) + "a";
             resist_count++;
         }
-        if (item.water_resist > 0 && resist_count < 4)
+        if (item->water_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.water_resist) + "w";
+            lines[line_count] += " " + IntToStr(item->water_resist) + "w";
             resist_count++;
         }
-        if (item.fire_resist > 0 && resist_count < 4)
+        if (item->fire_resist > 0 && resist_count < 4)
         {
-            lines[line_count] += " " + IntToStr(item.fire_resist) + "f";
+            lines[line_count] += " " + IntToStr(item->fire_resist) + "f";
             resist_count++;
         }
         if (lines[line_count].Length() > 0)
@@ -340,55 +365,74 @@ void Tooltip::ShowItemCount(int item_id, int count)
             lines[line_count] = "res+" + lines[line_count];
             line_count++;
         }
-        if (item.required_class > 0)
+        if (item->required_class > 0)
         {
-            String class_name = MainForm->class_values->GetName(item.required_class);
+            ClassValue *class_value = MainForm->class_values->GetRecord(item->required_class - 1);
+            String class_name = class_value->name;
             lines[line_count] = " " + class_name;
         }
-        if (item.required_level > 0)
+        if (item->required_level > 0)
         {
             if (!lines[line_count].Length())
-                lines[line_count] += " " + IntToStr(item.required_level) + "LVL";
+                lines[line_count] += " " + IntToStr(item->required_level) + "LVL";
             else
-                lines[line_count] += " (" + IntToStr(item.required_level) + "LVL)";
+                lines[line_count] += " (" + IntToStr(item->required_level) + "LVL)";
         }
-        if (!item.required_class)
+        if (!item->required_class)
         {
             int requirement_count = 0;
-            if (item.required_str > 0 && requirement_count < 3)
+            if (item->required_str > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_str) + "s";
+                lines[line_count] += " " + IntToStr(item->required_str) + "s";
                 requirement_count++;
             }
-            if (item.required_int > 0 && requirement_count < 3)
+            if (item->required_int > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_int) + "i";
+                lines[line_count] += " " + IntToStr(item->required_int) + "i";
                 requirement_count++;
             }
-            if (item.required_wis > 0 && requirement_count < 3)
+            if (item->required_wis > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_wis) + "w";
+                lines[line_count] += " " + IntToStr(item->required_wis) + "w";
                 requirement_count++;
             }
-            if (item.required_agi > 0 && requirement_count < 3)
+            if (item->required_agi > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_agi) + "a";
+                lines[line_count] += " " + IntToStr(item->required_agi) + "a";
                 requirement_count++;
             }
-            if (item.required_con > 0 && requirement_count < 3)
+            if (item->required_con > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_con) + "c";
+                lines[line_count] += " " + IntToStr(item->required_con) + "c";
                 requirement_count++;
             }
-            if (item.required_cha > 0 && requirement_count < 3)
+            if (item->required_cha > 0 && requirement_count < 3)
             {
-                lines[line_count] += " " + IntToStr(item.required_cha) + "ch";
+                lines[line_count] += " " + IntToStr(item->required_cha) + "ch";
                 requirement_count++;
             }
         }
         if (lines[line_count].Length() > 0)
         {
             lines[line_count] = "req:" + lines[line_count];
+            line_count++;
+        }
+    }
+    if (type == EifItemType_Transformation)
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            lines[line_count] = "";
+            line_count++;
+        }
+    }
+    if (type == EifItemType_SkillBook)
+    {
+        SkillValue *skill = MainForm->skill_values->GetSkill(item->spec_value - 1);
+        String skill_name = skill->name;
+        if (skill_name.Length() > 0)
+        {
+            lines[line_count] = "'" + skill_name + "'";
             line_count++;
         }
     }
@@ -408,9 +452,10 @@ void Tooltip::ShowSpell(int spell_id)
     if (line_count > 0 && spell_id == shown_id)
         return;
     shown_id = spell_id;
+    shown_kind = 2;
     ClearLines();
-    SkillValue spell = MainForm->skill_values->GetSkill(spell_id);
-    lines[line_count] = spell.name;
+    SkillValue *spell = MainForm->skill_values->GetSkill(spell_id - 1);
+    lines[line_count] = spell->name;
     line_colors[line_count] = 0;
     line_count++;
     if (!MainForm->config->GetExtendedTooltip())
@@ -419,13 +464,13 @@ void Tooltip::ShowSpell(int spell_id)
         return;
     }
     if (MainForm->config->GetElementalIcons())
-        element = spell.element;
+        element = spell->element;
     else
         element = 0;
-    int spell_type = spell.type;
-    int area = spell.area;
-    int target_type = spell.target_type;
-    int heal_amount = spell.hp_heal;
+    int spell_type = spell->type;
+    int area = spell->area;
+    int target_type = spell->target_type;
+    int heal_amount = spell->hp_heal;
     if (!spell_type)
     {
         if (target_type == 1)
@@ -467,53 +512,53 @@ void Tooltip::ShowSpell(int spell_id)
     line_count++;
     if (spell_type == 1)
     {
-        lines[line_count] += "damage: " + IntToStr(spell.min_damage) + "-" + IntToStr(spell.max_damage);
+        lines[line_count] += "damage: " + IntToStr(spell->min_damage) + "-" + IntToStr(spell->max_damage);
         line_count++;
     }
-    if (spell_type == 1 && spell.element > 0)
+    if (spell_type == 1 && spell->element > 0)
     {
-        lines[line_count] += "damage: " + IntToStr(spell.element_power);
-        if (spell.element == 1)
+        lines[line_count] += "damage: " + IntToStr(spell->element_power);
+        if (spell->element == 1)
             lines[line_count] += " light";
-        if (spell.element == 2)
+        if (spell->element == 2)
             lines[line_count] += " dark";
-        if (spell.element == 3)
+        if (spell->element == 3)
             lines[line_count] += " earth";
-        if (spell.element == 4)
+        if (spell->element == 4)
             lines[line_count] += " air";
-        if (spell.element == 5)
+        if (spell->element == 5)
             lines[line_count] += " water";
-        if (spell.element == 6)
+        if (spell->element == 6)
             lines[line_count] += " fire";
         line_count++;
     }
-    if (spell.accuracy > 0)
-        lines[line_count] += " " + IntToStr(spell.accuracy) + "hit";
-    if (spell.evade > 0)
-        lines[line_count] += " " + IntToStr(spell.evade) + "eva";
-    if (spell.armor > 0)
-        lines[line_count] += " " + IntToStr(spell.armor) + "ar";
-    if (spell.return_damage > 0)
-        lines[line_count] += " " + IntToStr(spell.return_damage) + "rd";
-    if (spell.accuracy > 0)
+    if (spell->accuracy > 0)
+        lines[line_count] += " " + IntToStr(spell->accuracy) + "hit";
+    if (spell->evade > 0)
+        lines[line_count] += " " + IntToStr(spell->evade) + "eva";
+    if (spell->armor > 0)
+        lines[line_count] += " " + IntToStr(spell->armor) + "ar";
+    if (spell->return_damage > 0)
+        lines[line_count] += " " + IntToStr(spell->return_damage) + "rd";
+    if (spell->accuracy > 0)
     {
         lines[line_count] = "amp+" + lines[line_count];
         line_count++;
     }
-    else if (spell.evade > 0 || spell.armor > 0)
+    else if (spell->evade > 0 || spell->armor > 0)
     {
         lines[line_count] = "aid+" + lines[line_count];
         line_count++;
     }
-    else if (spell.return_damage > 0)
+    else if (spell->return_damage > 0)
     {
         lines[line_count] = "r.dam+" + lines[line_count];
         line_count++;
     }
-    if (spell.tp_cost > 0)
-        lines[line_count] += " " + IntToStr(spell.tp_cost) + "tp";
-    if (spell.sp_cost > 0)
-        lines[line_count] += " " + IntToStr(spell.sp_cost) + "sp";
+    if (spell->tp_cost > 0)
+        lines[line_count] += " " + IntToStr(spell->tp_cost) + "tp";
+    if (spell->sp_cost > 0)
+        lines[line_count] += " " + IntToStr(spell->sp_cost) + "sp";
     if (lines[line_count].Length() > 0)
     {
         lines[line_count] = "use:" + lines[line_count];
@@ -568,30 +613,33 @@ void Tooltip::SetShowCursed(char show)
 // element icon and the head preview some items show.
 void Tooltip::DrawFrame()
 {
+    const int zero = 0;
     int bottom;
-    int right_limit;
-    int text_width;
-    int flip_shift;
-    if (line_count > 0)
+    if (line_count > zero)
     {
-        int height = pad_y;
+        const int two = 2;
+        const int line_height = 15;
+        const int blt_flags = 17;
+        const int max_shown_lines = 6;
+        const int four = 4;
+        int height = two * pad_y;
         int left = x;
-        height = 2 * height + 15;
         int top = y;
+        height += line_height;
         if (MainForm->config->GetExtendedTooltip())
         {
-            if (line_count >= 2)
-                height += 15;
+            if (line_count >= two)
+                height += line_height;
             if (line_count >= 3)
-                height += 15;
-            if (line_count >= 4)
-                height += 15;
+                height += line_height;
+            if (line_count >= four)
+                height += line_height;
             if (line_count >= 5)
-                height += 15;
-            if (line_count >= 6)
-                height += 15;
+                height += line_height;
+            if (line_count >= max_shown_lines)
+                height += line_height;
             top -= raise;
-            if (bottom_limit > 0)
+            if (bottom_limit > zero)
             {
                 bottom = top + anchor_y + height;
                 if (bottom > bottom_limit)
@@ -602,42 +650,50 @@ void Tooltip::DrawFrame()
                 if (vertical_align == TooltipAlign_Above)
                     top -= bottom_margin + height + bottom_extra;
                 if (vertical_align == TooltipAlign_Centered)
-                    top -= (bottom_margin + height + bottom_extra) / 2;
+                    top -= (bottom_margin + height + bottom_extra) / two;
             }
         }
         // Near the flip edge the tip is drawn on the other side of the mouse.
-        right_limit = flip_edge_x;
-        if (right_limit > 0)
-        {
-            text_width = width;
-            if (right_limit < x + anchor_x + text_width + 2 * pad_x)
-            {
-                flip_shift = 2 * pad_x + text_width + flip_gap + flip_extra;
-                left -= flip_shift;
-            }
-        }
+        if (flip_edge_x > zero && flip_edge_x < x + anchor_x + width + two * pad_x)
+            left -= two * pad_x + width + flip_gap + flip_extra;
         MainForm->blitter->HalfBlendBlt(left + anchor_x, top + anchor_y, MainForm->OffscreenSurface,
             MainForm->gfx->interface_graphics->chat_panel_surface,
-            &MainForm->gfx->interface_graphics->GetBackRect(2 * pad_x + width, height));
-        if (element > 0)
+            &MainForm->gfx->interface_graphics->GetBackRect(two * pad_x + width, height));
+        if (element > zero)
         {
-            if (element > 6)
-                element = 6;
-            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + title_width, top + anchor_y + pad_y + 2,
+            if (element > max_shown_lines)
+                element = max_shown_lines;
+            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + title_width, top + anchor_y + pad_y + two,
                 MainForm->gfx->interface_graphics->element_icons,
-                &MainForm->gfx->interface_graphics->GetElementIconRect(element),
-                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                &MainForm->gfx->interface_graphics->GetElementIconRect(element), blt_flags);
         }
         if (line_count > 6)
         {
-            if (line_count - 6 > scroll_offset)
-                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width - 2, top + anchor_y + pad_y + 81,
-                    MainForm->gfx->interface_graphics->element_icons,
-                    &MainForm->gfx->interface_graphics->scroll_down_arrow_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+            if (line_count + -max_shown_lines > scroll_offset)
+                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width + -two,
+                    top + anchor_y + pad_y + 81, MainForm->gfx->interface_graphics->element_icons,
+                    &MainForm->gfx->interface_graphics->scroll_down_arrow_rect, blt_flags);
             if (scroll_offset)
-                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width - 2, top + anchor_y + pad_y + 21,
-                    MainForm->gfx->interface_graphics->element_icons,
-                    &MainForm->gfx->interface_graphics->scroll_up_arrow_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+                MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + width + -two,
+                    top + anchor_y + pad_y + 21, MainForm->gfx->interface_graphics->element_icons,
+                    &MainForm->gfx->interface_graphics->scroll_up_arrow_rect, blt_flags);
+        }
+        if (shown_kind == 1 && item_type == EifItemType_Transformation)
+        {
+            int skin = MainForm->players->GetSkin(MainForm->net_client->GetPlayerId());
+            int gender = MainForm->players->GetGender(MainForm->net_client->GetPlayerId());
+            TRect arrow_rect;
+            arrow_rect.left = 136;
+            arrow_rect.right = 144;
+            arrow_rect.top = 91;
+            arrow_rect.bottom = 100;
+            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + four, top + anchor_y + pad_y + 38,
+                MainForm->gfx->sprites->stand_sheet, &MainForm->gfx->sprites->GetHeadRect(gender, skin), blt_flags);
+            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + 25, top + anchor_y + pad_y + 41,
+                MainForm->gfx->interface_graphics->hud_sheet, &arrow_rect, blt_flags);
+            MainForm->OffscreenSurface->BltFast(left + anchor_x + pad_x + 36, top + anchor_y + pad_y + 38,
+                MainForm->gfx->sprites->stand_sheet, &MainForm->gfx->sprites->GetHeadRect(gender, transform_skin),
+                blt_flags);
         }
     }
 }
@@ -645,18 +701,19 @@ void Tooltip::DrawFrame()
 // Draws the tip's lines at the place its box takes, the fixed lines first, then the scrolled ones.
 void Tooltip::DrawString()
 {
-    int flip_edge;
+    int line;
+    int bottom;
+    int edge_x;
     int text_width;
     int flip_shift;
-    int line;
     int index;
-    int bottom;
+    int scrolled_index;
     if (line_count > 0)
     {
-        int height = pad_y;
+        int height = 2 * pad_y;
         int left = x;
-        height = 2 * height + 15;
         int top = y;
+        height += 15;
         if (MainForm->config->GetExtendedTooltip())
         {
             if (line_count >= 2)
@@ -684,11 +741,11 @@ void Tooltip::DrawString()
                     top -= (height + bottom_margin + bottom_extra) / 2;
             }
         }
-        flip_edge = flip_edge_x;
-        if (flip_edge > 0)
+        edge_x = flip_edge_x;
+        if (edge_x > 0)
         {
             text_width = width;
-            if (flip_edge < x + anchor_x + text_width + 2 * pad_x)
+            if (edge_x < x + anchor_x + text_width + 2 * pad_x)
             {
                 flip_shift = 2 * pad_x + text_width + flip_gap + flip_extra;
                 left -= flip_shift;
@@ -697,17 +754,18 @@ void Tooltip::DrawString()
         for (line = 0; line < fixed_lines; line++)
         {
             index = line;
-            MainForm->text_canvas->Font->Color = (TColor)colors[line_colors[index]];
-            MainForm->text_canvas->TextOut(left + anchor_x + pad_x, top + anchor_y + pad_y + 15 * line, lines[index]);
+            MainForm->fonts->color = colors[line_colors[index]];
+            MainForm->fonts->DrawString(left + (short)anchor_x + (short)pad_x,
+                (short)top + (short)anchor_y + (short)pad_y + (short)(15 * line), lines[index]);
         }
         for (; line < 6; line++)
         {
-            int scrolled_index = scroll_offset + line;
-            MainForm->text_canvas->Font->Color = (TColor)colors[line_colors[scrolled_index]];
-            MainForm->text_canvas->TextOut(left + anchor_x + pad_x, top + anchor_y + pad_y + 15 * line,
-                lines[scrolled_index]);
+            scrolled_index = scroll_offset + line;
+            MainForm->fonts->color = colors[line_colors[scrolled_index]];
+            MainForm->fonts->DrawString(left + (short)anchor_x + (short)pad_x,
+                (short)top + (short)anchor_y + (short)pad_y + (short)(15 * line), lines[scrolled_index]);
         }
-        MainForm->text_canvas->Font->Color = (TColor)colors[default_color];
+        MainForm->fonts->color = colors[default_color];
     }
 }
 
@@ -715,21 +773,19 @@ void Tooltip::DrawString()
 void Tooltip::Measure()
 {
     short grow;
-    HDC dc;
     width = 0;
     title_width = 0;
-    if (MainForm->OffscreenSurface->GetDC(&dc))
+    if (MainForm->fonts->BeginOffscreenIf(241))
     {
         try
         {
-            MainForm->text_canvas->Handle = dc;
-            MainForm->text_canvas->Font->Size = 8;
+            MainForm->fonts->size = 8;
             int line_total = 1;
             if (MainForm->config->GetExtendedTooltip())
                 line_total = line_count;
             for (int i = 0; i < line_total; i++)
             {
-                int line_width = MainForm->text_canvas->TextWidth(lines[i]);
+                int line_width = (short)MainForm->fonts->TextWidth(lines[i]);
                 if (line_width > width)
                     width = line_width;
                 if (!i)
@@ -739,7 +795,7 @@ void Tooltip::Measure()
         catch (Exception &)
         {
         }
-        MainForm->OffscreenSurface->ReleaseDC(dc);
+        MainForm->fonts->End();
     }
     if (element > 0 && title_width + 6 > width)
     {

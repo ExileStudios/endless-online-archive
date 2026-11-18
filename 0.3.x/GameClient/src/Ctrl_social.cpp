@@ -429,6 +429,7 @@ void SocialController::OnMouseClick(int mouse_x, int mouse_y, int button)
             }
         }
     }
+    // Elsewhere the scroll bar takes the click.
     if (!handled)
     {
         if (window_x + 252 <= mouse_x && window_x + 267 >= mouse_x)
@@ -482,6 +483,7 @@ void SocialController::OnMouseMove(int mouse_x, int mouse_y)
             window_y = 19;
         MainForm->redraw_needed = true;
     }
+    // Twelve rows of the open list; a row past its end lights nothing.
     if (mouse_y > window_y + 43 && mouse_y < window_y + 243 && mouse_x > window_x + 17 && mouse_x < window_x + 252 &&
         !is_dragging_window)
     {

@@ -21,7 +21,7 @@ struct TileResource
     TileResource();
     ~TileResource();
     TRect GetFrameRect(int frame);
-    GraphicSize LoadSurface(int library, int resource_id);
+    TPoint LoadSurface(int library, int resource_id);
 };
 
 #endif

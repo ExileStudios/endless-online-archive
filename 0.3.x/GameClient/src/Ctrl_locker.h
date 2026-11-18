@@ -28,6 +28,7 @@ struct LockerController
     int reserved_value;
     int locker_x;
     int locker_y;
+    bool items_changed;
     char scroll_changed;
     int unused_value;
     int top_row;
@@ -45,6 +46,8 @@ struct LockerController
     LockerController();
     ~LockerController();
     void AddItem(int item_id, int amount);
+    void UpdateItem(int item_id, int amount);
+    void ScrollToItem(int item_id);
     void Open(String window_title, int reserved, int x, int y);
     void Close();
     void Tick();
@@ -52,7 +55,9 @@ struct LockerController
     int GetTopRow();
     void ClearItems();
     void ClearList();
-    void AdjustScroll();
+    void ClearSeenFlags();
+    void RemoveUnseenItems();
+    void UpdateScrollThumb();
     void MouseDown(int x, int y, int button);
     void MouseMove(int x, int y);
     void UpdateScrollHover(int x, int y);

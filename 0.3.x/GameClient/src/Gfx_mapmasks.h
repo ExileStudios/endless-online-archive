@@ -12,11 +12,8 @@ struct MaskGraphics
 {
     vector<MaskWrapper> entries;
     int last_index;
+    int library;
     int pending_count;
-    bool queue_drained;
-    HMODULE library;
-    char library_open;
-    char keep_library_open;
 
     MaskGraphics(char preload);
     ~MaskGraphics();
@@ -26,7 +23,7 @@ struct MaskGraphics
     void PurgeUnusedGraphics();
     void ReleaseGraphics();
     bool RequestGraphic(int graphic_id);
-    MaskWrapper GetGraphic(int graphic_id);
+    MaskWrapper * GetGraphic(int graphic_id);
     GraphicSize GetGraphicSize(int graphic_id);
     void QueueGraphic(int graphic_id);
     unsigned int GetGraphicCount();

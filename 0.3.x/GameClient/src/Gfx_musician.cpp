@@ -14,6 +14,8 @@ MusicianGraphics::MusicianGraphics()
     surface_desc = new TDDSurfaceDesc(NULL);
     surface_caps = new TDDSCaps(NULL);
     color_key = new TDDColorKey(NULL);
+    background_loaded = false;
+    cell_sheet_loaded = false;
     color_key->ColorSpaceHighValue = 0;
     color_key->ColorSpaceLowValue = 0;
 }
@@ -43,74 +45,44 @@ TRect MusicianGraphics::GetCellRect(int column, int row)
     return cell_rect;
 }
 
-// Loads the musician window background into a surface sized to the bitmap; returns its size,
-// or -1 when the bitmap could not be drawn onto the musician background surface.
-DEFINE_LOAD_BACKGROUND(MusicianGraphics)
-
-// Loads the musician cell sheet into its own surface, without a colour key; returns its size,
-// or -1 when it could not be drawn.
-GraphicSize MusicianGraphics::LoadCellSheet(HMODULE library, int resource_id)
+// Loads the musician window's background from the library; its size, or -1, -1 when it cannot be drawn.
+TPoint MusicianGraphics::LoadBackground(int library, int resource_id)
 {
-    GraphicSize size;
-    HDC dc;
-    HDC compatible_dc;
-    size.width = -1;
-    MainForm->resource_bitmap->Width = 0;
-    MainForm->resource_bitmap->Height = 0;
-    MainForm->resource_bitmap->LoadFromResourceID((unsigned int)library, resource_id);
-    surface_desc->Flags = DDSD_HEIGHT | DDSD_WIDTH;
+    TPoint size;
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
+    size = *(TPoint *)MainForm->gfx_transfers;
     surface_desc->SCaps = surface_caps;
-    surface_desc->SCaps->Caps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
-    surface_desc->Width = MainForm->resource_bitmap->Width;
-    surface_desc->Height = MainForm->resource_bitmap->Height;
-    if (!cell_sheet_surface)
-        cell_sheet_surface->Restore();
-    if (cell_sheet_surface->Created)
-        cell_sheet_surface->Destroy();
-    cell_sheet_surface->GetSurfaceDesc(surface_desc);
-    cell_sheet_surface->Create(surface_desc, MainForm->Dx_Draw1);
-    size.width = MainForm->resource_bitmap->Width;
-    size.height = MainForm->resource_bitmap->Height;
-    // The musician cell sheet bitmap goes on by a canvas Draw, or by BitBlt if configured.
-    if (!MainForm->config->GetUseBitBltDraw())
+    MainForm->gfx_transfers->CreateSurface(background_surface, surface_desc, size.x, size.y);
+    background_rect.left = 0;
+    background_rect.top = 0;
+    background_rect.right = size.x;
+    background_rect.bottom = size.y;
+    if (MainForm->gfx_transfers->BeginDraw(background_surface))
     {
-        if (cell_sheet_surface->GetDC(&dc))
-        {
-            try
-            {
-                MainForm->draw_canvas->Handle = dc;
-                MainForm->draw_canvas->Draw(0, 0, MainForm->resource_bitmap);
-                MainForm->draw_canvas->Handle = 0;
-            }
-            catch (Exception &)
-            {
-                MainForm->CountDrawError();
-                cell_sheet_surface->ReleaseDC(dc);
-                size.width = -1;
-                size.height = -1;
-            }
-            cell_sheet_surface->ReleaseDC(dc);
-        }
+        MainForm->gfx_transfers->Draw(background_surface);
+        MainForm->gfx_transfers->EndDraw(background_surface);
+        background_loaded = true;
+        return size;
     }
-    else
+    return TPoint(-1, -1);
+}
+
+// Loads the musician window's note cell sheet from the library; its size, or -1, -1 when it cannot be drawn.
+TPoint MusicianGraphics::LoadCellSheet(int library, int resource_id)
+{
+    TPoint size;
+    if (!MainForm->gfx_transfers->LoadResourceBitmap(library, resource_id))
+        return TPoint(-1, -1);
+    size = *(TPoint *)MainForm->gfx_transfers;
+    surface_desc->SCaps = surface_caps;
+    MainForm->gfx_transfers->CreateSurface(cell_sheet_surface, surface_desc, size.x, size.y);
+    if (MainForm->gfx_transfers->BeginDraw(cell_sheet_surface))
     {
-        compatible_dc = CreateCompatibleDC(0);
-        SelectObject(compatible_dc, MainForm->resource_bitmap->Handle);
-        if (cell_sheet_surface->GetDC(&dc))
-        {
-            try
-            {
-                BitBlt(dc, 0, 0, size.width, size.height, compatible_dc, 0, 0, SRCCOPY);
-            }
-            catch (...)
-            {
-                cell_sheet_surface->ReleaseDC(dc);
-                size.width = -1;
-                size.height = -1;
-            }
-            cell_sheet_surface->ReleaseDC(dc);
-        }
-        DeleteDC(compatible_dc);
+        MainForm->gfx_transfers->Draw(cell_sheet_surface);
+        MainForm->gfx_transfers->EndDraw(cell_sheet_surface);
+        cell_sheet_loaded = true;
+        return size;
     }
-    return size;
+    return TPoint(-1, -1);
 }

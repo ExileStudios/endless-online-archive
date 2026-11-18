@@ -44,6 +44,8 @@
 #include "Gfx_maptops.h"
 #include "Gfx_mapwalls.h"
 #include "Pathfinder.h"
+#include "Ctrl_hotkeys.h"
+#include "Gfx_mapnpcs.h"
 
 #pragma package(smart_init)
 
@@ -76,6 +78,7 @@ InterfaceController::InterfaceController()
     screenshot_cooldown = 0;
     player_list_cooldown = 0;
     trade_requester_id = 0;
+    status_message_hold = 0;
     player_list_button_ready = true;
     timed_text_visible = false;
     chat = new ChatController();
@@ -95,7 +98,8 @@ InterfaceController::InterfaceController()
     welcome_notice_pending = false;
 }
 
-// Back to the main menu: closes the connection, frees the game graphics, empties the lists and puts every window back.
+// Back to the main menu: closes the connection, stops the music, frees the game graphics, empties the lists and
+// puts every window back.
 void InterfaceController::Logout()
 {
     MainForm->gfx->interface_graphics->minimap_visible = 0;
@@ -135,16 +139,7 @@ void InterfaceController::Logout()
     MainForm->gfx->blends->ReleaseGraphics();
     MainForm->gfx->items->ReleaseGraphics();
     MainForm->gfx->items->ReleaseSubItemGraphics();
-    MainForm->players->ReloadGraphicsLibraries();
-    MainForm->npcs->ReloadGraphicsLibrary();
-    MainForm->gfx->tiles->ReopenLibrary();
-    MainForm->gfx->objects->ReopenLibrary();
-    MainForm->gfx->masks->ReopenLibrary();
-    MainForm->gfx->walls->ReopenLibrary();
-    MainForm->gfx->tops->ReopenLibrary();
-    MainForm->gfx->blends->ReopenLibrary();
-    MainForm->gfx->items->ReopenLibrary();
-    MainForm->gfx->icons->ReopenLibrary();
+    MainForm->gfx->npc_cache->ReleaseGraphics();
     MainForm->animation->paperdoll->equipped_head = -1;
     MainForm->animation->paperdoll->equipped_necklace = -1;
     MainForm->animation->paperdoll->equipped_armor = -1;
@@ -183,17 +178,22 @@ void InterfaceController::Logout()
     MainForm->animation->learn->is_visible = false;
     MainForm->animation->trade->is_visible = false;
     MainForm->animation->chest->is_visible = false;
+    MainForm->animation->hotkeys->is_visible = false;
     MainForm->animation->paperdoll->is_visible = false;
     MainForm->animation->book->is_visible = false;
     MainForm->animation->social->is_open = false;
     MainForm->animation->message_board->is_visible = false;
     MainForm->animation->dialog->is_visible = false;
-    MainForm->animation->paperdoll->window_x = 133;
-    MainForm->animation->paperdoll->window_y = 13;
+    MainForm->animation->paperdoll->window_x = 120;
+    MainForm->animation->paperdoll->window_y = 16;
+    MainForm->animation->book->window_x = 120;
+    MainForm->animation->book->window_y = 16;
+    MainForm->animation->hotkeys->window_x = 97;
+    MainForm->animation->hotkeys->window_y = 135;
     MainForm->animation->menu->message_x = DEFAULT_MESSAGE_BOX_X;
     MainForm->animation->menu->message_y = DEFAULT_MESSAGE_BOX_Y;
-    MainForm->animation->menu->form_x = DEFAULT_FORM_X;
-    MainForm->animation->menu->form_y = DEFAULT_FORM_Y;
+    MainForm->animation->menu->form_x = 100;
+    MainForm->animation->menu->form_y = 112;
     MainForm->animation->game->message_x = 170;
     MainForm->animation->game->message_y = 100;
     MainForm->animation->game->large_box_x = 170;
@@ -270,14 +270,13 @@ void InterfaceController::OnMouseMove(int mouse_x, int mouse_y)
     UpdateCornerHover(mouse_x, mouse_y);
 }
 
-// Lights the slanted corner button at the top right and puts its tip on the status line.
+// Lights the corner button while the mouse is on it and puts its tip on the status line.
 void InterfaceController::UpdateCornerHover(int mouse_x, int mouse_y)
 {
     bool result = false;
-    if (mouse_x >= 594 && mouse_x <= 624)
+    if (mouse_x >= 594 && mouse_x <= 623)
     {
-        if ((mouse_y > 10 && mouse_y < 17 && mouse_x < 3 * mouse_y + 560) ||
-            (mouse_y > 16 && mouse_y < 31 && mouse_x < mouse_y + 594))
+        if (mouse_y > 332 && mouse_y < 350)
         {
             if (!corner_button_hover)
             {
@@ -312,7 +311,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!inventory_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_SeeInventory));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_LookAtMap));
                 inventory_button_hover = true;
                 result = true;
             }
@@ -326,7 +325,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!minimap_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_LookAtMap));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_SeeInventory));
                 minimap_button_hover = true;
                 result = true;
             }
@@ -410,7 +409,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!players_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_WhoIsOnline));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_ClickHereToShow));
                 players_button_hover = true;
                 result = true;
             }
@@ -424,7 +423,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!group_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GroupWithOtherPeople));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_KeyboardMacroAndHotkeys));
                 group_button_hover = true;
                 result = true;
             }
@@ -438,7 +437,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!third_right_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_KeyboardMacroAndHotkeys));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_WhoIsOnline));
                 third_right_button_hover = true;
                 result = true;
             }
@@ -452,7 +451,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!settings_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GameSettingsAndOptions));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GroupWithOtherPeople));
                 settings_button_hover = true;
                 result = true;
             }
@@ -466,7 +465,7 @@ void InterfaceController::UpdateButtonHover(int mouse_x, int mouse_y)
         {
             if (!help_button_hover)
             {
-                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GameHelp));
+                ShowStatusMessage(StatusCategory_Button, MainForm->strings->GetText(GameText_GameSettingsAndOptions));
                 help_button_hover = true;
                 result = true;
             }
@@ -575,24 +574,40 @@ bool InterfaceController::TakeCornerHoverDirty()
     return was_dirty;
 }
 
-// Shows a text on the status line for 10 ticks, after the label of its category (6 is "Npc").
+void InterfaceController::HoldStatusMessages()
+{
+    status_message_hold = 2;
+}
+
+// Shows the text on the status line for 10 ticks, after its category's name in brackets; nothing while a message is
+// held.
 void InterfaceController::ShowStatusMessage(int category, String text)
 {
+    if (status_message_hold > 0)
+        return;
     status_message = text;
+    String open_bracket = "[ ";
+    String close_bracket = " ] ";
+    // The category puts its name in brackets before the text.
     if (category == StatusCategory_Button)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Button) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Button) + close_bracket + status_message;
     if (category == StatusCategory_Action)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Action) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Action) + close_bracket + status_message;
     if (category == StatusCategory_Warning)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Warning) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Warning) + close_bracket + status_message;
     if (category == StatusCategory_Information)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Information) + " ] " + status_message;
+        status_message =
+            open_bracket + MainForm->strings->GetText(GameText_Information) + close_bracket + status_message;
     if (category == StatusCategory_Item)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Item) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Item) + close_bracket + status_message;
     if (category == StatusCategory_Spell)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Spell) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Spell) + close_bracket + status_message;
     if (category == StatusCategory_Skill)
-        status_message = "[ " + MainForm->strings->GetText(GameText_Skill) + " ] " + status_message;
+        status_message = open_bracket + MainForm->strings->GetText(GameText_Skill) + close_bracket + status_message;
+    if (category == StatusCategory_Hotkey)
+        status_message = open_bracket + "Hotkey" + close_bracket + status_message;
+    if (category == StatusCategory_Locker)
+        status_message = open_bracket + "Locker" + close_bracket + status_message;
     if (category == StatusCategory_Npc)
         status_message = "[ Npc ] " + status_message;
     status_message_state = 1;
@@ -653,6 +668,8 @@ void InterfaceController::OnTimer()
         if (status_message_timer <= 0)
             status_message_state = STATUS_MESSAGE_EXPIRED;
     }
+    if (status_message_hold > 0)
+        status_message_hold--;
 }
 
 // Runs the timed text and the screen shake, which moves the screen a random amount each frame.

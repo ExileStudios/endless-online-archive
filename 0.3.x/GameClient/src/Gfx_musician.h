@@ -14,6 +14,8 @@ struct MusicianGraphics
     TDx_DrawSurface *background_surface;
     TDx_DrawSurface *cell_sheet_surface;
     TRect background_rect;
+    bool background_loaded;
+    bool cell_sheet_loaded;
     TDDSurfaceDesc *surface_desc;
     TDDSCaps *surface_caps;
     TDDColorKey *color_key;
@@ -21,8 +23,8 @@ struct MusicianGraphics
     MusicianGraphics();
     ~MusicianGraphics();
     TRect GetCellRect(int column, int row);
-    GraphicSize LoadBackground(HMODULE library, int resource_id);
-    GraphicSize LoadCellSheet(HMODULE library, int resource_id);
+    TPoint LoadBackground(int library, int resource_id);
+    TPoint LoadCellSheet(int library, int resource_id);
 };
 
 #endif

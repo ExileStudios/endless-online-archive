@@ -10,21 +10,28 @@
 
 #pragma package(smart_init)
 
-NpcValues::NpcValues(String data_path)
+NpcValues::NpcValues(String prefix, char keep_parts)
 {
-    file_prefix = data_path + "dtn";
-    unused_value = -1;
+    file_prefix = prefix + "dtn";
+    pub_folder = prefix;
+    file_parts = new TStringList();
+    keep_file_parts = keep_parts;
     is_downloading = false;
     is_loaded = false;
     has_bad_record = false;
     header_read = false;
+    has_bad_drop = false;
+    has_bad_message = false;
     checksum_high = 0;
     checksum_high = 0;
     record_count = 0;
+    drops_loaded = false;
+    chats_loaded = false;
 }
 
 NpcValues::~NpcValues()
 {
+    delete file_parts;
 }
 
 // Reads the checksum and record count from the head of the first npc file; a missing file is marked.
@@ -93,6 +100,7 @@ void NpcValues::Load()
     {
         Clear();
         ClearHeaders();
+        ClearFileParts();
         file_number = 0;
         records_read = 0;
         records_expected = 0;
@@ -125,6 +133,8 @@ void NpcValues::Load()
                     return;
                 if (data[1] != 'E' || data[2] != 'N' || data[3] != 'F')
                     return;
+                if (keep_file_parts)
+                    file_parts->Add(data);
                 read_position = 4;
                 PubfileHeader *header = new PubfileHeader(file_name);
                 header->file_length = data.Length();
@@ -145,29 +155,29 @@ void NpcValues::Load()
                         header->load_state = 3;
                     }
                     String npc_name = data.SubString(read_position, name_length);
-                    NpcValue npc(Count() + 1);
-                    npc.name = npc_name;
+                    NpcValue *npc = new NpcValue(Count() + 1);
+                    npc->name = npc_name;
                     read_position += name_length;
-                    npc.graphic = DecodeNumber(2);
-                    npc.race = ReadByte();
-                    npc.boss = DecodeNumber(2);
-                    npc.child = DecodeNumber(2);
-                    npc.npc_type = DecodeNumber(2);
-                    npc.behavior_id = DecodeNumber(2);
-                    npc.hp = DecodeNumber(3);
-                    npc.tp = DecodeNumber(2);
-                    npc.min_damage = DecodeNumber(2);
-                    npc.max_damage = DecodeNumber(2);
-                    npc.accuracy = DecodeNumber(2);
-                    npc.evade = DecodeNumber(2);
-                    npc.armor = DecodeNumber(2);
-                    npc.return_damage = (unsigned char)ReadByte();
-                    npc.element = DecodeNumber(2);
-                    npc.element_damage = DecodeNumber(2);
-                    npc.element_weakness = DecodeNumber(2);
-                    npc.element_weakness_damage = DecodeNumber(2);
-                    npc.level = ReadByte();
-                    npc.experience = DecodeNumber(3);
+                    npc->graphic = DecodeNumber(2);
+                    npc->race = ReadByte();
+                    npc->boss = DecodeNumber(2);
+                    npc->child = DecodeNumber(2);
+                    npc->npc_type = DecodeNumber(2);
+                    npc->behavior_id = DecodeNumber(2);
+                    npc->hp = DecodeNumber(3);
+                    npc->tp = DecodeNumber(2);
+                    npc->min_damage = DecodeNumber(2);
+                    npc->max_damage = DecodeNumber(2);
+                    npc->accuracy = DecodeNumber(2);
+                    npc->evade = DecodeNumber(2);
+                    npc->armor = DecodeNumber(2);
+                    npc->return_damage = ReadByte();
+                    npc->element = DecodeNumber(2);
+                    npc->element_damage = DecodeNumber(2);
+                    npc->element_weakness = DecodeNumber(2);
+                    npc->element_weakness_damage = DecodeNumber(2);
+                    npc->level = ReadByte();
+                    npc->experience = DecodeNumber(3);
                     records.insert(records.end(), npc);
                     header->records_read++;
                     records_read++;
@@ -218,73 +228,59 @@ void NpcValues::DeleteFiles()
 void Npcvalues_UnusedLiterals1()
 {
     "dtn";
+    "";
 }
 
-DEFINE_CLEAR(NpcValues)
-
-NpcValue NpcValues::GetNpcByIndex(int index)
+// Deletes every npc record with its drops and messages.
+void NpcValues::Clear()
 {
-    if (index < 0 || records.size() <= index)
-        return NpcValue(-1);
-    return records[index];
-}
-
-int NpcValues::GetGraphic(int npc_id)
-{
-    int graphic = -1;
-    vector<NpcValue>::iterator it;
-    for (it = records.begin(); it != records.end(); it++)
+    for (vector<NpcValue *>::iterator it = records.begin(); it != records.end(); it++)
     {
-        if (npc_id == it->npc_id)
-        {
-            graphic = it->graphic;
-            break;
-        }
+        (*it)->drops.clear();
+        (*it)->talk_lines.clear();
+        delete *it;
     }
-    return graphic;
+    records.clear();
 }
 
-String NpcValues::GetName(int npc_id)
+NpcValue *NpcValues::GetNpc(int index)
 {
-    String name;
-    for (vector<NpcValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (npc_id == it->npc_id)
-        {
-            name = it->name;
-            break;
-        }
-    }
-    return name;
+    if (index < 0)
+        index = 0;
+    if (records.size() > index)
+        return records[index];
+    return 0;
 }
 
-// The two type numbers of an NPC, both 0 when the id is not in the list.
-TPoint NpcValues::GetType(int npc_id)
-{
-    TPoint type_pair;
-    type_pair.x = NpcType_Friendly;
-    type_pair.y = 0;
-    vector<NpcValue>::iterator it;
-    for (it = records.begin(); it != records.end(); it++)
-    {
-        if (npc_id == it->npc_id)
-        {
-            type_pair.x = it->npc_type;
-            type_pair.y = it->behavior_id;
-            break;
-        }
-    }
-    return type_pair;
-}
-
-unsigned int NpcValues::Count()
+int NpcValues::Count()
 {
     return records.size();
 }
 
 DEFINE_CLEAR_HEADERS(NpcValues)
 
+void NpcValues::ClearFileParts()
+{
+    file_parts->Clear();
+}
+
 // Reads one byte at the read position, stored plus one; a value past 252 reads as 0.
-DEFINE_READ_BYTE(NpcValues)
+unsigned char NpcValues::ReadByte()
+{
+    unsigned char value;
+    try
+    {
+        value = data[read_position];
+        value--;
+    }
+    catch (...)
+    {
+        value = 0;
+    }
+    read_position++;
+    if (value > 252)
+        value = 0;
+    return value;
+}
 
 DEFINE_DECODE_NUMBER(NpcValues)

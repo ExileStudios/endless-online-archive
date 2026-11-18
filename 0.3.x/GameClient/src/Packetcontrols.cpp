@@ -27,6 +27,8 @@ Client::Client()
     is_banned = false;
     account_reply_disconnect = false;
     login_retry_pending = false;
+    lookups_refused = false;
+    server_busy = false;
     is_permanent_ban = false;
     ban_minutes = 1;
     login_failure_count = 0;
@@ -53,7 +55,7 @@ void Client::LoadWordFilter()
     String str;
     try
     {
-        file_handle = FileOpen(MainForm->strings->GetDataFilePath(DataFile_WordFilter), fmOpenRead);
+        file_handle = FileOpen(MainForm->files->GetDataFilePath(DataFile_WordFilter), fmOpenRead);
         file_size = FileSeek(file_handle, 0, 2);
         FileSeek(file_handle, 0, 0);
         buffer = new char[file_size + 1];
@@ -168,8 +170,18 @@ bool Client::HandleRawPacket(String frame)
                     if (frame.Length() >= 5)
                         ban_minutes = ByteValue(frame[5]);
                 }
-                // A version rejection: the server names the version it wants.
                 // A protocol rejection: the server names the protocol version it speaks.
+                if (frame.Length() >= 4 && ByteValue(frame[3]) == 20)
+                {
+                    version_rejected = true;
+                    int version_major = DecodeNumber(frame[4]);
+                    MainForm->edits->caret_enabled = false;
+                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
+                        MainForm->strings->GetDialogText(DialogText_ConnectionRefused, false),
+                        "Incompatible server protocol ( " + IntToStr(version_major) +
+                            " ) Use the latest client to connect this server.");
+                }
+                // A version rejection: the server names the version it wants.
                 if (frame.Length() >= 6 && ByteValue(frame[3]) == 1)
                 {
                     version_rejected = true;
@@ -305,7 +317,7 @@ bool Client::IsInSoundRange(int from_x, int from_y, int to_x, int to_y)
         if (dx + dy <= 14)
             in_range = true;
     }
-    else if (dx + dy <= 11)
+    else if (dx + dy <= 12)
         in_range = true;
     return in_range;
 }
@@ -721,6 +733,8 @@ void Client::ShowPendingScreen()
 {
     if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
     {
+        if (MainForm->animation->menu->connect_for_login)
+            MainForm->animation->menu->connect_for_login = false;
         if (MainForm->animation->menu->connect_for_create_account)
         {
             MainForm->animation->menu->connect_for_create_account = 0;
@@ -744,15 +758,19 @@ void Client::ShowPendingScreen()
 
             MainForm->edits->SetPasswordMode(EditId_AccountPassword, true);
             MainForm->edits->SetPasswordMode(EditId_ConfirmPassword, true);
-            MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-            MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_AlphanumericSpaces);
-            MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_AlphanumericSpaces);
-            MainForm->edits->SetCharFilter(EditId_AccountDetailA, EditCharFilter_LettersSpaces);
-            MainForm->edits->SetCharFilter(EditId_AccountDetailB, EditCharFilter_LettersSpaces);
-            MainForm->edits->SetCharFilter(EditId_Email, EditCharFilter_NoPunctuation);
+            MainForm->edits->SetShowStrength(EditId_AccountPassword, true);
+            MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+            MainForm->edits->SetAllowSpaces(EditId_AccountPassword, false);
+            MainForm->edits->SetAllowSpaces(EditId_ConfirmPassword, false);
+            MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+            MainForm->edits->SetCharFilter(EditId_AccountPassword, EditCharFilter_Password);
+            MainForm->edits->SetCharFilter(EditId_ConfirmPassword, EditCharFilter_Password);
+            MainForm->edits->SetCharFilter(EditId_AccountDetailA, EditCharFilter_Letters);
+            MainForm->edits->SetCharFilter(EditId_AccountDetailB, EditCharFilter_Letters);
+            MainForm->edits->SetCharFilter(EditId_Email, EditCharFilter_Email);
             MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-            MainForm->edits->SetMaxLength(EditId_AccountPassword, 12);
-            MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 12);
+            MainForm->edits->SetMaxLength(EditId_AccountPassword, 16);
+            MainForm->edits->SetMaxLength(EditId_ConfirmPassword, 16);
             MainForm->edits->caret_enabled = false;
             MainForm->animation->menu->OpenTextWindow();
             MainForm->animation->menu->AddWrappedText(MainForm->strings->GetText(GameText_ItIsVeryImportant), true);
@@ -761,9 +779,9 @@ void Client::ShowPendingScreen()
                 false);
             MainForm->edits->FocusEdit(EditId_AccountName);
         }
-        if (MainForm->animation->menu->connect_for_login)
+        if (MainForm->animation->menu->connect_for_recovery)
         {
-            MainForm->animation->menu->connect_for_login = false;
+            MainForm->animation->menu->connect_for_recovery = false;
             if (MainForm->animation->credits->is_running)
                 MainForm->animation->credits->Stop();
             MainForm->edits->Clear();
@@ -774,15 +792,15 @@ void Client::ShowPendingScreen()
             if (MainForm->config->GetSkipSoftpad())
             {
                 MainForm->animation->SetSubState(MenuScreen_Login);
-                MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_NAME_EDIT_Y, 141,
-                    EDIT_LINE_HEIGHT);
-                MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, LOGIN_PASSWORD_EDIT_Y, 141,
-                    EDIT_LINE_HEIGHT);
-                MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
-                MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_NoPunctuation);
+                MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, 309, 141, EDIT_LINE_HEIGHT);
+                MainForm->edits->AddEdit(EditId_Password, EditGroup_Menu, LOGIN_EDIT_X, 340, 141, EDIT_LINE_HEIGHT);
+                MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Alphanumeric);
+                MainForm->edits->SetCharFilter(EditId_Password, EditCharFilter_Password);
+                MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
+                MainForm->edits->SetAllowSpaces(EditId_Password, false);
                 MainForm->edits->SetPasswordMode(EditId_Password, true);
                 MainForm->edits->SetMaxLength(EditId_AccountName, 16);
-                MainForm->edits->SetMaxLength(EditId_Password, 12);
+                MainForm->edits->SetMaxLength(EditId_Password, 16);
                 if (MainForm->config->GetAutoAccountName().Length() < 2)
                     MainForm->edits->FocusEdit(EditId_AccountName);
                 else
@@ -796,7 +814,8 @@ void Client::ShowPendingScreen()
                 MainForm->animation->SetSubState(MenuScreen_GridAccountName);
                 MainForm->edits->AddEdit(EditId_AccountName, EditGroup_Menu, LOGIN_EDIT_X, GRID_LOGIN_NAME_EDIT_Y,
                     161, EDIT_LINE_HEIGHT);
-                MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_AlphanumericSpaces);
+                MainForm->edits->SetCharFilter(EditId_AccountName, EditCharFilter_Letters);
+                MainForm->edits->SetAllowSpaces(EditId_AccountName, false);
                 MainForm->edits->SetMaxLength(EditId_AccountName, 16);
                 MainForm->edits->FocusEdit(EditId_AccountName);
             }
@@ -804,13 +823,13 @@ void Client::ShowPendingScreen()
     }
 }
 
-// On a lost connection, says why: in game a message box, on the menu the reason the server gave or a general
-// one. Then it resets the connection state and closes the socket.
+// On a lost connection, says why: in game a message box, on the menu the reason the server gave, such as a ban, too
+// many account lookups or a busy server, or a general one.
 void Client::HandleDisconnect()
 {
     if (!version_rejected)
     {
-        // After a completed init the reasons come from the account replies; before it, from the raw init replies.
+        // After the init the reason comes from the account replies; before it, from the raw init replies.
         if (is_initialized)
         {
             if (MainForm->animation->GetScreenMode() == ScreenMode_Game)
@@ -833,21 +852,14 @@ void Client::HandleDisconnect()
                 char message_shown = false;
                 if (init_rejected)
                 {
-                    is_initialized = false;
-                    init_rejected = false;
-                    message_shown = true;
                     MainForm->edits->caret_enabled = false;
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetDialogText(DialogText_ServerFull, false),
                         MainForm->strings->GetDialogText(DialogText_ServerFull, true));
+                    message_shown = true;
                 }
                 if (is_banned)
                 {
-                    is_banned = false;
-                    is_permanent_ban = false;
-                    account_reply_disconnect = false;
-                    login_retry_pending = false;
-                    is_initialized = false;
                     MainForm->edits->caret_enabled = false;
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetDialogText(DialogText_AccountIsBlocked, false),
@@ -856,25 +868,14 @@ void Client::HandleDisconnect()
                 }
                 if (account_reply_disconnect && !message_shown)
                 {
-                    is_banned = false;
-                    is_permanent_ban = false;
-                    account_reply_disconnect = false;
-                    login_retry_pending = false;
-                    is_initialized = false;
                     MainForm->edits->caret_enabled = false;
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetDialogText(DialogText_RequestDeniedServer, false),
                         MainForm->strings->GetDialogText(DialogText_RequestDeniedServer, true));
                     message_shown = true;
                 }
-                // The login is tried again after a wait, with the same name and password.
                 if (login_retry_pending && !message_shown)
                 {
-                    is_banned = false;
-                    is_permanent_ban = false;
-                    account_reply_disconnect = false;
-                    login_retry_pending = false;
-                    is_initialized = false;
                     MainForm->edits->caret_enabled = false;
                     MainForm->animation->menu->retry_ticks = 500;
                     MainForm->animation->menu->retry_account_name = MainForm->animation->menu->account_name;
@@ -884,14 +885,36 @@ void Client::HandleDisconnect()
                         MainForm->strings->GetDialogText(DialogText_LoginRefusedServer, true));
                     message_shown = true;
                 }
+                if (lookups_refused && !message_shown)
+                {
+                    MainForm->edits->caret_enabled = false;
+                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Login Refused",
+                        "Too many account lookups from this connection. Try again in a few minutes.");
+                    message_shown = true;
+                }
+                if (server_busy && !message_shown)
+                {
+                    MainForm->edits->caret_enabled = false;
+                    MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Server Busy",
+                        "The server is very busy at this moment. Please try again shortly.");
+                    message_shown = true;
+                }
                 if (!message_shown)
                 {
-                    is_initialized = false;
                     MainForm->edits->caret_enabled = false;
                     MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain,
                         MainForm->strings->GetDialogText(DialogText_LostConnectionLater, false),
                         MainForm->strings->GetDialogText(DialogText_LostConnectionLater, true));
                 }
+                is_banned = false;
+                is_permanent_ban = false;
+                account_reply_disconnect = false;
+                login_retry_pending = false;
+                lookups_refused = false;
+                server_busy = false;
+                is_initialized = false;
+                MainForm->animation->menu->is_form_open = false;
+                MainForm->animation->menu->is_text_window_open = false;
             }
         }
         else if (MainForm->animation->GetScreenMode() == ScreenMode_Menu)
@@ -950,6 +973,7 @@ void Client::HandleDisconnect()
     version_rejected = false;
     is_banned = false;
     MainForm->animation->menu->connect_for_create_account = 0;
+    MainForm->animation->menu->connect_for_recovery = false;
     MainForm->animation->menu->connect_for_login = false;
     MainForm->client->Active = false;
 }
@@ -1091,6 +1115,7 @@ String Client::CensorText(String text)
                 }
             }
         }
+        // With the strict filter on, a line with any filtered word is dropped whole.
         if (MainForm->config->GetStrictFilter() && censored_any)
             text = "";
     }

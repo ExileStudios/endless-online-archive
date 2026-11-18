@@ -22,14 +22,17 @@
 #include "Gfx_menu.h"
 #include "Gfx_msgboard.h"
 #include "Gfx_musician.h"
-#include "Gfx_npcs.h"
 #include "Gfx_playername.h"
 #include "Gfx_shop.h"
 #include "Gfx_social.h"
-#include "Gfx_sprites.h"
 #include "Gfx_stats.h"
 #include "Gfx_trade.h"
 #include <stdlib.h>
+#include "Tmainform.h"
+#include "Ctrl_menu.h"
+#include "Gfx_global_npcs.h"
+#include "Gfx_global_sprites.h"
+#include "Gfx_mapnpcs.h"
 
 #pragma package(smart_init)
 
@@ -37,8 +40,9 @@
 GfxController::GfxController(char preload_tiles, char preload_map_graphics)
 {
     intro = new IntroGraphics();
-    sprites = new SpriteGraphics();
-    npc_cache = new NpcGraphics();
+    sprites = new SpriteGlobalGraphics();
+    npcs = new NpcGlobalGraphics();
+    npc_cache = new NpcGraphics(preload_map_graphics);
     objects = new ObjectGraphics(preload_map_graphics);
     tiles = new TileGraphics(preload_tiles);
     walls = new WallGraphics(preload_map_graphics);
@@ -78,10 +82,12 @@ GfxController::~GfxController()
     FreeBarberGraphics();
     FreeChestGraphics();
     FreeSocialGraphics();
-    if (intro)
-        delete intro;
     if (sprites)
         delete sprites;
+    if (npcs)
+        delete npcs;
+    if (intro)
+        delete intro;
     if (npc_cache)
         delete npc_cache;
     if (objects)
@@ -283,10 +289,7 @@ void GfxController::FreeChestGraphics()
 void GfxController::CreateHoverLabel(int text_width, int height, int label_style, int element, String text)
 {
     if (hover_label_created)
-    {
         FreeHoverLabel();
-        Sleep(1);
-    }
     hover_label = new PlayerNameGraphics(text_width, height, label_style, element, text);
     hover_label_created = true;
 }
@@ -324,189 +327,171 @@ void GfxController::FreeGameGraphics()
 // Loads the trade window background and the item slot frame into the trade graphics.
 void GfxController::LoadTradeGraphics()
 {
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (interface_library)
+    int slot_library;
+    int interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (interface_library && trade_created)
     {
-        HMODULE interface_library_copy = interface_library;
-        if (trade_created)
-            trade->LoadBackground(interface_library_copy, InterfaceBitmap_TradeWindow);
+        TPoint size = trade->LoadBackground(interface_library, InterfaceBitmap_TradeWindow);
     }
-    HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
-    if (slot_library)
+    slot_library = MainForm->gfx_vault->OpenLibrary(SLOT_GFX_FILE);
+    if (slot_library && trade_created)
     {
-        HMODULE slot_library_copy = slot_library;
-        if (trade_created)
-            trade->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
+        TPoint slot_size = trade->LoadItemSlot(slot_library, TileBitmap_ItemSlot);
     }
 }
 
 // Loads the shop window background and the item slot frame into the shop graphics.
 void GfxController::LoadShopGraphics()
 {
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (interface_library)
+    int slot_library;
+    int interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (interface_library && shop_created)
     {
-        HMODULE interface_library_copy = interface_library;
-        if (shop_created)
-            shop->LoadBackground(interface_library_copy, InterfaceBitmap_ShopWindow);
+        TPoint size = shop->LoadBackground(interface_library, InterfaceBitmap_ShopWindow);
     }
-    HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
-    if (slot_library)
+    slot_library = MainForm->gfx_vault->OpenLibrary(SLOT_GFX_FILE);
+    if (slot_library && shop_created)
     {
-        HMODULE slot_library_copy = slot_library;
-        if (shop_created)
-            shop->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
+        TPoint slot_size = shop->LoadItemSlot(slot_library, TileBitmap_ItemSlot);
     }
 }
 
 // Loads the npc quest dialog window background.
 void GfxController::LoadDialogGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && dialog_created)
     {
-        HMODULE library_copy = library;
-        if (dialog_created)
-            dialog->LoadSurface(library_copy, InterfaceBitmap_DialogWindow);
+        TPoint size = dialog->LoadSurface(library, InterfaceBitmap_DialogWindow);
     }
 }
 
 // The report window reuses the shop graphics: its own background with the shop item slot frame.
 void GfxController::LoadReportGraphics()
 {
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (interface_library)
+    int slot_library;
+    int interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (interface_library && shop_created)
     {
-        HMODULE interface_library_copy = interface_library;
-        if (shop_created)
-            shop->LoadBackground(interface_library_copy, InterfaceBitmap_ReportWindow);
+        TPoint size = shop->LoadBackground(interface_library, InterfaceBitmap_ReportWindow);
     }
-    HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
-    if (slot_library)
+    slot_library = MainForm->gfx_vault->OpenLibrary(SLOT_GFX_FILE);
+    if (slot_library && shop_created)
     {
-        HMODULE slot_library_copy = slot_library;
-        if (shop_created)
-            shop->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
+        TPoint slot_size = shop->LoadItemSlot(slot_library, TileBitmap_ItemSlot);
     }
 }
 
 // Loads the character stats window background.
 void GfxController::LoadStatGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && stat_created)
     {
-        HMODULE library_copy = library;
-        if (stat_created)
-            stat->LoadSurface(library_copy, InterfaceBitmap_StatWindow);
+        TPoint size = stat->LoadSurface(library, InterfaceBitmap_StatWindow);
     }
 }
 
-// Loads the message board sheet; the quest window loads it too.
+// Loads the message board sheet.
 void GfxController::LoadMsgBoardGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && message_board_created)
     {
-        HMODULE library_copy = library;
-        if (message_board_created)
-            message_board->LoadSurface(library_copy, InterfaceBitmap_MsgBoardWindow);
+        TPoint size = message_board->LoadSurface(library, InterfaceBitmap_MsgBoardWindow);
     }
 }
 
 // Loads the friends and ignore window background.
 void GfxController::LoadSocialGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && social_created)
     {
-        HMODULE library_copy = library;
-        if (social_created)
-            social->LoadSurface(library_copy, InterfaceBitmap_ShopWindow);
+        TPoint size = social->LoadSurface(library, InterfaceBitmap_ShopWindow);
     }
 }
 
 // Loads the bank window background.
 void GfxController::LoadBankGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && bank_created)
     {
-        HMODULE library_copy = library;
-        if (bank_created)
-            bank->LoadSurface(library_copy, InterfaceBitmap_BankWindow);
+        TPoint size = bank->LoadSurface(library, InterfaceBitmap_BankWindow);
     }
 }
 
 // Loads the jukebox window background.
 void GfxController::LoadJukeboxGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && jukebox_created)
     {
-        HMODULE library_copy = library;
-        if (jukebox_created)
-            jukebox->LoadSurface(library_copy, InterfaceBitmap_JukeboxWindow);
+        TPoint size = jukebox->LoadSurface(library, InterfaceBitmap_JukeboxWindow);
     }
 }
 
 // Loads the musician window background and its cell sheet.
 void GfxController::LoadMusicianGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library && musician_created)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
     {
-        musician->LoadBackground(library, InterfaceBitmap_MusicianWindow);
-        musician->LoadCellSheet(library, InterfaceBitmap_CellSheet);
+        int library_copy = library;
+        if (musician_created)
+        {
+            TPoint size = musician->LoadBackground(library_copy, InterfaceBitmap_MusicianWindow);
+            TPoint cell_size = musician->LoadCellSheet(library_copy, InterfaceBitmap_CellSheet);
+        }
     }
 }
 
 // Loads the barber window background.
 void GfxController::LoadBarberGraphics()
 {
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library && barber_created)
     {
-        HMODULE library_copy = library;
-        if (barber_created)
-            barber->LoadSurface(library_copy, InterfaceBitmap_BarberWindow);
+        TPoint size = barber->LoadSurface(library, InterfaceBitmap_BarberWindow);
     }
 }
 
 // Loads the chest window background and the item slot frame into the chest graphics.
 void GfxController::LoadChestGraphics()
 {
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (interface_library)
+    int slot_library;
+    int interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (interface_library && chest_created)
     {
-        HMODULE interface_library_copy = interface_library;
-        if (chest_created)
-            chest->LoadBackground(interface_library_copy, InterfaceBitmap_ChestWindow);
+        TPoint size = chest->LoadBackground(interface_library, InterfaceBitmap_ChestWindow);
     }
-    HMODULE slot_library = LoadLibraryA(GetGfxFileName(SLOT_GFX_FILE).c_str());
-    if (slot_library)
+    slot_library = MainForm->gfx_vault->OpenLibrary(SLOT_GFX_FILE);
+    if (slot_library && chest_created)
     {
-        HMODULE slot_library_copy = slot_library;
-        if (chest_created)
-            chest->LoadItemSlot(slot_library_copy, TileBitmap_ItemSlot);
+        TPoint slot_size = chest->LoadItemSlot(slot_library, TileBitmap_ItemSlot);
     }
 }
 
-// Loads the menu screens' panels, buttons and sheets from the menu graphics file, the intro picture while it is
-// still kept, and the animation sheet and scroll icons from the interface file.
+// Loads the menu screens' pictures from the menu and interface files: the panels, form and label sheets, buttons,
+// boxes, icons and the animation sheet.
 void GfxController::LoadMenuGraphics(char single_panel)
 {
-    int menu_library_copy;
     int interface_library_copy;
-    HMODULE menu_library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
+    int menu_library_copy;
+    int menu_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
     if (menu_library)
     {
-        menu_library_copy = (int)menu_library;
+        menu_library_copy = menu_library;
         if (intro_created)
             intro->LoadSurface(menu_library_copy, MenuBitmap_Intro);
         // A single-panel layout loads one lower panel of its own instead of both panels and the key sheet.
         if (single_panel)
+        {
             menu->LoadLowerPanel(menu_library_copy, MenuBitmap_SingleLowerPanel);
+            menu->LoadCheckboxSheet(menu_library_copy, MenuBitmap_CheckboxSheet);
+            menu->LoadFormSheet(menu_library_copy, MenuBitmap_FormSheet);
+        }
         else
         {
             menu->LoadLowerPanel(menu_library_copy, MenuBitmap_LowerPanel);
@@ -523,15 +508,13 @@ void GfxController::LoadMenuGraphics(char single_panel)
         menu->LoadProgressBar(menu_library_copy, MenuBitmap_ProgressBar);
         menu->LoadSlotIcons(menu_library_copy, MenuBitmap_SlotIcons);
         menu->LoadCornerButton(menu_library_copy, MenuBitmap_CornerButton);
-        FreeLibrary(menu_library);
     }
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
+    int interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
     if (interface_library)
     {
-        interface_library_copy = (int)interface_library;
+        interface_library_copy = interface_library;
         menu->LoadAnimationSheet(interface_library_copy, InterfaceBitmap_AnimationSheet);
         menu->LoadScrollIcons(interface_library_copy, InterfaceBitmap_ScrollIcons);
-        FreeLibrary(interface_library);
     }
 }
 
@@ -540,20 +523,19 @@ void GfxController::LoadMenuGraphics(char single_panel)
 void GfxController::LoadGameGraphics()
 {
     int interface_library_copy;
-    int menu_library_copy;
-    HMODULE menu_library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
+    int interface_library;
+    int menu_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
     if (menu_library)
     {
-        menu_library_copy = (int)menu_library;
+        int menu_library_copy = menu_library;
         game->LoadButtonSheet(menu_library_copy, MenuBitmap_SmallButtons);
         game->LoadMessageBoxBackground(menu_library_copy, MenuBitmap_GameMessageBox);
         game->LoadTextBoxBackground(menu_library_copy, MenuBitmap_TextBoxBackground);
-        FreeLibrary(menu_library);
     }
-    HMODULE interface_library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
+    interface_library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
     if (menu_library)
     {
-        interface_library_copy = (int)interface_library;
+        interface_library_copy = interface_library;
         interface_graphics->LoadHudBackground(interface_library_copy, InterfaceBitmap_HudBackground);
         interface_graphics->LoadClockBackground(interface_library_copy, InterfaceBitmap_ClockBackground);
         interface_graphics->LoadTooltipBackground(interface_library_copy, InterfaceBitmap_TooltipBackground);
@@ -562,12 +544,11 @@ void GfxController::LoadGameGraphics()
         interface_graphics->LoadSmallIcons(interface_library_copy, InterfaceBitmap_SmallIcons);
         interface_graphics->LoadChatTabs(interface_library_copy, InterfaceBitmap_ChatTabs);
         interface_graphics->LoadCornerButton(interface_library_copy, InterfaceBitmap_CornerButton);
+        interface_graphics->LoadSmallButtons(interface_library_copy, InterfaceBitmap_SmallButtons);
+        interface_graphics->LoadInventoryButtons(interface_library_copy, InterfaceBitmap_InventoryButtons);
         interface_graphics->LoadChatModeIcons(interface_library_copy, InterfaceBitmap_ChatModeIcons);
         interface_graphics->LoadTabButtons(interface_library_copy, InterfaceBitmap_TabButtons);
         interface_graphics->LoadListIcons(interface_library_copy, InterfaceBitmap_ListIcons);
-        interface_graphics->LoadHudFrame(interface_library_copy, InterfaceBitmap_HudFrame);
-        interface_graphics->LoadHudLeftFrame(interface_library_copy, InterfaceBitmap_HudLeftFrame);
-        interface_graphics->LoadHudTopFrame(interface_library_copy, InterfaceBitmap_HudTopFrame);
         interface_graphics->LoadTileCursor(interface_library_copy, InterfaceBitmap_TileCursor);
         interface_graphics->LoadControlSheet(interface_library_copy, InterfaceBitmap_ControlSheet);
         interface_graphics->LoadScrollIcons(interface_library_copy, InterfaceBitmap_ScrollIcons);
@@ -577,6 +558,7 @@ void GfxController::LoadGameGraphics()
         interface_graphics->LoadGroupIcons(interface_library_copy, InterfaceBitmap_GroupIcons);
         interface_graphics->LoadMinimapTiles(interface_library_copy, InterfaceBitmap_MinimapTiles);
         interface_graphics->LoadStatusIcons(interface_library_copy, InterfaceBitmap_StatusIcons);
+        interface_graphics->LoadHudIcons(interface_library_copy, InterfaceBitmap_HudIcons);
         interface_graphics->LoadHudSheet(interface_library_copy, InterfaceBitmap_HudSheet);
         interface_graphics->LoadElementIcons(interface_library_copy, InterfaceBitmap_ElementIcons);
         interface_graphics->LoadPopupIcons(interface_library_copy, InterfaceBitmap_PopupIcons);
@@ -585,266 +567,14 @@ void GfxController::LoadGameGraphics()
         game->LoadPaperdollBackground(interface_library_copy, InterfaceBitmap_PaperdollBackground);
         game->LoadInputBoxBackground(interface_library_copy, InterfaceBitmap_InputBoxBackground);
         game->LoadListBoxBackground(interface_library_copy, InterfaceBitmap_ListBoxBackground);
-        game->LoadBookBackground(interface_library_copy, InterfaceBitmap_BookBackground);
-        FreeLibrary(interface_library);
+        game->LoadSpareSurface2(interface_library_copy, InterfaceBitmap_BookBackground);
+        if (!game->LoadSpareSurface(interface_library_copy, InterfaceBitmap_SpareSurface))
+            MainForm->animation->menu->loading_tip =
+                "Warning! Missing .egf resources, errors may occure during gameplay. Please patch your client";
     }
 }
 
-// Loads the skills panel background into the shared panel surface.
-void GfxController::LoadSkillPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Skills);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the spells panel background into the shared panel surface; the skills panel uses the same bitmap.
-void GfxController::LoadSpellPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Skills);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the help panel background into the shared panel surface.
-void GfxController::LoadHelpPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Help);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the chat panel background into the shared panel surface.
-void GfxController::LoadChatPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Chat);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the status panel background into the shared panel surface.
-void GfxController::LoadStatusPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Status);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the player list panel background into the shared panel surface.
-void GfxController::LoadPlayerlistPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_PlayerList);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the group panel background into the shared panel surface.
-void GfxController::LoadGroupPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Group);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the inventory panel background into the shared panel surface.
-void GfxController::LoadInventoryPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Inventory);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the settings panel background into the shared panel surface.
-void GfxController::LoadSettingsPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_Settings);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the news panel background into the shared panel surface.
-void GfxController::LoadNewsPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(INTERFACE_GFX_FILE).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        interface_graphics->LoadPanelBackground(library_copy, PanelBackground_News);
-        FreeLibrary(library);
-    }
-}
-
-// Reloads the menu background picked by background_id.
-void GfxController::LoadMenuBackground()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        FreeLibrary(library);
-    }
-}
-
-// Builds the main menu backdrop: the background with an artwork drawn on it.
-// With random_artwork a new main menu artwork is picked at random first.
-void GfxController::LoadMainMenuScreen(bool random_artwork)
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        if (random_artwork)
-            menu->artwork_id = random(4) + 141;
-        menu->LoadArtwork(library_copy, menu->artwork_id);
-        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
-        FreeLibrary(library);
-    }
-}
-
-// Builds the create-account backdrop: the background, the form labels and a random artwork.
-void GfxController::LoadCreateAccountScreen()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        menu->DrawFormLabels(0, 0);
-        menu->LoadArtwork(library_copy, random(8) + 161);
-        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
-        FreeLibrary(library);
-    }
-}
-
-// Builds the password entry backdrop, after the account name: the background, the current artwork and the upper panel.
-void GfxController::LoadPasswordScreen()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        menu->LoadArtwork(library_copy, menu->artwork_id);
-        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
-        menu->DrawUpperPanelOnBackground(266, 184);
-        FreeLibrary(library);
-    }
-}
-
-// Builds the login backdrop: the background, the current artwork and the lower panel.
-void GfxController::LoadLoginScreen()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        menu->LoadArtwork(library_copy, menu->artwork_id);
-        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
-        menu->DrawLowerPanelOnBackground(266, 284);
-        FreeLibrary(library);
-    }
-}
-
-// Builds the character selection backdrop: the background, three character slot frames and a random artwork.
-void GfxController::LoadCharacterSelectScreen()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadBackground(library_copy, menu->background_id);
-        menu->DrawSlotFrameOnBackground(334, 36);
-        menu->DrawSlotFrameOnBackground(334, 160);
-        menu->DrawSlotFrameOnBackground(334, 284);
-        menu->LoadArtwork(library_copy, random(8) + 161);
-        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the shared player sheets from the player graphics file: stand, walk, attack, spell, sitting, ranged and face.
-void GfxController::LoadSpriteGraphics()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_CharacterBodies).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        sprites->LoadStandSheet(library_copy, BodyBitmap_StandSheet);
-        sprites->LoadWalkSheet(library_copy, BodyBitmap_WalkSheet);
-        sprites->LoadAttackSheet(library_copy, BodyBitmap_AttackSheet);
-        sprites->LoadSpellCastSheet(library_copy, BodyBitmap_SpellCastSheet);
-        sprites->LoadChairSitSheet(library_copy, BodyBitmap_ChairSitSheet);
-        sprites->LoadFloorSitSheet(library_copy, BodyBitmap_FloorSitSheet);
-        sprites->LoadRangedAttackSheet(library_copy, BodyBitmap_RangedAttackSheet);
-        sprites->LoadFaceSheet(library_copy, BodyBitmap_FaceSheet);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the create-character panel background.
-void GfxController::LoadCreateCharacterPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadCreateCharacterBackground(library_copy, MenuBitmap_CreateCharacterPanel);
-        FreeLibrary(library);
-    }
-}
-
-// Loads the change-password panel into the surface the create-character panel uses.
-void GfxController::LoadChangePasswordPanel()
-{
-    HMODULE library = LoadLibraryA(GetGfxFileName(GfxLibrary_MenuInterface).c_str());
-    if (library)
-    {
-        int library_copy = (int)library;
-        menu->LoadCreateCharacterBackground(library_copy, MenuBitmap_ChangePasswordPanel);
-        FreeLibrary(library);
-    }
-}
-
-// Builds a graphics file path by number, padded to three digits, from a scrambled path text.
+// The file name of a graphics library, gfx\gfxNNN.egf.
 String GfxController::GetGfxFileName(int file_number)
 {
     String path = DecodePath(".!G!G.e");
@@ -873,4 +603,260 @@ String GfxController::DecodePath(String encoded_path)
         }
     }
     return encoded_path;
+}
+
+// Loads the skills panel background into the shared panel surface.
+void GfxController::LoadSkillPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Skills);
+}
+
+// Loads the spells panel background into the shared panel surface; the skills panel uses the same bitmap.
+void GfxController::LoadSpellPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Skills);
+}
+
+// Loads the help panel background into the shared panel surface.
+void GfxController::LoadHelpPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Help);
+}
+
+// Loads the chat panel background into the shared panel surface.
+void GfxController::LoadChatPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Chat);
+}
+
+// Loads the status panel background into the shared panel surface.
+void GfxController::LoadStatusPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Status);
+}
+
+// Loads the player list panel background into the shared panel surface.
+void GfxController::LoadPlayerlistPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_PlayerList);
+}
+
+// Loads the group panel background into the shared panel surface.
+void GfxController::LoadGroupPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Group);
+}
+
+// Loads the inventory panel background into the shared panel surface.
+void GfxController::LoadInventoryPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Inventory);
+}
+
+// Loads the settings panel background into the shared panel surface.
+void GfxController::LoadSettingsPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_Settings);
+}
+
+// Loads the news panel background into the shared panel surface.
+void GfxController::LoadNewsPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(INTERFACE_GFX_FILE);
+    if (library)
+        interface_graphics->LoadPanelBackground(library, PanelBackground_News);
+}
+
+// Reloads the menu background picked by background_id.
+void GfxController::LoadMenuBackground()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+        menu->LoadBackground(library, menu->background_id);
+}
+
+// Shows the next menu background, 130 to 136 in turn, with the artwork on it.
+void GfxController::NextMenuBackground()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+    {
+        menu->background_id++;
+        if (menu->background_id > 136)
+            menu->background_id = 130;
+        menu->LoadBackground(library, menu->background_id);
+        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
+    }
+}
+
+// Loads the menu background and artwork, a random one of four when asked, and draws the artwork on it.
+void GfxController::LoadMainMenuScreen(bool random_artwork)
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+    {
+        int library_copy = library;
+        menu->LoadBackground(library_copy, menu->background_id);
+        if (random_artwork)
+            menu->artwork_id = random(4) + 141;
+        menu->LoadArtwork(library_copy, menu->artwork_id);
+        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
+    }
+}
+
+// Draws the create account screen's background: the menu backdrop, the form labels and a random side artwork.
+void GfxController::LoadCreateAccountScreen()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+    {
+        int library_copy = library;
+        menu->LoadBackground(library_copy, menu->background_id);
+        menu->DrawFormLabels(0, 0);
+        int artwork_id = random(8) + 161;
+        side_artwork_id = artwork_id;
+        menu->LoadArtwork(library_copy, artwork_id);
+        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
+    }
+}
+
+// Draws the sign-up code screen's background for the style, with a new random side artwork or the last one.
+void GfxController::LoadSignupCodeScreen(int style, bool random_artwork)
+{
+    int artwork_id;
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+    {
+        int library_copy = library;
+        menu->LoadBackground(library_copy, menu->background_id);
+        menu->DrawSignupFormBackground(0, 0, style);
+        if (random_artwork)
+        {
+            artwork_id = random(8) + 161;
+            side_artwork_id = artwork_id;
+        }
+        else
+            artwork_id = side_artwork_id;
+        menu->LoadArtwork(library_copy, artwork_id);
+        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
+    }
+}
+
+// Draws the password reset screen's background for the step, with a new random side artwork or the last one.
+void GfxController::LoadPasswordResetScreen(int step, bool random_artwork)
+{
+    int artwork_id;
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+    {
+        int library_copy = library;
+        menu->LoadBackground(library_copy, menu->background_id);
+        menu->DrawPasswordResetBackground(0, 0, step);
+        if (random_artwork)
+        {
+            artwork_id = random(8) + 161;
+            side_artwork_id = artwork_id;
+        }
+        else
+            artwork_id = side_artwork_id;
+        menu->LoadArtwork(library_copy, artwork_id);
+        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
+    }
+}
+
+// Loads the menu background and artwork with the upper panel drawn on it.
+void GfxController::LoadPasswordScreen()
+{
+    int menu_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (menu_library)
+    {
+        int menu_library_copy = menu_library;
+        menu->LoadBackground(menu_library_copy, menu->background_id);
+        menu->LoadArtwork(menu_library_copy, menu->artwork_id);
+        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
+        menu->DrawUpperPanelOnBackground(266, 184);
+    }
+}
+
+// Loads the menu background and artwork with the lower panel drawn on it.
+void GfxController::LoadLoginScreen()
+{
+    int menu_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (menu_library)
+    {
+        int menu_library_copy = menu_library;
+        menu->LoadBackground(menu_library_copy, menu->background_id);
+        menu->LoadArtwork(menu_library_copy, menu->artwork_id);
+        menu->DrawArtworkOnBackground(MENU_ARTWORK_X, MENU_ARTWORK_Y);
+        menu->DrawLowerPanelOnBackground(266, 284);
+    }
+}
+
+// Draws the character selection backdrop: the three slot frames and a random side artwork.
+void GfxController::LoadCharacterSelectScreen()
+{
+    int menu_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (menu_library)
+    {
+        int menu_library_copy = menu_library;
+        menu->LoadBackground(menu_library_copy, menu->background_id);
+        menu->DrawSlotFrameOnBackground(334, 36);
+        menu->DrawSlotFrameOnBackground(334, 160);
+        menu->DrawSlotFrameOnBackground(334, 284);
+        menu->LoadArtwork(menu_library_copy, random(8) + 161);
+        menu->DrawArtworkOnBackground(SIDE_ARTWORK_X, SIDE_ARTWORK_Y);
+    }
+}
+
+// Loads the character sprite sheets, from standing to the kind sheet, from their library.
+void GfxController::LoadSpriteGraphics()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_CharacterBodies);
+    if (library)
+    {
+        int library_copy = library;
+        sprites->LoadStandSheet(library_copy, BodyBitmap_StandSheet);
+        sprites->LoadWalkSheet(library_copy, BodyBitmap_WalkSheet);
+        sprites->LoadAttackSheet(library_copy, BodyBitmap_AttackSheet);
+        sprites->LoadSpellCastSheet(library_copy, BodyBitmap_SpellCastSheet);
+        sprites->LoadChairSitSheet(library_copy, BodyBitmap_ChairSitSheet);
+        sprites->LoadFloorSitSheet(library_copy, BodyBitmap_FloorSitSheet);
+        sprites->LoadRangedAttackSheet(library_copy, BodyBitmap_RangedAttackSheet);
+        sprites->LoadFaceSheet(library_copy, BodyBitmap_FaceSheet);
+        sprites->LoadKindSheet(library_copy, BodyBitmap_KindSheet);
+    }
+}
+
+// Loads the create-character panel background.
+void GfxController::LoadCreateCharacterPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+        menu->LoadCreateCharacterBackground(library, MenuBitmap_CreateCharacterPanel);
+}
+
+// Loads the change-password panel into the surface the create-character panel uses.
+void GfxController::LoadChangePasswordPanel()
+{
+    int library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MenuInterface);
+    if (library)
+        menu->LoadCreateCharacterBackground(library, MenuBitmap_ChangePasswordPanel);
 }

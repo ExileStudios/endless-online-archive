@@ -9,10 +9,11 @@
 
 #pragma package(smart_init)
 
-ClassValues::ClassValues(String path)
+ClassValues::ClassValues(String folder, char keep)
 {
-    file_prefix = path + "dat";
-    unused_value = -1;
+    file_prefix = folder + "dat";
+    kept_files = new TStringList();
+    keep_files = keep;
     is_loaded = false;
     has_long_name = false;
     file_missing = false;
@@ -92,6 +93,7 @@ void ClassValues::Load()
     {
         Clear();
         ClearHeaders();
+        ClearKeptFiles();
         part_number = 0;
         records_read = 0;
         record_count = 0;
@@ -123,6 +125,8 @@ void ClassValues::Load()
                     return;
                 if (file_text[1] != 'E' || file_text[2] != 'C' || file_text[3] != 'F')
                     return;
+                if (keep_files)
+                    kept_files->Add(file_text);
                 read_position = 4;
                 PubfileHeader *header = new PubfileHeader(part_file_name);
                 header->file_length = file_text.Length();
@@ -133,8 +137,7 @@ void ClassValues::Load()
                 part_headers.insert(part_headers.end(), header);
                 if (!records_read)
                     record_count = header->record_count;
-                int part_record;
-                for (part_record = 0; records_read < record_count && part_record < 900; part_record++)
+                for (int part_record = 0; records_read < record_count && part_record < 900; part_record++)
                 {
                     unsigned char name_length = ReadByte();
                     if (name_length > 50)
@@ -143,17 +146,17 @@ void ClassValues::Load()
                         header->load_state = 3;
                     }
                     String name = file_text.SubString(read_position, name_length);
-                    ClassValue record(Count() + 1);
-                    record.name = name;
+                    ClassValue *record = new ClassValue(Count() + 1);
+                    record->name = name;
                     read_position += name_length;
-                    record.parent_class_id = ReadByte();
-                    record.stat_group = ReadByte();
-                    record.strength = DecodeNumber(2);
-                    record.intelligence = DecodeNumber(2);
-                    record.wisdom = DecodeNumber(2);
-                    record.agility = DecodeNumber(2);
-                    record.constitution = DecodeNumber(2);
-                    record.charisma = DecodeNumber(2);
+                    record->parent_class_id = ReadByte();
+                    record->stat_group = ReadByte();
+                    record->strength = DecodeNumber(2);
+                    record->intelligence = DecodeNumber(2);
+                    record->wisdom = DecodeNumber(2);
+                    record->agility = DecodeNumber(2);
+                    record->constitution = DecodeNumber(2);
+                    record->charisma = DecodeNumber(2);
                     records.insert(records.end(), record);
                     header->records_read++;
                     records_read++;
@@ -211,20 +214,22 @@ void ClassValues::LoadFrom(String folder)
     Load();
 }
 
-DEFINE_CLEAR(ClassValues)
-
-String ClassValues::GetName(int class_id)
+// Deletes every class record.
+void ClassValues::Clear()
 {
-    String name;
-    for (vector<ClassValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (class_id == it->class_id)
-        {
-            name = it->name;
-            break;
-        }
-    }
-    return name;
+    for (vector<ClassValue *>::iterator record = records.begin(); record != records.end(); record++)
+        delete *record;
+    records.clear();
+}
+
+// The class record at the index, kept within the list.
+ClassValue *ClassValues::GetRecord(int index)
+{
+    if (index < 0)
+        index = 0;
+    if (records.size() <= index)
+        index = records.size() - 1;
+    return records[index];
 }
 
 // True when the class is the ancestor or comes from it through its parent classes; any class for ancestor 0.
@@ -232,7 +237,7 @@ bool ClassValues::IsDescendantOf(int class_id, int ancestor_id)
 {
     if (!ancestor_id)
         return true;
-    for (; class_id > 0; class_id = records[class_id - 1].parent_class_id)
+    for (; class_id > 0; class_id = records[class_id - 1]->parent_class_id)
     {
         if (class_id == ancestor_id)
             return true;
@@ -240,7 +245,7 @@ bool ClassValues::IsDescendantOf(int class_id, int ancestor_id)
     return false;
 }
 
-unsigned int ClassValues::Count()
+int ClassValues::Count()
 {
     return records.size();
 }
@@ -251,6 +256,11 @@ void ClassValues::ClearHeaders()
     for (int i = 0; i < part_headers.size(); i++)
         delete part_headers[i];
     part_headers.clear();
+}
+
+void ClassValues::ClearKeptFiles()
+{
+    kept_files->Clear();
 }
 
 // Reads one byte at the read position, stored plus one; a value past 252 reads as 0.

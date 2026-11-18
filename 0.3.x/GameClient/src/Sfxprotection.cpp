@@ -18,6 +18,8 @@ SfxController::SfxController(int sound_level, int music_level)
     music_retry_countdown = -1;
     ambient_sound_id = 0;
     fast_fade = false;
+    buffer_index = 1;
+    playing_buffer = 0;
     midi_player = new Dx_MidiPlayer();
     if (MainForm->config->GetMusicVolume() > 0)
     {
@@ -41,19 +43,51 @@ void SfxController::InitMidiPlayer()
     midi_player->Initialize();
 }
 
+void SfxController::PlaySfxAt(int sound_id, short volume)
+{
+    PlaySoundFile(MainForm->files->GetClientSoundPath(sound_id), volume);
+}
+
+int SfxController::PlaySfx(int sound_id)
+{
+    PlaySfxAt(sound_id, 0);
+}
+
+void SfxController::PlayControlSoundAt(int sound_id, short volume)
+{
+    PlaySoundFile(MainForm->files->GetControlSoundPath(sound_id), volume);
+}
+
+void SfxController::PlayGameSoundAt(int sound_id, short volume)
+{
+    PlaySoundFile(MainForm->files->GetSoundPath(sound_id), volume);
+}
+
+void SfxController::PlayGameSound(int sound_id)
+{
+    PlayGameSoundAt(sound_id, 0);
+}
+
+// Plays the instrument's note at the volume, each note 3600 Hz above the last.
+void SfxController::PlayInstrumentNoteAt(int instrument_id, int note_id, short volume)
+{
+    PlaySoundFile(MainForm->files->GetInstrumentSoundPath(instrument_id), volume);
+    SetPlayingFrequency(36 * note_id);
+}
+
 void SfxController::PlayInstrumentNote(int instrument_id, int note_id)
 {
-    PlaySoundFile(MainForm->strings->GetInstrumentNotePath(instrument_id, note_id), 0);
+    PlayInstrumentNoteAt(instrument_id, note_id, 0);
 }
 
 void SfxController::PlayEffectSoundAt(int sound_id, short volume)
 {
-    PlaySoundFile(MainForm->strings->GetSoundPath(sound_id), volume);
+    PlaySoundFile(MainForm->files->GetEffectSoundPath(sound_id), volume);
 }
 
-void SfxController::PlaySfx(int sound_id)
+void SfxController::PlayEffectSound(int sound_id)
 {
-    PlaySoundFile(MainForm->strings->GetSoundPath(sound_id), 0);
+    PlayEffectSoundAt(sound_id, 0);
 }
 
 // Plays a sound file on the next free effect buffer, as many as the sound buffers setting allows; nothing while the
@@ -63,90 +97,94 @@ void SfxController::PlaySoundFile(String file_path, int volume)
     volume = ScaleVolume(volume, sound_volume);
     if (volume < -3000)
         return;
-    if (sound_volume > 0 && !MainForm->minimized)
+    if (sound_volume <= 0)
+        return;
+    if (MainForm->minimized)
+        return;
+    buffer_index++;
+    if (MainForm->config->GetSoundBuffers() < buffer_index)
+        buffer_index = 2;
+    if (buffer_index == 2)
     {
-        char is_played = false;
-        if (!is_played && !MainForm->Dx_SoundBuffer2->Created)
-        {
-            if (MainForm->Dx_SoundBuffer2->CreateFromFile(file_path.c_str(), MainForm->DSBufferDesc2,
-                MainForm->Dx_Sound1))
-            {
-                MainForm->Dx_SoundBuffer2->SetVolume(volume);
-                try
-                {
-                    MainForm->Dx_SoundBuffer2->Play(0, 0);
-                }
-                catch (...)
-                {
-                }
-                is_played = true;
-            }
-        }
-        if (!is_played && !MainForm->Dx_SoundBuffer3->Created &&
-            MainForm->Dx_SoundBuffer3->CreateFromFile(file_path, MainForm->DSBufferDesc3, MainForm->Dx_Sound1))
-        {
-            MainForm->Dx_SoundBuffer3->SetVolume(volume);
-            try
-            {
-                MainForm->Dx_SoundBuffer3->Play(0, 0);
-            }
-            catch (...)
-            {
-            }
-            is_played = true;
-        }
-        if (!is_played && !MainForm->Dx_SoundBuffer4->Created &&
-            MainForm->Dx_SoundBuffer4->CreateFromFile(file_path, MainForm->DSBufferDesc4, MainForm->Dx_Sound1))
-        {
-            MainForm->Dx_SoundBuffer4->SetVolume(volume);
-            try
-            {
-                MainForm->Dx_SoundBuffer4->Play(0, 0);
-            }
-            catch (...)
-            {
-            }
-            is_played = true;
-        }
-        if (!is_played && !MainForm->Dx_SoundBuffer5->Created &&
-            MainForm->Dx_SoundBuffer5->CreateFromFile(file_path, MainForm->DSBufferDesc5, MainForm->Dx_Sound1))
-        {
-            MainForm->Dx_SoundBuffer5->SetVolume(volume);
-            try
-            {
-                MainForm->Dx_SoundBuffer5->Play(0, 0);
-            }
-            catch (...)
-            {
-            }
-            is_played = true;
-        }
-        if (!is_played && !MainForm->Dx_SoundBuffer6->Created &&
-            MainForm->Dx_SoundBuffer6->CreateFromFile(file_path, MainForm->DSBufferDesc6, MainForm->Dx_Sound1))
-        {
-            MainForm->Dx_SoundBuffer6->SetVolume(volume);
-            try
-            {
-                MainForm->Dx_SoundBuffer6->Play(0, 0);
-            }
-            catch (...)
-            {
-            }
-            is_played = true;
-        }
-        if (!is_played && !MainForm->Dx_SoundBuffer7->Created &&
-            MainForm->Dx_SoundBuffer7->CreateFromFile(file_path, MainForm->DSBufferDesc7, MainForm->Dx_Sound1))
-        {
-            MainForm->Dx_SoundBuffer7->SetVolume(volume);
-            try
-            {
-                MainForm->Dx_SoundBuffer7->Play(0, 0);
-            }
-            catch (...)
-            {
-            }
-        }
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer2, file_path, volume))
+            return;
+        else
+            buffer_index++;
     }
+    if (buffer_index == 3)
+    {
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer3, file_path, volume))
+            return;
+        else
+            buffer_index++;
+    }
+    if (buffer_index == 4)
+    {
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer4, file_path, volume))
+            return;
+        else
+            buffer_index++;
+    }
+    if (buffer_index == 5)
+    {
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer5, file_path, volume))
+            return;
+        else
+            buffer_index++;
+    }
+    if (buffer_index == 6)
+    {
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer6, file_path, volume))
+            return;
+        else
+            buffer_index++;
+    }
+    if (buffer_index == 7)
+    {
+        if (PlayOnBuffer(MainForm->Dx_SoundBuffer7, file_path, volume))
+            return;
+        else
+            buffer_index++;
+    }
+}
+
+// Plays the sound file on the buffer at the volume; false when the buffer is busy or the file cannot be played.
+bool SfxController::PlayOnBuffer(TDx_SoundBuffer *buffer, String file_path, int volume)
+{
+    if (buffer->Playing)
+    {
+        playing_buffer = 0;
+        return false;
+    }
+    if (!buffer->CreateFromFile(file_path.c_str(), MainForm->DSBufferDesc2, MainForm->Dx_Sound1))
+    {
+        playing_buffer = 0;
+        return false;
+    }
+    if (!buffer->Created)
+    {
+        playing_buffer = 0;
+        return false;
+    }
+    try
+    {
+        buffer->SetVolume(volume);
+        buffer->Play(0, 0);
+    }
+    catch (...)
+    {
+        playing_buffer = 0;
+        return false;
+    }
+    playing_buffer = buffer;
+    return true;
+}
+
+// Sets the playing sound's frequency to 22000 Hz plus 100 for each step of pitch.
+void SfxController::SetPlayingFrequency(int pitch)
+{
+    if (playing_buffer)
+        playing_buffer->SetFrequency(100 * pitch + 22000);
 }
 
 // Scales a sound's volume by the sound setting's level, from silent at 0 to the full volume at 100, at least 20.
@@ -179,10 +217,10 @@ void SfxController::PlayMusic(int music_id)
         if (midi_player->IsSegmentPlaying())
             midi_player->Stop();
         if (!play_from_jukebox)
-            midi_player->Play(MainForm->strings->GetMusicPath(music_id));
+            midi_player->Play(MainForm->files->GetMusicPath(music_id));
         else
         {
-            midi_player->Play(MainForm->strings->GetJukeboxMusicPath(music_id));
+            midi_player->Play(MainForm->files->GetJukeboxPath(music_id));
             play_from_jukebox = false;
         }
     }
@@ -249,7 +287,7 @@ void SfxController::PlayAmbientSound(int sound_id, short distance)
             ambient_target_volume = -100 * distance;
         if (!ambient_sound_id)
         {
-            String sound_path = MainForm->strings->GetSoundPath(sound_id);
+            String sound_path = MainForm->files->GetAmbientSoundPath(sound_id);
             if (!MainForm->Dx_SoundBuffer1->Created &&
                 MainForm->Dx_SoundBuffer1->CreateFromFile(sound_path, MainForm->DSBufferDesc1, MainForm->Dx_Sound1))
             {

@@ -110,6 +110,7 @@ void JukeboxController::MouseDown(int x, int y, int button)
                         MainForm->strings->GetDialogText(DialogText_WarningEnough, true) + " " +
                             LowerCase(MainForm->item_values->GetName(ItemId_Gold));
                     MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
+                        // A song is already playing
                         MainForm->strings->GetDialogText(DialogText_WarningEnough, false), no_gold_text);
                     MainForm->edits->caret_enabled = false;
                 }

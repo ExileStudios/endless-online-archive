@@ -9,8 +9,8 @@
 BookController::BookController()
 {
     lines = new TStringList();
-    window_x = 133;
-    window_y = 13;
+    window_x = 120;
+    window_y = 16;
     frame_index = 0;
     admin_level = 0;
     top_line = 0;
@@ -95,11 +95,8 @@ void BookController::MouseDown(int x, int y, int button)
 // Drags a grabbed thumb, moves a dragged window, kept on screen, and tracks the close and scroll buttons.
 void BookController::MouseMove(int x, int y)
 {
-    if (x >= window_x + 190 && x <= window_x + 204)
-    {
-        if (y >= window_y + 51 && y <= window_y + 270)
-            DragScrollThumb(y);
-    }
+    if (y >= window_y + 51 && y <= window_y + 270)
+        DragScrollThumb(y);
     if (is_dragging && drag_mode == 1)
     {
         window_x = x - drag_offset_x;
@@ -108,8 +105,8 @@ void BookController::MouseMove(int x, int y)
             window_x = 10;
         if (window_y <= 8)
             window_y = 8;
-        if (window_x >= 250)
-            window_x = 250;
+        if (window_x >= 223)
+            window_x = 223;
         if (window_y >= 19)
             window_y = 19;
         MainForm->redraw_needed = true;

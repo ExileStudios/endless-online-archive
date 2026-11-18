@@ -10,10 +10,11 @@
 
 #pragma package(smart_init)
 
-SkillValues::SkillValues(String data_path)
+SkillValues::SkillValues(String prefix, char keep_parts)
 {
-    file_prefix = data_path + "dsl";
-    unused_value = -1;
+    file_prefix = prefix + "dsl";
+    file_parts = new TStringList();
+    keep_file_parts = keep_parts;
     is_downloading = false;
     is_loaded = false;
     has_bad_record = false;
@@ -93,6 +94,7 @@ void SkillValues::Load()
     {
         Clear();
         ClearHeaders();
+        ClearFileParts();
         part_number = 0;
         records_read = 0;
         records_expected = 0;
@@ -124,6 +126,8 @@ void SkillValues::Load()
                     return;
                 if (data[1] != 'E' || data[2] != 'S' || data[3] != 'F')
                     return;
+                if (keep_file_parts)
+                    file_parts->Add(data);
                 read_position = 4;
                 PubfileHeader *header = new PubfileHeader(file_name);
                 header->file_length = data.Length();
@@ -151,42 +155,42 @@ void SkillValues::Load()
                         header->load_state = 3;
                     }
                     String skill_name = data.SubString(read_position, name_length);
-                    SkillValue skill(Count() + 1);
-                    skill.name = skill_name;
+                    SkillValue *skill = new SkillValue(Count() + 1);
+                    skill->name = skill_name;
                     read_position += name_length;
                     String shout = data.SubString(read_position, shout_length);
-                    skill.shout = shout;
+                    skill->shout = shout;
                     read_position += shout_length;
-                    skill.icon = DecodeNumber(2);
-                    skill.graphic = DecodeNumber(2);
-                    skill.tp_cost = DecodeNumber(2);
-                    skill.sp_cost = DecodeNumber(2);
-                    skill.cast_time = ReadByte();
-                    skill.category = ReadByte();
-                    skill.spare_byte = ReadByte();
-                    skill.type = DecodeNumber(3);
-                    skill.element = ReadByte();
-                    skill.element_power = DecodeNumber(2);
-                    skill.target_restriction = ReadByte();
-                    skill.target_type = ReadByte();
-                    skill.target_time = ReadByte();
-                    skill.area = ReadByte();
-                    skill.max_level = DecodeNumber(2);
-                    skill.min_damage = DecodeNumber(2);
-                    skill.max_damage = DecodeNumber(2);
-                    skill.accuracy = DecodeNumber(2);
-                    skill.evade = DecodeNumber(2);
-                    skill.armor = DecodeNumber(2);
-                    skill.return_damage = ReadByte();
-                    skill.hp_heal = DecodeNumber(2);
-                    skill.tp_heal = DecodeNumber(2);
-                    skill.sp_heal = ReadByte();
-                    skill.bonus_str = DecodeNumber(2);
-                    skill.bonus_int = DecodeNumber(2);
-                    skill.bonus_wis = DecodeNumber(2);
-                    skill.bonus_agi = DecodeNumber(2);
-                    skill.bonus_con = DecodeNumber(2);
-                    skill.bonus_cha = DecodeNumber(2);
+                    skill->icon = DecodeNumber(2);
+                    skill->graphic = DecodeNumber(2);
+                    skill->tp_cost = DecodeNumber(2);
+                    skill->sp_cost = DecodeNumber(2);
+                    skill->cast_time = ReadByte();
+                    skill->category = ReadByte();
+                    skill->spare_byte = ReadByte();
+                    skill->type = DecodeNumber(3);
+                    skill->element = ReadByte();
+                    skill->element_power = DecodeNumber(2);
+                    skill->target_restriction = ReadByte();
+                    skill->target_type = ReadByte();
+                    skill->target_time = ReadByte();
+                    skill->area = ReadByte();
+                    skill->max_level = DecodeNumber(2);
+                    skill->min_damage = DecodeNumber(2);
+                    skill->max_damage = DecodeNumber(2);
+                    skill->accuracy = DecodeNumber(2);
+                    skill->evade = DecodeNumber(2);
+                    skill->armor = DecodeNumber(2);
+                    skill->return_damage = ReadByte();
+                    skill->hp_heal = DecodeNumber(2);
+                    skill->tp_heal = DecodeNumber(2);
+                    skill->sp_heal = ReadByte();
+                    skill->bonus_str = DecodeNumber(2);
+                    skill->bonus_int = DecodeNumber(2);
+                    skill->bonus_wis = DecodeNumber(2);
+                    skill->bonus_agi = DecodeNumber(2);
+                    skill->bonus_con = DecodeNumber(2);
+                    skill->bonus_cha = DecodeNumber(2);
                     records.insert(records.end(), skill);
                     header->records_read++;
                     records_read++;
@@ -245,178 +249,47 @@ void SkillValues::LoadFrom(String folder)
     Load();
 }
 
-DEFINE_CLEAR(SkillValues)
-
-// The id of the skill with this name, in any case, or -1.
-int SkillValues::FindByName(String name)
+// Deletes every skill record.
+void SkillValues::Clear()
 {
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (LowerCase(name) == LowerCase(it->name))
-            return it->skill_id;
-    }
-    return -1;
+    for (vector<SkillValue *>::iterator it = records.begin(); it != records.end(); it++)
+        delete *it;
+    records.clear();
 }
 
-SkillValue SkillValues::GetSkill(int skill_id)
+// The skill with this name, in any case, or 0.
+SkillValue *SkillValues::FindByName(String name)
 {
-    for (vector<SkillValue>::iterator skill = records.begin(); skill != records.end(); skill++)
+    for (vector<SkillValue *>::iterator it = records.begin(); it != records.end(); it++)
     {
-        if (skill->skill_id == skill_id)
-            return *skill;
+        if (LowerCase(name) == LowerCase((*it)->name))
+            return *it;
     }
-    return SkillValue(0);
+    return 0;
 }
 
-int SkillValues::GetGraphic(int skill_id)
+// The skill record at the index, kept within the list.
+SkillValue *SkillValues::GetSkill(int index)
 {
-    int graphic = -1;
-    vector<SkillValue>::iterator it;
-    for (it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            graphic = it->graphic;
-            break;
-        }
-    }
-    return graphic;
+    if (index < 0)
+        index = 0;
+    if (records.size() <= index)
+        index = records.size() - 1;
+    return records[index];
 }
 
-int SkillValues::GetTargetRestriction(int skill_id)
-{
-    int target_restriction = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            target_restriction = it->target_restriction;
-            break;
-        }
-    }
-    return target_restriction;
-}
-
-int SkillValues::GetCastTime(int skill_id)
-{
-    int cast_time = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            cast_time = it->cast_time;
-            break;
-        }
-    }
-    return cast_time;
-}
-
-int SkillValues::GetTpCost(int skill_id)
-{
-    int tp_cost = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            tp_cost = it->tp_cost;
-            break;
-        }
-    }
-    return tp_cost;
-}
-
-int SkillValues::GetSpCost(int skill_id)
-{
-    int sp_cost = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            sp_cost = it->sp_cost;
-            break;
-        }
-    }
-    return sp_cost;
-}
-
-int SkillValues::GetType(int skill_id)
-{
-    int type = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            type = it->type;
-            break;
-        }
-    }
-    return type;
-}
-
-int SkillValues::GetCategory(int skill_id)
-{
-    int category = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            category = it->category;
-            break;
-        }
-    }
-    return category;
-}
-
-int SkillValues::GetIcon(int skill_id)
-{
-    int icon = -1;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            icon = it->icon;
-            break;
-        }
-    }
-    return icon;
-}
-
-String SkillValues::GetName(int skill_id)
-{
-    String name;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            name = it->name;
-            break;
-        }
-    }
-    return name;
-}
-
-// The words shown over the caster when the skill is cast.
-String SkillValues::GetShout(int skill_id)
-{
-    String shout;
-    for (vector<SkillValue>::iterator it = records.begin(); it != records.end(); it++)
-    {
-        if (skill_id == it->skill_id)
-        {
-            shout = it->shout;
-            break;
-        }
-    }
-    return shout;
-}
-
-unsigned int SkillValues::Count()
+int SkillValues::Count()
 {
     return records.size();
 }
 
 // Deletes every skill record.
 DEFINE_CLEAR_HEADERS(SkillValues)
+
+void SkillValues::ClearFileParts()
+{
+    file_parts->Clear();
+}
 
 DEFINE_READ_BYTE(SkillValues)
 
