@@ -35,6 +35,7 @@
 #include <time.h>
 #include "Ctrl_hotkeys.h"
 #include "Ctrl_notification.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -87,6 +88,7 @@ AnimationController::AnimationController(char show_intro)
     hotkeys = new HotkeysController();
     book = new BookController();
     trade = new TradeController();
+    crafter = new CrafterController();
     shop = new ShopController();
     dialog = new DialogController();
     learn = new LearnController();
@@ -125,6 +127,7 @@ AnimationController::~AnimationController()
     delete bank;
     delete jukebox;
     delete barber;
+    delete crafter;
     delete shop;
     delete dialog;
     delete guild;
@@ -187,6 +190,7 @@ bool AnimationController::IsObjectClickDelayed()
     return delayed;
 }
 
+// Blocks commands for the seconds, at 15 ticks a second.
 void AnimationController::SetCommandDelay(int seconds)
 {
     command_delay = 15 * seconds;
@@ -219,6 +223,7 @@ bool AnimationController::IsTileUseDelayed()
     return delayed;
 }
 
+// Blocks walking for 14 ticks.
 void AnimationController::BlockWalking()
 {
     walk_block = 14;
@@ -483,6 +488,11 @@ void AnimationController::CloseTopWindow()
     if (learn->is_visible)
     {
         learn->Close();
+        return;
+    }
+    if (crafter->is_visible)
+    {
+        crafter->Close();
         return;
     }
     if (shop->is_visible)

@@ -57,6 +57,7 @@
 #include "Ctrl_tooltip.h"
 #include "Ctrl_hotkeys.h"
 #include "Gfx_mapnpcs.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -96,14 +97,14 @@ void Mouser::HandleMove()
                 MainForm->animation->book->is_visible || MainForm->animation->trade->is_visible ||
                 MainForm->animation->bank->is_visible || MainForm->animation->jukebox->is_visible ||
                 MainForm->animation->musician->is_visible || MainForm->animation->barber->is_visible ||
-                MainForm->animation->learn->is_visible || MainForm->animation->shop->is_visible ||
-                MainForm->animation->stat->is_visible || MainForm->animation->guild->is_visible ||
-                MainForm->animation->memo->is_visible || MainForm->animation->dialog->is_visible ||
-                MainForm->animation->report->is_visible || MainForm->animation->law->is_visible ||
-                MainForm->animation->inn->is_visible || MainForm->animation->locker->is_visible ||
-                MainForm->animation->chest->is_visible || MainForm->animation->social->is_open ||
-                MainForm->animation->message_board->is_visible || MainForm->animation->quests->is_visible ||
-                MainForm->animation->game->amount_box_visible)
+                MainForm->animation->learn->is_visible || MainForm->animation->crafter->is_visible ||
+                MainForm->animation->shop->is_visible || MainForm->animation->stat->is_visible ||
+                MainForm->animation->guild->is_visible || MainForm->animation->memo->is_visible ||
+                MainForm->animation->dialog->is_visible || MainForm->animation->report->is_visible ||
+                MainForm->animation->law->is_visible || MainForm->animation->inn->is_visible ||
+                MainForm->animation->locker->is_visible || MainForm->animation->chest->is_visible ||
+                MainForm->animation->social->is_open || MainForm->animation->message_board->is_visible ||
+                MainForm->animation->quests->is_visible || MainForm->animation->game->amount_box_visible)
             {
                 char window_handled = false;
                 if (MainForm->animation->game->message_visible)
@@ -340,6 +341,11 @@ void Mouser::HandleMove()
                 {
                     window_handled = true;
                     MainForm->animation->learn->MouseMove(x, y);
+                }
+                if (MainForm->animation->crafter->is_visible && !window_handled)
+                {
+                    window_handled = true;
+                    MainForm->animation->crafter->MouseMove(x, y);
                 }
                 if (MainForm->animation->shop->is_visible && !window_handled)
                 {
@@ -764,6 +770,8 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 !MainForm->animation->interface_controller->inventory->is_dragging) ||
             (MainForm->animation->bank->is_visible &&
                 !MainForm->animation->interface_controller->inventory->is_dragging) ||
+            (MainForm->animation->crafter->is_visible &&
+                !MainForm->animation->interface_controller->inventory->is_dragging) ||
             (MainForm->animation->shop->is_visible &&
                 !MainForm->animation->interface_controller->inventory->is_dragging) ||
             MainForm->animation->learn->is_visible || MainForm->animation->stat->is_visible ||
@@ -1109,6 +1117,13 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->edits->caret_enabled = true;
                         MainForm->redraw_needed = true;
                     }
+                    if (MainForm->animation->game->message_kind == ConfirmAction_CraftItem)
+                    {
+                        MainForm->net_client->sender->SendCraftItem(MainForm->animation->crafter->session_id,
+                            MainForm->animation->crafter->result_item_id);
+                        MainForm->animation->game->message_visible = false;
+                        MainForm->redraw_needed = true;
+                    }
                 }
             }
             SkillValue *forget_skill;
@@ -1135,37 +1150,6 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                 {
                     if (MainForm->animation->game->large_box_kind == LargeBoxKind_CraftItem)
                     {
-                        if (MainForm->animation->interface_controller->status->weight <
-                            MainForm->animation->interface_controller->status->max_weight)
-                        {
-                            if (MainForm->animation->interface_controller->inventory->TestAddItem(MainForm->animation->shop->selected_item_id))
-                            {
-                                MainForm->net_client->sender->SendCraftItem(MainForm->animation->shop->npc_session_id,
-                                    MainForm->animation->shop->selected_item_id);
-                                box_closed = true;
-                                MainForm->animation->game->large_box_visible = false;
-                                MainForm->edits->caret_enabled = true;
-                                MainForm->redraw_needed = true;
-                            }
-                            else
-                            {
-                                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                    MainForm->strings->GetText(GameText_YouHaveNotEnough));
-                                MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                    MainForm->strings->GetText(GameText_Warning),
-                                    MainForm->strings->GetText(GameText_YouHaveNotEnough));
-                                MainForm->edits->caret_enabled = false;
-                            }
-                        }
-                        else
-                        {
-                            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Warning,
-                                MainForm->strings->GetText(GameText_YouCannotCarryEnough));
-                            MainForm->animation->game->ShowMessageBox(DialogButtons_Ok, ConfirmAction_None,
-                                MainForm->strings->GetText(GameText_Warning),
-                                MainForm->strings->GetText(GameText_YouCannotCarryEnough));
-                            MainForm->edits->caret_enabled = false;
-                        }
                     }
                     if (MainForm->animation->game->large_box_kind == LargeBoxKind_AcceptGuildInvite)
                     {
@@ -2040,6 +2024,11 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->redraw_needed = true;
                     }
                 }
+            }
+            if (MainForm->animation->crafter->is_visible && !handled)
+            {
+                handled = true;
+                MainForm->animation->crafter->MouseDown(click_x, click_y, button);
             }
             if (MainForm->animation->shop->is_visible && !handled)
             {
@@ -5033,6 +5022,7 @@ void Mouser::HandleMouseUp()
         MainForm->animation->barber->MouseUp();
         MainForm->animation->stat->MouseUp();
         MainForm->animation->learn->MouseUp();
+        MainForm->animation->crafter->MouseUp();
         MainForm->animation->shop->MouseUp();
         MainForm->animation->guild->MouseUp();
         MainForm->animation->memo->MouseUp();

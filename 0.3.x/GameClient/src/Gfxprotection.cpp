@@ -33,6 +33,7 @@
 #include "Gfx_global_npcs.h"
 #include "Gfx_global_sprites.h"
 #include "Gfx_mapnpcs.h"
+#include "Gfx_crafter.h"
 
 #pragma package(smart_init)
 
@@ -56,6 +57,7 @@ GfxController::GfxController(char preload_tiles, char preload_map_graphics)
     game_created = false;
     hover_label_created = false;
     trade_created = false;
+    crafter_created = false;
     shop_created = false;
     dialog_created = false;
     bank_created = false;
@@ -75,6 +77,7 @@ GfxController::~GfxController()
     FreeHoverLabel();
     FreeGameGraphics();
     FreeTradeGraphics();
+    FreeCrafterGraphics();
     FreeShopGraphics();
     FreeBankGraphics();
     FreeJukeboxGraphics();
@@ -136,6 +139,13 @@ void GfxController::CreateTradeGraphics()
     if (!trade_created)
         trade = new TradeGraphics();
     trade_created = true;
+}
+
+void GfxController::CreateCrafterGraphics()
+{
+    if (!crafter_created)
+        crafter = new CrafterGraphics();
+    crafter_created = true;
 }
 
 void GfxController::CreateShopGraphics()
@@ -213,6 +223,13 @@ void GfxController::FreeDialogGraphics()
     if (dialog_created)
         delete dialog;
     dialog_created = false;
+}
+
+void GfxController::FreeCrafterGraphics()
+{
+    if (crafter_created)
+        delete crafter;
+    crafter_created = false;
 }
 
 void GfxController::FreeShopGraphics()
@@ -337,6 +354,22 @@ void GfxController::LoadTradeGraphics()
     if (slot_library && trade_created)
     {
         TPoint slot_size = trade->LoadItemSlot(slot_library, TileBitmap_ItemSlot);
+    }
+}
+
+// Loads the crafter window's background and its parts.
+void GfxController::LoadCrafterGraphics()
+{
+    int parts_library;
+    int crafter_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_GameInterface);
+    if (crafter_library && crafter_created)
+    {
+        TPoint size = crafter->LoadBackground(crafter_library, InterfaceBitmap_CrafterWindow);
+    }
+    parts_library = MainForm->gfx_vault->OpenLibrary(GfxLibrary_MapTiles);
+    if (parts_library && crafter_created)
+    {
+        TPoint parts_size = crafter->LoadParts(parts_library, TileBitmap_ItemSlot);
     }
 }
 

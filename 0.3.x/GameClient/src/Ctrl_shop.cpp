@@ -14,6 +14,7 @@
 #include "Ctrl_learn.h"
 #include "Ctrl_locker.h"
 #include "Ctrl_tooltip.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -183,11 +184,10 @@ int ShopController::CountSellableItems()
 
 // A click in the window. On the menu: open the buy, sell or craft list. On the buy list: checks weight, room and
 // gold, then asks to confirm one item or opens the amount box. On the sell list: the same without the checks.
-// On the craft list: shows the recipe. Otherwise the scroll bar and moving the window.
+// On the craft list: opens the crafting window with the item's ingredients.
+// Otherwise the scroll bar and moving the window.
 void ShopController::MouseDown(int x, int y, int button)
 {
-    vector<ShopItem>::iterator j;
-    vector<ShopItem>::iterator k;
     int carried_amount;
     vector<CraftItem>::iterator i;
     char handled = false;
@@ -207,7 +207,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 else
                 {
                     shown_items.clear();
-                    for (j = buy_items.begin(); j != buy_items.end(); j++)
+                    for (vector<ShopItem>::iterator j = buy_items.begin(); j != buy_items.end(); j++)
                         shown_items.insert(shown_items.end(), *j);
                     page = ShopPage_Buy;
                 }
@@ -222,7 +222,7 @@ void ShopController::MouseDown(int x, int y, int button)
                 else
                 {
                     shown_items.clear();
-                    for (k = sell_items.begin(); k != sell_items.end(); k++)
+                    for (vector<ShopItem>::iterator k = sell_items.begin(); k != sell_items.end(); k++)
                     {
                         carried_amount =
                             MainForm->animation->interface_controller->inventory->GetItemAmount(k->item_id);
@@ -375,56 +375,36 @@ void ShopController::MouseDown(int x, int y, int button)
             if (page == ShopPage_Craft && row >= 0 && (int)shown_items.size() > row)
             {
                 handled = true;
+                tooltip->Hide();
                 int craft_item_id = MainForm->animation->shop->shown_items[row].item_id;
                 int craft_max_amount;
                 craft_max_amount = MainForm->animation->shop->shown_items[row].max_amount;
                 String craft_item_name = MainForm->item_values->GetName(craft_item_id);
-                MainForm->animation->shop->selected_item_id = craft_item_id;
-                MainForm->animation->shop->selected_amount = 1;
-                String craft_text;
-                int buttons = 2;
-                char recipe_found = false;
-                MainForm->animation->game->large_box_lines[1] = "";
-                MainForm->animation->game->large_box_lines[2] = "";
-                MainForm->animation->game->large_box_lines[3] = "";
-                MainForm->animation->game->large_box_lines[4] = "";
-                MainForm->animation->game->large_box_lines[5] = "";
+                MainForm->gfx->CreateCrafterGraphics();
+                MainForm->gfx->LoadCrafterGraphics();
+                MainForm->animation->crafter->Open(craft_item_name, craft_item_id, npc_session_id);
                 i = craft_items.begin();
                 while (i != craft_items.end())
                 {
                     if (craft_item_id == i->item_id)
                     {
-                        recipe_found = true;
                         for (int craft_ingredient = 0; craft_ingredient < MAX_CRAFT_INGREDIENTS; craft_ingredient++)
                         {
                             if (i->ingredient_ids[craft_ingredient] > 0 && i->ingredient_amounts[craft_ingredient] > 0)
                             {
-                                int carried_ingredient_amount =
-                                    MainForm->animation->interface_controller->inventory->GetItemAmount(i->ingredient_ids[craft_ingredient]);
-                                int needed_ingredient_amount = i->ingredient_amounts[craft_ingredient];
+                                int ingredient_id = i->ingredient_ids[craft_ingredient];
+                                int ingredient_amount = i->ingredient_amounts[craft_ingredient];
                                 String ingredient_name =
                                     MainForm->item_values->GetName(i->ingredient_ids[craft_ingredient]);
-                                if (carried_ingredient_amount < needed_ingredient_amount)
-                                    recipe_found = false;
-                                MainForm->animation->game->large_box_lines[craft_ingredient + 2] =
-                                    "+  " + IntToStr(needed_ingredient_amount) + " " + ingredient_name;
+                                MainForm->animation->crafter->AddIngredient(ingredient_name, ingredient_id,
+                                    ingredient_amount);
                             }
                         }
                         break;
                     }
                     i++;
                 }
-                // The box offers crafting only when every ingredient is carried in full
-                if (recipe_found)
-                {
-                    craft_text = MainForm->strings->GetText(GameText_PutIngredientsTogether);
-                    buttons = 3;
-                }
-                else
-                    craft_text = MainForm->strings->GetText(GameText_YouDontHaveAll);
-                MainForm->animation->game->ShowLargeMessageBox(buttons, LargeBoxKind_CraftItem,
-                    MainForm->strings->GetText(GameText_Ingredients) + " " + craft_item_name, craft_text);
-                MainForm->edits->caret_enabled = false;
+                MainForm->animation->crafter->Layout();
             }
             if (page == ShopPage_Unknown4 && row >= 0 && (int)shown_items.size() > row)
                 handled = true;

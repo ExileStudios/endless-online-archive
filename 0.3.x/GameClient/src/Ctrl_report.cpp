@@ -11,6 +11,7 @@
 #include "Ctrl_locker.h"
 #include "Ctrl_shop.h"
 #include "Ctrl_trade.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -133,6 +134,7 @@ void ReportController::AddText(String text, String right_text, bool add_blank_li
 // Shows the window with a title and no lines, closing other npc windows.
 void ReportController::Open(String window_title)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->law->is_visible = false;

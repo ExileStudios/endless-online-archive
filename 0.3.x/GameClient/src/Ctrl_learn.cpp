@@ -16,6 +16,7 @@
 #include "Ctrl_skills.h"
 #include "Ctrl_spells.h"
 #include "Ctrl_tooltip.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -68,6 +69,7 @@ void LearnController::RemoveSkill(int skill_id)
 // Shows the skill master's window for the npc on its menu page with an empty list, closing the other npc windows.
 void LearnController::Open(String npc, int session_id)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->law->is_visible = false;

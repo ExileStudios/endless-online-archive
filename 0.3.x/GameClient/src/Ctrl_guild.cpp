@@ -14,6 +14,7 @@
 #include "Ctrl_learn.h"
 #include "Ctrl_locker.h"
 #include "Ctrl_shop.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -49,6 +50,7 @@ DEFINE_ADD_TEXT(GuildController)
 // Shows the guild master's window on its menu page with no text, closing the other npc windows.
 void GuildController::Open(String window_title, int session_id)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->law->is_visible = false;

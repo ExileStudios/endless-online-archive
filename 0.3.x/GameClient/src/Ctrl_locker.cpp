@@ -14,6 +14,7 @@
 #include "Ctrl_inventory.h"
 #include "Ctrl_shop.h"
 #include "Ctrl_tooltip.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -106,6 +107,7 @@ void LockerController::ScrollToItem(int item_id)
 // Shows the locker at the map tile with an empty list, closing other npc windows.
 void LockerController::Open(String window_title, int reserved, int x, int y)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->guild->is_visible = false;
     MainForm->animation->memo->is_visible = false;

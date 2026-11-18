@@ -10,6 +10,7 @@
 #include "Ctrl_locker.h"
 #include "Ctrl_shop.h"
 #include "Ctrl_trade.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -189,9 +190,10 @@ void MemoController::AddText(String text, String right_text, bool add_blank_line
     MainForm->redraw_needed = true;
 }
 
-// Shows the memo window with the title and an empty page, closing other npc windows.
+// Shows the memo window empty and at the top, closing the other npc windows.
 void MemoController::Show(String window_title)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->law->is_visible = false;

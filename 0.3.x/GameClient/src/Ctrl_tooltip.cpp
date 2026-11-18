@@ -656,9 +656,9 @@ void Tooltip::DrawFrame()
         // Near the flip edge the tip is drawn on the other side of the mouse.
         if (flip_edge_x > zero && flip_edge_x < x + anchor_x + width + two * pad_x)
             left -= two * pad_x + width + flip_gap + flip_extra;
-        MainForm->blitter->HalfBlendBlt(left + anchor_x, top + anchor_y, MainForm->OffscreenSurface,
+        MainForm->blitter->AlphaBlt(left + anchor_x, top + anchor_y, MainForm->OffscreenSurface,
             MainForm->gfx->interface_graphics->chat_panel_surface,
-            &MainForm->gfx->interface_graphics->GetBackRect(two * pad_x + width, height));
+            &MainForm->gfx->interface_graphics->GetBackRect(two * pad_x + width, height), 175);
         if (element > zero)
         {
             if (element > max_shown_lines)

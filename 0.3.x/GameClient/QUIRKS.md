@@ -315,7 +315,7 @@ int ItemValues::GetGraphic(int item_id)
 - **When it happens:** Every caller that asks for a value of the last item: the inventory, paperdoll, shop, chest,
   locker and map code call these getters. `UseItem` reads the type first.
   - Search of the tree for `Count\(\) > \(unsigned int\)item_id`: 0 line(s).
-  - Search of the tree for `item_values->GetGraphic\(`: 29 line(s), in Ctrl_inventory.cpp, Ctrl_paperdoll.cpp,
+  - Search of the tree for `item_values->GetGraphic\(`: 30 line(s), in Ctrl_inventory.cpp, Ctrl_paperdoll.cpp,
     Gfx_game.cpp, Gfx_interface.cpp, TMainForm.cpp.
   - Reachable with the shipped code: reachable. The item with the highest id in the server's item file is the last
     record of the list.
@@ -968,12 +968,14 @@ void GameController::StartSpotCountdown(int x, int y)
   other windows.
 - **What it does:** Step by step:
   - `LockerController::Open` clears `locker` (itself) where the others clear `learn`, so the learn window stays.
-  - `MemoController::Open` clears `memo` (itself) where the others clear `guild`, so a guild window stays.
-  - `LawController::Open` clears five windows and leaves out `inn`, so an inn window stays.
+  - `MemoController::Show`, which every `MemoController::Open` runs first, clears `memo` (itself) where the others clear
+    `guild`, so a guild window stays.
+  - `LawController::Open` clears six windows and leaves out `inn`, so an inn window stays.
 - **Evidence, from the code and not from the names:**
-  - full: `Ctrl_inn.cpp` `MainForm->animation->law->is_visible = false;` The inn window hides all six others.
-  - short: `Ctrl_law.cpp` `MainForm->animation->memo->is_visible = false;` The law window's list ends here, without the
-    inn.
+  - full: `Ctrl_inn.cpp` `sleep_request_cooldown = 0;` The inn window hides all seven others before it resets its own
+    state.
+  - short: `Ctrl_law.cpp` `reset_value = 0;` The law window's list of windows to hide, which comes before this,
+    leaves out the inn.
 - **When it happens:** The server's reply that opens the locker, a memo or the law window arrives while the learn, guild
   or inn window is open.
   - `LockerController::Open` is called from `PacketProcessor::DispatchPacket`
@@ -1438,20 +1440,22 @@ void GameController::StartSpotCountdown(int x, int y)
   - What you see: None visible: `draw_progress` is 99 on every draw. Had the first value been kept, a player whose
     graphics are still pending (`load_progress` 0) would skip the frame-buffer blit in `BlitFrame`.
 - **The bitmap loaders' surface setup calls Restore on the surface only when the surface pointer is null.**
-  `Gfx_tile.cpp`, `TileResource::LoadSurface`.
+  `Gfxtransfers.cpp`, `GfxTransfers::CreateSurface`.
   - Code:
-    `if (!surface) surface->Restore(); if (surface->Created) surface->Destroy(); surface->GetSurfaceDesc(surface_desc); surface->Create(surface_desc, MainForm->Dx_Draw1);`
+    `if (!surface) surface->Restore(); if (surface->Created) surface->Destroy(); surface->GetSurfaceDesc(desc); surface->Create(desc, MainForm->Dx_Draw1);`
   - What it does: Step by step: - `if (!surface)` calls `surface->Restore();` only when `surface` is null, so the call
-    would go through a null pointer. - Every surface the loaders test is a member made by `new TDx_DrawSurface(NULL)` in
+    would go through a null pointer. - Every surface the loaders pass is a member made by `new TDx_DrawSurface(NULL)` in
     a constructor (searches below), so the test is always false and `Restore` is never called.
-  - When it happens: Every bitmap load of the map lists, the effects and the window graphics runs the test. The search
-    for `if \(!(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface)\)` finds 1 line(s).
-    The search for `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) =[^=]`
-    finds 37 line(s). The search for
-    `(\b|->)(surface|background_surface|item_slot_surface|cell_sheet_surface|layer[012]_surface) = (?!new TDx_DrawSurface\(NULL\);)`
+  - When it happens: Every bitmap load of the map lists, the npc sheets, the effects and the window graphics runs the
+    test. The search for
+    `(\b|->)(surface|background_surface|parts_surface|cell_sheet_surface|front_sheet|back_sheet|front_mirrored|back_mirrored|layer[012]_surface) =[^=]`
+    finds 42 line(s). The search for
+    `(\b|->)(surface|background_surface|parts_surface|cell_sheet_surface|front_sheet|back_sheet|front_mirrored|back_mirrored|layer[012]_surface) = (?!new TDx_DrawSurface\(NULL\);)`
     finds 5 line(s). Reachable with the shipped code: never reached. The search for any store to the surface members the
-    loaders test (`surface`, `background_surface`, `item_slot_surface`, `cell_sheet_surface` and the three effect
-    layers) finds 31 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 0.
+    loaders pass (`surface`, `background_surface`, `parts_surface`, `cell_sheet_surface`, the four npc sheets and the
+    three effect layers) finds 42 lines, and the search for one that is not `new TDx_DrawSurface(NULL)` finds 5: two of
+    the font's own `surface`, which no loader passes, and the three lines of `EffectResource::LoadSurfaces` that pick
+    one of the effect's layer surfaces into a local.
   - What you see: None visible: no surface is restored here, lost or not.
 - **A wall sheet exactly 120 pixels wide, or a tile sheet exactly 250, is flagged animated but drawn whole.**
   `Gfx_wall.cpp`, `WallResource::LoadSurface`; `Gfx_wall.cpp`, `Gfx_wall_GetFrameRect`;

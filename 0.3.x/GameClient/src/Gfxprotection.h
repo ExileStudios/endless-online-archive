@@ -102,7 +102,9 @@ enum BodyBitmap
 struct BankGraphics;
 struct BarberGraphics;
 struct BlendGraphics;
+struct BlendWrapper;
 struct ChestGraphics;
+struct CrafterGraphics;
 struct DialogGraphics;
 struct EffectGraphics;
 struct GameGraphics;
@@ -146,6 +148,7 @@ struct GfxController
     GameGraphics *game;
     PlayerNameGraphics *hover_label;
     TradeGraphics *trade;
+    CrafterGraphics *crafter;
     ShopGraphics *shop;
     DialogGraphics *dialog;
     BankGraphics *bank;
@@ -173,6 +176,7 @@ struct GfxController
     bool hover_label_created;
     bool intro_created;
     bool trade_created;
+    bool crafter_created;
     bool shop_created;
     bool dialog_created;
     bool bank_created;
@@ -191,6 +195,7 @@ struct GfxController
     void CreateMenuGraphics();
     void FreeMenuGraphics();
     void CreateTradeGraphics();
+    void CreateCrafterGraphics();
     void CreateShopGraphics();
     void CreateDialogGraphics();
     void CreateMsgBoardGraphics();
@@ -202,6 +207,7 @@ struct GfxController
     void CreateBarberGraphics();
     void FreeTradeGraphics();
     void FreeDialogGraphics();
+    void FreeCrafterGraphics();
     void FreeShopGraphics();
     void FreeMsgBoardGraphics();
     void FreeSocialGraphics();
@@ -217,6 +223,7 @@ struct GfxController
     void CreateGameGraphics();
     void FreeGameGraphics();
     void LoadTradeGraphics();
+    void LoadCrafterGraphics();
     void LoadShopGraphics();
     void LoadDialogGraphics();
     void LoadReportGraphics();

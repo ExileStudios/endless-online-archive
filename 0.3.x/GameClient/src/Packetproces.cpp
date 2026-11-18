@@ -48,6 +48,7 @@
 #include "Ctrl_bossbars.h"
 #include "Ctrl_hotkeys.h"
 #include "Gfx_mapnpcs.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -479,7 +480,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int recover_reply = DecodeNumber(packet.SubString(1, 2));
             if (!recover_reply)
-                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Account recover",
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Account not found",
                     "Sorry, Account " + LowerCase(MainForm->animation->account_name) +
                         " does not exist in the database.");
             if (recover_reply == 1)
@@ -494,14 +495,17 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
                     "Recover request accepted. Check " + recover_email + " in a few minutes.");
             }
             if (recover_reply == 3)
-                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Account recover",
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Too many attempts",
                     "Too many account lookups from this connection. Please wait a few minutes.");
             if (recover_reply >= 4)
-                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Account recover",
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Recover Disabled",
                     "Sorry, the recover system is currently disabled. Please try again later.");
             if (recover_reply == 5)
                 MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Too Busy",
                     "Sorry, the recover system is currently too busy. Please try again later.");
+            if (recover_reply == 6)
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_RecoverNotice, "Too many attempts",
+                    "Too many requests have been sent to this email, Please try again tomorrow.");
         }
         if (action == AC_CONFIRM)
         {
@@ -536,12 +540,20 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_CONFIRM)
         {
             int account_confirm_reply = DecodeNumber(packet.SubString(1, 2));
+            if (!account_confirm_reply)
+            {
+                MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Too many Signups",
+                    "Too many signup attempts on this email, Please try again tomorrow");
+                MainForm->edits->caret_enabled = true;
+                MainForm->animation->menu->create_account_enabled = true;
+                MainForm->edits->FocusEdit(EditId_Email);
+            }
             if (account_confirm_reply == 1)
             {
                 MainForm->animation->menu->is_message_open = false;
                 MainForm->animation->menu->ShowActivationStep(0);
             }
-            if (account_confirm_reply == 2)
+            if (account_confirm_reply >= 2)
             {
                 MainForm->animation->menu->ShowMessageBox(MessageBoxKind_Plain, "Too Busy",
                     "Sorry, the server currently too busy. Please try again in a minute.");
@@ -3425,6 +3437,8 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->interface_controller->inventory->AddItemQuietly(crafted_item_id, 1);
             if (crafted_item_id == ItemId_Gold)
                 MainForm->animation->interface_controller->status->gold++;
+            if (MainForm->animation->crafter->is_visible)
+                MainForm->animation->crafter->Layout();
             MainForm->animation->interface_controller->inventory->MarkItemsDirty();
             MainForm->redraw_needed = true;
             MainForm->sfx->PlaySfx(SfxSound_ShopCreate);
@@ -4664,6 +4678,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
             MainForm->animation->trade->is_visible = false;
             MainForm->animation->chest->is_visible = false;
             MainForm->animation->guild->is_visible = false;
+            MainForm->animation->crafter->is_visible = false;
             MainForm->animation->shop->is_visible = false;
             MainForm->animation->bank->is_visible = false;
             MainForm->animation->interface_controller->spells->CancelCast();

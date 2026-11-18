@@ -46,6 +46,7 @@
 #include "Pathfinder.h"
 #include "Ctrl_hotkeys.h"
 #include "Gfx_mapnpcs.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -110,6 +111,7 @@ void InterfaceController::Logout()
     MainForm->gfx->FreeHoverLabel();
     MainForm->gfx->FreeGameGraphics();
     MainForm->gfx->FreeTradeGraphics();
+    MainForm->gfx->FreeCrafterGraphics();
     MainForm->gfx->FreeShopGraphics();
     MainForm->gfx->FreeBankGraphics();
     MainForm->gfx->FreeBarberGraphics();
@@ -169,6 +171,7 @@ void InterfaceController::Logout()
     MainForm->animation->bank->is_visible = false;
     MainForm->animation->jukebox->is_visible = false;
     MainForm->animation->barber->is_visible = false;
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->guild->is_visible = false;
     MainForm->animation->memo->is_visible = false;

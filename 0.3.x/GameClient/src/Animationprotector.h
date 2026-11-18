@@ -8,6 +8,7 @@ struct BarberController;
 struct BookController;
 struct BossBars;
 struct ChestController;
+struct CrafterController;
 struct CreditsController;
 struct DialogController;
 struct GameController;
@@ -87,6 +88,7 @@ struct AnimationController
     HotkeysController *hotkeys;
     BookController *book;
     TradeController *trade;
+    CrafterController *crafter;
     ShopController *shop;
     LearnController *learn;
     GuildController *guild;

@@ -96,6 +96,7 @@ struct GameGraphics
     void DrawLawWindow();
     void DrawQuestWindow();
     void DrawMsgBoardWindow();
+    void DrawCrafterWindow();
     void DrawShopWindow();
     void DrawLearnWindow();
     void DrawTradeWindow();
@@ -119,6 +120,7 @@ struct GameGraphics
     void DrawMemoButtons();
     void DrawInnButtons();
     void DrawLawButtons();
+    void DrawCrafterButtons();
     void DrawLearnButtons();
     void DrawShopButtons();
     void DrawTradeButtons();
@@ -153,6 +155,7 @@ struct GameGraphics
     void DrawInnText();
     void DrawLawText();
     void DrawLearnText();
+    void DrawCrafterText();
     void DrawShopText();
     void DrawTradeText();
     void DrawBookText();

@@ -77,6 +77,7 @@
 #include "Gfx_global_sprites.h"
 #include "Gfx_mapnpcs.h"
 #include <multimon.h>
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 #pragma link "TDx_Draw"
@@ -1355,6 +1356,8 @@ void __fastcall TMainForm::HandleMMTimerEvent()
             animation->inn->Tick();
         if (animation->learn)
             animation->learn->Tick();
+        if (animation->crafter)
+            animation->crafter->Update();
         if (animation->shop)
             animation->shop->Tick();
         if (animation->message_board)
@@ -2296,7 +2299,6 @@ void TMainForm::RenderGame_ViewPort_Frame()
     blitter->AddMapLights();
     blitter->ApplyDarkness(OffscreenSurface);
     blitter->DrawMapEffects(OffscreenSurface);
-    redraw_needed = true;
     // The own character is drawn once more, over everything on the map.
     if (own_player_index != -1)
     {
@@ -2539,7 +2541,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
     if (animation->inn->is_visible)
     {
         gfx->game->DrawInnWindow();
-        gfx->game->DrawInnButtons();
+        gfx->game->DrawLearnButtons();
         if (fonts->BeginOffscreenIf(1))
         {
             try
@@ -2555,7 +2557,7 @@ void TMainForm::RenderGame_ViewPort_Frame()
     if (animation->law->is_visible)
     {
         gfx->game->DrawLawWindow();
-        gfx->game->DrawLawButtons();
+        gfx->game->DrawInnButtons();
         if (fonts->BeginOffscreenIf(1))
         {
             try
@@ -2604,10 +2606,38 @@ void TMainForm::RenderGame_ViewPort_Frame()
             fonts->End();
         }
     }
+    if (animation->crafter->is_visible)
+    {
+        gfx->game->DrawCrafterWindow();
+        gfx->game->DrawCrafterButtons();
+        if (fonts->BeginOffscreenIf(1))
+        {
+            try
+            {
+                gfx->game->DrawCrafterText();
+            }
+            catch (Exception &)
+            {
+            }
+            fonts->End();
+        }
+        animation->crafter->tooltip->DrawFrame();
+        if (fonts->BeginOffscreenIf(1))
+        {
+            try
+            {
+                animation->crafter->tooltip->DrawString();
+            }
+            catch (Exception &)
+            {
+            }
+            fonts->End();
+        }
+    }
     if (animation->learn->is_visible)
     {
         gfx->game->DrawLearnWindow();
-        gfx->game->DrawLearnButtons();
+        gfx->game->DrawLawButtons();
         animation->learn->tooltip->DrawFrame();
         if (fonts->BeginOffscreenIf(1))
         {

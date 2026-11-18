@@ -51,6 +51,8 @@
 #include "Ctrl_hotkeys.h"
 #include "Ctrl_inventory.h"
 #include "Gfx_global_sprites.h"
+#include "Ctrl_crafter.h"
+#include "Gfx_crafter.h"
 
 #pragma package(smart_init)
 
@@ -1502,6 +1504,114 @@ void GameGraphics::DrawMsgBoardWindow()
             &MainForm->gfx->interface_graphics->GetScrollIconRect(7), DDBLTFAST_WAIT);
 }
 
+// Draws the crafting window: the item's ingredient slots, laid out by how many there are, each with its graphic and
+// amount, a missing one dimmed.
+void GameGraphics::DrawCrafterWindow()
+{
+    CraftIngredient *it;
+    ItemWrapper *graphic_item;
+    int x;
+    int y;
+    unsigned char slot_kind;
+    int graphic;
+    if (MainForm->animation->crafter->ingredient_count < 3)
+    {
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x,
+            MainForm->animation->crafter->window_y, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->upper_background_rect, DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x,
+            MainForm->animation->crafter->window_y + 161, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->lower_background_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    else
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x,
+            MainForm->animation->crafter->window_y, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->full_background_rect, DDBLTFAST_WAIT);
+    it = MainForm->animation->crafter->ingredients.begin();
+    while (it != MainForm->animation->crafter->ingredients.end())
+    {
+        x = MainForm->animation->crafter->window_x + it->x;
+        y = MainForm->animation->crafter->window_y + it->y;
+        slot_kind = 0;
+        if (it->is_hovered)
+            slot_kind = 1;
+        MainForm->gfx->game->BlitClippedAlpha(x - 6, y - 5, MainForm->gfx->crafter->background_surface,
+            MainForm->gfx->crafter->GetSlotRect(slot_kind), 130);
+        MainForm->OffscreenSurface->BltFast(x, y, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->slot_frame_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(x + 9, y + 12, MainForm->gfx->crafter->parts_surface,
+            &MainForm->gfx->crafter->parts_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        graphic = MainForm->item_values->GetGraphic(it->item_id) - 1;
+        if (it->is_result && !MainForm->animation->crafter->can_craft &&
+            MainForm->animation->crafter->blink_counter < 10)
+            MainForm->OffscreenSurface->BltFast(x + 35, y + 52, MainForm->gfx->crafter->background_surface,
+                &MainForm->gfx->crafter->blocked_mark_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (graphic >= 0)
+        {
+            if (MainForm->gfx->items->RequestGraphic(graphic))
+            {
+                GraphicSize graphic_size = MainForm->gfx->items->GetGraphicSize(graphic);
+                int item_x = x + 31 - graphic_size.width / 2;
+                int item_y = y + 20 - graphic_size.height / 2;
+                graphic_item = MainForm->gfx->items->GetGraphic(graphic);
+                if (graphic_item)
+                    MainForm->gfx->game->BlitClipped(item_x, item_y, graphic_item->resource->surface,
+                        graphic_item->resource->surface_rect);
+            }
+            else
+                MainForm->redraw_needed = true;
+        }
+        it++;
+    }
+    // The slot layout follows the number of ingredients, one to four.
+    if (MainForm->animation->crafter->ingredient_count == 1)
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 120,
+            MainForm->animation->crafter->window_y + 90, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->center_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->crafter->ingredient_count == 2)
+    {
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 96,
+            MainForm->animation->crafter->window_y + 90, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->left_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 185,
+            MainForm->animation->crafter->window_y + 90, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->right_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (MainForm->animation->crafter->ingredient_count == 3)
+    {
+        MainForm->gfx->game->BlitClippedHalfBlend(MainForm->animation->crafter->window_x + 27,
+            MainForm->animation->crafter->window_y + 102, MainForm->gfx->crafter->background_surface,
+            MainForm->gfx->crafter->left_glow_rect);
+        MainForm->gfx->game->BlitClippedHalfBlend(MainForm->animation->crafter->window_x + 122,
+            MainForm->animation->crafter->window_y + 102, MainForm->gfx->crafter->background_surface,
+            MainForm->gfx->crafter->right_glow_rect);
+        MainForm->gfx->game->BlitClippedHalfBlend(MainForm->animation->crafter->window_x + 85,
+            MainForm->animation->crafter->window_y + 156, MainForm->gfx->crafter->background_surface,
+            MainForm->gfx->crafter->lower_glow_rect);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 96,
+            MainForm->animation->crafter->window_y + 143, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->left_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 185,
+            MainForm->animation->crafter->window_y + 164, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->right_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    if (MainForm->animation->crafter->ingredient_count == 4)
+    {
+        MainForm->gfx->game->BlitClippedHalfBlend(MainForm->animation->crafter->window_x + 74,
+            MainForm->animation->crafter->window_y + 105, MainForm->gfx->crafter->background_surface,
+            MainForm->gfx->crafter->four_glow_rect);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 96,
+            MainForm->animation->crafter->window_y + 90, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->left_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 96,
+            MainForm->animation->crafter->window_y + 162, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->left_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 185,
+            MainForm->animation->crafter->window_y + 128, MainForm->gfx->crafter->background_surface,
+            &MainForm->gfx->crafter->right_link_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+}
+
 // Draws the shop window: background, hovered row highlight, a slot with the item graphic for each visible item, the
 // scroll arrows, the menu icons on the first page, and the scroll thumb.
 void GameGraphics::DrawShopWindow()
@@ -2401,8 +2511,8 @@ void GameGraphics::DrawMemoButtons()
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
-// Draws the inn window's close button on the first page, or close and back on the others, lit under the mouse.
-void GameGraphics::DrawInnButtons()
+// Draws the skill master's close button, with a back button off its menu page, each lit while the mouse is on it.
+void GameGraphics::DrawLearnButtons()
 {
     if (!MainForm->animation->inn->page)
     {
@@ -2436,8 +2546,8 @@ void GameGraphics::DrawInnButtons()
     }
 }
 
-// Draws the law window's close button on the first page, or close and back on the others, lit under the mouse.
-void GameGraphics::DrawLawButtons()
+// Draws the inn window's close button on the first page, or close and back on the others, lit under the mouse.
+void GameGraphics::DrawInnButtons()
 {
     if (!MainForm->animation->law->page)
     {
@@ -2471,8 +2581,8 @@ void GameGraphics::DrawLawButtons()
     }
 }
 
-// Draws the skill master window's close button on the first page, or close and back on the others.
-void GameGraphics::DrawLearnButtons()
+// Draws the law window's close button on the first page, or close and back on the others, lit under the mouse.
+void GameGraphics::DrawLawButtons()
 {
     if (MainForm->animation->learn->page == LearnPage_Menu)
     {
@@ -2502,6 +2612,45 @@ void GameGraphics::DrawLearnButtons()
         else
             MainForm->OffscreenSurface->BltFast(MainForm->animation->learn->window_x + 48,
                 MainForm->animation->learn->window_y + 252, button_sheet, &GetButtonRect(5, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+}
+
+// Draws the crafting window's close button, and a craft button when the item can be made, lower for more than two
+// ingredients; each is lit while the mouse is on it.
+void GameGraphics::DrawCrafterButtons()
+{
+    short button_y = 146;
+    if (MainForm->animation->crafter->ingredient_count > 2)
+        button_y += 70;
+    if (!MainForm->animation->crafter->can_craft)
+    {
+        if (MainForm->animation->crafter->close_hovered)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 98,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(1, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 98,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(1, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    }
+    else
+    {
+        if (MainForm->animation->crafter->close_hovered)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 48,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(1, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 48,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(1, 0),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        if (MainForm->animation->crafter->craft_hovered)
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 144,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(4, 1),
+                DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        else
+            MainForm->OffscreenSurface->BltFast(MainForm->animation->crafter->window_x + 144,
+                MainForm->animation->crafter->window_y + button_y, button_sheet, &GetButtonRect(4, 0),
                 DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
 }
@@ -3674,6 +3823,60 @@ void GameGraphics::DrawLearnText()
                     MainForm->animation->learn->line_right_texts->Strings[j]);
             list_row++;
         }
+    }
+}
+
+// Draws the crafting window's text: each ingredient with the amount held against the amount needed, and how many times
+// the item can be crafted.
+void GameGraphics::DrawCrafterText()
+{
+    MainForm->fonts->color = 0xC8F0F0;
+    MainForm->fonts->face = 1;
+    MainForm->fonts->size = 10;
+    String title = "Craftable: " + MainForm->animation->crafter->result_name;
+    MainForm->fonts->TextWidth(title);
+    MainForm->fonts->DrawString((short)MainForm->animation->crafter->window_x + 30,
+        (short)MainForm->animation->crafter->window_y + 12, title);
+    MainForm->fonts->color = 0xD6E6E6;
+    String state_text;
+    if (MainForm->animation->crafter->can_craft)
+        state_text = MainForm->strings->GetText(GameText_PutIngredientsTogether);
+    else
+        state_text = MainForm->strings->GetText(GameText_YouDontHaveAll);
+    MainForm->fonts->TextWidth(state_text);
+    MainForm->fonts->DrawString((short)MainForm->animation->crafter->window_x + 30,
+        (short)MainForm->animation->crafter->window_y + 36, state_text);
+    MainForm->fonts->color = 0xC8C8C8;
+    MainForm->fonts->size = 8;
+    if (MainForm->animation->crafter->tooltip->IsVisible())
+        MainForm->fonts->color = 0x787878;
+    vector<CraftIngredient>::iterator ingredient;
+    for (ingredient = MainForm->animation->crafter->ingredients.begin();
+        ingredient != MainForm->animation->crafter->ingredients.end(); ingredient++)
+    {
+        int slot_x = MainForm->animation->crafter->window_x + ingredient->x;
+        int slot_y = MainForm->animation->crafter->window_y + ingredient->y;
+        String label;
+        if (!ingredient->is_result)
+        {
+            label = IntToStr(ingredient->owned) + "/" + IntToStr(ingredient->amount);
+            if (ingredient->owned > ingredient->amount)
+            {
+                int label_width = (short)MainForm->fonts->TextWidth(label);
+                if (label_width > 70)
+                    label = IntToStr(ingredient->amount) + "+/" + IntToStr(ingredient->amount);
+            }
+        }
+        else if (MainForm->animation->crafter->can_craft)
+        {
+            label = "1x (";
+            label += IntToStr(MainForm->animation->crafter->max_crafts);
+            if (MainForm->animation->crafter->max_crafts >= 99)
+                label += "+";
+            label += ")";
+        }
+        int label_offset = 37 - (short)MainForm->fonts->TextWidth(label) / 2;
+        MainForm->fonts->DrawString(slot_x + (short)label_offset, slot_y + 50, label);
     }
 }
 

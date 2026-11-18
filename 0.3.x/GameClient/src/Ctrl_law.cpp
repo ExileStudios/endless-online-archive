@@ -10,6 +10,7 @@
 #include "Ctrl_locker.h"
 #include "Ctrl_shop.h"
 #include "Ctrl_trade.h"
+#include "Ctrl_crafter.h"
 
 #pragma package(smart_init)
 
@@ -45,6 +46,7 @@ DEFINE_ADD_TEXT(LawController)
 // Shows the law window on its menu page with no text, closing other npc windows.
 void LawController::Open(int session_id)
 {
+    MainForm->animation->crafter->is_visible = false;
     MainForm->animation->shop->is_visible = false;
     MainForm->animation->locker->is_visible = false;
     MainForm->animation->learn->is_visible = false;

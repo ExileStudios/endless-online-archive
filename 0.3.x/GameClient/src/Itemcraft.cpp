@@ -18,3 +18,14 @@ CraftItem::CraftItem(int id)
 CraftItem::~CraftItem()
 {
 }
+
+CraftIngredient::CraftIngredient(int id)
+{
+    item_id = id;
+    is_hovered = false;
+    is_result = false;
+}
+
+CraftIngredient::~CraftIngredient()
+{
+}
