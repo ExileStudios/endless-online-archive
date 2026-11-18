@@ -109,28 +109,27 @@ void MemoController::AddCharacterStats(String stats_data)
     int max_hitpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(14, 2));
     int techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(16, 2));
     int max_techpoints = MainForm->net_client->DecodeNumber(stats_data.SubString(18, 2));
-    int spent_points = MainForm->net_client->DecodeNumber(stats_data.SubString(20, 2));
-    int total_points = MainForm->net_client->DecodeNumber(stats_data.SubString(22, 2));
-    int str_value = MainForm->net_client->DecodeNumber(stats_data.SubString(24, 2));
-    int int_value = MainForm->net_client->DecodeNumber(stats_data.SubString(26, 2));
-    int wis_value = MainForm->net_client->DecodeNumber(stats_data.SubString(28, 2));
-    int agi_value = MainForm->net_client->DecodeNumber(stats_data.SubString(30, 2));
-    int con_value = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
-    int cha_value = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
-    int damage_max = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
-    int damage_min = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
-    int hitrate = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
-    int dodge = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
-    int armor = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
-    int light_element = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
-    int dark_element = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
-    int fire_element = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
-    int water_element = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
-    int earth_element = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 2));
-    int wind_element = MainForm->net_client->DecodeNumber(stats_data.SubString(56, 2));
-    int divine_element = MainForm->net_client->DecodeNumber(stats_data.SubString(58, 2));
-    int weight = MainForm->net_client->DecodeNumber(stats_data.SubString(60, 1));
-    int max_weight = MainForm->net_client->DecodeNumber(stats_data.SubString(61, 1));
+    int str_value = MainForm->net_client->DecodeNumber(stats_data.SubString(20, 2));
+    int int_value = MainForm->net_client->DecodeNumber(stats_data.SubString(22, 2));
+    int wis_value = MainForm->net_client->DecodeNumber(stats_data.SubString(24, 2));
+    int agi_value = MainForm->net_client->DecodeNumber(stats_data.SubString(26, 2));
+    int con_value = MainForm->net_client->DecodeNumber(stats_data.SubString(28, 2));
+    int cha_value = MainForm->net_client->DecodeNumber(stats_data.SubString(30, 2));
+    int damage_max = MainForm->net_client->DecodeNumber(stats_data.SubString(32, 2));
+    int damage_min = MainForm->net_client->DecodeNumber(stats_data.SubString(34, 2));
+    int hitrate = MainForm->net_client->DecodeNumber(stats_data.SubString(36, 2));
+    int dodge = MainForm->net_client->DecodeNumber(stats_data.SubString(38, 2));
+    int armor = MainForm->net_client->DecodeNumber(stats_data.SubString(40, 2));
+    int light_element = MainForm->net_client->DecodeNumber(stats_data.SubString(42, 2));
+    int dark_element = MainForm->net_client->DecodeNumber(stats_data.SubString(44, 2));
+    int fire_element = MainForm->net_client->DecodeNumber(stats_data.SubString(46, 2));
+    int water_element = MainForm->net_client->DecodeNumber(stats_data.SubString(48, 2));
+    int earth_element = MainForm->net_client->DecodeNumber(stats_data.SubString(50, 2));
+    int wind_element = MainForm->net_client->DecodeNumber(stats_data.SubString(52, 2));
+    int weight = MainForm->net_client->DecodeNumber(stats_data.SubString(54, 1));
+    int max_weight = MainForm->net_client->DecodeNumber(stats_data.SubString(55, 1));
+    int spent_points = 0;
+    int total_points = 0;
     AddText(MainForm->strings->GetText(GameText_Level), IntToStr(experience) + " [" + IntToStr(character_level) + "]",
         false);
     AddText(MainForm->strings->GetText(GameText_Location), IntToStr(map_id), false);
@@ -163,7 +162,7 @@ void MemoController::AddCharacterStats(String stats_data)
     AddText(MainForm->strings->GetText(GameText_WaterEle), IntToStr(water_element), false);
     AddText(MainForm->strings->GetText(GameText_EarthEle), IntToStr(earth_element), false);
     AddText(MainForm->strings->GetText(GameText_WindEle), IntToStr(wind_element), false);
-    AddText("devine ele.", IntToStr(divine_element), false);
+    AddText("devine ele.", "-", false);
 }
 
 // Adds a text with its right-hand value, wrapped to the page width; each wrapped line repeats the value.
@@ -294,9 +293,11 @@ void MemoController::ShowItem(ItemValue *item)
 void MemoController::ShowNpc(NpcValue *npc)
 {
     NpcWrapper *picture;
-    int x;
+    NpcResource *resource;
     int y;
-    int trim;
+    int excess_height;
+    int x;
+    int trim[1];
     if (!npc)
         return;
     preview_surface->BltFast(0, 0, MainForm->gfx->interface_graphics->chat_panel_surface,
@@ -306,40 +307,42 @@ void MemoController::ShowNpc(NpcValue *npc)
     {
         picture = MainForm->gfx->npc_cache->FindGraphic(graphic);
         TRect rect = picture->resource->GetFrameRect(0);
-        x = 108 - picture->resource->frame_width / 2;
-        y = 55 - picture->resource->frame_height / 2;
+        resource = picture->resource;
+        x = 108 - resource->frame_width / 2;
+        y = 55 - resource->frame_height / 2;
         if (y < 0)
             y = 0;
-        if (rect.bottom > 200)
-        {
-            rect.top = 70;
-            rect.bottom = rect.top + 88;
-        }
-        else if (rect.bottom > 150)
-        {
-            rect.top = 50;
-            rect.bottom = rect.top + 88;
-        }
-        else if (rect.bottom > 100)
-        {
-            rect.top = 25;
-            rect.bottom = rect.top + 88;
-        }
-        else if (rect.bottom > 88)
-        {
-            rect.top = 0;
-            rect.bottom = 88;
-        }
         // A picture taller than 88 shows 88 rows, lower down the taller it is; one wider than 200
         // is cut at both sides.
+        if (picture->resource->frame_height > 88)
+        {
+            excess_height = picture->resource->frame_height - 88;
+            rect.top = 0;
+            rect.bottom = 88;
+            if (excess_height > 50)
+            {
+                rect.top += 20;
+                rect.bottom += 20;
+            }
+            if (excess_height > 100)
+            {
+                rect.top += 20;
+                rect.bottom += 20;
+            }
+            if (excess_height > 150)
+            {
+                rect.top += 20;
+                rect.bottom += 20;
+            }
+        }
         if (picture->resource->frame_width > 200)
         {
-            trim = (picture->resource->frame_width - 200) / 2;
-            rect.left += trim;
-            rect.right -= trim;
+            trim[0] = (picture->resource->frame_width - 200) / 2;
+            rect.left += trim[0];
+            rect.right -= trim[0];
             x = 0;
         }
-        preview_surface->BltFast(x, y, picture->resource->front_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+        preview_surface->BltFast(x, y, resource->front_sheet, &rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     }
     // An npc whose name has fewer than three letters shows no memo.
     if (npc->name.Length() < 3)
@@ -358,7 +361,7 @@ void MemoController::ShowNpc(NpcValue *npc)
     AddText("Techpoints", String((unsigned short)npc->tp) + " tp", false);
     AddText("", "", false);
     AddText("Damage",
-        String((unsigned short)npc->min_damage) + " - " + String(String((unsigned short)npc->min_damage)) + " dmg",
+        String((unsigned short)npc->min_damage) + " - " + String(String((unsigned short)npc->max_damage)) + " dmg",
         false);
     AddText("Hitrate", String((unsigned short)npc->accuracy) + " hit", false);
     AddText("Evade", String((unsigned short)npc->evade) + " ev", false);

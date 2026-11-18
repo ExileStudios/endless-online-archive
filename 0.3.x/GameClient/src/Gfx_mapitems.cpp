@@ -228,7 +228,7 @@ bool ItemGraphics::LoadSubItemGraphicNow(int graphic_id)
                 it->is_loaded = true;
                 it->unfetched_frames = 0;
                 it->idle_ticks = 0;
-                pending_count--;
+                sub_item_pending_count--;
                 return true;
             }
             it++;

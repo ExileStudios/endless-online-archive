@@ -259,6 +259,10 @@ InterfaceGraphics::InterfaceGraphics()
     memo_preview_rect.left = 0;
     memo_preview_rect.bottom = 99;
     memo_preview_rect.right = 220;
+    notification_close_top = 14;
+    notification_close_left = 102;
+    notification_close_bottom = 25;
+    notification_close_right = 112;
     minimap_visible = 0;
 }
 

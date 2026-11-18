@@ -129,6 +129,10 @@ struct InterfaceGraphics
     TRect notification_rect;
     TRect notification_top_rect;
     TRect notification_bottom_rect;
+    int notification_close_left;
+    int notification_close_top;
+    int notification_close_right;
+    int notification_close_bottom;
     TRect memo_preview_rect;
     unsigned char minimap_visible;
     TDDSurfaceDesc *surface_desc;

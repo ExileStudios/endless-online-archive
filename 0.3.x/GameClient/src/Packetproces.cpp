@@ -663,7 +663,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         {
             int captcha_id = DecodeNumber(packet.SubString(1, 2));
             int captcha_reward = DecodeNumber(packet.SubString(3, 4));
-            String captcha_text(DecodeNumber(packet.SubString(7, 5)));
+            String captcha_text = packet.SubString(7, 5);
             if (captcha_text.Length() != 5)
                 captcha_text = "";
             MainForm->animation->captcha->Open(captcha_id, captcha_text, captcha_reward);
@@ -671,7 +671,7 @@ void PacketProcessor::DispatchPacket(int action, int family, String packet)
         if (action == AC_UPDATE)
         {
             int answer_id = DecodeNumber(packet.SubString(1, 2));
-            String answer_text(DecodeNumber(packet.SubString(3, 5)));
+            String answer_text = packet.SubString(3, 5);
             MainForm->animation->captcha->SetAnswer(answer_id, answer_text);
         }
         if (action == AC_CLOSE)

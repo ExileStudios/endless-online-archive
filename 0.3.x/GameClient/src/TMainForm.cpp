@@ -184,7 +184,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     version_major = 0;
     version_minor = 3;
     version_build = 29;
-    version_letter = 'H';
+    version_letter = 'J';
     min_theme_version_major = 0;
     min_theme_version_minor = 3;
     files = new FileController();
