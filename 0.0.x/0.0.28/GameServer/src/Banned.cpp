@@ -39,25 +39,25 @@ void Banned::AddBan(String ip, String serial, bool permanent, int duration)
 {
     try
     {
-        int p1 = ip.Pos(".");
-        ip[p1] = 'x';
-        int p2 = ip.Pos(".");
-        ip[p2] = 'x';
-        int p3 = ip.Pos(".");
-        ip[p3] = 'x';
+        int first_dot = ip.Pos(".");
+        ip[first_dot] = 'x';
+        int second_dot = ip.Pos(".");
+        ip[second_dot] = 'x';
+        int third_dot = ip.Pos(".");
+        ip[third_dot] = 'x';
         short octet1 = IP_OCTET_UNSET;
         short octet2 = IP_OCTET_UNSET;
         short octet3 = IP_OCTET_UNSET;
         short octet4 = IP_OCTET_UNSET;
         Asocketban *entry;
-        if (ip.SubString(1, p1 - 1) != "*")
-            octet1 = StrToInt(ip.SubString(1, p1 - 1));
-        if (ip.SubString(p1 + 1, p2 - 1 - p1) != "*")
-            octet2 = StrToInt(ip.SubString(p1 + 1, p2 - 1 - p1));
-        if (ip.SubString(p2 + 1, p3 - 1 - p2) != "*")
-            octet3 = StrToInt(ip.SubString(p2 + 1, p3 - 1 - p2));
-        if (ip.SubString(p3 + 1, 3) != "*")
-            octet4 = StrToInt(ip.SubString(p3 + 1, 3));
+        if (ip.SubString(1, first_dot - 1) != "*")
+            octet1 = StrToInt(ip.SubString(1, first_dot - 1));
+        if (ip.SubString(first_dot + 1, second_dot - 1 - first_dot) != "*")
+            octet2 = StrToInt(ip.SubString(first_dot + 1, second_dot - 1 - first_dot));
+        if (ip.SubString(second_dot + 1, third_dot - 1 - second_dot) != "*")
+            octet3 = StrToInt(ip.SubString(second_dot + 1, third_dot - 1 - second_dot));
+        if (ip.SubString(third_dot + 1, 3) != "*")
+            octet4 = StrToInt(ip.SubString(third_dot + 1, 3));
         entry = new Asocketban;
         entry->hdid = serial;
         entry->octet[0] = octet1;
@@ -79,29 +79,29 @@ void Banned::AddBan(String ip, String hdid, char ban_type, int duration)
 {
     try
     {
-        int p1 = ip.Pos(".");
-        ip[p1] = 'x';
-        int p2 = ip.Pos(".");
-        ip[p2] = 'x';
-        int p3 = ip.Pos(".");
-        ip[p3] = 'x';
+        int first_dot = ip.Pos(".");
+        ip[first_dot] = 'x';
+        int second_dot = ip.Pos(".");
+        ip[second_dot] = 'x';
+        int third_dot = ip.Pos(".");
+        ip[third_dot] = 'x';
         short octet1 = IP_OCTET_UNSET;
         short octet2 = IP_OCTET_UNSET;
         short octet3 = IP_OCTET_UNSET;
-        short lv6c = 256;
+        short octet4 = 256;
         Asocketban *entry;
-        if (ip.SubString(1, p1 - 1) != "*")
-            octet1 = StrToInt(ip.SubString(1, p1 - 1));
-        if (ip.SubString(p1 + 1, p2 - 1 - p1) != "*")
-            octet2 = StrToInt(ip.SubString(p1 + 1, p2 - 1 - p1));
-        if (ip.SubString(p2 + 1, p3 - 1 - p2) != "*")
-            octet3 = StrToInt(ip.SubString(p2 + 1, p3 - 1 - p2));
+        if (ip.SubString(1, first_dot - 1) != "*")
+            octet1 = StrToInt(ip.SubString(1, first_dot - 1));
+        if (ip.SubString(first_dot + 1, second_dot - 1 - first_dot) != "*")
+            octet2 = StrToInt(ip.SubString(first_dot + 1, second_dot - 1 - first_dot));
+        if (ip.SubString(second_dot + 1, third_dot - 1 - second_dot) != "*")
+            octet3 = StrToInt(ip.SubString(second_dot + 1, third_dot - 1 - second_dot));
         entry = new Asocketban;
         entry->hdid = hdid;
         entry->octet[0] = octet1;
         entry->octet[1] = octet2;
         entry->octet[2] = octet3;
-        entry->octet[3] = lv6c;
+        entry->octet[3] = octet4;
         entry->ban_date = DateTimeToTimeStamp(Now());
         entry->ban_type = ban_type;
         entry->duration = duration;
@@ -115,7 +115,7 @@ void Banned::AddBan(String ip, String hdid, char ban_type, int duration)
 // True when the ip or the hdid is banned; GetBanType and GetBanTime then give the ban's type and the minutes left.
 char Banned::IsBanned(String ip, String hdid)
 {
-    char banned = 0;
+    char banned = false;
     try
     {
         int first_dot = ip.Pos(".");
@@ -138,7 +138,7 @@ char Banned::IsBanned(String ip, String hdid)
             octet4 = StrToInt(ip.SubString(third_dot + 1, 3));
         for (int i = ban_list->Count - 1; i >= 0; i--)
         {
-            char match = 0;
+            char match = false;
             Asocketban *entry;
             TTimeStamp now;
             entry = (Asocketban *)ban_list->Items[i];
@@ -153,13 +153,13 @@ char Banned::IsBanned(String ip, String hdid)
                     continue;
             }
             if (hdid == entry->hdid)
-                match = 1;
+                match = true;
             if (entry->octet[1] == octet2 || entry->octet[1] > 255)
             {
                 if (entry->octet[2] == octet3 || entry->octet[2] > 255)
                 {
                     if (entry->octet[3] == octet4 || entry->octet[3] > 255)
-                        match = 1;
+                        match = true;
                 }
             }
             if (match)
@@ -168,7 +168,7 @@ char Banned::IsBanned(String ip, String hdid)
                 {
                     ban_time = (entry->duration - elapsed) / 60 + 1;
                     ban_type = entry->ban_type;
-                    banned = 1;
+                    banned = true;
                 }
             }
             // a timed ban that ran out is taken off the list
@@ -184,7 +184,7 @@ char Banned::IsBanned(String ip, String hdid)
     }
     catch (...)
     {
-        banned = 0;
+        banned = false;
     }
     return banned;
 }

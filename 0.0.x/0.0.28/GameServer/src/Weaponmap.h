@@ -30,11 +30,11 @@ struct WeaponMapper;
 // Tells the ranged weapons by their graphic.
 struct WeaponMapper
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     WeaponMapper();
     ~WeaponMapper();
-    char Combat_IsRangedWeapon(int doll_graphic_id);
+    char IsRangedWeapon(int doll_graphic_id);
 };
 
 #endif

@@ -18,7 +18,7 @@ MsgBoardController::MsgBoardController()
     for (int i = 0; i < BOARD_COUNT; i++)
     {
         boards[i].clear();
-        board_enabled[i] = 1;
+        board_enabled[i] = true;
     }
     LoadBoards();
 }
@@ -30,7 +30,7 @@ MsgBoardController::~MsgBoardController()
     for (int i = 0; i < BOARD_COUNT; i++)
     {
         boards[i].clear();
-        board_enabled[i] = 1;
+        board_enabled[i] = true;
     }
 }
 
@@ -45,7 +45,7 @@ bool MsgBoardController::LoadBoards()
         int size;
         char *file_buffer;
         path = "./pub/dbb001.ebf";
-        file_handle = FileOpen(path.c_str(), 0);
+        file_handle = FileOpen(path.c_str(), fmOpenRead);
         if (file_handle < 0)
             return false;
         size = FileSeek(file_handle, 0, 2);
@@ -59,7 +59,7 @@ bool MsgBoardController::LoadBoards()
         for (int i = 0; i < BOARD_COUNT; i++)
         {
             boards[i].clear();
-            board_enabled[i] = 1;
+            board_enabled[i] = true;
         }
         for (int i = 0; i < BOARD_COUNT; i++)
         {
@@ -109,7 +109,7 @@ void MsgBoardController::ClearBoard(int board)
     {
         board = board - 1;
         boards[board].clear();
-        board_enabled[board] = 1;
+        board_enabled[board] = true;
     }
 }
 
@@ -124,7 +124,7 @@ void MsgBoardController::DeletePost(int board, int post_id)
             if (it->id == post_id)
             {
                 boards[board].erase(it);
-                board_enabled[board] = 1;
+                board_enabled[board] = true;
                 return;
             }
         }
@@ -161,7 +161,7 @@ void MsgBoardController::AddPost(int board, String poster, String subject, Strin
             boards[board].insert(boards[board].begin(), post);
         else
             boards[board].insert(boards[board].end(), post);
-        board_enabled[board] = 1;
+        board_enabled[board] = true;
         if (boards[board].size() > (unsigned int)(post_limit + 4))
             boards[board].resize(post_limit + 4);
     }
@@ -176,7 +176,7 @@ String MsgBoardController::GetBoard(int board)
         if (board_enabled[board - 1])
         {
             BuildBoardList(board);
-            board_enabled[board - 1] = 0;
+            board_enabled[board - 1] = false;
         }
         result = board_names[board - 1];
     }
@@ -271,15 +271,15 @@ void MsgBoardController::LoadBoard(int board, String data)
     {
         ClearBoard(board);
         board = board - 1;
-        board_enabled[board] = 1;
+        board_enabled[board] = true;
         SetDecodeSource(data, -1);
-        int count = DecodeNumber(ReadToken());
+        int count = DecodeNumber(ReaderGetBreakString());
         int total = 0;
         for (int i = 0; i < count && i < BOARD_POST_SLOTS; i++)
         {
-            int poster_length = DecodeNumber(ReadToken());
-            int subject_length = DecodeNumber(ReadToken());
-            int message_length = DecodeNumber(ReadToken());
+            int poster_length = DecodeNumber(ReaderGetBreakString());
+            int subject_length = DecodeNumber(ReaderGetBreakString());
+            int message_length = DecodeNumber(ReaderGetBreakString());
             poster_lengths[i] = poster_length; subject_lengths[i] = subject_length; message_lengths[i] = message_length;
             total = total + poster_length + subject_length + message_length;
         }
@@ -294,7 +294,7 @@ void MsgBoardController::LoadBoard(int board, String data)
                 text.Delete(1, subject_lengths[j]);
                 String message = text.SubString(1, message_lengths[j]);
                 text.Delete(1, message_lengths[j]);
-                AddPost(board + 1, poster, subject, message, 1);
+                AddPost(board + 1, poster, subject, message, true);
             }
         }
     }
@@ -303,9 +303,9 @@ void MsgBoardController::LoadBoard(int board, String data)
 // Starts reading data field by field, each field ending at the delimiter.
 void MsgBoardController::SetDecodeSource(String data, char delimiter)
 {
-    read_pos = 1;
-    misc_text = data;
-    read_len = data.Length();
+    reader_pos = 1;
+    reader_data = data;
+    reader_len = data.Length();
     read_break = delimiter;
 }
 
@@ -317,23 +317,23 @@ void Msgboardcontrol_UnusedLiterals1()
 }
 
 // The next field; the delimiter after it is skipped.
-String MsgBoardController::ReadToken()
+String MsgBoardController::ReaderGetBreakString()
 {
     String result = "";
     try
     {
-        if (read_len >= 1)
+        if (reader_len >= 1)
         {
-            while (read_pos <= read_len)
+            while (reader_pos <= reader_len)
             {
-                if (misc_text[read_pos] != read_break)
-                    result.Insert(misc_text[read_pos], result.Length() + 1);
+                if (reader_data[reader_pos] != read_break)
+                    result.Insert(reader_data[reader_pos], result.Length() + 1);
                 else
                 {
-                    read_pos++;
+                    reader_pos++;
                     break;
                 }
-                read_pos++;
+                reader_pos++;
             }
         }
     }
@@ -350,12 +350,12 @@ String MsgBoardController::ReadRest()
     String result = "";
     try
     {
-        if (read_len >= 1)
+        if (reader_len >= 1)
         {
-            while (read_pos <= read_len)
+            while (reader_pos <= reader_len)
             {
-                result.Insert(misc_text[read_pos], result.Length() + 1);
-                read_pos++;
+                result.Insert(reader_data[reader_pos], result.Length() + 1);
+                reader_pos++;
             }
         }
     }

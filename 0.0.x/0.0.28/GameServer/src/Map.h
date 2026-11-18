@@ -31,8 +31,8 @@ struct MapItem;
 struct MapItem
 {
     unsigned short map_id;
-    unsigned short rid1;
-    unsigned short rid2;
+    unsigned short checksum_high;
+    unsigned short checksum_low;
     unsigned short filesize;
     unsigned char width;
     unsigned char height;
@@ -50,7 +50,7 @@ struct MapItem
     vector<MapWarp> arena_spawn_list;
     int relog_x;
     int relog_y;
-    short field_0x4c;
+    short unused_value;
     bool buf_copied;
     bool no_scroll;
     String buf;

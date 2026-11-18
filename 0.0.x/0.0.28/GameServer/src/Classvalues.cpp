@@ -11,10 +11,10 @@ ClassValues::ClassValues()
 {
     encode_scratch = new char[8];
     record_index = -1;
-    loaded = 0;
+    loaded = false;
     file_id = 0;
     string_list = new TStringList();
-    LoadClasses();
+    Load();
 }
 
 ClassValues::~ClassValues()
@@ -22,7 +22,7 @@ ClassValues::~ClassValues()
 }
 
 // Reads pub/dat001.ecf and the files after it until every class is loaded.
-void ClassValues::LoadClasses()
+void ClassValues::Load()
 {
     int file;
     int count;
@@ -43,17 +43,17 @@ void ClassValues::LoadClasses()
                 path = path + "0" + IntToStr(file) + ".ecf";
             try
             {
-                int size;
-                char *file_buffer;
-                file_handle = FileOpen(path.c_str(), 0);
-                size = FileSeek(file_handle, 0, 2);
+                int file_size;
+                char *buffer;
+                file_handle = FileOpen(path.c_str(), fmOpenRead);
+                file_size = FileSeek(file_handle, 0, 2);
                 FileSeek(file_handle, 0, 0);
-                file_buffer = new char[size + 1];
-                FileRead(file_handle, file_buffer, size);
+                buffer = new char[file_size + 1];
+                FileRead(file_handle, buffer, file_size);
                 FileClose(file_handle);
-                data = file_buffer;
-                data.SetLength(size);
-                delete[] file_buffer;
+                data = buffer;
+                data.SetLength(file_size);
+                delete[] buffer;
                 // a file without the ECF header ends the loading
                 if (data[1] != 'E' || data[2] != 'C' || data[3] != 'F')
                     return;
@@ -63,33 +63,33 @@ void ClassValues::LoadClasses()
                 {
                     rid[0] = DecodeNumber(data.SubString(4, 2));
                     rid[1] = DecodeNumber(data.SubString(6, 2));
-                    int parsed = DecodeNumber(data.SubString(8, 2));
+                    int header_count = DecodeNumber(data.SubString(8, 2));
                     int version = DecodeNumber(data.SubString(10, 1));
-                    total = parsed;
-                    num_records = parsed;
+                    total = header_count;
+                    num_records = header_count;
                 }
                 data.Delete(1, 10);
-                for (int j = 0; count < total && j < 250; j++)
+                for (int i = 0; count < total && i < 250; i++)
                 {
-                    int namelen = DecodeNumber(data.SubString(1, 1));
-                    AddClass(GetCount() + 1, DecodeNumber(data.SubString(namelen + 2, 1)), data.SubString(2, namelen),
-                        DecodeNumber(data.SubString(namelen + 3, 1)), DecodeNumber(data.SubString(namelen + 4, 2)),
-                        DecodeNumber(data.SubString(namelen + 6, 2)), DecodeNumber(data.SubString(namelen + 8, 2)),
-                        DecodeNumber(data.SubString(namelen + 10, 2)), DecodeNumber(data.SubString(namelen + 12, 2)),
-                        DecodeNumber(data.SubString(namelen + 14, 2)));
+                    int name_length = DecodeNumber(data.SubString(1, 1));
+                    AddClass(GetCount() + 1, DecodeNumber(data.SubString(name_length + 2, 1)), data.SubString(2, name_length),
+                        DecodeNumber(data.SubString(name_length + 3, 1)), DecodeNumber(data.SubString(name_length + 4, 2)),
+                        DecodeNumber(data.SubString(name_length + 6, 2)), DecodeNumber(data.SubString(name_length + 8, 2)),
+                        DecodeNumber(data.SubString(name_length + 10, 2)), DecodeNumber(data.SubString(name_length + 12, 2)),
+                        DecodeNumber(data.SubString(name_length + 14, 2)));
                     count++;
-                    data.Delete(1, namelen + 15);
+                    data.Delete(1, name_length + 15);
                 }
             }
             catch (...)
             {
                 FileClose(file_handle);
-                loaded = 0;
+                loaded = false;
             }
             file++;
         } while (count < total);
         file_id = file - 1;
-        loaded = 1;
+        loaded = true;
     }
     return;
 }
@@ -119,14 +119,14 @@ ClassValue &Classvalues_Slot(vector<ClassValue> &list, int index)
 char ClassValues::ClassMatches(int class_id, int class_requirement)
 {
     if (!class_requirement)
-        return 1;
+        return true;
     while (class_id > 0)
     {
         if (class_id == class_requirement)
-            return 1;
+            return true;
         class_id = record_list[class_id - 1].parent_type;
     }
-    return 0;
+    return false;
 }
 
 // The class at index; one out of range gives the first class.

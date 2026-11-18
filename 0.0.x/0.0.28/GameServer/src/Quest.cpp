@@ -9,7 +9,7 @@ Quest::Quest(int quest_id)
 {
     this->quest_id = quest_id;
     this->state_count = 0;
-    this->loaded = 0;
+    this->loaded = false;
 }
 
 Quest::~Quest()

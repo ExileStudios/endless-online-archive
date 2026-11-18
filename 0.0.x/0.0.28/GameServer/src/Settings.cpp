@@ -37,7 +37,7 @@ Settings::Settings()
     guardian_flood_rate = 10;
     game_master_flood_rate = 10;
     high_game_master_flood_rate = 10;
-    world_communication = 1;
+    world_communication = true;
     chat_log = 0;
     account_lock = 0;
     access_lock = 0;
@@ -334,7 +334,7 @@ int Settings::ReadIniInt(String key, int default_value)
             for (int i = 0; i < ini_lines->Count; i++)
             {
                 String line = ini_lines->Strings[i];
-                char before_eq = 1;
+                char before_eq = true;
                 String ini_name = "";
                 String value = "";
                 if (line.Length() >= 1)
@@ -342,7 +342,7 @@ int Settings::ReadIniInt(String key, int default_value)
                     for (int j = 1; j <= line.Length(); j++)
                     {
                         if (line[j] == '=')
-                            before_eq = 0;
+                            before_eq = false;
                         if (line[j] != ' ' && line[j] != '=')
                         {
                             if (before_eq)
@@ -379,8 +379,8 @@ String Settings::ReadIniString(String key, String default_value)
             {
                 char before_eq;
                 String line = ini_lines->Strings[i];
-                before_eq = 1;
-                char after_eq = 1;
+                before_eq = true;
+                char after_eq = true;
                 String ini_name = "";
                 String value = "";
                 if (line.Length() >= 1)
@@ -388,7 +388,7 @@ String Settings::ReadIniString(String key, String default_value)
                     for (int j = 1; j <= line.Length(); j++)
                     {
                         if (line[j] == '=')
-                            before_eq = 0;
+                            before_eq = false;
                         if (before_eq)
                         {
                             if (line[j] != ' ' && line[j] != '=')
@@ -398,7 +398,7 @@ String Settings::ReadIniString(String key, String default_value)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                             {
-                                after_eq = 0;
+                                after_eq = false;
                                 value = value + line[j];
                             }
                         }
@@ -433,8 +433,8 @@ char Settings::ReadIniBool(String key, char default_value)
             {
                 char before_eq;
                 String line = ini_lines->Strings[i];
-                before_eq = 1;
-                char after_eq = 1;
+                before_eq = true;
+                char skip_leading = true;
                 String ini_name = "";
                 String value = "";
                 if (line.Length() >= 1)
@@ -442,17 +442,17 @@ char Settings::ReadIniBool(String key, char default_value)
                     for (int j = 1; j <= line.Length(); j++)
                     {
                         if (line[j] == '=')
-                            before_eq = 0;
+                            before_eq = false;
                         if (before_eq)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                                 ini_name = ini_name + line[j];
                         }
-                        else if (after_eq)
+                        else if (skip_leading)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                             {
-                                after_eq = 0;
+                                skip_leading = false;
                                 value = value + line[j];
                             }
                         }

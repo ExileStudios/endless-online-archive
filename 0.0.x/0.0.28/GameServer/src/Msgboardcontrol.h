@@ -27,9 +27,9 @@ struct MsgBoardController
     int post_limit;
     int last_post_id;
     vector<MsgBoard> boards[BOARD_COUNT];
-    String misc_text;
-    int read_pos;
-    int read_len;
+    String reader_data;
+    int reader_pos;
+    int reader_len;
     char read_break;
     char *encode_scratch;
     char board_enabled[BOARD_COUNT];
@@ -38,7 +38,7 @@ struct MsgBoardController
     int subject_lengths[32];
     int message_lengths[32];
     int extra_lengths[BOARD_COUNT];
-    char pad_0x2e4[96];
+    char unused_bytes[96];
     String extra_strings[32];
 
     MsgBoardController();
@@ -55,7 +55,7 @@ struct MsgBoardController
     String BuildBoardData(int board);
     void LoadBoard(int board, String data);
     void SetDecodeSource(String data, char delimiter);
-    String ReadToken();
+    String ReaderGetBreakString();
     String ReadRest();
     int DecodeNumber(String value);
     String EncodeNumber(unsigned int value, signed int width);

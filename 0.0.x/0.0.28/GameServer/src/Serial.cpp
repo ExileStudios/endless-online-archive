@@ -18,9 +18,9 @@ SerialKey::SerialKey()
     counter = 10;
     ini_file = new TStringList();
     LoadIni(DecodeString(ENC_SERIAL_INI_PATH));
-    key_base = ReadKey(DecodeString(ENC_KEY_NAME), key_base);
-    unlock_code = ReadKey(DecodeString(ENC_KEY_MKEY), unlock_code);
-    serial_code = ReadKey(DecodeString(ENC_KEY_SKEY), serial_code);
+    key_base = ReadIniString(DecodeString(ENC_KEY_NAME), key_base);
+    unlock_code = ReadIniString(DecodeString(ENC_KEY_MKEY), unlock_code);
+    serial_code = ReadIniString(DecodeString(ENC_KEY_SKEY), serial_code);
     CloseIni();
     Validate();
     LoadIni(DecodeString(ENC_PUB_DVF_PATH));
@@ -44,15 +44,15 @@ void SerialKey::LoadIni(String path)
         last_slash_pos = 0;
         if (exe.Length() >= 1)
         {
-            int i = exe.Length();
-            while (i >= 1)
+            int pos = exe.Length();
+            while (pos >= 1)
             {
-                if (exe[i] == '\\')
+                if (exe[pos] == '\\')
                 {
-                    last_slash_pos = i;
+                    last_slash_pos = pos;
                     break;
                 }
-                i--;
+                pos--;
             }
         }
         String dir = "";
@@ -75,7 +75,7 @@ void SerialKey::LoadIni(String path)
 }
 
 // The value of a key of the loaded file ( the name in any case ), or the default when it is missing or empty.
-String SerialKey::ReadKey(String key, String default_value)
+String SerialKey::ReadIniString(String key, String default_value)
 {
     String result = default_value;
     if (ini_file->Count >= 1)
@@ -86,8 +86,8 @@ String SerialKey::ReadKey(String key, String default_value)
             {
                 char before_eq;
                 String line = ini_file->Strings[i];
-                before_eq = 1;
-                char after_eq = 1;
+                before_eq = true;
+                char skip_leading = true;
                 String ini_name = "";
                 String value = "";
                 if (line.Length() >= 1)
@@ -95,17 +95,17 @@ String SerialKey::ReadKey(String key, String default_value)
                     for (int j = 1; j <= line.Length(); j++)
                     {
                         if (line[j] == '=')
-                            before_eq = 0;
+                            before_eq = false;
                         if (before_eq)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                                 ini_name = ini_name + line[j];
                         }
-                        else if (after_eq)
+                        else if (skip_leading)
                         {
                             if (line[j] != ' ' && line[j] != '=')
                             {
-                                after_eq = 0;
+                                skip_leading = false;
                                 value = value + line[j];
                             }
                         }
@@ -165,12 +165,12 @@ bool SerialKey::IsValid()
 // Checks the licence in two steps: the skey must fit the name, then the mkey must fit this PC's drive serial.
 void SerialKey::Validate()
 {
-    char stage1_passed;
+    char serial_valid;
     int group_sum1;
     int group_sum2;
     int group_sum3;
     int i;
-    stage1_passed = 0;
+    serial_valid = false;
     valid = false;
     group_sum1 = 400;
     group_sum2 = 410;
@@ -191,12 +191,12 @@ void SerialKey::Validate()
         String serial_group2 = serial_code.SubString(9, 3);
         String serial_group3 = serial_code.SubString(13, 3);
         if (expected1 == serial_group1 && expected2 == serial_group2 && expected3 == serial_group3)
-            stage1_passed = 1;
+            serial_valid = true;
     }
     // .. step 2: the mkey belongs to one PC
-    if (stage1_passed)
+    if (serial_valid)
     {
-        DWORD csize = 16;
+        DWORD name_size = 16;
         DWORD volserial;
         DWORD maxcomp;
         DWORD flags;
@@ -204,18 +204,18 @@ void SerialKey::Validate()
         char volume_name[1000];
         char filesystem_name[1000];
         computer_name[0] = 0;
-        GetComputerNameA(computer_name, &csize);
+        GetComputerNameA(computer_name, &name_size);
         String cn = computer_name;
         GetVolumeInformationA("c:\\", volume_name, 1000, &volserial, &maxcomp, &flags, filesystem_name, 1000);
-        String vs = volserial;
-        if (vs.Length() >= 33)
-            vs = vs.SubString(1, 32);
+        String volume_serial = volserial;
+        if (volume_serial.Length() >= 33)
+            volume_serial = volume_serial.SubString(1, 32);
         int char_sum = 0;
-        for (int i = 1; i <= vs.Length(); i++)
-            char_sum += (unsigned char)vs[i];
+        for (int i = 1; i <= volume_serial.Length(); i++)
+            char_sum += (unsigned char)volume_serial[i];
         for (int i = 1; i <= serial_code.Length(); i++)
             char_sum += (unsigned char)serial_code[i];
-        char_sum = vs.Length() * char_sum;
+        char_sum = volume_serial.Length() * char_sum;
         char_sum *= 135;
         key_base_copy = key_base;
         key_base = IntToStr(char_sum);
@@ -247,15 +247,15 @@ String SerialKey::DecodeString(String src)
 {
     int parity;
     int i;
-    String rev = "";
+    String reversed = "";
     String result = "";
     parity = (src.Length() + 1) % 2;
     for (i = src.Length(); i >= 1; i--)
-        rev = rev + src[i];
+        reversed = reversed + src[i];
     for (int i = 1; i <= src.Length(); i++)
     {
-        char ch = rev[i];
-        unsigned char byte_value = ch;
+        char raw_char = reversed[i];
+        unsigned char byte_value = raw_char;
         int code = byte_value;
         if (i % 2 == parity)
         {
@@ -263,33 +263,33 @@ String SerialKey::DecodeString(String src)
             {
                 code = 125 - code + 34;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             else
-                result = result + String(rev[i]);
+                result = result + String(reversed[i]);
         }
         else
         {
-            char done = 0;
+            char done = false;
             if (code >= 34 && code <= 79)
             {
-                done = 1;
+                done = true;
                 code = 79 - code + 34;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             if (code >= 80 && code <= 125)
             {
-                done = 1;
+                done = true;
                 code = 125 - code + 80;
                 byte_value = code;
-                ch = byte_value;
-                result = result + String((char)ch);
+                raw_char = byte_value;
+                result = result + String(raw_char);
             }
             if (!done)
-                result = result + String(rev[i]);
+                result = result + String(reversed[i]);
         }
     }
     return result;

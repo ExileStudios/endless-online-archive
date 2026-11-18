@@ -68,7 +68,7 @@ void NewsTopics::LoadFile(String file_name)
         {
             if (ini_file->Strings[i].Length() > 1)
             {
-                if (ini_file->Strings[i][1] == 35)  // '#'
+                if (ini_file->Strings[i][1] == '#')  // '#'
                     ini_file->Delete(i);
             }
             else

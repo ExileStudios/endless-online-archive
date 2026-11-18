@@ -32,7 +32,7 @@ struct SerialKey
     SerialKey();
     ~SerialKey();
     void LoadIni(String path);
-    String ReadKey(String key, String default_value);
+    String ReadIniString(String key, String default_value);
     void CloseIni();
     String GetKeyBaseCopy();
     String GetUnlockCode();

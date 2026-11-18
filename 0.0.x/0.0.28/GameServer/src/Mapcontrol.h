@@ -94,7 +94,7 @@ struct MapContainer
     int GetTileBlock(int map_id, int x, int y, char ignore_spec_block);
     void AddTileSpec(MapItem *map, int x, int y, int spec);
     void AddWarp(MapItem *map, int x, int y, int dest_map, int level, int dest_x, int dest_y);
-    void AddLockKey(MapItem *map, int x, int y, int key_id);
+    void SetChestKey(MapItem *map, int x, int y, int key_id);
     void AddChest(MapItem *map, int x, int y);
     void AddChestSpawn(MapItem *map, int x, int y, int key_id, int slot, int item_id, int spawn_time, int amount);
     void LoadMaps();

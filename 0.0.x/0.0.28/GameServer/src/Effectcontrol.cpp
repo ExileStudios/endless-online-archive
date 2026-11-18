@@ -101,7 +101,7 @@ void EffectController::Tick()
                 if ((*player_iter)->hp > 0)
                 {
                     int dmg = (*player_iter)->max_hp / 5;
-                    unsigned int died = 0;
+                    unsigned int died = false;
                     if (dmg < 1)
                         dmg = 1;
                     if ((*player_iter)->hp < dmg)
@@ -110,7 +110,7 @@ void EffectController::Tick()
                     if ((*player_iter)->hp <= 0)
                     {
                         (*player_iter)->hp = 0;
-                        died = 1;
+                        died = true;
                     }
                     String spike_packet = EncodeNumber(MapDamageType_Spikes, 1);
                     spike_packet.Insert(EncodeNumber(dmg, 2), spike_packet.Length() + 1);

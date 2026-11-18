@@ -47,7 +47,7 @@ struct NpcValues
 
     NpcValues();
     ~NpcValues();
-    void LoadNpcs();
+    void Load();
     void LoadDrops();
     void LoadTalk();
     void AddDrop(int npc_id, int item_id, int min_amount, int max_amount, int rate);

@@ -21,7 +21,7 @@ struct Game;
 // The game's formulas: experience per level, hit rate, armor and element damage.
 struct Game
 {
-    char pad_0x0[8];
+    char unused_bytes[8];
 
     Game();
     ~Game();

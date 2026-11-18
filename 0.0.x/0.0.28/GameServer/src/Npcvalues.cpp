@@ -15,12 +15,12 @@ NpcValues::NpcValues()
 {
     encode_scratch = new char[8];
     record_index = -1;
-    loaded = 0;
+    loaded = false;
     drops_loaded = false;
     talk_loaded = false;
     file_id = 0;
     string_list = new TStringList();
-    LoadNpcs();
+    Load();
     LoadDrops();
     LoadTalk();
 }
@@ -30,7 +30,7 @@ NpcValues::~NpcValues()
 }
 
 // Reads pub/dtn001.enf and the files after it until every npc is loaded.
-void NpcValues::LoadNpcs()
+void NpcValues::Load()
 {
     int file;
     int count;
@@ -51,17 +51,17 @@ void NpcValues::LoadNpcs()
                 path = path + "0" + IntToStr(file) + ".enf";
             try
             {
-                int size;
-                char *file_buffer;
-                file_handle = FileOpen(path.c_str(), 0);
-                size = FileSeek(file_handle, 0, 2);
+                int file_size;
+                char *buffer;
+                file_handle = FileOpen(path.c_str(), fmOpenRead);
+                file_size = FileSeek(file_handle, 0, 2);
                 FileSeek(file_handle, 0, 0);
-                file_buffer = new char[size + 1];
-                FileRead(file_handle, file_buffer, size);
+                buffer = new char[file_size + 1];
+                FileRead(file_handle, buffer, file_size);
                 FileClose(file_handle);
-                data = file_buffer;
-                data.SetLength(size);
-                delete[] file_buffer;
+                data = buffer;
+                data.SetLength(file_size);
+                delete[] buffer;
                 // a file without the ENF header ends the loading
                 if (data[1] != 'E' || data[2] != 'N' || data[3] != 'F')
                     return;
@@ -77,31 +77,31 @@ void NpcValues::LoadNpcs()
                 data.Delete(1, 10);
                 for (int i = 0; count < total && i < 900; i++)
                 {
-                    int namelen = DecodeNumber(data.SubString(1, 1)) + 1;
-                    AddNpc(GetCount() + 1, data.SubString(2, namelen - 1), DecodeNumber(data.SubString(namelen + 1, 2)),
-                        DecodeNumber(data.SubString(namelen + 3, 1)), DecodeNumber(data.SubString(namelen + 4, 2)),
-                        DecodeNumber(data.SubString(namelen + 6, 2)), DecodeNumber(data.SubString(namelen + 8, 2)),
-                        DecodeNumber(data.SubString(namelen + 10, 2)), DecodeNumber(data.SubString(namelen + 12, 3)),
-                        DecodeNumber(data.SubString(namelen + 15, 2)), DecodeNumber(data.SubString(namelen + 17, 2)),
-                        DecodeNumber(data.SubString(namelen + 19, 2)), DecodeNumber(data.SubString(namelen + 21, 2)),
-                        DecodeNumber(data.SubString(namelen + 23, 2)), DecodeNumber(data.SubString(namelen + 25, 2)),
-                        DecodeNumber(data.SubString(namelen + 27, 1)), DecodeNumber(data.SubString(namelen + 28, 2)),
-                        DecodeNumber(data.SubString(namelen + 30, 2)), DecodeNumber(data.SubString(namelen + 32, 2)),
-                        DecodeNumber(data.SubString(namelen + 34, 2)), DecodeNumber(data.SubString(namelen + 36, 1)),
-                        DecodeNumber(data.SubString(namelen + 37, 3)));
+                    int name_end = DecodeNumber(data.SubString(1, 1)) + 1;
+                    AddNpc(GetCount() + 1, data.SubString(2, name_end - 1), DecodeNumber(data.SubString(name_end + 1, 2)),
+                        DecodeNumber(data.SubString(name_end + 3, 1)), DecodeNumber(data.SubString(name_end + 4, 2)),
+                        DecodeNumber(data.SubString(name_end + 6, 2)), DecodeNumber(data.SubString(name_end + 8, 2)),
+                        DecodeNumber(data.SubString(name_end + 10, 2)), DecodeNumber(data.SubString(name_end + 12, 3)),
+                        DecodeNumber(data.SubString(name_end + 15, 2)), DecodeNumber(data.SubString(name_end + 17, 2)),
+                        DecodeNumber(data.SubString(name_end + 19, 2)), DecodeNumber(data.SubString(name_end + 21, 2)),
+                        DecodeNumber(data.SubString(name_end + 23, 2)), DecodeNumber(data.SubString(name_end + 25, 2)),
+                        DecodeNumber(data.SubString(name_end + 27, 1)), DecodeNumber(data.SubString(name_end + 28, 2)),
+                        DecodeNumber(data.SubString(name_end + 30, 2)), DecodeNumber(data.SubString(name_end + 32, 2)),
+                        DecodeNumber(data.SubString(name_end + 34, 2)), DecodeNumber(data.SubString(name_end + 36, 1)),
+                        DecodeNumber(data.SubString(name_end + 37, 3)));
                     count++;
-                    data.Delete(1, namelen + 39);
+                    data.Delete(1, name_end + 39);
                 }
             }
             catch (...)
             {
                 FileClose(file_handle);
-                loaded = 0;
+                loaded = false;
             }
             file++;
         } while (count < total);
         file_id = file - 1;
-        loaded = 1;
+        loaded = true;
     }
     return;
 }
@@ -118,7 +118,7 @@ void NpcValues::LoadDrops()
         {
             int size;
             char *file_buffer;
-            file_handle = FileOpen(path.c_str(), 0);
+            file_handle = FileOpen(path.c_str(), fmOpenRead);
             size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             file_buffer = new char[size + 1];
@@ -164,7 +164,7 @@ void NpcValues::LoadTalk()
         {
             int size;
             char *file_buffer;
-            file_handle = FileOpen(path.c_str(), 0);
+            file_handle = FileOpen(path.c_str(), fmOpenRead);
             size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             file_buffer = new char[size + 1];

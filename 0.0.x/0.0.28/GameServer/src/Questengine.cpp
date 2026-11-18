@@ -82,7 +82,7 @@ bool QuestContainer::LoadQuest(int quest_id)
             text.Insert("0", 0);
         text.Insert("./quests/", 0);
         text.Insert(".txt", text.Length() + 1);
-        handle = FileOpen(text.c_str(), 0);
+        handle = FileOpen(text.c_str(), fmOpenRead);
         if (handle < 0)
             return false;
         file_size = FileSeek(handle, 0, 2);
@@ -105,8 +105,8 @@ bool QuestContainer::LoadQuest(int quest_id)
         action_type = 0;
         rule_type = QuestCondition_None;
         int pos = 1;
-        char in_quote = 0;
-        char in_comment = 0;
+        char in_quote = false;
+        char in_comment = false;
         // .. a token ends at a space, tab, comma, ; or line end
         // ( ) { } stand alone, "a text" is one token, and // starts a comment
         while (text.Length() > 0)
@@ -115,7 +115,7 @@ bool QuestContainer::LoadQuest(int quest_id)
             {
                 if (text[pos] == '"')
                 {
-                    in_quote = 0;
+                    in_quote = false;
                     if (pos > 1)
                         ParseToken(quest, text.SubString(1, pos - 1));
                     text.Delete(1, pos);
@@ -125,7 +125,7 @@ bool QuestContainer::LoadQuest(int quest_id)
                 {
                     if (text[pos] == '\n')
                     {
-                        in_quote = 0;
+                        in_quote = false;
                         if (pos > 2)
                             ParseToken(quest, text.SubString(1, pos - 2));
                         text.Delete(1, pos);
@@ -143,7 +143,7 @@ bool QuestContainer::LoadQuest(int quest_id)
             {
                 if (text[pos] == '\n')
                 {
-                    in_comment = 0;
+                    in_comment = false;
                     text.Delete(1, pos);
                     pos = 1;
                 }
@@ -156,13 +156,13 @@ bool QuestContainer::LoadQuest(int quest_id)
             }
             else if (text[pos] == '"')
             {
-                in_quote = 1;
+                in_quote = true;
                 text.Delete(1, pos);
                 pos = 1;
             }
             else if (text[pos] == '/' && text.Length() != pos && text[pos + 1] == '/')
             {
-                in_comment = 1;
+                in_comment = true;
                 text.Delete(1, pos + 1);
                 pos = 1;
             }
@@ -263,7 +263,7 @@ bool QuestContainer::LoadQuest(int quest_id)
         }
     }
     quest->state_count = state_count;
-    quest->loaded = 1;
+    quest->loaded = true;
     return true;
 }
 
@@ -627,7 +627,7 @@ int QuestContainer::ParseInt(String token)
 {
     for (int i = 1; i <= token.Length(); i++)
     {
-        if ((unsigned char)token[i] < 48 || (unsigned char)token[i] > 57)
+        if ((unsigned char)token[i] < '0' || (unsigned char)token[i] > '9')
             return 0;
     }
     return StrToInt(token);

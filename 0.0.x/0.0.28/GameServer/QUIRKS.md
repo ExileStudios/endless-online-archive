@@ -6,7 +6,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## The per-character save in the game tick does not run, because its gate is shut at the top of every tick
 
-`Packets.cpp`, `Packets::Game_Tick` (`0x00416b84`)
+`Packets.cpp`, `Packets::Game_Tick`
 
 ```cpp
     save_gate = false;
@@ -38,20 +38,20 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - `players->GetOnlineCount()` gives `online_count`, the number of characters in the game: `UpdatePeakOnline` counts
     the characters with `logged_in` set into it at each game entry, and `Players::Remove` takes one off.
 - **Evidence, from the code and not from the names:**
-  - the save: `Players.cpp:287` `String query = "UPDATE endl_characters SET ";` The query the branch would send updates
+  - the save: `Players.cpp` `String query = "UPDATE endl_characters SET ";` The query the branch would send updates
     the character's row of `endl_characters`.
-  - the number of characters: `MainForm.cpp:240`
+  - the number of characters: `MainForm.cpp`
     `caption.Insert(IntToStr(players->GetOnlineCount()) + " players", caption.Length() + 1);` The window caption shows
     the same number followed by " players".
-  - the number of characters: `Players.cpp:1498` `online_count++;` It is counted up once for each character with
+  - the number of characters: `Players.cpp` `online_count++;` It is counted up once for each character with
     `logged_in` set.
-  - the seconds: `MainForm.cpp:133` `timer->Interval = 10;` The timer fires every 10 ms; `TGUI::timerTimer` calls
+  - the seconds: `MainForm.cpp` `timer->Interval = 10;` The timer fires every 10 ms; `TGUI::timerTimer` calls
     `Game_Tick` on every tenth firing, and `Game_Tick` walks the characters on every tenth call.
 - **When it happens:** On every pass of the loop, once a second, for every character with `logged_in` set.
   - `Packets::Game_Tick` is called from `TGUI::timerTimer` (`server_ctrl->Game_Tick();`).
   - `Players::Character_BuildSaveQuery` is called from `Packets::Game_Tick`
     (`players->Character_BuildSaveQuery(*player, 1)`); `Players::Remove` (`Character_BuildSaveQuery(player, 0)`).
-  - Search of the tree for `\bsave_gate\b`: 4 line(s), Packets.cpp:112, Packets.cpp:183, Packets.cpp:189, Packets.h:272.
+  - Search of the tree for `\bsave_gate\b`: 4 line(s), in Packets.cpp, Packets.h.
   - Reachable with the shipped code: never reached. The branch's test starts with `save_gate`, and the search shows that
     the only assignments to it are the two `= false` lines.
 - **What you see:** A character's whole row is saved only when the character leaves the game: `Players::Remove` queues
@@ -61,7 +61,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## When a partner leaves during the vows, the wedding countdown is compared with 1 instead of set to 1
 
-`Weddings.cpp`, `WeddingController::Tick` (`0x0052efa0`)
+`Weddings.cpp`, `WeddingController::Tick`
 
 ```cpp
             if ((*it)->countdown == 18)
@@ -102,8 +102,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## A map id of 0 or less is compared with 1 instead of set to 1, so the tile lookup would read `maps[-1]`
 
-`Mapcontrol.cpp`, `MapContainer::GetTileSpecObject` (`0x0047c114`); `Packets.cpp`, `Packets::Chair_Execute`
-(`0x00466fcc`)
+`Mapcontrol.cpp`, `MapContainer::GetTileSpecObject`; `Packets.cpp`, `Packets::Chair_Execute`
 
 ```cpp
     if (map_id <= 0)
@@ -139,7 +138,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## A spell list longer than 255 characters is saved whole in `skillblob`, and its tail is saved again in `skillblob2`
 
-`Players.cpp`, `Players::Character_BuildSaveQuery` (`0x0040902c`)
+`Players.cpp`, `Players::Character_BuildSaveQuery`
 
 ```cpp
     if (invblob.Length() > 255)
@@ -171,16 +170,16 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - `Delete(index, count)` returns at once when the count is not positive, so `skillblob` stays whole.
   - The query writes the whole list to `skillblob`, and its part from character 256 on to `skillblob2`.
 - **Evidence, from the code and not from the names:**
-  - the list being cut: `Players.cpp:360` `query.Insert(",skillblob = '" + skillblob + "'", query.Length() + 1);` The
+  - the list being cut: `Players.cpp` `query.Insert(",skillblob = '" + skillblob + "'", query.Length() + 1);` The
     text `skillblob` is written to the `skillblob` column.
-  - the list being cut: `Players.cpp:361` `query.Insert(",skillblob2 = '" + skillblob_tail + "'", query.Length() + 1);`
+  - the list being cut: `Players.cpp` `query.Insert(",skillblob2 = '" + skillblob_tail + "'", query.Length() + 1);`
     Its tail, `skillblob_tail`, is written to the `skillblob2` column.
-  - the list being cut: `Packets.cpp:7123`
+  - the list being cut: `Packets.cpp`
     `newplayer->skillblob = mysql_controls->Db_GetString("skillblob") + mysql_controls->Db_GetString("skillblob2");` At
     login the two columns are read back and joined, `skillblob` first.
-  - the list whose length is used: `Players.cpp:350` `query.Insert(",invblob = '" + invblob + "'", query.Length() + 1);`
+  - the list whose length is used: `Players.cpp` `query.Insert(",invblob = '" + invblob + "'", query.Length() + 1);`
     The text `invblob` is written to the `invblob` column, so the count comes from a different column's list.
-  - the list whose length is used: `Players.cpp:267` `if (invblob.Length() > 255)` The lines above cut `invblob` to at
+  - the list whose length is used: `Players.cpp` `if (invblob.Length() > 255)` The lines above cut `invblob` to at
     most 255 characters before the spell list is cut.
 - **When it happens:** Every time a character is saved, which is in `Players::Remove`, when the character leaves the
   game. The other caller, in `Packets::Game_Tick`, sits in a branch that never runs (the first entry above).
@@ -196,7 +195,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## `ResetMap` leaves a kept map's file text in memory, and reads the next map's record to do it
 
-`Mapcontrol.cpp`, `MapContainer::ResetMap` (`0x00481e0c`)
+`Mapcontrol.cpp`, `MapContainer::ResetMap`
 
 ```cpp
     maps[map_id - 1].width = 0;
@@ -217,11 +216,11 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - Next, `ReloadMap` calls `ParseMapFile`. That reads `maps/<id>.emf` from disk again and, for a kept map, sets `buf`
     to the new text.
 - **Evidence, from the code and not from the names:**
-  - the map being reset: `Mapcontrol.cpp:790` `maps[map_id - 1].width = 0;` Every other line of the function works on
+  - the map being reset: `Mapcontrol.cpp` `maps[map_id - 1].width = 0;` Every other line of the function works on
     `maps[map_id - 1]`, the record of map `map_id`.
-  - the map being reset: `Mapcontrol.cpp:810` `file_name.Insert("./maps/", 0);` `ReadRawFile` reads
+  - the map being reset: `Mapcontrol.cpp` `file_name.Insert("./maps/", 0);` `ReadRawFile` reads
     `maps[map_id - 1].buf` for map `map_id`, and when it is empty reads the file `./maps/` + the id + `.emf` instead.
-  - the record whose length is read: `Mapcontrol.cpp:792` `maps[map_id - 1].buf.Delete(0, maps[map_id].buf.Length());`
+  - the record whose length is read: `Mapcontrol.cpp` `maps[map_id - 1].buf.Delete(0, maps[map_id].buf.Length());`
     The count is read from `maps[map_id]`, one record further on than every other line of the function.
 - **When it happens:** A player at the top admin level, 4 (`AdminLevel_HighGameMaster`), types `$r map` to reload the
   map they stand on. `Packets::Player_HandlePacket` calls `ReloadMap(player->map_id)`, which checks that the id is
@@ -238,7 +237,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## A member over the kill limit sets the share to 0 for every later member and for the killer
 
-`Packets.cpp`, `Packets::Party_ShareExp` (`0x0046690c`)
+`Packets.cpp`, `Packets::Party_ShareExp`
 
 ```cpp
             if (settings->GetMaxKills())
@@ -262,9 +261,9 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - `exp` is not set back. So every member after that one in `party_ids` also gets 0, and `return exp;` hands 0 back as
     the killer's share.
 - **Evidence, from the code and not from the names:**
-  - the kill limit: `Settings.cpp:239` `max_kills = ReadIniInt("maxkills", max_kills);` The limit is the `maxkills` key
+  - the kill limit: `Settings.cpp` `max_kills = ReadIniInt("maxkills", max_kills);` The limit is the `maxkills` key
     of the settings file, and `Settings::GetMaxKills` returns `max_kills`.
-  - the member's count: `Killcounters.cpp:41` `int bucket = name[1] - 97;` `IncrementAndGet` files the name under its
+  - the member's count: `Killcounters.cpp` `int bucket = name[1] - 97;` `IncrementAndGet` files the name under its
     first letter, adds one to that name's count, and returns the count.
 - **When it happens:** When a party member kills an npc, `maxkills` in the server settings is above 0, and at least one
   other member on the map has passed the limit today.
@@ -280,7 +279,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## Learning a spell checks its intelligence requirement against wisdom, and its wisdom requirement against intelligence
 
-`Packets.cpp`, `Packets::Player_HandlePacket` (`0x0041794c`)
+`Packets.cpp`, `Packets::Player_HandlePacket`
 
 ```cpp
             if (player->adj_strength < skill.str_requirement)
@@ -312,25 +311,25 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - When either is lower, the branch returns `true` without a reply. The class check above sends a
     `SkillMasterReply_WrongClass` reply, but the stat checks send nothing.
 - **Evidence, from the code and not from the names:**
-  - intelligence: `Packets.cpp:7074` `newplayer->base_intelligence = mysql_controls->Db_GetInt("stat_intelligence");`
+  - intelligence: `Packets.cpp` `newplayer->base_intelligence = mysql_controls->Db_GetInt("stat_intelligence");`
     The character's intelligence comes from the `stat_intelligence` column; `Player::CalculateAdjStats` makes
     `adj_intelligence` from it (`adj_intelligence = base_intelligence + equip_intelligence_bonus;`).
-  - intelligence: `Learnvalues.cpp:64` `DecodeNumber(data.SubString(17, 2)), DecodeNumber(data.SubString(19, 2)),` The
+  - intelligence: `Learnvalues.cpp` `DecodeNumber(data.SubString(17, 2)), DecodeNumber(data.SubString(19, 2)),` The
     number at position 19 is the second stat requirement of the spell, and `AddSkill` stores it as `int_requirement`.
-  - intelligence: `Itemvalues.cpp:98`
+  - intelligence: `Itemvalues.cpp`
     `DecodeNumber(data.SubString(namelen + 44, 2)), DecodeNumber(data.SubString(namelen + 46, 2)),` The item record's
     second stat requirement, at position `namelen + 44`, becomes `intelligence_requirement`, which the equip check
     compares with `adj_intelligence` (`if (player->adj_intelligence < equip_item->intelligence_requirement)`).
-  - intelligence: `Classvalues.cpp:77`
+  - intelligence: `Classvalues.cpp`
     `DecodeNumber(data.SubString(namelen + 6, 2)), DecodeNumber(data.SubString(namelen + 8, 2)),` The class record's
     second stat, at position `namelen + 6`, becomes `intl`, which `Player_CalculateStats` adds to `adj_intelligence`.
-  - wisdom: `Packets.cpp:7073` `newplayer->base_wisdom = mysql_controls->Db_GetInt("stat_wisdom");` The character's
+  - wisdom: `Packets.cpp` `newplayer->base_wisdom = mysql_controls->Db_GetInt("stat_wisdom");` The character's
     wisdom comes from the `stat_wisdom` column, and becomes `adj_wisdom` the same way.
-  - wisdom: `Learnvalues.cpp:65` `DecodeNumber(data.SubString(21, 2)), DecodeNumber(data.SubString(23, 2)),` The number
+  - wisdom: `Learnvalues.cpp` `DecodeNumber(data.SubString(21, 2)), DecodeNumber(data.SubString(23, 2)),` The number
     at position 21 is the spell's third stat requirement, stored as `wis_requirement`. The item record's third, at
     `namelen + 46`, is compared with `adj_wisdom`, and the class record's third, at `namelen + 8`, is added to
     `adj_wisdom`.
-  - wisdom: `Learnvalues.cpp:179` `data.Insert(EncodeNumber(it->wis_requirement, 2), data.Length() + 1);` The list sent
+  - wisdom: `Learnvalues.cpp` `data.Insert(EncodeNumber(it->wis_requirement, 2), data.Length() + 1);` The list sent
     to the client writes the requirements back in file order, `int_requirement` then `wis_requirement`.
 - **When it happens:** When a player asks a skill master to teach a spell whose intelligence and wisdom requirements
   differ.
@@ -342,8 +341,8 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## The 27th kill list, for names that do not start with a to z, is left out of the end-of-day clear and the save
 
-`Killcounters.cpp`, `KillCounters::Clear` (`0x0053e5d0`); `Killcounters.cpp`, `KillCounters::Save` (`0x0053f2d0`);
-`Killcounters.cpp`, `KillCounters::IncrementAndGet` (`0x0053e784`)
+`Killcounters.cpp`, `KillCounters::Clear`; `Killcounters.cpp`, `KillCounters::Save`;
+`Killcounters.cpp`, `KillCounters::IncrementAndGet`
 
 ```cpp
     if (bucket < 0 || bucket > 26)
@@ -366,12 +365,12 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - `Clear` and `Save` loop `i` from 0 to 25, so list 26 is neither cleared nor written. `Clear` also deletes
     `cache/kills.chk`.
 - **Evidence, from the code and not from the names:**
-  - the 27 lists: `Killcounters.cpp:43` `bucket = 26;` A first letter outside a to z (`name[1] - 97` outside 0 to 26)
+  - the 27 lists: `Killcounters.cpp` `bucket = 26;` A first letter outside a to z (`name[1] - 97` outside 0 to 26)
     files the name in list 26.
-  - the 27 lists: `Killcounters.cpp:25` `for (int i = 0; i < 26; i++)` The end-of-day clear stops at 25.
-  - the 27 lists: `Killcounters.cpp:129` `string_list->SaveToFile("./cache/kills.chk");` The save writes the lists its
+  - the 27 lists: `Killcounters.cpp` `for (int i = 0; i < 26; i++)` The end-of-day clear stops at 25.
+  - the 27 lists: `Killcounters.cpp` `string_list->SaveToFile("./cache/kills.chk");` The save writes the lists its
     loop went over to `cache/kills.chk`.
-  - the end of the day: `Packets.cpp:220` `if (stamp > 8620000)` The clear runs once the time of day passes 23:56:39
+  - the end of the day: `Packets.cpp` `if (stamp > 8620000)` The clear runs once the time of day passes 23:56:39
     (`stamp` is the hundredths of a second since midnight, plus 100), while `GetMaxKills` is above 0.
 - **When it happens:** Only for a name that does not start with a to z, and no character name can. Creating a character
   with any character other than a letter bans the ip for 4 hours (the `IsAlphabeticText` check in the create branch).
@@ -393,7 +392,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## The character-pick reply sends wisdom before intelligence, the other way round from the seven other stat packets
 
-`Packets.cpp`, `Packets::Player_HandlePacket` (`0x0041794c`)
+`Packets.cpp`, `Packets::Player_HandlePacket`
 
 ```cpp
                 welcome_reply.Insert(EO_EncodeNumber(welcome_select_slot->adj_strength, 2), welcome_reply.Length() + 1);
@@ -411,25 +410,23 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 - **What it does:** Step by step:
   - The reply writes `adj_strength`, then `adj_wisdom`, then `adj_intelligence`, then `adj_agility`, `adj_constitution`
     and `adj_charisma`, two bytes each.
-  - The seven other packets with the six stats write intelligence second and wisdom third: Packets.cpp:918, 2549, 3090,
-    3164, 5557, 5639 and 6935 (the evidence shows the first of them). The two searches below find these eight packets'
-    lines for each stat: this reply's and the seven others'.
+  - The seven other packets with the six stats write intelligence second and wisdom third, all seven in Packets.cpp (the
+    evidence shows the first of them). The two searches below find these eight packets' lines for each stat: this
+    reply's and the seven others'.
   - No line of the tree reads this reply back. The client reads it, so which number it shows as which stat is not in
     this code.
 - **Evidence, from the code and not from the names:**
-  - intelligence: `Packets.cpp:7074` `newplayer->base_intelligence = mysql_controls->Db_GetInt("stat_intelligence");`
+  - intelligence: `Packets.cpp` `newplayer->base_intelligence = mysql_controls->Db_GetInt("stat_intelligence");`
     The character's intelligence comes from the `stat_intelligence` column, and `adj_intelligence` from it.
-  - wisdom: `Packets.cpp:7073` `newplayer->base_wisdom = mysql_controls->Db_GetInt("stat_wisdom");` The character's
+  - wisdom: `Packets.cpp` `newplayer->base_wisdom = mysql_controls->Db_GetInt("stat_wisdom");` The character's
     wisdom comes from the `stat_wisdom` column, and `adj_wisdom` from it.
-  - the order of the other packets: `Packets.cpp:918`
+  - the order of the other packets: `Packets.cpp`
     `lookup_reply.Insert(EO_EncodeNumber(lookup_target->adj_intelligence, 2),` The `lookup_reply`, the first of the
     seven listed, writes `adj_intelligence` and then `adj_wisdom`.
 - **When it happens:** Every time a player picks a character on the character list.
   - `Packets::Player_HandlePacket` is called from `Packets::Server_ClientRead` (`Player_HandlePacket(player,`).
-  - Search of the tree for `EncodeNumber\([^)]*adj_intelligence, 2\)`: 8 line(s), Packets.cpp:918, Packets.cpp:1713,
-    Packets.cpp:2549, Packets.cpp:3090, Packets.cpp:3164, Packets.cpp:5557, Packets.cpp:5639, Packets.cpp:6935.
-  - Search of the tree for `EncodeNumber\([^)]*adj_wisdom, 2\)`: 8 line(s), Packets.cpp:920, Packets.cpp:1712,
-    Packets.cpp:2550, Packets.cpp:3092, Packets.cpp:3166, Packets.cpp:5558, Packets.cpp:5640, Packets.cpp:6936.
+  - Search of the tree for `EncodeNumber\([^)]*adj_intelligence, 2\)`: 8 line(s), in Packets.cpp.
+  - Search of the tree for `EncodeNumber\([^)]*adj_wisdom, 2\)`: 8 line(s), in Packets.cpp.
   - Reachable with the shipped code: reachable. Every character pick sends the reply.
 - **What you see:** Not decided by this code. If the client reads the fields in the order of the other packets, it shows
   the character's wisdom as intelligence and their intelligence as wisdom, until a later packet with the stats (a stat
@@ -437,12 +434,12 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## The item loader reads each item's strength requirement from position 41 of its record, inside the class requirement
 
-`Itemvalues.cpp`, `ItemValues::LoadItems` (`0x0047849c`)
+`Itemvalues.cpp`, `ItemValues::LoadItems`
 
 ```cpp
-                        DecodeNumber(data.SubString(namelen + 37, 1)), DecodeNumber(data.SubString(namelen + 38, 2)),
-                        DecodeNumber(data.SubString(namelen + 40, 2)), DecodeNumber(data.SubString(namelen + 41, 2)),
-                        DecodeNumber(data.SubString(namelen + 44, 2)), DecodeNumber(data.SubString(namelen + 46, 2)),
+                        DecodeNumber(data.SubString(name_end + 37, 1)), DecodeNumber(data.SubString(name_end + 38, 2)),
+                        DecodeNumber(data.SubString(name_end + 40, 2)), DecodeNumber(data.SubString(name_end + 41, 2)),
+                        DecodeNumber(data.SubString(name_end + 44, 2)), DecodeNumber(data.SubString(name_end + 46, 2)),
 ```
 
 - **What the function is for:** `ItemValues::LoadItems` reads the item files into the item list, one `AddItem` call
@@ -458,7 +455,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
   - With the class requirement's second byte 254, the strength requirement reads 0. With that byte 1 (a digit of 0), it
     reads 253 times the strength the item needs: 10 reads as 2530.
 - **Evidence, from the code and not from the names:**
-  - the fields around it: `Itemvalues.cpp:98`
+  - the fields around it: `Itemvalues.cpp`
     `DecodeNumber(data.SubString(namelen + 44, 2)), DecodeNumber(data.SubString(namelen + 46, 2)),` The two fields after
     it start at 44 and 46, two bytes apart.
 - **When it happens:** At start, for every item, while `ItemValues::ItemValues` loads the item files. The equip check
@@ -472,7 +469,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
 
 ## Small ones with no effect
 
-- **The licence check reads the PC's name and does not use it.** `Serial.cpp`, `SerialKey::Validate` (`0x00412d48`).
+- **The licence check reads the PC's name and does not use it.** `Serial.cpp`, `SerialKey::Validate`.
   - Code: `GetComputerNameA(computer_name, &csize); String cn = computer_name;`
   - What it does: `GetComputerNameA` fills `computer_name`, which is copied into `cn`. No later line reads `cn`: the
     search finds only the line that sets it.
@@ -480,7 +477,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
     `\bcn\b` finds 1 line(s). Reachable with the shipped code: reachable. Every start runs it.
   - What you see: None. The check uses the drive serial (`GetVolumeInformationA`) and the key.
 - **The packet decoder asks whether a stack is empty and drops the answer.** `Packets.cpp`,
-  `Packets::EO_Decode_Deinterleave` (`0x00472414`).
+  `Packets::EO_Decode_Deinterleave`.
   - Code: `pending.empty();`
   - What it does: `pending.empty();` comes right after `while (!pending.empty())`, the loop that empties `pending`. It
     only returns true, and nothing uses the answer.
@@ -488,7 +485,7 @@ it does instead, so the comments in `src/` can stay about what the code is for.
     shipped code: reachable. Every packet from a client is decoded by it.
   - What you see: None.
 - **The shutdown check has no `return` when the database thread is still running, and gives 0 there.**
-  `Mysqlcontrols.cpp`, `mySQLdb::Database_TryShutdown` (`0x00477258`).
+  `Mysqlcontrols.cpp`, `mySQLdb::Database_TryShutdown`.
   - Code:
     `if (task_queue->job_queue.size() > 0) return 0; else if (task_queue->last_player_id > 0) return 0; else if (worker_thread->Suspended) { worker_thread->Terminate(); return 1; } }`
   - What it does: `task_queue->job_queue.size() > 0` and `task_queue->last_player_id > 0` each `return 0;` while the

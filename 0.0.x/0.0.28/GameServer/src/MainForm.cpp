@@ -271,7 +271,7 @@ String TGUI::Mainform_ComputeRegName(String key_base, String display_code, Strin
     String result = "";
     String part = "";
     sum = 13;
-    again = 1;
+    again = true;
     do
     {
         for (int i = 1; i <= key_base.Length(); i++)
@@ -282,7 +282,7 @@ String TGUI::Mainform_ComputeRegName(String key_base, String display_code, Strin
             sum += (unsigned char)unlock_code[i];
         sum = sum + 2;
         if (!key_base.Length() && !display_code.Length())
-            again = 0;
+            again = false;
         if (key_base.Length() > 0)
             key_base.Delete(1, 1);
         if (display_code.Length() > 0)

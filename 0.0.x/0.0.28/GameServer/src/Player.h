@@ -67,7 +67,7 @@ struct Player
     int client_encryption_multiple;
     int sequence;
     int account_create_cooldown;
-    int field_0x2c;
+    int unused_value;
     int session_id;
     int challenge_response;
     String receive_buffer;
@@ -101,7 +101,7 @@ struct Player
     int admin_level;
     int save_ticks;
     int recover_ticks;
-    bool field_0xa4;
+    bool unused_flag;
     String name;
     String partner_name;
     String title;
@@ -216,7 +216,7 @@ struct Player
     bool in_party;
     int party_leader_id;
     int party_ids[PARTY_MAX_MEMBERS];
-    String invblob1;
+    String inventory_blob;
     String bankblob;
     String skillblob;
     String quest_cache;
@@ -242,7 +242,7 @@ struct Player
     bool fast_action;
     bool flush_queue;
     TCustomWinSocket *socket;
-    char pad_0x3b4[12];
+    char unused_bytes[12];
     String pending_char_name;
     int item_change_id;
     int item_change_count;

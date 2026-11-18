@@ -36,8 +36,8 @@ Npc::Npc(int npc_index, short npc_id, short x, short y, short attack_dir, int sp
     this->base_act_ticks = this->act_ticks;
     this->spawn_time = spawn_time;
     this->base_spawn_time = spawn_time;
-    TDateTime now1 = Now();
-    this->death_stamp = DateTimeToTimeStamp(now1);
+    TDateTime now = Now();
+    this->death_stamp = DateTimeToTimeStamp(now);
     this->spawn_x = x;
     this->spawn_y = y;
     this->act_counter = 4;

@@ -29,9 +29,9 @@ char WeddingController::Has(int map_id, int priest_npc_index)
     for (vector<Wedding *>::iterator it = active_weddings.begin(); it != active_weddings.end(); it++)
     {
         if ((*it)->map_id == map_id && (*it)->priest_npc_index == priest_npc_index)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // Starts a wedding: the ceremony begins in 20 seconds.

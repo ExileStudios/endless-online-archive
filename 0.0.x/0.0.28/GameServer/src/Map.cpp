@@ -10,7 +10,7 @@ MapItem::MapItem(int map_id, int width, int height)
     this->map_id = map_id;
     this->width = width;
     this->height = height;
-    this->field_0x4c = 0;
+    this->unused_value = 0;
     this->buf_copied = false;
     this->npc_dirty = false;
     this->boss_alive = false;

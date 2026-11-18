@@ -229,7 +229,7 @@ bool mySQLdb::Mysql_SubmitQuery_FromCallback(int query_type, int player_id, int 
 // Runs a select at once, outside the database thread; false when it fails.
 bool mySQLdb::Query(String query)
 {
-    bool ok = 1;
+    bool ok = true;
     try
     {
         if (GUI->myquery->Active)
@@ -245,7 +245,7 @@ bool mySQLdb::Query(String query)
     }
     catch (...)
     {
-        ok = 0;
+        ok = false;
         query_error_count++;
     }
     return ok;
@@ -273,7 +273,7 @@ bool mySQLdb::Mysql_SubmitExec_FromCallback(int account_ident, String query)
 // Runs a write at once, outside the database thread; false when it fails.
 bool mySQLdb::ExecDrop(String query)
 {
-    bool ok = 1;
+    bool ok = true;
     try
     {
         if (GUI->myquery->Active)
@@ -284,7 +284,7 @@ bool mySQLdb::ExecDrop(String query)
     }
     catch (...)
     {
-        ok = 0;
+        ok = false;
         exec_error_count++;
     }
     return ok;
@@ -300,13 +300,13 @@ unsigned int mySQLdb::Db_GetQueuedQueryCount()
 char mySQLdb::Database_TryShutdown()
 {
     if (task_queue->job_queue.size() > 0)
-        return 0;
+        return false;
     else if (task_queue->last_player_id > 0)
-        return 0;
+        return false;
     else if (worker_thread->Suspended)
     {
         worker_thread->Terminate();
-        return 1;
+        return true;
     }
 }
 
@@ -320,7 +320,7 @@ bool mySQLdb::IsAsciiText(String value)
 {
     for (int i = 1; i <= value.Length(); i++)
     {
-        if ((unsigned char)value[i] > 122)
+        if ((unsigned char)value[i] > 'z')
             return false;
     }
     return true;
@@ -329,22 +329,22 @@ bool mySQLdb::IsAsciiText(String value)
 // True when the text is letters only, A to Z and a to z.
 bool mySQLdb::IsAlphabeticText(String value)
 {
-    bool result = 1;
+    bool result = true;
     if (value.Length() >= 1)
     {
         int i = value.Length();
         while (i >= 1)
         {
-            if ((unsigned char)value[i] < 65 || (unsigned char)value[i] > 122)
+            if ((unsigned char)value[i] < 'A' || (unsigned char)value[i] > 'z')
             {
-                result = 0;
+                result = false;
                 break;
             }
-            if ((unsigned char)value[i] > 90)
+            if ((unsigned char)value[i] > 'Z')
             {
-                if ((unsigned char)value[i] < 97)
+                if ((unsigned char)value[i] < 'a')
                 {
-                    result = 0;
+                    result = false;
                     break;
                 }
             }
@@ -361,11 +361,11 @@ String mySQLdb::Mysql_SanitizeString(String value, char uppercase)
     {
         for (int i = value.Length(); i >= 1; i--)
         {
-            if ((unsigned char)value[i] == 32)
+            if ((unsigned char)value[i] == ' ')
                 continue;
-            if ((unsigned char)value[i] >= 91 && (unsigned char)value[i] <= 96)
+            if ((unsigned char)value[i] >= '[' && (unsigned char)value[i] <= '`')
                 value.Delete(i, 1);
-            else if ((unsigned char)value[i] <= 64 || (unsigned char)value[i] >= 123)
+            else if ((unsigned char)value[i] <= '@' || (unsigned char)value[i] >= '{')
                 value.Delete(i, 1);
         }
     }
@@ -382,10 +382,10 @@ String mySQLdb::Db_SanitizeString(String value)
     {
         for (int i = value.Length(); i >= 1; i--)
         {
-            if (String(value[i]) == "'" || value[i] == 37 || value[i] == 91 || value[i] == 42 || value[i] == 93 ||
-                value[i] == 40 || value[i] == 44 || value[i] == 41 || value[i] == 38 || value[i] == 123 ||
-                value[i] == 35 || value[i] == 125 || value[i] == 34 || value[i] == 58 || value[i] == 59 ||
-                value[i] == -56 || value[i] == 61 || value[i] == 47 || value[i] == 92 || value[i] == -1)
+            if (String(value[i]) == "'" || value[i] == '%' || value[i] == '[' || value[i] == '*' || value[i] == ']' ||
+                value[i] == '(' || value[i] == ',' || value[i] == ')' || value[i] == '&' || value[i] == '{' ||
+                value[i] == '#' || value[i] == '}' || value[i] == '"' || value[i] == ':' || value[i] == ';' ||
+                value[i] == -56 || value[i] == '=' || value[i] == '/' || value[i] == '\\' || value[i] == -1)
                 value.Delete(i, 1);
         }
     }
@@ -403,14 +403,14 @@ void mySQLdb::NormalizePlayerText(String *message)
     int other = 0;
     for (int i = (*message).Length(); i >= 1; i--)
     {
-        if ((unsigned char)(*message)[i] >= 65 && (unsigned char)(*message)[i] <= 90)
+        if ((unsigned char)(*message)[i] >= 'A' && (unsigned char)(*message)[i] <= 'Z')
             caps++;
-        if ((unsigned char)(*message)[i] >= 65)
+        if ((unsigned char)(*message)[i] >= 'A')
         {
-            if ((unsigned char)(*message)[i] <= 122)
+            if ((unsigned char)(*message)[i] <= 'z')
             {
                 // a 'W' counts as a symbol
-                if ((unsigned char)(*message)[i] != 87)
+                if ((unsigned char)(*message)[i] != 'W')
                     continue;
             }
         }
@@ -442,22 +442,22 @@ String mySQLdb::DecodeString(String value)
             unsigned char letter = reversed[j];
             unsigned char ch = letter;
             int code = ch;
-            char done = 0;
-            if (!done && code >= 48 && code <= 57)
+            char done = false;
+            if (!done && code >= '0' && code <= '9')
             {
-                code = 57 - code + 48;
+                code = '9' - code + '0';
                 ch = code;
                 letter = ch;
                 result.Insert(String((char)letter), result.Length() + 1);
-                done = 1;
+                done = true;
             }
-            if (!done && code >= 97 && code <= 122)
+            if (!done && code >= 'a' && code <= 'z')
             {
-                code = 122 - code + 97;
+                code = 'z' - code + 'a';
                 ch = code;
                 letter = ch;
                 result.Insert(String((char)letter), result.Length() + 1);
-                done = 1;
+                done = true;
             }
             if (!done)
                 result.Insert(String((char)letter), result.Length() + 1);

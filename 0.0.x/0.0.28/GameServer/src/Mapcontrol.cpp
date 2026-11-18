@@ -276,17 +276,17 @@ MapObject MapContainer::GetTileSpecObject(int map_id, int x, int y)
 // The special tile's value, or -1.
 int MapContainer::GetTileSpec(int map_id, int x, int y)
 {
-    int result = -1;
+    int key = -1;
     for (vector<MapObject>::iterator it = maps[map_id - 1].tile_specs.begin(); it != maps[map_id - 1].tile_specs.end();
         it++)
     {
         if (it->x == x && it->y == y)
         {
-            result = it->value;
+            key = it->value;
             break;
         }
     }
-    return result;
+    return key;
 }
 
 // The value of the tile when it is marked special, or -1.
@@ -321,9 +321,9 @@ char MapContainer::TryTakeQuestCooldown(int map_id)
     if (map_id > 0 && (int)maps.size() >= map_id && maps[map_id - 1].quest_cooldown < 1)
     {
         maps[map_id - 1].quest_cooldown = 10;
-        return 1;
+        return true;
     }
-    return 0;
+    return false;
 }
 
 char MapContainer::GetNoScroll(int map_id)
@@ -356,7 +356,7 @@ MapCoord MapContainer::GetRelogCoords(int map_id)
 // The boss's children on the map turn angry; 1 when there are any.
 char MapContainer::AggroChildNpcs(int map_id)
 {
-    char found_child = 0;
+    char found_child = false;
     if (map_id > 0 && (int)maps.size() >= map_id)
     {
         TDateTime now = Now();
@@ -366,7 +366,7 @@ char MapContainer::AggroChildNpcs(int map_id)
             if ((*it)->child > 0)
             {
                 (*it)->aggressive = true;
-                found_child = 1;
+                found_child = true;
             }
         }
     }
@@ -376,7 +376,7 @@ char MapContainer::AggroChildNpcs(int map_id)
 // The boss is dead: its children on the map die too; 1 when there were any.
 char MapContainer::KillChildNpcs(int map_id)
 {
-    char found_child = 0;
+    char found_child = false;
     if (map_id > 0 && (int)maps.size() >= map_id)
     {
         maps[map_id - 1].boss_alive = false;
@@ -389,7 +389,7 @@ char MapContainer::KillChildNpcs(int map_id)
             (*it)->death_stamp = DateTimeToTimeStamp(now);
             (*it)->alive = false;
             (*it)->aggressive = false;
-            found_child = 1;
+            found_child = true;
         }
     }
     return found_child;
@@ -577,13 +577,13 @@ char MapContainer::IsWarpTile(int map_id, int x, int y)
 int MapContainer::CountOpenNeighbors(int map_id, int x, int y)
 {
     int result = 0;
-    if (GetTileBlock(map_id, x - 1, y, 1) == 0)
+    if (GetTileBlock(map_id, x - 1, y, true) == 0)
         result++;
-    if (!GetTileBlock(map_id, x, y - 1, 1))
+    if (!GetTileBlock(map_id, x, y - 1, true))
         result++;
-    if (!GetTileBlock(map_id, x + 1, y, 1))
+    if (!GetTileBlock(map_id, x + 1, y, true))
         result++;
-    if (!GetTileBlock(map_id, x, y + 1, 1))
+    if (!GetTileBlock(map_id, x, y + 1, true))
         result++;
     return result;
 }
@@ -653,16 +653,16 @@ void MapContainer::AddWarp(MapItem *map, int x, int y, int dest_map, int level, 
 }
 
 // Sets the key a door on the map needs.
-void MapContainer::AddLockKey(MapItem *map, int x, int y, int key_id)
+void MapContainer::SetChestKey(MapItem *map, int x, int y, int key_id)
 {
-    char found = 0;
+    char found = false;
     for (vector<MapObject>::iterator it = map->legacy_door_key_list.begin(); it != map->legacy_door_key_list.end();
         it++)
     {
         if (it->x == x && it->y == y)
         {
             it->value = key_id;
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -676,12 +676,12 @@ void MapContainer::AddLockKey(MapItem *map, int x, int y, int key_id)
 // Adds a chest on the tile, once.
 void MapContainer::AddChest(MapItem *map, int x, int y)
 {
-    char found = 0;
+    char found = false;
     for (vector<MapChest>::iterator it = map->chest_list.begin(); it != map->chest_list.end(); it++)
     {
         if (it->x == x && it->y == y)
         {
-            found = 1;
+            found = true;
             break;
         }
     }
@@ -696,13 +696,13 @@ void MapContainer::AddChest(MapItem *map, int x, int y)
 void MapContainer::AddChestSpawn(MapItem *map, int x, int y, int key_id, int slot, int item_id, int spawn_time,
     int amount)
 {
-    char found = 0;
+    char found = false;
     for (vector<MapChest>::iterator chest_iter = map->chest_list.begin(); chest_iter != map->chest_list.end();
         chest_iter++)
     {
         if (chest_iter->x == x && chest_iter->y == y)
         {
-            found = 1;
+            found = true;
             chest_iter->key_id = key_id;
             if ((int)chest_iter->slots.size() <= slot)
             {
@@ -803,7 +803,7 @@ String MapContainer::ReadRawFile(int map_id)
                 file_name.Insert("0", 0);
             file_name.Insert("./maps/", 0);
             file_name.Insert(".emf", file_name.Length() + 1);
-            file_handle = FileOpen(file_name.c_str(), 0);
+            file_handle = FileOpen(file_name.c_str(), fmOpenRead);
             if (file_handle < 0)
                 return "";
             size = FileSeek(file_handle, 0, 2);
@@ -842,7 +842,7 @@ char MapContainer::ReloadMap(int map_id)
 bool MapContainer::ParseMapFile(MapItem *map, int map_id)
 {
     String map_buf;
-    String local_c;
+    String unused_text;
     int file_handle;
     try
     {
@@ -857,7 +857,7 @@ bool MapContainer::ParseMapFile(MapItem *map, int map_id)
         int tile_count;
         map_buf.Insert("./maps/", 0);
         map_buf.Insert(".emf", map_buf.Length() + 1);
-        file_handle = FileOpen(map_buf.c_str(), 0);
+        file_handle = FileOpen(map_buf.c_str(), fmOpenRead);
         if (file_handle < 0)
             return false;
         size = FileSeek(file_handle, 0, 2);
@@ -873,8 +873,8 @@ bool MapContainer::ParseMapFile(MapItem *map, int map_id)
         map->map_id = map_id;
         map->width = DecodeNumber(map_buf.SubString(38, 1)) + 1;
         map->height = DecodeNumber(map_buf.SubString(39, 1)) + 1;
-        map->rid1 = DecodeNumber(map_buf.SubString(4, 2));
-        map->rid2 = DecodeNumber(map_buf.SubString(6, 2));
+        map->checksum_high = DecodeNumber(map_buf.SubString(4, 2));
+        map->checksum_low = DecodeNumber(map_buf.SubString(6, 2));
         map->map_type = DecodeNumber(map_buf.SubString(32, 1));
         map->timed_effect = DecodeNumber(map_buf.SubString(33, 1));
         map->relog_x = DecodeNumber(map_buf.SubString(44, 1));
@@ -948,7 +948,7 @@ bool MapContainer::ParseMapFile(MapItem *map, int map_id)
             int key_x = DecodeNumber(map_buf.SubString(1, 1));
             int key_y = DecodeNumber(map_buf.SubString(2, 1));
             int key_id = DecodeNumber(map_buf.SubString(3, 2));
-            AddLockKey(map, key_x, key_y, key_id);
+            SetChestKey(map, key_x, key_y, key_id);
             map_buf.Delete(1, 4);
         }
         count = DecodeNumber(map_buf.SubString(1, 1));
@@ -1033,7 +1033,7 @@ bool MapContainer::ParseMapFile(MapItem *map, int map_id)
                     AddTileSpec(map, x, y, TileSpec_PassableDoor);
                     SetTileBits(map, x, y, 2);
                     if (lock_key > 1)
-                        AddLockKey(map, x, y, lock_key);
+                        SetChestKey(map, x, y, lock_key);
                 }
                 map_buf.Delete(1, 8);
             }
@@ -1051,7 +1051,7 @@ bool MapContainer::ParseMapFile(MapItem *map, int map_id)
 bool MapContainer::LoadMap(int map_id)
 {
     String map_buf;
-    String local_c;
+    String unused_text;
     int file_handle;
     try
     {
@@ -1066,7 +1066,7 @@ bool MapContainer::LoadMap(int map_id)
         int tile_count;
         map_buf.Insert("./maps/", 0);
         map_buf.Insert(".emf", map_buf.Length() + 1);
-        file_handle = FileOpen(map_buf.c_str(), 0);
+        file_handle = FileOpen(map_buf.c_str(), fmOpenRead);
         if (file_handle < 0)
             return false;
         size = FileSeek(file_handle, 0, 2);
@@ -1080,8 +1080,8 @@ bool MapContainer::LoadMap(int map_id)
         if (map_buf[1] != 'E' || map_buf[2] != 'M' || map_buf[3] != 'F')
             return false;
         MapItem map(map_id, DecodeNumber(map_buf.SubString(38, 1)) + 1, DecodeNumber(map_buf.SubString(39, 1)) + 1);
-        map.rid1 = DecodeNumber(map_buf.SubString(4, 2));
-        map.rid2 = DecodeNumber(map_buf.SubString(6, 2));
+        map.checksum_high = DecodeNumber(map_buf.SubString(4, 2));
+        map.checksum_low = DecodeNumber(map_buf.SubString(6, 2));
         map.map_type = DecodeNumber(map_buf.SubString(32, 1));
         map.timed_effect = DecodeNumber(map_buf.SubString(33, 1));
         map.relog_x = DecodeNumber(map_buf.SubString(44, 1));
@@ -1153,7 +1153,7 @@ bool MapContainer::LoadMap(int map_id)
             int key_x = DecodeNumber(map_buf.SubString(1, 1));
             int key_y = DecodeNumber(map_buf.SubString(2, 1));
             int key_id = DecodeNumber(map_buf.SubString(3, 2));
-            AddLockKey(&map, key_x, key_y, key_id);
+            SetChestKey(&map, key_x, key_y, key_id);
             map_buf.Delete(1, 4);
         }
         count = DecodeNumber(map_buf.SubString(1, 1));
@@ -1238,7 +1238,7 @@ bool MapContainer::LoadMap(int map_id)
                     AddTileSpec(&map, x, y, TileSpec_PassableDoor);
                     SetTileBits(&map, x, y, 2);
                     if (lock_key > 1)
-                        AddLockKey(&map, x, y, lock_key);
+                        SetChestKey(&map, x, y, lock_key);
                 }
                 map_buf.Delete(1, 8);
             }
@@ -1327,7 +1327,7 @@ void MapContainer::AddChestItem(int map_id, MapCoord coords, int item_id, int am
             {
                 if (chest_iter->x == coords.x && chest_iter->y == coords.y)
                 {
-                    char found = 0;
+                    char found = false;
                     for (vector<ChestItem>::iterator it = chest_iter->slots.begin();
                         it != chest_iter->slots.end() && !found; it++)
                     {
@@ -1339,13 +1339,13 @@ void MapContainer::AddChestItem(int map_id, MapCoord coords, int item_id, int am
                         {
                             if (it->item_present)
                             {
-                                found = 1;
+                                found = true;
                                 it->amount += amount;
                             }
                         }
                         else
                         {
-                            found = 1;
+                            found = true;
                             it->amount += amount;
                         }
                     }
@@ -1434,7 +1434,7 @@ MapCoord MapContainer::TakeChestItem(int map_id, MapCoord coords, int item_id)
         {
             if (chest_iter->x == coords.x && chest_iter->y == coords.y)
             {
-                char found = 0;
+                char found = false;
                 for (vector<ChestItem>::iterator it = chest_iter->slots.begin();
                     it != chest_iter->slots.end() && !found; it++)
                 {
@@ -1444,7 +1444,7 @@ MapCoord MapContainer::TakeChestItem(int map_id, MapCoord coords, int item_id)
                         continue;
                     if (!it->item_present)
                         continue;
-                    found = 1;
+                    found = true;
                     result.x = it->item_id;
                     result.y = it->amount;
                     if (it->respawn_enabled)
@@ -1480,7 +1480,7 @@ char MapContainer::CanDropItemAt(int map_id, int x, int y, int account_ident)
             {
                 count++;
                 if (count > 9)
-                    return 0;
+                    return false;
             }
             else
             {
@@ -1489,11 +1489,11 @@ char MapContainer::CanDropItemAt(int map_id, int x, int y, int account_ident)
                 int ms = now.Time - (*cursor)->drop_time.Time;
                 elapsed = ms / MS_PER_SECOND + elapsed * SECONDS_PER_DAY;
                 if ((*cursor)->protect_ticks > elapsed)
-                    return 0;
+                    return false;
             }
         }
     }
-    return 1;
+    return true;
 }
 
 // The item on the ground by its index, for the player to pick up:

@@ -69,7 +69,7 @@ struct ItemValue
     short air_resistance;
     short water_resistance;
     short fire_resistance;
-    int spec1;
+    int spec_value;
     short spec2;
     short spec3;
     short level_requirement;

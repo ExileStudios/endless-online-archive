@@ -68,7 +68,7 @@ String JukeBoxController::BuildOpenData(unsigned int map_id)
 // False while the last one still plays ( JUKEBOX_TRACK_SECONDS ).
 char JukeBoxController::TryPlayTrack(int map_id, String player_name)
 {
-    char played = 0;
+    char played = false;
     for (vector<JukeBox>::iterator it = jukeboxes.begin(); it != jukeboxes.end(); it++)
     {
         if (it->map_id == map_id)
@@ -86,7 +86,7 @@ char JukeBoxController::TryPlayTrack(int map_id, String player_name)
             }
             if (!it->active)
             {
-                played = 1;
+                played = true;
                 it->active = true;
                 it->last_play = Now();
                 it->player_name = player_name;

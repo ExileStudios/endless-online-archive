@@ -12,12 +12,12 @@ ItemValues::ItemValues()
 {
     encode_scratch = new char[8];
     record_index = -1;
-    loaded = 0;
+    loaded = false;
     rid[0] = -1;
     rid[1] = -1;
     file_id = 0;
     string_list = new TStringList();
-    LoadItems();
+    Load();
 }
 
 ItemValues::~ItemValues()
@@ -25,7 +25,7 @@ ItemValues::~ItemValues()
 }
 
 // Reads pub/dat001.eif and the files after it until every item is loaded.
-void ItemValues::LoadItems()
+void ItemValues::Load()
 {
     int file;
     int count;
@@ -51,16 +51,16 @@ void ItemValues::LoadItems()
             try
             {
                 int size;
-                char *file_buffer;
-                file_handle = FileOpen(path.c_str(), 0);
+                char *buffer;
+                file_handle = FileOpen(path.c_str(), fmOpenRead);
                 size = FileSeek(file_handle, 0, 2);
                 FileSeek(file_handle, 0, 0);
-                file_buffer = new char[size + 1];
-                FileRead(file_handle, file_buffer, size);
+                buffer = new char[size + 1];
+                FileRead(file_handle, buffer, size);
                 FileClose(file_handle);
-                data = file_buffer;
+                data = buffer;
                 data.SetLength(size);
-                delete[] file_buffer;
+                delete[] buffer;
                 // a file without the EIF header ends the loading
                 if (data[1] != 'E' || data[2] != 'I' || data[3] != 'F')
                     return;
@@ -70,49 +70,49 @@ void ItemValues::LoadItems()
                 {
                     rid[0] = DecodeNumber(data.SubString(4, 2));
                     rid[1] = DecodeNumber(data.SubString(6, 2));
-                    int parsed = DecodeNumber(data.SubString(8, 2));
+                    int header_count = DecodeNumber(data.SubString(8, 2));
                     int version = DecodeNumber(data.SubString(10, 1));
-                    total = parsed;
-                    num_records = parsed;
+                    total = header_count;
+                    num_records = header_count;
                 }
                 data.Delete(1, 10);
-                for (int j = 0; count < total && j < 900; j++)
+                for (int i = 0; count < total && i < 900; i++)
                 {
-                    int namelen = DecodeNumber(data.SubString(1, 1)) + 1;
-                    AddItem(GetCount() + 1, data.SubString(2, namelen - 1),
-                        DecodeNumber(data.SubString(namelen + 1, 2)), DecodeNumber(data.SubString(namelen + 3, 1)),
-                        DecodeNumber(data.SubString(namelen + 4, 1)), DecodeNumber(data.SubString(namelen + 5, 1)),
-                        DecodeNumber(data.SubString(namelen + 6, 2)), DecodeNumber(data.SubString(namelen + 8, 2)),
-                        DecodeNumber(data.SubString(namelen + 10, 2)), DecodeNumber(data.SubString(namelen + 12, 2)),
-                        DecodeNumber(data.SubString(namelen + 14, 2)), DecodeNumber(data.SubString(namelen + 16, 2)),
-                        DecodeNumber(data.SubString(namelen + 18, 2)), DecodeNumber(data.SubString(namelen + 20, 1)),
-                        DecodeNumber(data.SubString(namelen + 21, 1)), DecodeNumber(data.SubString(namelen + 22, 1)),
-                        DecodeNumber(data.SubString(namelen + 23, 1)), DecodeNumber(data.SubString(namelen + 24, 1)),
-                        DecodeNumber(data.SubString(namelen + 25, 1)), DecodeNumber(data.SubString(namelen + 26, 1)),
-                        DecodeNumber(data.SubString(namelen + 27, 1)), DecodeNumber(data.SubString(namelen + 28, 1)),
-                        DecodeNumber(data.SubString(namelen + 29, 1)), DecodeNumber(data.SubString(namelen + 30, 1)),
-                        DecodeNumber(data.SubString(namelen + 31, 1)), DecodeNumber(data.SubString(namelen + 32, 1)),
-                        DecodeNumber(data.SubString(namelen + 33, 3)), DecodeNumber(data.SubString(namelen + 36, 1)),
-                        DecodeNumber(data.SubString(namelen + 37, 1)), DecodeNumber(data.SubString(namelen + 38, 2)),
-                        DecodeNumber(data.SubString(namelen + 40, 2)), DecodeNumber(data.SubString(namelen + 41, 2)),
-                        DecodeNumber(data.SubString(namelen + 44, 2)), DecodeNumber(data.SubString(namelen + 46, 2)),
-                        DecodeNumber(data.SubString(namelen + 48, 2)), DecodeNumber(data.SubString(namelen + 50, 2)),
-                        DecodeNumber(data.SubString(namelen + 52, 2)), DecodeNumber(data.SubString(namelen + 54, 1)),
-                        DecodeNumber(data.SubString(namelen + 55, 1)), DecodeNumber(data.SubString(namelen + 56, 1)),
-                        DecodeNumber(data.SubString(namelen + 57, 1)), DecodeNumber(data.SubString(namelen + 58, 1)));
+                    int name_end = DecodeNumber(data.SubString(1, 1)) + 1;
+                    AddItem(GetCount() + 1, data.SubString(2, name_end - 1),
+                        DecodeNumber(data.SubString(name_end + 1, 2)), DecodeNumber(data.SubString(name_end + 3, 1)),
+                        DecodeNumber(data.SubString(name_end + 4, 1)), DecodeNumber(data.SubString(name_end + 5, 1)),
+                        DecodeNumber(data.SubString(name_end + 6, 2)), DecodeNumber(data.SubString(name_end + 8, 2)),
+                        DecodeNumber(data.SubString(name_end + 10, 2)), DecodeNumber(data.SubString(name_end + 12, 2)),
+                        DecodeNumber(data.SubString(name_end + 14, 2)), DecodeNumber(data.SubString(name_end + 16, 2)),
+                        DecodeNumber(data.SubString(name_end + 18, 2)), DecodeNumber(data.SubString(name_end + 20, 1)),
+                        DecodeNumber(data.SubString(name_end + 21, 1)), DecodeNumber(data.SubString(name_end + 22, 1)),
+                        DecodeNumber(data.SubString(name_end + 23, 1)), DecodeNumber(data.SubString(name_end + 24, 1)),
+                        DecodeNumber(data.SubString(name_end + 25, 1)), DecodeNumber(data.SubString(name_end + 26, 1)),
+                        DecodeNumber(data.SubString(name_end + 27, 1)), DecodeNumber(data.SubString(name_end + 28, 1)),
+                        DecodeNumber(data.SubString(name_end + 29, 1)), DecodeNumber(data.SubString(name_end + 30, 1)),
+                        DecodeNumber(data.SubString(name_end + 31, 1)), DecodeNumber(data.SubString(name_end + 32, 1)),
+                        DecodeNumber(data.SubString(name_end + 33, 3)), DecodeNumber(data.SubString(name_end + 36, 1)),
+                        DecodeNumber(data.SubString(name_end + 37, 1)), DecodeNumber(data.SubString(name_end + 38, 2)),
+                        DecodeNumber(data.SubString(name_end + 40, 2)), DecodeNumber(data.SubString(name_end + 41, 2)),
+                        DecodeNumber(data.SubString(name_end + 44, 2)), DecodeNumber(data.SubString(name_end + 46, 2)),
+                        DecodeNumber(data.SubString(name_end + 48, 2)), DecodeNumber(data.SubString(name_end + 50, 2)),
+                        DecodeNumber(data.SubString(name_end + 52, 2)), DecodeNumber(data.SubString(name_end + 54, 1)),
+                        DecodeNumber(data.SubString(name_end + 55, 1)), DecodeNumber(data.SubString(name_end + 56, 1)),
+                        DecodeNumber(data.SubString(name_end + 57, 1)), DecodeNumber(data.SubString(name_end + 58, 1)));
                     count++;
-                    data.Delete(1, namelen + 58);
+                    data.Delete(1, name_end + 58);
                 }
             }
             catch (...)
             {
                 FileClose(file_handle);
-                loaded = 0;
+                loaded = false;
             }
             file++;
         } while (count < total);
         file_id = file - 1;
-        loaded = 1;
+        loaded = true;
     }
     return;
 }
@@ -121,7 +121,7 @@ void ItemValues::AddItem(int id, String name, int graphic_id, short type, short 
     short tp, short min_damage, short max_damage, short accuracy, short evade, short armor, short return_damage,
     short strength, short intelligence, short wisdom, short agility, short constitution, short charisma,
     short light_resistance, short dark_resistance, short earth_resistance, short air_resistance, short water_resistance,
-    short fire_resistance, int spec1, short spec2, short spec3, short level_requirement, short class_requirement,
+    short fire_resistance, int spec_value, short spec2, short spec3, short level_requirement, short class_requirement,
     short strength_requirement, short intelligence_requirement, short wisdom_requirement, short agility_requirement,
     short constitution_requirement, short charisma_requirement, short element, short element_damage, short weight,
     short weapon_target_area, short size)
@@ -150,7 +150,7 @@ void ItemValues::AddItem(int id, String name, int graphic_id, short type, short 
     value->air_resistance = air_resistance;
     value->water_resistance = water_resistance;
     value->fire_resistance = fire_resistance;
-    value->spec1 = spec1;
+    value->spec_value = spec_value;
     value->spec2 = spec2;
     value->spec3 = spec3;
     value->level_requirement = level_requirement;
@@ -198,14 +198,14 @@ int ItemValues::GetCount()
     return record_list.size();
 }
 
-// An equipment item's spec1 ( weapon to bracer ), else 0.
-int ItemValues::GetSpec1ForTypes(int item_id)
+// An equipment item's spec_value ( weapon to bracer ), else 0.
+int ItemValues::GetSpecValueForTypes(int item_id)
 {
     int result = 0;
     if (item_id > 0 && GetCount() > item_id && record_list[item_id - 1]->type >= EifItemType_Weapon &&
         record_list[item_id - 1]->type <= EifItemType_Bracer)
     {
-        result = record_list[item_id - 1]->spec1;
+        result = record_list[item_id - 1]->spec_value;
         if (result < 0)
             result = 0;
     }
@@ -240,25 +240,25 @@ MapCoord ItemValues::GetSpecXY(int item_id)
     return result;
 }
 
-int ItemValues::GetSpec1(int item_id)
+int ItemValues::GetSpecValue(int item_id)
 {
     int result = 0;
     if (item_id > 0 && GetCount() > item_id)
     {
-        result = record_list[item_id - 1]->spec1;
+        result = record_list[item_id - 1]->spec_value;
         if (result < 0)
             result = 0;
     }
     return result;
 }
 
-// A teleport scroll's map ( spec1 ), else 0.
+// A teleport scroll's map ( spec_value ), else 0.
 int ItemValues::GetScrollMap(int item_id)
 {
     int result = 0;
     if (item_id > 0 && GetCount() > item_id && record_list[item_id - 1]->type == EifItemType_Teleport)
     {
-        result = record_list[item_id - 1]->spec1;
+        result = record_list[item_id - 1]->spec_value;
         if (result < 0)
             result = 0;
     }

@@ -25,7 +25,7 @@ struct MySQLthread : public Classes::TThread
     TSession *session;
     TDatabase *database;
     TQuery *query;
-    char pad_0x3c[4];
+    char unused_bytes[4];
     mySQLtask *task;
     mySQLbuffer *queue;
 

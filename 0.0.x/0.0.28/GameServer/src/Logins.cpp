@@ -53,13 +53,13 @@ bool Logins::HandleAddress(String address)
         return true;
     else
     {
-        bool is_new = 1;
+        bool is_new = true;
         for (int i = 0; i < login_list->Count; i++)
         {
             Asocketblock *entry = (Asocketblock *)login_list->Items[i];
             if (entry->address == address)
             {
-                is_new = 0;
+                is_new = false;
                 break;
             }
         }
@@ -70,7 +70,7 @@ bool Logins::HandleAddress(String address)
                 Asocketvip *reserved_entry = (Asocketvip *)reserved_names->Items[j];
                 if (reserved_entry->value == address)
                 {
-                    is_new = 1;
+                    is_new = true;
                     break;
                 }
             }

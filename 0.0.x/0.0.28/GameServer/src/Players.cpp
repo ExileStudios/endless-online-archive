@@ -382,9 +382,9 @@ char Players::IsAccountIdentOnline(int account_ident)
     for (vector<Player *>::iterator it = players.begin(); it != players.end(); it++)
     {
         if ((*it)->account_ident == account_ident)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // True when another connection is logged in with the account name ( names under 3 characters never are ).
@@ -409,9 +409,9 @@ char Players::IsPlayerAt(int map_id, int x, int y)
     for (vector<Player *>::iterator it = players.begin(); it != players.end(); it++)
     {
         if ((*it)->x == x && (*it)->y == y && (*it)->map_id == map_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // True when the player already holds a name, or another player holds this one; else they now hold it.
@@ -438,10 +438,10 @@ char Players::Player_HasKeyItem(Player *player, int key_id)
     for (vector<PlayerInventory>::iterator it = player->inventory.begin(); it != player->inventory.end(); it++)
     {
         if (GUI->item_values->GetType(it->item_id) == EifItemType_Key &&
-            GUI->item_values->GetSpec1(it->item_id) == key_id)
-            return 1;
+            GUI->item_values->GetSpecValue(it->item_id) == key_id)
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // The spell's level, or -1 when the player does not know it.
@@ -460,9 +460,9 @@ char Players::Player_HasSpellId(Player *player, int spell_id)
     for (vector<PlayerSkill>::iterator it = player->spells.begin(); it != player->spells.end(); it++)
     {
         if (it->skill_id == spell_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 char Players::Player_HasBankItem(Player *player, int item_id)
@@ -470,9 +470,9 @@ char Players::Player_HasBankItem(Player *player, int item_id)
     for (vector<PlayerInventory>::iterator it = player->bank.begin(); it != player->bank.end(); it++)
     {
         if (it->item_id == item_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // Puts an item from the inventory on: 1 when it went on, 0 when there is none or the slot is taken.
@@ -494,32 +494,32 @@ char Players::Player_EquipItem(Player *player, int item_id, int slot)
                 {
                     player->equip_result = 2;
                     player->weapon_item_id = item_id;
-                    player->weapon_graphic_id = GUI->item_values->GetSpec1ForTypes(item_id);
+                    player->weapon_graphic_id = GUI->item_values->GetSpecValueForTypes(item_id);
                 }
                 if (type == EifItemType_Shield && player->shield_item_id <= 0)
                 {
                     player->equip_result = 2;
                     player->shield_item_id = item_id;
-                    player->shield_graphic_id = GUI->item_values->GetSpec1ForTypes(item_id);
+                    player->shield_graphic_id = GUI->item_values->GetSpecValueForTypes(item_id);
                 }
                 if (type == EifItemType_Armor && player->armor_item_id <= 0 &&
                     GUI->item_values->GetGender(item_id) == player->gender)
                 {
                     player->equip_result = 2;
                     player->armor_item_id = item_id;
-                    player->armor_graphic_id = GUI->item_values->GetSpec1ForTypes(item_id);
+                    player->armor_graphic_id = GUI->item_values->GetSpecValueForTypes(item_id);
                 }
                 if (type == EifItemType_Hat && player->hat_item_id <= 0)
                 {
                     player->equip_result = 2;
                     player->hat_item_id = item_id;
-                    player->hat_graphic_id = GUI->item_values->GetSpec1ForTypes(item_id);
+                    player->hat_graphic_id = GUI->item_values->GetSpecValueForTypes(item_id);
                 }
                 if (type == EifItemType_Boots && player->boots_item_id <= 0)
                 {
                     player->equip_result = 2;
                     player->boots_item_id = item_id;
-                    player->boots_graphic_id = GUI->item_values->GetSpec1ForTypes(item_id);
+                    player->boots_graphic_id = GUI->item_values->GetSpecValueForTypes(item_id);
                 }
                 if (type == EifItemType_Gloves && player->gloves_item_id <= 0)
                 {
@@ -587,13 +587,13 @@ char Players::Player_EquipItem(Player *player, int item_id, int slot)
                     player->equip_result_count = it->amount;
                     if (it->amount < 1)
                         player->inventory.erase(it);
-                    return 1;
+                    return true;
                 }
             }
-            return 0;
+            return false;
         }
     }
-    return 0;
+    return false;
 }
 
 // Takes an equipped item off, back into the inventory: 1 when it was on, else 0.
@@ -701,16 +701,16 @@ char Players::Player_UnequipItem(Player *player, int item_id, int slot)
             {
                 it->amount++;
                 player->equip_result_count = it->amount;
-                return 1;
+                return true;
             }
         }
         PlayerInventory item(item_id);
         item.amount = 1;
         player->inventory.insert(player->inventory.end(), item);
         player->equip_result_count = 1;
-        return 1;
+        return true;
     }
-    return 0;
+    return false;
 }
 
 // Adds to the inventory, stacking on the item when the player has it.
@@ -746,7 +746,7 @@ char Players::Player_RemoveItem(Player *player, int item_id, unsigned int amount
             player->item_change_id = -1;
             player->item_change_count = 0;
             player->item_change_remaining = 0;
-            return 0;
+            return false;
         }
         else
         {
@@ -756,7 +756,7 @@ char Players::Player_RemoveItem(Player *player, int item_id, unsigned int amount
                 player->item_change_count = amount;
                 player->item_change_remaining = 0;
                 player->inventory.erase(it);
-                return 1;
+                return true;
             }
             else
             {
@@ -764,11 +764,11 @@ char Players::Player_RemoveItem(Player *player, int item_id, unsigned int amount
                 player->item_change_id = item_id;
                 player->item_change_count = amount;
                 player->item_change_remaining = it->amount;
-                return 1;
+                return true;
             }
         }
     }
-    return 0;
+    return false;
 }
 
 // Takes up to amount of the item from the inventory, all the player has when they have less.
@@ -841,49 +841,49 @@ char Players::Player_RemoveBankItem(Player *player, int item_id)
             player->item_change_id = it->item_id;
             player->item_change_count = it->amount;
             player->bank.erase(it);
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 // Offers an item in the trade ( 10 at most ), or a new amount of one offered; either undoes the accept.
 char Players::Player_AddTradeItem(Player *player, int item_id, int amount)
 {
     if (player->trade_items.size() > 9)
-        return 0;
+        return false;
     for (vector<PlayerInventory>::iterator it = player->trade_items.begin(); it != player->trade_items.end(); it++)
     {
         if (it->item_id == item_id)
         {
             player->trade_accepted = false;
             it->amount = amount;
-            return 1;
+            return true;
         }
     }
     PlayerInventory item(item_id);
     item.amount = amount;
     player->trade_accepted = false;
     player->trade_items.insert(player->trade_items.end(), item);
-    return 1;
+    return true;
 }
 
 // Takes an item back out of the trade, unless the player accepted it.
 char Players::Player_RemoveTradeItem(Player *player, int item_id)
 {
     if (player->trade_accepted)
-        return 0;
+        return false;
     if (player->trade_items.size() > 5)
-        return 0;
+        return false;
     for (vector<PlayerInventory>::iterator it = player->trade_items.begin(); it != player->trade_items.end(); it++)
     {
         if (it->item_id == item_id)
         {
             player->trade_items.erase(it);
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 // Learns a spell at level 0, once.
@@ -922,10 +922,10 @@ char Players::Player_RemoveSpell(Player *player, int spell_id)
         if (it->skill_id == spell_id)
         {
             player->spells.erase(it);
-            return 1;
+            return true;
         }
     }
-    return 0;
+    return false;
 }
 
 void Players::Player_ClearSpells(Player *player)
@@ -936,7 +936,7 @@ void Players::Player_ClearSpells(Player *player)
 // Takes every cursed item off, with its bonuses: 1 when the weapon, shield, armor, hat or boots changed.
 char Players::Player_RemoveCursedItems(Player *player)
 {
-    char changed = 0;
+    char changed = false;
     if (GUI->item_values->GetSpecial(player->weapon_item_id) == ItemSpecial_Cursed)
     {
         ItemValue *item = GUI->item_values->GetByIndex(player->weapon_item_id - 1);
@@ -957,7 +957,7 @@ char Players::Player_RemoveCursedItems(Player *player)
         player->equip_charisma_bonus -= item->charisma;
         player->weapon_item_id = 0;
         player->weapon_graphic_id = 0;
-        changed = 1;
+        changed = true;
     }
     if (GUI->item_values->GetSpecial(player->shield_item_id) == ItemSpecial_Cursed)
     {
@@ -979,7 +979,7 @@ char Players::Player_RemoveCursedItems(Player *player)
         player->equip_charisma_bonus -= shield_item->charisma;
         player->shield_item_id = 0;
         player->shield_graphic_id = 0;
-        changed = 1;
+        changed = true;
     }
     if (GUI->item_values->GetSpecial(player->armor_item_id) == ItemSpecial_Cursed)
     {
@@ -1001,7 +1001,7 @@ char Players::Player_RemoveCursedItems(Player *player)
         player->equip_charisma_bonus -= armor_item->charisma;
         player->armor_item_id = 0;
         player->armor_graphic_id = 0;
-        changed = 1;
+        changed = true;
     }
     if (GUI->item_values->GetSpecial(player->hat_item_id) == ItemSpecial_Cursed)
     {
@@ -1023,7 +1023,7 @@ char Players::Player_RemoveCursedItems(Player *player)
         player->equip_charisma_bonus -= hat_item->charisma;
         player->hat_item_id = 0;
         player->hat_graphic_id = 0;
-        changed = 1;
+        changed = true;
     }
     if (GUI->item_values->GetSpecial(player->boots_item_id) == ItemSpecial_Cursed)
     {
@@ -1045,7 +1045,7 @@ char Players::Player_RemoveCursedItems(Player *player)
         player->equip_charisma_bonus -= boots_item->charisma;
         player->boots_item_id = 0;
         player->boots_graphic_id = 0;
-        changed = 1;
+        changed = true;
     }
     if (GUI->item_values->GetSpecial(player->gloves_item_id) == ItemSpecial_Cursed)
     {
@@ -1336,10 +1336,10 @@ void Players::Party_AddNewMember(Player *existing_member, Player *new_member)
 // A player leaves the party; when they led it, or only one would be left, the party ends.
 void Players::Player_LeaveParty(Player *player)
 {
-    char disband = 0;
+    char disband = false;
     player->in_party = false;
     if (player->player_id == player->party_leader_id || player->CountPartyMembers() < 3)
-        disband = 1;
+        disband = true;
     for (int i = 0; i < PARTY_MAX_MEMBERS; i++)
     {
         if (player->party_ids[i] == player->player_id)

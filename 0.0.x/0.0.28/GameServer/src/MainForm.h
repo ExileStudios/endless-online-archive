@@ -99,7 +99,7 @@ public:
         Game *game_control;
         int last_action;
         int last_family;
-        char pad_0x374[4];
+        char unused_bytes[4];
 
         Packets *Mainform_GetServer();
         String Mainform_ComputeRegName(String key_base, String display_code, String unlock_code);

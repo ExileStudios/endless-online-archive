@@ -25,20 +25,20 @@ void DoorController::Tick()
     now = DateTimeToTimeStamp(Now());
     int days = now.Date - last_tick.Date;
     int ms = now.Time - last_tick.Time;
-    bool elapsed = 0;
+    bool elapsed = false;
     if (ms / MS_PER_SECOND + days * SECONDS_PER_DAY > 1)
-        elapsed = 1;
+        elapsed = true;
     for (vector<MapItem>::iterator map_iter = map_control->maps.begin(); map_iter != map_control->maps.end();
         map_iter++)
     {
         if (!map_iter->has_open_doors)
             continue;
-        char found = 0;
+        char found = false;
         for (vector<MapObject>::iterator it = map_iter->tile_specs.begin(); it != map_iter->tile_specs.end(); it++)
         {
             if (!(it->value == TileSpec_DoorOpen || it->value == TileSpec_PassableDoorOpen))
                 continue;
-            found = 1;
+            found = true;
             if (elapsed)
                 it->ticks = 0;
             else

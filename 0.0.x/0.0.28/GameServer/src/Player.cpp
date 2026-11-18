@@ -31,7 +31,7 @@ Player::Player(Scktcomp::TCustomWinSocket *socket)
     this->global_chat = false;
     this->admin_level = AdminLevel_Player;
     this->account_create_cooldown = 0;
-    this->field_0x2c = 0;
+    this->unused_value = 0;
     // the multiples are 5 to 12
     this->server_encryption_multiple = random(8) + 5;
     this->client_encryption_multiple = random(8) + 5;
@@ -49,7 +49,7 @@ Player::Player(Scktcomp::TCustomWinSocket *socket)
     this->skill_points = 0;
     this->save_ticks = 0;
     this->recover_ticks = 0;
-    this->field_0xa4 = false;
+    this->unused_flag = false;
     this->whispers_disabled = false;
     this->party_requested_id = -1;
     this->trade_partner_id = -1;
@@ -61,10 +61,10 @@ Player::Player(Scktcomp::TCustomWinSocket *socket)
     this->inventory_dirty = false;
     this->equipment_dirty = false;
     this->base_stats_dirty = false;
-    this->map_has_quakes = 0;
-    this->map_has_spikes = 0;
-    this->map_has_hp_drain = 0;
-    this->map_has_tp_drain = 0;
+    this->map_has_quakes = false;
+    this->map_has_spikes = false;
+    this->map_has_hp_drain = false;
+    this->map_has_tp_drain = false;
     this->last_pass_ms = DateTimeToTimeStamp(Now());
     this->talk_tokens = TALK_TOKEN_BUDGET;
     this->drop_counter = DROP_TOKEN_BUDGET;
@@ -130,9 +130,9 @@ char Player::IsPartyMember(int player_id)
     for (int i = 0; i < 9; i++)
     {
         if (party_ids[i] == player_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 void Player::ClearPartyRoster()

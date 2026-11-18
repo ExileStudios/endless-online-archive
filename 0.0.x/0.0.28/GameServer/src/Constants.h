@@ -23,7 +23,7 @@ String Class::EncodeNumber(unsigned int value, signed int width) \
     try \
     { \
         unsigned int quotient = 1; \
-        char flag = 1; \
+        char flag = true; \
         for (int i = 0; i < width; i++) \
         { \
             if (flag) \
@@ -35,7 +35,7 @@ String Class::EncodeNumber(unsigned int value, signed int width) \
                 encode_scratch[i] = digit; \
                 value = quotient; \
                 if (quotient < 1) \
-                    flag = 0; \
+                    flag = false; \
                 else \
                 { \
                     /* the number needs another byte */ \

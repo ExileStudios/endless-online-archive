@@ -47,7 +47,7 @@ struct NpcController
     void Npc_ChaseTarget(Npc *npc, Player *player, int map_id, int map_w, int map_h);
     char Npc_IsPlayerAt(int map_id, int x, int y);
     int Npc_GetPlayerIdAt(int map_id, int x, int y);
-    char Npc_IsWithinRange(int x1, int y1, int x2, int y2);
+    char Npc_IsWithinRange(int from_x, int from_y, int to_x, int to_y);
     String EncodeNumber(unsigned int value, signed int width);
 };
 

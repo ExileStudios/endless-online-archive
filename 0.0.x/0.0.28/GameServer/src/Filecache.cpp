@@ -43,7 +43,7 @@ void FileCache::UpdatePlayerCache(Player *record)
         if (!record->admin_level)
         {
             TopPlayer *last = 0;
-            char found = 0;
+            char found = false;
             int min_experience = 2147483640;
             for (it = top_players.begin(); it != top_players.end(); it++)
             {
@@ -53,7 +53,7 @@ void FileCache::UpdatePlayerCache(Player *record)
                     (*it)->title = record->title;
                     (*it)->level = record->level;
                     (*it)->gender = record->gender;
-                    found = 1;
+                    found = true;
                 }
                 if ((*it)->experience < min_experience)
                 {

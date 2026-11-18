@@ -33,7 +33,7 @@ struct ClassValues
 
     ClassValues();
     ~ClassValues();
-    void LoadClasses();
+    void Load();
     void AddClass(int id, int parent_type, String name, short stat_group, short str, short intl, short wis, short agi,
         short con, short cha);
     char ClassMatches(int class_id, int class_requirement);

@@ -70,7 +70,7 @@ void EventController::Tick()
                     evac_pos.x = random(3) + 14;
                     evac_pos.y = random(3) + 37;
                     // map 47, the jail of the warning
-                    server->Player_Warp(*player_iter, MapId_CastleMaze, evac_pos, WarpEffect_None, 0);
+                    server->Player_Warp(*player_iter, MapId_CastleMaze, evac_pos, WarpEffect_None, false);
                 }
             }
         }
@@ -104,7 +104,7 @@ void EventController::Tick()
                             target_player->arena_entering = true;
                             target_player->in_arena = false;
                             target_player->arena_kills = 0;
-                            server->Player_Warp(target_player, map_iter->map_id, arena_pos, WarpEffect_None, 0);
+                            server->Player_Warp(target_player, map_iter->map_id, arena_pos, WarpEffect_None, false);
                             if (map_iter->arena_block == 2 && fighter_count == 1)
                                 break;
                         }

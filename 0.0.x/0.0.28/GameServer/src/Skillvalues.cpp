@@ -12,10 +12,10 @@ SkillValues::SkillValues()
 {
     encode_scratch = new char[8];
     record_index = -1;
-    loaded = 0;
+    loaded = false;
     file_id = 0;
     string_list = new TStringList();
-    LoadSpells();
+    Load();
 }
 
 SkillValues::~SkillValues()
@@ -23,7 +23,7 @@ SkillValues::~SkillValues()
 }
 
 // Reads pub/dsl001.esf and the files after it until every spell is loaded.
-void SkillValues::LoadSpells()
+void SkillValues::Load()
 {
     int file;
     int count;
@@ -44,17 +44,17 @@ void SkillValues::LoadSpells()
                 path = path + "0" + IntToStr(file) + ".esf";
             try
             {
-                int size;
-                char *file_buffer;
-                file_handle = FileOpen(path.c_str(), 0);
-                size = FileSeek(file_handle, 0, 2);
+                int file_size;
+                char *buffer;
+                file_handle = FileOpen(path.c_str(), fmOpenRead);
+                file_size = FileSeek(file_handle, 0, 2);
                 FileSeek(file_handle, 0, 0);
-                file_buffer = new char[size + 1];
-                FileRead(file_handle, file_buffer, size);
+                buffer = new char[file_size + 1];
+                FileRead(file_handle, buffer, file_size);
                 FileClose(file_handle);
-                data = file_buffer;
-                data.SetLength(size);
-                delete[] file_buffer;
+                data = buffer;
+                data.SetLength(file_size);
+                delete[] buffer;
                 // a file without the ESF header ends the loading
                 if (data[1] != 'E' || data[2] != 'S' || data[3] != 'F')
                     return;
@@ -64,18 +64,18 @@ void SkillValues::LoadSpells()
                 {
                     rid[0] = DecodeNumber(data.SubString(4, 2));
                     rid[1] = DecodeNumber(data.SubString(6, 2));
-                    int parsed = DecodeNumber(data.SubString(8, 2));
+                    int header_count = DecodeNumber(data.SubString(8, 2));
                     int version = DecodeNumber(data.SubString(10, 1));
-                    total = parsed;
-                    num_records = parsed;
+                    total = header_count;
+                    num_records = header_count;
                 }
                 data.Delete(1, 10);
-                for (int j = 0; count < total && j < 900; j++)
+                for (int i = 0; count < total && i < 900; i++)
                 {
-                    int namelen = DecodeNumber(data.SubString(1, 1));
+                    int name_length = DecodeNumber(data.SubString(1, 1));
                     int chantlen = DecodeNumber(data.SubString(2, 1));
-                    int base = namelen + chantlen + 2;
-                    AddRecord(GetCount() + 1, data.SubString(3, namelen), data.SubString(namelen + 3, chantlen),
+                    int base = name_length + chantlen + 2;
+                    AddRecord(GetCount() + 1, data.SubString(3, name_length), data.SubString(name_length + 3, chantlen),
                         DecodeNumber(data.SubString(base + 1, 2)), DecodeNumber(data.SubString(base + 3, 2)),
                         DecodeNumber(data.SubString(base + 5, 2)), DecodeNumber(data.SubString(base + 7, 2)),
                         DecodeNumber(data.SubString(base + 9, 1)), DecodeNumber(data.SubString(base + 10, 1)),
@@ -98,12 +98,12 @@ void SkillValues::LoadSpells()
             catch (...)
             {
                 FileClose(file_handle);
-                loaded = 0;
+                loaded = false;
             }
             file++;
         } while (count < total);
         file_id = file - 1;
-        loaded = 1;
+        loaded = true;
     }
     return;
 }

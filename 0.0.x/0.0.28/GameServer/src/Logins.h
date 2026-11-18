@@ -37,7 +37,7 @@ struct Logins
     mySQLdb *mysql_controls;
     TList *login_list;
     TList *reserved_names;
-    String field_0xc;
+    String unused_text;
 
     Logins(mySQLdb *mysql);
     ~Logins();

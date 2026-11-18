@@ -45,22 +45,23 @@ struct ItemValues
 
     ItemValues();
     ~ItemValues();
-    void LoadItems();
+    void Load();
     void AddItem(int id, String name, int graphic_id, short type, short subtype, short special, short hp, short tp,
         short min_damage, short max_damage, short accuracy, short evade, short armor, short return_damage,
         short strength, short intelligence, short wisdom, short agility, short constitution, short charisma,
         short light_resistance, short dark_resistance, short earth_resistance, short air_resistance,
-        short water_resistance, short fire_resistance, int spec1, short spec2, short spec3, short level_requirement,
+        short water_resistance, short fire_resistance, int spec_value, short spec2, short spec3,
+        short level_requirement,
         short class_requirement, short strength_requirement, short intelligence_requirement, short wisdom_requirement,
         short agility_requirement, short constitution_requirement, short charisma_requirement, short element,
         short element_damage, short weight, short weapon_target_area, short size);
     void Clear();
     ItemValue *GetByIndex(int index);
     int GetCount();
-    int GetSpec1ForTypes(int item_id);
+    int GetSpecValueForTypes(int item_id);
     MapCoord GetElement(int item_id);
     MapCoord GetSpecXY(int item_id);
-    int GetSpec1(int item_id);
+    int GetSpecValue(int item_id);
     int GetScrollMap(int item_id);
     int GetGender(int item_id);
     int GetType(int item_id);

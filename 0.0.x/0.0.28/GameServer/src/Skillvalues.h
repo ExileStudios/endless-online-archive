@@ -34,7 +34,7 @@ struct SkillValues
 
     SkillValues();
     ~SkillValues();
-    void LoadSpells();
+    void Load();
     void AddRecord(int id, String name, String chant, short icon_id, short graphic_id, short tp_cost, short sp_cost,
         short cast_time, short nature, short esf_constant, short skill_type, short element, short element_power,
         short target_restrict, short target_type, short target_time, short skill_range_area, short max_skill_level,

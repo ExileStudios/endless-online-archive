@@ -27,25 +27,25 @@ void LearnValue::AddSkill(int skill_id, int level_requirement, int class_require
     int str_requirement, int int_requirement, int wis_requirement, int agi_requirement, int con_requirement,
     int cha_requirement)
 {
-    char found = 0;
-    for (vector<LearnItemVal>::iterator it = skills.begin(); it != skills.end(); it++)
+    char found = false;
+    for (vector<LearnItemVal>::iterator known = skills.begin(); known != skills.end(); known++)
     {
-        if (skill_id != it->id)
+        if (skill_id != known->id)
             continue;
-        found = 1;
-        it->level_requirement = level_requirement;
-        it->class_requirement = class_requirement;
-        it->price = price;
-        it->skill_requirement_1 = skill_requirement_1;
-        it->skill_requirement_2 = skill_requirement_2;
-        it->skill_requirement_3 = skill_requirement_3;
-        it->skill_requirement_4 = skill_requirement_4;
-        it->str_requirement = str_requirement;
-        it->int_requirement = int_requirement;
-        it->wis_requirement = wis_requirement;
-        it->agi_requirement = agi_requirement;
-        it->con_requirement = con_requirement;
-        it->cha_requirement = cha_requirement;
+        found = true;
+        known->level_requirement = level_requirement;
+        known->class_requirement = class_requirement;
+        known->price = price;
+        known->skill_requirement_1 = skill_requirement_1;
+        known->skill_requirement_2 = skill_requirement_2;
+        known->skill_requirement_3 = skill_requirement_3;
+        known->skill_requirement_4 = skill_requirement_4;
+        known->str_requirement = str_requirement;
+        known->int_requirement = int_requirement;
+        known->wis_requirement = wis_requirement;
+        known->agi_requirement = agi_requirement;
+        known->con_requirement = con_requirement;
+        known->cha_requirement = cha_requirement;
     }
     if (!found)
     {

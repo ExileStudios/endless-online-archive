@@ -12,7 +12,7 @@
 ShopValues::ShopValues()
 {
     record_index = -1;
-    loaded = 0;
+    loaded = false;
     LoadShops();
 }
 
@@ -33,7 +33,7 @@ void ShopValues::LoadShops()
         {
             int size;
             char *file_buffer;
-            file_handle = FileOpen(path.c_str(), 0);
+            file_handle = FileOpen(path.c_str(), fmOpenRead);
             size = FileSeek(file_handle, 0, 2);
             FileSeek(file_handle, 0, 0);
             file_buffer = new char[size + 1];
@@ -74,12 +74,12 @@ void ShopValues::LoadShops()
                 }
                 record_list.insert(record_list.end(), shop);
             } while (data.Length() > 9);
-            loaded = 1;
+            loaded = true;
         }
         catch (...)
         {
             FileClose(file_handle);
-            loaded = 0;
+            loaded = false;
         }
     }
 }

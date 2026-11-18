@@ -26,7 +26,7 @@ struct mySQLdb
     FileCache *file_cache;
     TTimeStamp last_status_time;
     TTimeStamp connected_time;
-    char pad_0x14[4];
+    char unused_bytes[4];
     int query_error_count;
     int exec_error_count;
     mySQLbuffer *task_queue;

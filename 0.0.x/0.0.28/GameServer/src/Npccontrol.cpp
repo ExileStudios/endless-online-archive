@@ -38,7 +38,7 @@ NpcController::~NpcController()
 // One npc step ( every 200 ms ): respawns, regen, the moves and attacks, then each player gets what changed near them.
 void NpcController::Tick()
 {
-    char flag = 1;
+    char flag = true;
     act_counter++;
     regen_counter++;
     for (vector<MapItem>::iterator map = map_control->maps.begin(); map != map_control->maps.end(); map++)
@@ -273,7 +273,7 @@ void NpcController::Tick()
                                     if (Npc_AttackPlayer(*npc, target))  // the player died
                                     {
                                         (*npc)->chase_target_id = -1;
-                                        flag = 0;
+                                        flag = false;
                                     }
                                     map->npc_dirty = true;
                                     (*npc)->attack_pending = true;
@@ -498,7 +498,7 @@ void NpcController::Npc_Wander(Npc *npc, int map_id, int map_w, int map_h)
     {
         if (npc->y < map_h)
         {
-            if (!map_control->GetTileBlock(map_id, npc->x, npc->y + 1, 0))
+            if (!map_control->GetTileBlock(map_id, npc->x, npc->y + 1, false))
             {
                 if (!map_control->IsOccupied(map_id, npc->x, npc->y + 1))
                 {
@@ -516,7 +516,7 @@ void NpcController::Npc_Wander(Npc *npc, int map_id, int map_w, int map_h)
     {
         if (npc->x >= 1)
         {
-            if (!map_control->GetTileBlock(map_id, npc->x - 1, npc->y, 0))
+            if (!map_control->GetTileBlock(map_id, npc->x - 1, npc->y, false))
             {
                 if (!map_control->IsOccupied(map_id, npc->x - 1, npc->y))
                 {
@@ -534,7 +534,7 @@ void NpcController::Npc_Wander(Npc *npc, int map_id, int map_w, int map_h)
     {
         if (npc->y >= 1)
         {
-            if (!map_control->GetTileBlock(map_id, npc->x, npc->y - 1, 0))
+            if (!map_control->GetTileBlock(map_id, npc->x, npc->y - 1, false))
             {
                 if (!map_control->IsOccupied(map_id, npc->x, npc->y - 1))
                 {
@@ -552,7 +552,7 @@ void NpcController::Npc_Wander(Npc *npc, int map_id, int map_w, int map_h)
     {
         if (npc->x < map_w)
         {
-            if (!map_control->GetTileBlock(map_id, npc->x + 1, npc->y, 0))
+            if (!map_control->GetTileBlock(map_id, npc->x + 1, npc->y, false))
             {
                 if (!map_control->IsOccupied(map_id, npc->x + 1, npc->y))
                 {
@@ -688,7 +688,7 @@ void NpcController::Npc_ChaseTarget(Npc *npc, Player *player, int map_id, int ma
                 if (npc->y + 1 == npc->stuck_y)
                     continue;
             }
-            if (map_control->GetTileBlock(map_id, npc->x, npc->y + 1, 0))
+            if (map_control->GetTileBlock(map_id, npc->x, npc->y + 1, false))
                 continue;
             if (map_control->IsOccupied(map_id, npc->x, npc->y + 1))
                 continue;
@@ -719,7 +719,7 @@ void NpcController::Npc_ChaseTarget(Npc *npc, Player *player, int map_id, int ma
                 if (npc->y == npc->stuck_y)
                     continue;
             }
-            if (map_control->GetTileBlock(map_id, npc->x - 1, npc->y, 0))
+            if (map_control->GetTileBlock(map_id, npc->x - 1, npc->y, false))
                 continue;
             if (map_control->IsOccupied(map_id, npc->x - 1, npc->y))
                 continue;
@@ -750,7 +750,7 @@ void NpcController::Npc_ChaseTarget(Npc *npc, Player *player, int map_id, int ma
                 if (npc->y - 1 == npc->stuck_y)
                     continue;
             }
-            if (map_control->GetTileBlock(map_id, npc->x, npc->y - 1, 0))
+            if (map_control->GetTileBlock(map_id, npc->x, npc->y - 1, false))
                 continue;
             if (map_control->IsOccupied(map_id, npc->x, npc->y - 1))
                 continue;
@@ -781,7 +781,7 @@ void NpcController::Npc_ChaseTarget(Npc *npc, Player *player, int map_id, int ma
                 if (npc->y == npc->stuck_y)
                     continue;
             }
-            if (map_control->GetTileBlock(map_id, npc->x + 1, npc->y, 0))
+            if (map_control->GetTileBlock(map_id, npc->x + 1, npc->y, false))
                 continue;
             if (map_control->IsOccupied(map_id, npc->x + 1, npc->y))
                 continue;
@@ -823,9 +823,9 @@ char NpcController::Npc_IsPlayerAt(int map_id, int x, int y)
     for (vector<Player *>::iterator it = player_targets.begin(); it != player_targets.end(); it++)
     {
         if ((*it)->x == x && (*it)->y == y && (*it)->map_id == map_id)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
 
 // The player who stands on the tile, or -1.
@@ -850,16 +850,16 @@ int NpcController::Npc_GetPlayerIdAt(int map_id, int x, int y)
 }
 
 // 1 when the second spot is in view of the first: 15 steps to the lower right, 12 any other way.
-char NpcController::Npc_IsWithinRange(int x1, int y1, int x2, int y2)
+char NpcController::Npc_IsWithinRange(int from_x, int from_y, int to_x, int to_y)
 {
     char result = 0;
-    int dx = x2 - x1;
-    int dy = y2 - y1;
+    int dx = to_x - from_x;
+    int dy = to_y - from_y;
     if (dx < 0)
         dx = 0 - dx;
     if (dy < 0)
         dy = 0 - dy;
-    if (x2 > x1 && y2 > y1)
+    if (to_x > from_x && to_y > from_y)
     {
         if (dx + dy <= 15)
             result = 1;
