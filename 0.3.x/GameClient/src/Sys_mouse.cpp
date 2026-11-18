@@ -533,6 +533,11 @@ void Mouser::HandleMove()
                         MainForm->animation->menu->right_arrow_state = 1;
                     else
                         MainForm->animation->menu->right_arrow_state = 0;
+                    if (MainForm->animation->menu->form_x + 430 <= x && MainForm->animation->menu->form_x + 445 >= x &&
+                        MainForm->animation->menu->form_y + 44 <= y && MainForm->animation->menu->form_y + 66 >= y)
+                        MainForm->animation->menu->preview_hover = true;
+                    else
+                        MainForm->animation->menu->preview_hover = false;
                     if (MainForm->animation->menu->form_x + button_x <= x &&
                         button_x + MainForm->animation->menu->form_x + 88 >= x &&
                         MainForm->animation->menu->form_y + button_y <= y &&
@@ -981,6 +986,8 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
                         MainForm->animation->game->message_visible = false;
                         MainForm->edits->caret_enabled = true;
                         MainForm->redraw_needed = true;
+                        if (!MainForm->animation->barber->hair_style)
+                            MainForm->animation->game->PlayEmote(Emote_Surprised);
                     }
                     if (MainForm->animation->game->message_kind == ConfirmAction_LeaveGuild)
                     {
@@ -2304,15 +2311,6 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
             {
                 handled = true;
                 MainForm->animation->barber->MouseDown(click_x, click_y, button);
-                if (x >= MainForm->animation->barber->window_x + 215 &&
-                    x <= MainForm->animation->barber->window_x + 304 &&
-                    y >= MainForm->animation->barber->window_y + 151 &&
-                    y <= MainForm->animation->barber->window_y + 178)
-                {
-                    MainForm->sfx->PlaySfx(SfxSound_DialogButtonClick);
-                    MainForm->animation->barber->Close();
-                    MainForm->redraw_needed = true;
-                }
             }
             if (MainForm->animation->stat->is_visible && !handled)
             {
@@ -3568,8 +3566,20 @@ void Mouser::HandleMouseDown(int click_x, int click_y, int button)
             {
                 if (MainForm->animation->menu->form_kind == CHARACTER_CREATE_DIALOG)
                 {
-                    if (x >= MainForm->animation->menu->form_x + 335 && x <= MainForm->animation->menu->form_x + 448 &&
-                        y >= MainForm->animation->menu->form_y + 38 && y <= MainForm->animation->menu->form_y + 202)
+                    if (x >= MainForm->animation->menu->form_x + 430 && x <= MainForm->animation->menu->form_x + 445 &&
+                        y >= MainForm->animation->menu->form_y + 44 && y <= MainForm->animation->menu->form_y + 66)
+                    {
+                        MainForm->sfx->PlaySfx(SfxSound_ArrowButton);
+                        if (MainForm->animation->menu->new_hair_style)
+                        {
+                            MainForm->animation->menu->new_hair_style = 0;
+                            MainForm->players->SetPreviewHairStyle(MainForm->animation->menu->new_hair_style);
+                            MainForm->players->ReloadGraphics(PlayerId_Preview);
+                        }
+                    }
+                    else if (x >= MainForm->animation->menu->form_x + 335 &&
+                        x <= MainForm->animation->menu->form_x + 448 && y >= MainForm->animation->menu->form_y + 38 &&
+                        y <= MainForm->animation->menu->form_y + 202)
                     {
                         preview_direction = MainForm->players->GetDirection(PlayerId_Preview);
                         if (MainForm->players->GetDirection(PlayerId_Preview) < 3)

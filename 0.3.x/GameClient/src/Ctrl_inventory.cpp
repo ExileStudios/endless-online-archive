@@ -173,7 +173,7 @@ void InventoryController::MarkDragDirty()
 int InventoryController::UseItem(int item_id, int category)
 {
     ItemValue *item;
-    char use_not_needed = false;
+    char use_not_needed;
     char heals_nothing;
     ItemValue *equipment;
     if (item_id <= 0)
@@ -216,12 +216,35 @@ int InventoryController::UseItem(int item_id, int category)
     // A visual document opens in its window.
     if (item->type == EifItemType_VisualDocument)
         return FinishUse(item->type);
-    if ((item->type >= EifItemType_Heal && item->type <= EifItemType_SkillBook) || item->type == EifItemType_Alcohol ||
-        item->type == EifItemType_HairDye)
+    // A hair tool is refused when the hair style is already the one it gives.
+    if (item->type == EifItemType_HairTool)
+    {
+        if (MainForm->players->GetHairStyle(MainForm->net_client->GetPlayerId()) == item->spec_value)
+        {
+            pending_use_item_id = item_id;
+            MainForm->animation->notification->NotifyWithStatus(NotifyKind_Item, item->item_id, NotifyStatus_NoEffect);
+            MainForm->animation->interface_controller->ShowStatusMessage(category,
+                "There was no need to use " + item->name);
+            MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
+            return FinishUse(-102);
+        }
+        MainForm->animation->notification->NotifyWithStatus(NotifyKind_Item, item->item_id, NotifyStatus_Ready);
+        MainForm->net_client->sender->SendUseItem(item_id);
+        if (!item->spec_value)
+        {
+            MainForm->animation->game->PlayEmote(Emote_Surprised);
+            return RefuseUse(-102, 67);
+        }
+        return FinishUse(item->type);
+    }
+    unsigned char item_type = item->type;
+    // Types 3 to 7, 22 and 24 are used at once, unless the use would change nothing.
+    if ((item_type >= EifItemType_Heal && item_type <= EifItemType_SkillBook) || item_type == EifItemType_Alcohol ||
+        item_type == EifItemType_HairDye)
     {
         use_not_needed = false;
         heals_nothing = false;
-        if (item->type == EifItemType_Heal)
+        if (item_type == EifItemType_Heal)
         {
             if (item->hp <= 0 && item->tp <= 0)
                 heals_nothing = true;
@@ -252,6 +275,7 @@ int InventoryController::UseItem(int item_id, int category)
                 return FinishUse(-101);
             }
         }
+        use_not_needed = false;
         if (item->type == EifItemType_Transformation &&
             MainForm->players->GetSkin(MainForm->net_client->GetPlayerId()) == item->spec_value)
         {
@@ -268,20 +292,25 @@ int InventoryController::UseItem(int item_id, int category)
             SuppressHoverMessage();
             return RefuseUse(-10, 55);
         }
-        // A teleport is refused on a map that forbids it, or while actions are blocked.
-        if (item->type == EifItemType_Teleport && MainForm->map->item_use_restricted)
+        if (item->type == EifItemType_Teleport)
         {
-            MainForm->animation->interface_controller->ShowStatusMessage(category,
-                MainForm->strings->GetText(GameText_NothingHappened));
-            MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
-            return FinishUse(-20);
+            if (MainForm->map->item_use_restricted)
+            {
+                MainForm->animation->interface_controller->ShowStatusMessage(category,
+                    MainForm->strings->GetText(GameText_NothingHappened));
+                MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
+                return FinishUse(-20);
+            }
         }
-        if (item->type == EifItemType_Teleport && MainForm->map->IsActionBlocked())
+        if (item->type == EifItemType_Teleport)
         {
-            MainForm->animation->interface_controller->ShowStatusMessage(category,
-                MainForm->strings->GetText(GameText_NothingHappened));
-            MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
-            return FinishUse(-20);
+            if (MainForm->map->IsActionBlocked())
+            {
+                MainForm->animation->interface_controller->ShowStatusMessage(category,
+                    MainForm->strings->GetText(GameText_NothingHappened));
+                MainForm->animation->interface_controller->inventory->SuppressHoverMessage();
+                return FinishUse(-20);
+            }
         }
         MainForm->animation->notification->NotifyWithStatus(NotifyKind_Item, item->item_id, NotifyStatus_Ready);
         MainForm->net_client->sender->SendUseItem(item_id);
@@ -554,18 +583,15 @@ int InventoryController::UseItem(int item_id, int category)
                 MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_First);
                 return FinishUse(item->type);
             }
-            else if (MainForm->animation->paperdoll->equipped_bracer2 <= 0)
+            if (MainForm->animation->paperdoll->equipped_bracer2 <= 0)
             {
                 MainForm->net_client->sender->SendEquipItem(item_id, PaperdollSubSlot_Second);
                 return FinishUse(item->type);
             }
-            else
-            {
-                MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
-                    MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
-                SuppressHoverMessage();
-                return RefuseUse(-10, 55);
-            }
+            MainForm->animation->interface_controller->ShowStatusMessage(StatusCategory_Information,
+                MainForm->strings->GetText(GameText_YouAlreadyHaveItem));
+            SuppressHoverMessage();
+            return RefuseUse(-10, 55);
         }
     }
     FinishUse(-1);

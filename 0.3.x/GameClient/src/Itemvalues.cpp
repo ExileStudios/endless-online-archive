@@ -268,7 +268,7 @@ ItemValue *ItemValues::GetItem(int index)
 int ItemValues::GetWeight(int item_id)
 {
     int weight = 0;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
     {
         weight = 0;
         weight = records[item_id - 1]->weight;
@@ -282,7 +282,7 @@ int ItemValues::GetWeight(int item_id)
 int ItemValues::GetGender(int item_id)
 {
     int gender = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
     {
         gender = 0;
         gender = records[item_id - 1]->gender;
@@ -295,7 +295,7 @@ int ItemValues::GetGender(int item_id)
 int ItemValues::GetGraphic(int item_id)
 {
     int graphic = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         graphic = records[item_id - 1]->graphic;
     return graphic;
 }
@@ -303,7 +303,7 @@ int ItemValues::GetGraphic(int item_id)
 int ItemValues::GetSize(int item_id)
 {
     int size = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         size = records[item_id - 1]->size;
     return size;
 }
@@ -311,7 +311,7 @@ int ItemValues::GetSize(int item_id)
 int ItemValues::GetSpecial(int item_id)
 {
     int special = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         special = records[item_id - 1]->special;
     return special;
 }
@@ -319,7 +319,7 @@ int ItemValues::GetSpecial(int item_id)
 int ItemValues::GetType(int item_id)
 {
     int type = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         type = records[item_id - 1]->type;
     return type;
 }
@@ -327,7 +327,7 @@ int ItemValues::GetType(int item_id)
 int ItemValues::GetSubType(int item_id)
 {
     int subtype = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         subtype = records[item_id - 1]->subtype;
     return subtype;
 }
@@ -335,7 +335,7 @@ int ItemValues::GetSubType(int item_id)
 int ItemValues::GetClassRequirement(int item_id)
 {
     int required_class = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         required_class = records[item_id - 1]->required_class;
     return required_class;
 }
@@ -343,7 +343,7 @@ int ItemValues::GetClassRequirement(int item_id)
 int ItemValues::GetSpecValue(int item_id)
 {
     int spec_value = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
+    if (item_id > 0 && (unsigned int)Count() >= item_id)
         spec_value = records[item_id - 1]->spec_value;
     return spec_value;
 }

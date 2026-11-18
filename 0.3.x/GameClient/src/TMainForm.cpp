@@ -182,7 +182,7 @@ void __fastcall TMainForm::FormCreate(TObject *Sender)
     version_major = 0;
     version_minor = 3;
     version_build = 29;
-    version_letter = 'd';
+    version_letter = 'e';
     files = new FileController();
     String title =
         "Endless Online " + String(version_major) + "." + String(version_minor) + "." + String(version_build);

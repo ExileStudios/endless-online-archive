@@ -4,14 +4,20 @@
 // The barber window: a preview of the player with the new hair, and the price.
 struct BarberController
 {
+    bool accept_hovered;
     char close_hovered;
     char is_visible;
+    int hovered_column;
     int hovered_row;
     int window_x;
     int window_y;
+    bool previous_hovered;
+    bool next_hovered;
+    bool reset_hovered;
     int npc_session_id;
     int base_price;
     int price_per_level;
+    int style_page;
     short style_count;
     int hair_style;
     int hair_color;

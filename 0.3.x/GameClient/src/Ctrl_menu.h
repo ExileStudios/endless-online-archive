@@ -48,6 +48,7 @@ struct MenuController
     bool form_ok_button_hover;
     bool form_cancel_button_hover;
     bool text_window_ok_button_hover;
+    bool preview_hover;
     unsigned char left_arrow_state;
     unsigned char right_arrow_state;
     bool text_scroll_up_hover;

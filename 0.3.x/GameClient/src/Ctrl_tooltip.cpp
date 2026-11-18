@@ -191,6 +191,8 @@ void Tooltip::ShowItemCount(int item_id, int count)
         lines[line_count] += "debuff*";
     else if (type == EifItemType_TitleCertificate)
         lines[line_count] += "title certificate";
+    else if (type == EifItemType_HairTool)
+        lines[line_count] += "hairtool";
     else
         lines[line_count] += "unknown";
     if (type == EifItemType_Heal)

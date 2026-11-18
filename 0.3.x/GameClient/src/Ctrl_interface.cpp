@@ -211,7 +211,7 @@ void InterfaceController::Logout()
     MainForm->animation->chest->window_y = 23;
     MainForm->animation->trade->window_x = 49;
     MainForm->animation->trade->window_y = 13;
-    MainForm->animation->barber->window_x = 165;
+    MainForm->animation->barber->window_x = 107;
     MainForm->animation->barber->window_y = 53;
     MainForm->animation->social->window_x = 333;
     MainForm->animation->social->window_y = 13;

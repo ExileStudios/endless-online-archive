@@ -183,8 +183,8 @@ GameGraphics::GameGraphics()
     item_row_highlight_rect.bottom = 441;
     short_highlight_rect.top = 405;
     short_highlight_rect.left = 0;
-    short_highlight_rect.right = 173;
-    short_highlight_rect.bottom = 441;
+    short_highlight_rect.right = 31;
+    short_highlight_rect.bottom = 436;
     row_highlight_rect.top = 405;
     row_highlight_rect.left = 0;
     row_highlight_rect.right = 232;
@@ -828,28 +828,60 @@ void GameGraphics::DrawChestWindow()
     }
 }
 
-// Draws the barber window: background, hovered row highlight, the three row icons, and a preview of the player with
-// the chosen hair style and colour.
+// Draws the barber window: background, the hovered style cell, the lit buttons and the preview of the player.
 void GameGraphics::DrawBarberWindow()
 {
+    char alpha;
+    TRect arrow_rect;
     MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x, MainForm->animation->barber->window_y,
-        MainForm->gfx->barber->surface, &MainForm->gfx->barber->surface_rect, DDBLTFAST_WAIT);
-    if (MainForm->animation->barber->hovered_row >= 0)
-        MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 19,
-            37 * MainForm->animation->barber->hovered_row + MainForm->animation->barber->window_y + 23,
-            MainForm->OffscreenSurface, MainForm->gfx->interface_graphics->control_sheet, &short_highlight_rect, 12);
-    MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 24,
-        MainForm->animation->barber->window_y + 23, MainForm->gfx->interface_graphics->control_sheet, &GetIconRect(6),
-        DDBLTFAST_WAIT);
-    MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 24,
-        MainForm->animation->barber->window_y + 60, MainForm->gfx->interface_graphics->control_sheet, &GetIconRect(7),
-        DDBLTFAST_WAIT);
-    MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 24,
-        MainForm->animation->barber->window_y + 97, MainForm->gfx->interface_graphics->control_sheet, &GetIconRect(8),
-        DDBLTFAST_WAIT);
+        MainForm->gfx->barber->surface, &MainForm->gfx->barber->background_rect, DDBLTFAST_WAIT);
+    if (MainForm->animation->barber->hovered_column >= 0)
+    {
+        int cell_x = 31 * MainForm->animation->barber->hovered_column;
+        int cell_y = MainForm->animation->barber->hovered_row * 38;
+        MainForm->blitter->AlphaBlt(cell_x + MainForm->animation->barber->window_x + 31,
+            MainForm->animation->barber->window_y + cell_y + 32, MainForm->OffscreenSurface,
+            MainForm->gfx->interface_graphics->control_sheet, &short_highlight_rect, 12);
+    }
+    arrow_rect.left = 426;
+    arrow_rect.right = 436;
+    arrow_rect.top = 103;
+    arrow_rect.bottom = 119;
+    if (MainForm->animation->barber->reset_hovered)
+    {
+        arrow_rect.top += 17;
+        arrow_rect.bottom += 17;
+    }
+    MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 392, MainForm->animation->barber->window_y + 29,
+        MainForm->OffscreenSurface, MainForm->gfx->barber->surface, &arrow_rect, 180);
+    alpha = '<';
+    if (MainForm->animation->barber->previous_hovered)
+    {
+        MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 16,
+            MainForm->animation->barber->window_y + 24, MainForm->OffscreenSurface, MainForm->gfx->barber->surface,
+            &MainForm->gfx->barber->arrow_glow_rect, 12);
+        alpha = 'x';
+    }
+    MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 20, MainForm->animation->barber->window_y + 65,
+        MainForm->OffscreenSurface, MainForm->gfx->barber->surface, &MainForm->gfx->barber->previous_arrow_rect,
+        (unsigned char)alpha);
+    alpha = '<';
+    if (MainForm->animation->barber->next_hovered)
+    {
+        MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 278,
+            MainForm->animation->barber->window_y + 24, MainForm->OffscreenSurface, MainForm->gfx->barber->surface,
+            &MainForm->gfx->barber->arrow_glow_rect, 12);
+        alpha = 'x';
+    }
+    MainForm->blitter->AlphaBlt(MainForm->animation->barber->window_x + 284, MainForm->animation->barber->window_y + 65,
+        MainForm->OffscreenSurface, MainForm->gfx->barber->surface, &MainForm->gfx->barber->next_arrow_rect,
+        (unsigned char)alpha);
+    MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 26,
+        MainForm->animation->barber->window_y + 32, MainForm->gfx->barber->styles_surface,
+        &MainForm->gfx->barber->styles_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     MainForm->gfx->sprites->DrawPlayerAt(MainForm->players->GetPlayerById(PlayerId_Preview),
         MainForm->animation->barber->hair_style, MainForm->animation->barber->hair_color,
-        MainForm->animation->barber->window_x + 250, MainForm->animation->barber->window_y + 50);
+        MainForm->animation->barber->window_x + 350, MainForm->animation->barber->window_y + 50);
 }
 
 // Draws the musician window background and lights the note cell under the mouse.
@@ -1509,6 +1541,7 @@ void GameGraphics::DrawMsgBoardWindow()
 void GameGraphics::DrawCrafterWindow()
 {
     CraftIngredient *it;
+    int amount;
     ItemWrapper *graphic_item;
     int x;
     int y;
@@ -1548,6 +1581,19 @@ void GameGraphics::DrawCrafterWindow()
                 &MainForm->gfx->crafter->blocked_mark_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         if (graphic >= 0)
         {
+            if (it->item_id == ItemId_Gold)
+            {
+                graphic = 134;
+                amount = it->amount;
+                if (amount > 1)
+                    graphic = 135;
+                if (amount > 99)
+                    graphic = 136;
+                if (amount > 9999)
+                    graphic = 137;
+                if (amount > 99999)
+                    graphic = 138;
+            }
             if (MainForm->gfx->items->RequestGraphic(graphic))
             {
                 GraphicSize graphic_size = MainForm->gfx->items->GetGraphicSize(graphic);
@@ -2250,15 +2296,23 @@ void GameGraphics::DrawChestButtons()
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
 
-// Draws the barber window's close button, lit under the mouse.
+// Draws the barber window's accept and close buttons, each lit while the mouse is on it.
 void GameGraphics::DrawBarberButtons()
 {
-    if (MainForm->animation->barber->close_hovered)
+    if (MainForm->animation->barber->accept_hovered)
         MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 215,
-            MainForm->animation->barber->window_y + 151, button_sheet, &GetButtonRect(1, 1),
+            MainForm->animation->barber->window_y + 151, button_sheet, &GetButtonRect(4, 1),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
     else
         MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 215,
+            MainForm->animation->barber->window_y + 151, button_sheet, &GetButtonRect(4, 0),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    if (MainForm->animation->barber->close_hovered)
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 308,
+            MainForm->animation->barber->window_y + 151, button_sheet, &GetButtonRect(1, 1),
+            DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+    else
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->barber->window_x + 308,
             MainForm->animation->barber->window_y + 151, button_sheet, &GetButtonRect(1, 0),
             DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
 }
@@ -2959,20 +3013,14 @@ void GameGraphics::DrawBarberText()
     MainForm->fonts->face = 1;
     MainForm->fonts->size = 8;
     MainForm->fonts->color = 0xC8C8C8;
-    int text_y = MainForm->animation->barber->window_y + 26;
-    int text_x = MainForm->animation->barber->window_x + 76;
+    int text_y = MainForm->animation->barber->window_y + 157;
+    int center_x = MainForm->animation->barber->window_x + 117;
     String gold_name = LowerCase(MainForm->item_values->GetName(ItemId_Gold));
-    MainForm->fonts->DrawString(text_x, text_y, MainForm->strings->GetText(GameText_ChangeModal));
-    MainForm->fonts->DrawString(text_x, (short)text_y + 14,
-        MainForm->strings->GetText(GameText_Current) + ": " + IntToStr(MainForm->animation->barber->hair_style));
-    MainForm->fonts->DrawString(text_x, (short)text_y + 37, MainForm->strings->GetText(GameText_ChangeColor));
-    MainForm->fonts->DrawString(text_x, (short)text_y + 51,
-        MainForm->strings->GetText(GameText_Current) + ": " +
-            MainForm->strings->GetText(MainForm->animation->barber->hair_color + 167));
-    MainForm->fonts->DrawString(text_x, (short)text_y + 74, MainForm->strings->GetText(GameText_BuyHairstyle));
-    MainForm->fonts->DrawString(text_x, (short)text_y + 88,
-        MainForm->strings->GetText(GameText_Current) + ": " + IntToStr(MainForm->animation->barber->price) + " " +
-            gold_name);
+    String price_text =
+        MainForm->strings->GetText(GameText_BuyHairstyle) + ": " + IntToStr(MainForm->animation->barber->price) + " " +
+            gold_name;
+    int text_width = (short)MainForm->fonts->TextWidth(price_text);
+    MainForm->fonts->DrawString(center_x - (short)(text_width / 2), text_y, price_text);
 }
 
 // Draws whether a song is playing, with the requester's name if known, and the rows for the chosen song and the

@@ -975,6 +975,7 @@ void MenuGraphics::DrawChangePasswordText()
 void MenuGraphics::DrawCreateCharacterControls()
 {
     int skin_marker_x;
+    TRect toggle_rect;
     TRect marker_rect;
     TRect lock_rect;
     TRect gender_rect;
@@ -990,6 +991,17 @@ void MenuGraphics::DrawCreateCharacterControls()
         int hair_style = MainForm->animation->menu->new_hair_style;
         int hair_color = MainForm->animation->menu->new_hair_color;
         int skin = MainForm->animation->menu->new_skin;
+        toggle_rect.left = 76;
+        toggle_rect.right = 87;
+        toggle_rect.top = 14;
+        toggle_rect.bottom = 30;
+        if (MainForm->animation->menu->preview_hover)
+        {
+            toggle_rect.left += 11;
+            toggle_rect.right += 11;
+        }
+        MainForm->OffscreenSurface->BltFast(MainForm->animation->menu->form_x + 429,
+            MainForm->animation->menu->form_y + 46, slot_icons, &toggle_rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
         marker_rect.left = 66;
         marker_rect.right = 70;
         marker_rect.top = 13;
@@ -1153,7 +1165,7 @@ bool MenuGraphics::RenderHairStyles(int gender, int skin, int hair_color, int pa
                 hair_styles->BltFast(31 * shown + 6, 2 * gender, hair_surface, &hair_rect,
                     DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
                 shown++;
-                if (shown > 8)
+                if (shown >= 8)
                     break;
             }
         }

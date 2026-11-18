@@ -284,44 +284,6 @@ void FFileLog::Open(String path)
 - **What you see:** With "LogFile=C:\My Logs\chat.txt" the client opens "C:\MYLOGS\CHAT.TXT"; when that folder does not
   exist, the log counts as open and every chat line is handed to `fprintf` with no file, which the code does not define.
 
-## The last item of the item file has no graphic, type, weight or other values
-
-`Itemvalues.cpp`, `ItemValues::GetWeight`; `Itemvalues.cpp`, `ItemValues::GetGender`;
-`Itemvalues.cpp`, `ItemValues::GetGraphic`; `Itemvalues.cpp`, `ItemValues::GetSize`;
-`Itemvalues.cpp`, `ItemValues::GetSpecial`; `Itemvalues.cpp`, `ItemValues::GetType`;
-`Itemvalues.cpp`, `ItemValues::GetSubType`; `Itemvalues.cpp`, `ItemValues::GetClassRequirement`; `Itemvalues.cpp`, `ItemValues::GetSpecValue`
-
-```cpp
-int ItemValues::GetGraphic(int item_id)
-{
-    int graphic = -1;
-    if (item_id > 0 && (unsigned int)Count() > item_id)
-        graphic = records[item_id - 1].graphic;
-    return graphic;
-    }
-```
-
-- **What the function is for:** The nine getters return one value of an item from the item list, or a default when the
-  id is not in the list.
-- **What the line was written to do:** Accept every id from 1 to the item count. The evidence: `Load` adds the items
-  with ids `Count() + 1`, so item n is `records[n - 1]` and the last id equals `Count()`; `GetName` and `GetKeyName`
-  search the whole list and do find the last item.
-- **What it does:** Step by step:
-  - Each getter takes the record only when `Count() > item_id`, so the id equal to `Count()` fails the test.
-  - The getter returns its default for that id: 0 from `GetWeight`, -1 from the eight others.
-- **Evidence, from the code and not from the names:**
-  - ids: `Itemvalues.cpp` `AddItem(Count() + 1, file_text.SubString(2, name_end - 1),` item n is records[n - 1]
-  - key: `Itemvalues.cpp` `if (it->type == 9 && key_id == it->spec_value)` the key lookup searches every record
-- **When it happens:** Every caller that asks for a value of the last item: the inventory, paperdoll, shop, chest,
-  locker and map code call these getters. `UseItem` reads the type first.
-  - Search of the tree for `Count\(\) > \(unsigned int\)item_id`: 0 line(s).
-  - Search of the tree for `item_values->GetGraphic\(`: 30 line(s), in Ctrl_inventory.cpp, Ctrl_paperdoll.cpp,
-    Gfx_game.cpp, Gfx_interface.cpp, TMainForm.cpp.
-  - Reachable with the shipped code: reachable. The item with the highest id in the server's item file is the last
-    record of the list.
-- **What you see:** With 500 items, item 500 is drawn with graphic -1, weighs 0, and `UseItem` gets type -1, which
-  matches none of its item types, so using it does nothing; its name still shows, from `GetName`.
-
 ## A word wider than the text window makes the client add empty lines without end
 
 `Ctrl_menu.cpp`, `MenuController::AddWrappedText`
