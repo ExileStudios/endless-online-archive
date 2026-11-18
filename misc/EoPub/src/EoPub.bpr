@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!-- C++Builder XML Project -->
+<PROJECT>
+  <MACROS>
+    <VERSION value="BCB.05.03"/>
+    <PROJECT value="EoPub.exe"/>
+    <OBJFILES value="EoPub.obj Unitmain.obj Itemvalue.obj Itemvalues.obj Unitabout.obj Unitgfx.obj Unitedititem.obj Uitabitems.obj Datatypeitem.obj Datatypes.obj Unitpathconfig.obj Classvalue.obj Classvalues.obj Uitabclasses.obj Uniteditclass.obj Configuration.obj Configcheck.obj Unitconfiguration.obj Unitexportform.obj Unitexportresultform.obj Unitwarning.obj Unitwarningreload.obj Unitwarningclscorruption.obj Unitwarningoutofbound.obj Unitwarningexit.obj Unittoolsitems.obj Npcvalue.obj Npcvalues.obj Uitabnpcs.obj Datagridcol.obj Datagrid.obj Datacomboitem.obj Datagridview.obj Datagridui.obj Skillvalue.obj Skillvalues.obj Uitabskills.obj Datalinkitem.obj Sys_magicmap.obj Unitwarningdelete.obj Dataform.obj Uniteditnpc.obj Uniteditskill.obj Pubfileheader.obj Unitpubfilestatus.obj Unitwarningexpertmode.obj Unitfolderselect.obj Gfxvault.obj Unitnewfolder.obj Unitpathscan.obj Unittoolsnpcs.obj Unittoolsskills.obj Unittoolsclasses.obj Unitwarningcannotopen.obj Npcdrop.obj Uniteditnpcchats.obj Uniteditnpcdrops.obj Unitselectitem.obj Npcdataadapter.obj Shopcraft.obj Shopitem.obj Shopvalue.obj Shopvalues.obj Learnitem.obj Learnvalue.obj Learnvalues.obj Uitabshops.obj Uitabtrainers.obj Uniteditshop.obj Unitedittrainer.obj Uniteditshopitems.obj Unitselectskill.obj Unitedittrainerskills.obj Uniteditshopcrafts.obj Uniteditshopcraftsreq.obj Unitedittrainerskillsreq.obj $(BCB)\lib\Release\vclx50.lib ..\lib\elpack\elpackB5.lib Unitedittrainerskillsstats.obj Unittoolsshops.obj Unittoolstrainers.obj Learndataadapter.obj Shopdataadapter.obj Innvalues.obj Uitabinns.obj Uniteditinn.obj Uniteditinnquiz.obj Inndataadapter.obj Unittoolsinns.obj Packetbuilder.obj"/>
+    <RESFILES value="EoPub.res"/>
+    <IDLFILES value=""/>
+    <IDLGENFILES value=""/>
+    <DEFFILE value=""/>
+    <RESDEPEN value="$(RESFILES) UnitAbout.dfm UnitWarningClsCorruption.dfm UnitConfiguration.dfm UnitWarningDelete.dfm UnitEditClass.dfm UnitEditInn.dfm UnitEditInnQuiz.dfm UnitEditShop.dfm UnitEditTrainer.dfm UnitExportForm.dfm UnitExportResultForm.dfm UnitFolderSelect.dfm UnitGfx.dfm UnitEditItem.dfm UnitMain.dfm UnitNewFolder.dfm UnitEditNpc.dfm UnitEditNpcChats.dfm UnitEditNpcDrops.dfm UnitPathConfig.dfm UnitPathScan.dfm UnitPubfileStatus.dfm UnitWarningReload.dfm UnitSelectItem.dfm UnitSelectSkill.dfm UnitEditShopCrafts.dfm UnitEditShopCraftsReq.dfm UnitEditShopItems.dfm UnitEditSkill.dfm UnitToolsClasses.dfm UnitToolsInns.dfm UnitToolsItems.dfm UnitToolsNpcs.dfm UnitToolsShops.dfm UnitToolsSkills.dfm UnitToolsTrainers.dfm UnitEditTrainerSkills.dfm UnitEditTrainerSkillsReq.dfm UnitEditTrainerSkillsStats.dfm UnitWarning.dfm UnitWarningCannotOpen.dfm UnitWarningExit.dfm UnitWarningExpertMode.dfm UnitWarningOutOfBound.dfm"/>
+    <LIBFILES value=""/>
+    <LIBRARIES value="elpackB5.lib vclx50.lib vcl50.lib"/>
+    <SPARELIBS value="elpackB5.lib vclx50.lib vcl50.lib"/>
+    <PACKAGES value=""/>
+    <PATHCPP value=".;"/>
+    <PATHPAS value=".;"/>
+    <PATHRC value=".;"/>
+    <PATHASM value=".;"/>
+    <DEBUGLIBPATH value="$(BCB)\lib\debug"/>
+    <RELEASELIBPATH value="$(BCB)\lib\release"/>
+    <LINKER value="ilink32"/>
+    <USERDEFINES value=""/>
+    <SYSDEFINES value=""/>
+    <MAINSOURCE value="EoPub.cpp"/>
+    <INCLUDEPATH value="$(BCB)\include;$(BCB)\include\vcl;..\lib\elpack"/>
+    <LIBPATH value="$(BCB)\lib\obj;$(BCB)\lib;$(BCB)\lib\release;..\lib\elpack"/>
+    <WARNINGS value="-w-8057"/>
+  </MACROS>
+  <OPTIONS>
+    <IDLCFLAGS value=""/>
+    <CFLAG1 value="-O2 -vi -tWM -c"/>
+    <PFLAGS value="-$YD -$W -$O- -v -JPHNE -M"/>
+    <RFLAGS value=""/>
+    <AFLAGS value="/mx /w2 /zd"/>
+    <LFLAGS value="-Tpe -aa -c -Gn -j"/>
+  </OPTIONS>
+  <LINKER>
+    <ALLOBJ value="c0w32.obj memmgr.lib sysinit.obj $(OBJFILES)"/>
+    <ALLRES value="$(RESFILES)"/>
+    <ALLLIB value="$(LIBFILES) $(LIBRARIES) import32.lib cp32mt.lib vcle50.lib"/>
+  </LINKER>
+  <IDEOPTIONS>
+[Version Info]
+IncludeVerInfo=1
+AutoIncBuild=0
+MajorVer=0
+MinorVer=0
+Release=3
+Build=29
+Debug=0
+PreRelease=0
+Special=0
+Private=0
+DLL=0
+Locale=1043
+CodePage=1252
+
+[Version Info Keys]
+CompanyName=Vult-r game studios
+FileDescription=Endless Pub Editor
+FileVersion=0.0.3.29
+InternalName=EOPub
+LegalCopyright=(c) 2003-2022 Vult-r
+LegalTrademarks=none
+OriginalFilename=eopub.exe
+ProductName=Eo Pub Editor
+ProductVersion=0.0.3.29
+Comments=www.endless-online.com
+
+[Debugging]
+DebugSourceDirs=$(BCB)\source\vcl
+
+[Parameters]
+RunParams=
+HostApplication=
+RemoteHost=
+RemotePath=
+RemoteDebug=0
+
+[Compiler]
+InMemoryExe=0
+ShowInfoMsgs=0
+LinkDebugVcl=0
+
+  </IDEOPTIONS>
+</PROJECT>
